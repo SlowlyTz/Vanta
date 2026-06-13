@@ -1,0 +1,19 @@
+{
+  "name": "jellyfin-client",
+  "version": "1.0.0",
+  "description": "Apple TV style Jellyfin Web Client",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0"
+  }
+}
