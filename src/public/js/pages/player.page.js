@@ -1,6 +1,5 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
-import { appStore } from '../store/app.store.js';
 import { formatTime } from '../utils/format.js';
 
 export default function PlayerPage({ id }) {
