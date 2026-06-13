@@ -1,5 +1,7 @@
 # Jellyfin Web Client
 
+> **Work in Progress** — This project is under active development and is not yet a stable release. Expect breaking changes and incomplete features.
+
 A modern Jellyfin streaming client with a minimalist Apple TV-inspired design. The application runs on a Node.js/Express backend that serves static frontend assets and acts as an API proxy. Authentication is handled server-side with HTTP-only session cookies, keeping credentials out of the browser.
 
 ## Features
