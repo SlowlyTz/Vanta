@@ -16,6 +16,8 @@ export function Navbar({ onLogout, onChangePassword }) {
   let mobileSettingsView = 'nav';
   let mobileNavOpen = false;
   let lastFocusedElement = null;
+  let settingsStatsLoaded = false;
+  let settingsStatsLoading = false;
 
   NAV_LINKS.forEach(link => {
     const anchor = createElement('a', {
@@ -167,7 +169,11 @@ export function Navbar({ onLogout, onChangePassword }) {
       setSettingsOpen(false);
       onLogout?.();
     }
-  }, 'Abmelden');
+  },
+    createLogoutIcon(),
+    createElement('span', { className: 'settings-logout-label' }, 'Abmelden'),
+    createChevronIcon()
+  );
 
   const mobileCurrentPasswordInput = createElement('input', {
     className: 'settings-input',
@@ -227,7 +233,17 @@ export function Navbar({ onLogout, onChangePassword }) {
       setMobileNavOpen(false);
       onLogout?.();
     }
-  }, 'Abmelden');
+  },
+    createLogoutIcon(),
+    createElement('span', { className: 'settings-logout-label' }, 'Abmelden'),
+    createChevronIcon()
+  );
+
+  const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
+  const mobileSettingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
+  const settingsOverview = createSettingsOverview();
+  const mobileSettingsOverview = createSettingsOverview();
+  const statViews = [settingsOverview, mobileSettingsOverview];
 
   const settingsTitle = createElement('h2', {
     className: 'settings-dialog-title',
@@ -248,21 +264,28 @@ export function Navbar({ onLogout, onChangePassword }) {
     onClick: () => setSettingsOpen(false)
   }, createCloseIcon());
 
-  const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'));
-  const themeOption = createSettingsOption('Thema', () => setSettingsView('theme'));
-  const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'));
-  const mobileThemeOption = createSettingsOption('Thema', () => setMobileSettingsView('theme'));
+  const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
+  const themeOption = createSettingsOption('Thema', () => setSettingsView('theme'), createPaletteIcon());
+  const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
+  const mobileThemeOption = createSettingsOption('Thema', () => setMobileSettingsView('theme'), createPaletteIcon());
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
     dataset: { view: 'root' }
   },
-    createElement('div', { className: 'settings-options' },
-      passwordOption,
-      themeOption
+    createSettingsProfile(settingsUsername),
+    createElement('section', { className: 'settings-section' },
+      createElement('h3', { className: 'settings-section-title' }, 'Overview'),
+      settingsOverview.element
     ),
-    createElement('div', { className: 'settings-options-spacer', 'aria-hidden': 'true' }),
-    createElement('div', { className: 'settings-logout-section' }, logoutBtn)
+    createElement('section', { className: 'settings-section' },
+      createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
+      createElement('div', { className: 'settings-options' },
+        passwordOption,
+        themeOption
+      ),
+      createElement('div', { className: 'settings-logout-section' }, logoutBtn)
+    )
   );
 
   const passwordPanel = createElement('div', {
@@ -297,12 +320,19 @@ export function Navbar({ onLogout, onChangePassword }) {
   }, 'Einstellungen');
 
   const mobileRootPanel = createElement('div', { className: 'settings-panel settings-panel-root' },
-    createElement('div', { className: 'settings-options' },
-      mobilePasswordOption,
-      mobileThemeOption
+    createSettingsProfile(mobileSettingsUsername),
+    createElement('section', { className: 'settings-section' },
+      createElement('h3', { className: 'settings-section-title' }, 'Overview'),
+      mobileSettingsOverview.element
     ),
-    createElement('div', { className: 'settings-options-spacer', 'aria-hidden': 'true' }),
-    createElement('div', { className: 'settings-logout-section' }, mobileLogoutBtn)
+    createElement('section', { className: 'settings-section' },
+      createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
+      createElement('div', { className: 'settings-options' },
+        mobilePasswordOption,
+        mobileThemeOption
+      ),
+      createElement('div', { className: 'settings-logout-section' }, mobileLogoutBtn)
+    )
   );
 
   const mobilePasswordPanel = createElement('div', { className: 'settings-panel settings-panel-password' }, mobilePasswordForm);
@@ -335,6 +365,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     className: 'settings-dialog',
     id: 'settings-dialog',
     role: 'dialog',
+    tabindex: '-1',
     'aria-modal': 'true',
     'aria-labelledby': 'settings-dialog-title'
   },
@@ -421,6 +452,10 @@ export function Navbar({ onLogout, onChangePassword }) {
   const update = ({ currentHash, user, scrolled }) => {
     element.classList.toggle('scrolled', !!scrolled);
 
+    const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
+    settingsUsername.textContent = displayName;
+    mobileSettingsUsername.textContent = displayName;
+
     NAV_LINKS.forEach(link => {
       const linkEl = $(`#nav-${link.key}`, element);
       if (!linkEl) return;
@@ -483,6 +518,59 @@ export function Navbar({ onLogout, onChangePassword }) {
     }
   };
 
+  const setStatValue = (key, value) => {
+    for (const view of statViews) {
+      view[key].textContent = value;
+    }
+  };
+
+  const setStatsLoading = () => {
+    setStatValue('movies', '...');
+    setStatValue('series', '...');
+    setStatValue('episodes', '...');
+  };
+
+  const setStatsFallback = () => {
+    setStatValue('movies', '-');
+    setStatValue('series', '-');
+    setStatValue('episodes', '-');
+  };
+
+  const getTotalItems = (result) => {
+    if (!result || result.status !== 'fulfilled') return null;
+    const value = result.value?.totalItems ?? result.value?.totalRecordCount;
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const formatCount = (value) => {
+    return Number.isFinite(value) ? new Intl.NumberFormat('de-DE').format(value) : '-';
+  };
+
+  const loadSettingsStats = async () => {
+    if (settingsStatsLoaded || settingsStatsLoading) return;
+
+    settingsStatsLoading = true;
+    setStatsLoading();
+
+    try {
+      const [movies, series, episodes] = await Promise.allSettled([
+        MediaApi.getLibrary('Movie', null, null, 1, 1),
+        MediaApi.getLibrary('Series', null, null, 1, 1),
+        MediaApi.getLibrary('Episode', null, null, 1, 1)
+      ]);
+
+      setStatValue('movies', formatCount(getTotalItems(movies)));
+      setStatValue('series', formatCount(getTotalItems(series)));
+      setStatValue('episodes', formatCount(getTotalItems(episodes)));
+      settingsStatsLoaded = [movies, series, episodes].some(result => result.status === 'fulfilled');
+    } catch (error) {
+      console.error('Failed to load settings overview:', error);
+      setStatsFallback();
+    } finally {
+      settingsStatsLoading = false;
+    }
+  };
+
   const setSettingsView = (view) => {
     settingsView = view;
     settingsTitle.textContent = settingsView === 'password'
@@ -492,6 +580,7 @@ export function Navbar({ onLogout, onChangePassword }) {
         : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
+    settingsDialog.dataset.view = settingsView;
     rootPanel.hidden = settingsView !== 'root';
     passwordPanel.hidden = settingsView !== 'password';
     themePanel.hidden = settingsView !== 'theme';
@@ -519,6 +608,10 @@ export function Navbar({ onLogout, onChangePassword }) {
     mobileRootPanel.hidden = mobileSettingsView !== 'root';
     mobilePasswordPanel.hidden = mobileSettingsView !== 'password';
     mobileThemePanel.hidden = mobileSettingsView !== 'theme';
+
+    if (mobileSettingsView === 'root') {
+      loadSettingsStats();
+    }
 
     if (mobileSettingsView !== 'password') {
       setStatus(mobileSettingsStatus, '');
@@ -548,7 +641,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     }
 
     setSettingsView('root');
-    window.requestAnimationFrame(() => passwordOption.focus());
+    loadSettingsStats();
+    window.requestAnimationFrame(() => settingsDialog.focus());
   };
 
   const setMobileNavOpen = (open) => {
@@ -587,14 +681,52 @@ export function Navbar({ onLogout, onChangePassword }) {
   return { element, update };
 }
 
-function createSettingsOption(label, onClick) {
+function createSettingsOption(label, onClick, icon) {
   return createElement('button', {
     className: 'settings-option',
     type: 'button',
     onClick
   },
-    createElement('span', { className: 'settings-option-label' }, label),
+    createElement('span', { className: 'settings-option-main' },
+      icon,
+      createElement('span', { className: 'settings-option-label' }, label)
+    ),
     createChevronIcon()
+  );
+}
+
+function createSettingsProfile(usernameElement) {
+  return createElement('div', { className: 'settings-profile' },
+    createElement('div', { className: 'settings-profile-avatar' }, createUserIcon()),
+    createElement('div', { className: 'settings-profile-copy' },
+      usernameElement,
+      createElement('span', { className: 'settings-profile-subtitle' }, 'Premium Mitglied')
+    )
+  );
+}
+
+function createSettingsOverview() {
+  const movies = createElement('span', { className: 'settings-stat-value' }, '-');
+  const series = createElement('span', { className: 'settings-stat-value' }, '-');
+  const episodes = createElement('span', { className: 'settings-stat-value' }, '-');
+
+  return {
+    movies,
+    series,
+    episodes,
+    element: createElement('div', { className: 'settings-overview-grid' },
+      createSettingsStat('Filme', movies, createMovieIcon()),
+      createSettingsStat('Serien', series, createScreenIcon()),
+      createSettingsStat('Folgen', episodes, createPlayOutlineIcon())
+    )
+  };
+}
+
+function createSettingsStat(label, valueElement, icon) {
+  return createElement('div', { className: 'settings-stat' },
+    icon,
+    createElement('span', { className: 'settings-stat-label' }, label),
+    valueElement
   );
 }
 
@@ -612,6 +744,75 @@ function createSettingsIcon() {
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3"></circle>
       <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.08V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.28.37.66.62 1.08.7H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"></path>
+    </svg>
+  `);
+}
+
+function createUserIcon() {
+  return createIcon('settings-profile-icon', `
+    <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21a8 8 0 0 0-16 0"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+  `);
+}
+
+function createMovieIcon() {
+  return createIcon('settings-row-icon settings-accent-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 6h16v14H4z"></path>
+      <path d="M8 6 6 2"></path>
+      <path d="M12 6 10 2"></path>
+      <path d="M16 6 14 2"></path>
+    </svg>
+  `);
+}
+
+function createScreenIcon() {
+  return createIcon('settings-row-icon settings-accent-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+      <path d="M8 20h8"></path>
+      <path d="M12 16v4"></path>
+    </svg>
+  `);
+}
+
+function createPlayOutlineIcon() {
+  return createIcon('settings-row-icon settings-accent-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 4.5v15l13-7.5z"></path>
+    </svg>
+  `);
+}
+
+function createPasswordIcon() {
+  return createIcon('settings-row-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+      <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+    </svg>
+  `);
+}
+
+function createPaletteIcon() {
+  return createIcon('settings-row-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22a10 10 0 1 1 10-10c0 1.9-1.3 3-3 3h-1.5a1.5 1.5 0 0 0-1.1 2.5l.3.3c1 1 1 2.6-.1 3.4-.9.5-2 .8-3.6.8z"></path>
+      <circle cx="7.5" cy="10.5" r=".8"></circle>
+      <circle cx="10.5" cy="7.5" r=".8"></circle>
+      <circle cx="14.5" cy="7.5" r=".8"></circle>
+      <circle cx="16.5" cy="11" r=".8"></circle>
+    </svg>
+  `);
+}
+
+function createLogoutIcon() {
+  return createIcon('settings-row-icon settings-logout-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <path d="M16 17l5-5-5-5"></path>
+      <path d="M21 12H9"></path>
     </svg>
   `);
 }

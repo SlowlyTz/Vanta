@@ -37,8 +37,8 @@ export const MediaApi = {
     return request('/api/media/studios');
   },
 
-  getLibrary(type, genre = null, studio = null) {
-    let url = `/api/media/library?type=${encodeURIComponent(type)}`;
+  getLibrary(type, genre = null, studio = null, page = 1, limit = 50) {
+    let url = `/api/media/library?type=${encodeURIComponent(type)}&page=${page}&limit=${limit}`;
     if (genre) {
       url += `&genre=${encodeURIComponent(genre)}`;
     }
