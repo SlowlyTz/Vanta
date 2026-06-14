@@ -2,8 +2,15 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { MediaCarousel } from '../components/mediaCarousel.js';
-import { getItemImageUrl } from '../utils/image.js';
-import { formatYear } from '../utils/format.js';
+import { HeroCarousel } from '../components/heroCarousel.js';
+
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 export default function HomePage() {
   const container = createElement('div', { className: 'page-container' });
@@ -57,41 +64,14 @@ export default function HomePage() {
       return;
     }
 
-    // Pick hero item (first movie, or first series)
-    const heroItem = (data.movies && data.movies[0]) || (data.series && data.series[0]);
-    if (heroItem) {
-      const heroBackdrop = getItemImageUrl(heroItem, 'Backdrop');
+    const heroItems = shuffleArray([
+      ...(data.movies || []),
+      ...(data.series || [])
+    ]).slice(0, 8);
 
-      const playBtn = createElement('button', {
-        className: 'btn-primary',
-        onClick: () => { window.location.hash = `#/player/${heroItem.Id}`; }
-      });
-      playBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg>Abspielen`;
-
-      const detailsBtn = createElement('button', {
-        className: 'btn-secondary',
-        onClick: () => { window.location.hash = `#/item/${heroItem.Id}`; }
-      }, 'Details');
-
-      const hero = createElement('div', { className: 'home-hero' },
-        createElement('div', {
-          className: 'home-hero-backdrop',
-          style: { backgroundImage: `url('${heroBackdrop}')` }
-        }),
-        createElement('div', { className: 'home-hero-content' },
-          createElement('h1', { className: 'home-hero-title' }, heroItem.Name),
-          createElement('div', { className: 'home-hero-metadata' },
-            createElement('span', {}, formatYear(heroItem.PremiereDate || heroItem.ProductionYear)),
-            createElement('span', {}, heroItem.Type === 'Series' ? 'Serie' : 'Film')
-          ),
-          createElement('p', { className: 'home-hero-desc' }, heroItem.Overview || 'Keine Beschreibung verfügbar.'),
-          createElement('div', { className: 'home-hero-actions' },
-            playBtn,
-            detailsBtn
-          )
-        )
-      );
-      container.appendChild(hero);
+    if (heroItems.length > 0) {
+      const heroEl = HeroCarousel({ items: heroItems });
+      if (heroEl) container.appendChild(heroEl);
     }
 
     const sectionsContainer = createElement('div', { className: 'content-section' });
