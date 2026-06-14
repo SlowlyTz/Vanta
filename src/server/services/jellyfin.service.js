@@ -278,8 +278,33 @@ export class JellyfinService {
   }
 
   static async getLibrary(userId, token, type, genre = null, studio = null, page = 1, limit = 50) {
+    const types = type.split(',').map(t => t.trim()).filter(Boolean);
+
+    if (types.length <= 1) {
+      return this._fetchLibraryPage(userId, token, types[0] || type, genre, studio, page, limit);
+    }
+
+    const allResults = await Promise.all(
+      types.map(t => this._fetchLibraryPage(userId, token, t, genre, studio, 1, 100000))
+    );
+
+    const allItems = allResults.flatMap(r => r.items);
+    const totalRecordCount = allResults.reduce((sum, r) => sum + r.totalRecordCount, 0);
+
+    allItems.sort((a, b) => (a.SortName || a.Name || '').localeCompare(b.SortName || b.Name || ''));
+
     const startIndex = (page - 1) * limit;
-    let url = `${JELLYFIN_BASE_URL}/Users/${userId}/Items?IncludeItemTypes=${type}&Recursive=true&Fields=${encodeURIComponent(COMMON_ITEM_FIELDS)}&SortBy=SortName&SortOrder=Ascending&StartIndex=${startIndex}&Limit=${limit}`;
+    const paginatedItems = allItems.slice(startIndex, startIndex + limit);
+
+    return {
+      items: paginatedItems,
+      totalRecordCount
+    };
+  }
+
+  static async _fetchLibraryPage(userId, token, type, genre, studio, page, limit) {
+    const startIndex = (page - 1) * limit;
+    let url = `${JELLYFIN_BASE_URL}/Users/${userId}/Items?IncludeItemTypes=${encodeURIComponent(type)}&Recursive=true&Fields=${encodeURIComponent(COMMON_ITEM_FIELDS)}&SortBy=SortName&SortOrder=Ascending&StartIndex=${startIndex}&Limit=${limit}`;
     if (genre) {
       url += `&Genres=${encodeURIComponent(genre)}`;
     }
