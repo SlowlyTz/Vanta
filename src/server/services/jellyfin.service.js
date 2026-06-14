@@ -41,6 +41,48 @@ const DETAIL_ITEM_FIELDS = [
   'OriginalTitle'
 ].join(',');
 
+const buildBrowserDeviceProfile = ({ forceTranscode = false, preferHls = false } = {}) => {
+  const hlsProfile = {
+    Type: 'Video',
+    Container: 'ts',
+    Protocol: 'hls',
+    Context: 'Streaming',
+    VideoCodec: 'h264',
+    AudioCodec: 'aac,mp3',
+    MaxAudioChannels: '2',
+    MinSegments: '2',
+    BreakOnNonKeyFrames: true
+  };
+  const httpProfile = {
+    Type: 'Video',
+    Container: 'mp4',
+    Protocol: 'http',
+    Context: 'Streaming',
+    VideoCodec: 'h264',
+    AudioCodec: 'aac',
+    MaxAudioChannels: '2'
+  };
+
+  return {
+    Name: 'Slowly Stream HTML5',
+    MaxStreamingBitrate: 40000000,
+    MaxStaticBitrate: 100000000,
+    MusicStreamingTranscodingBitrate: 384000,
+    DirectPlayProfiles: forceTranscode ? [] : [
+      {
+        Type: 'Video',
+        Container: 'mp4,m4v,mov',
+        VideoCodec: 'h264',
+        AudioCodec: 'aac,mp3,alac'
+      }
+    ],
+    TranscodingProfiles: preferHls ? [hlsProfile, httpProfile] : [httpProfile, hlsProfile],
+    ContainerProfiles: [],
+    CodecProfiles: [],
+    SubtitleProfiles: []
+  };
+};
+
 export class JellyfinService {
   static async login(username, password) {
     const url = `${JELLYFIN_BASE_URL}/Users/AuthenticateByName`;
@@ -372,6 +414,56 @@ export class JellyfinService {
     });
 
     return response;
+  }
+
+  static async getPlaybackInfo(userId, token, itemId, options = {}) {
+    const url = `${JELLYFIN_BASE_URL}/Items/${itemId}/PlaybackInfo?UserId=${encodeURIComponent(userId)}`;
+    const forceTranscode = options.forceTranscode === true;
+    const preferHls = options.preferHls === true;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Emby-Authorization': getAuthHeader(token)
+      },
+      body: JSON.stringify({
+        UserId: userId,
+        MaxStreamingBitrate: forceTranscode ? 20000000 : 40000000,
+        MaxAudioChannels: 2,
+        EnableDirectPlay: !forceTranscode,
+        EnableDirectStream: !forceTranscode,
+        EnableTranscoding: true,
+        AllowVideoStreamCopy: !forceTranscode,
+        AllowAudioStreamCopy: !forceTranscode,
+        AutoOpenLiveStream: true,
+        DeviceProfile: buildBrowserDeviceProfile({ forceTranscode, preferHls })
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(`Failed to fetch playback info: ${response.statusText || errorText}`);
+    }
+
+    return await response.json();
+  }
+
+  static async fetchPlaybackResource(pathOrUrl, token, rangeHeader) {
+    const url = new URL(pathOrUrl, JELLYFIN_BASE_URL);
+    url.searchParams.set('api_key', token);
+
+    const headers = {
+      'X-Emby-Authorization': getAuthHeader(token)
+    };
+
+    if (rangeHeader) {
+      headers.Range = rangeHeader;
+    }
+
+    return await fetch(url, {
+      method: 'GET',
+      headers
+    });
   }
 
   static async getPersonDetails(userId, token, personId) {

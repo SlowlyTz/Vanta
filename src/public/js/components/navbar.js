@@ -1,4 +1,5 @@
 import { MediaApi } from '../api/media.api.js';
+import { PLAYBACK_MODE_OPTIONS, settingsStore } from '../store/settings.store.js';
 import { createElement, $ } from '../utils/dom.js';
 
 const NAV_LINKS = [
@@ -244,6 +245,31 @@ export function Navbar({ onLogout, onChangePassword }) {
   const settingsOverview = createSettingsOverview();
   const mobileSettingsOverview = createSettingsOverview();
   const statViews = [settingsOverview, mobileSettingsOverview];
+  const playbackChoiceButtons = [];
+
+  const createPlaybackChoices = () => PLAYBACK_MODE_OPTIONS.map(option => {
+    const button = createElement('button', {
+      className: 'settings-choice',
+      type: 'button',
+      'aria-pressed': 'false',
+      onClick: () => settingsStore.setPlaybackMode(option.value)
+    },
+      createElement('span', { className: 'settings-choice-label' }, option.label),
+      createCheckIcon()
+    );
+
+    playbackChoiceButtons.push({ button, value: option.value });
+    return button;
+  });
+
+  const syncPlaybackChoices = () => {
+    const currentMode = settingsStore.getPlaybackMode();
+    playbackChoiceButtons.forEach(({ button, value }) => {
+      const isActive = value === currentMode;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  };
 
   const settingsTitle = createElement('h2', {
     className: 'settings-dialog-title',
@@ -266,8 +292,10 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
   const themeOption = createSettingsOption('Thema', () => setSettingsView('theme'), createPaletteIcon());
+  const playbackOption = createSettingsOption('Wiedergabe', () => setSettingsView('playback'), createPlaybackIcon());
   const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
   const mobileThemeOption = createSettingsOption('Thema', () => setMobileSettingsView('theme'), createPaletteIcon());
+  const mobilePlaybackOption = createSettingsOption('Wiedergabe', () => setMobileSettingsView('playback'), createPlaybackIcon());
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
@@ -282,7 +310,8 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         passwordOption,
-        themeOption
+        themeOption,
+        playbackOption
       ),
       createElement('div', { className: 'settings-logout-section' }, logoutBtn)
     )
@@ -304,6 +333,13 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('span', { className: 'settings-choice-label' }, 'Dunkel'),
       createCheckIcon()
     )
+  );
+
+  const playbackPanel = createElement('div', {
+    className: 'settings-panel settings-panel-playback',
+    dataset: { view: 'playback' }
+  },
+    createElement('div', { className: 'settings-options' }, createPlaybackChoices())
   );
 
   const mobileSettingsBackButton = createElement('button', {
@@ -329,7 +365,8 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         mobilePasswordOption,
-        mobileThemeOption
+        mobileThemeOption,
+        mobilePlaybackOption
       ),
       createElement('div', { className: 'settings-logout-section' }, mobileLogoutBtn)
     )
@@ -345,6 +382,9 @@ export function Navbar({ onLogout, onChangePassword }) {
       createCheckIcon()
     )
   );
+  const mobilePlaybackPanel = createElement('div', { className: 'settings-panel settings-panel-playback' },
+    createElement('div', { className: 'settings-options' }, createPlaybackChoices())
+  );
 
   const mobileSettingsPanel = createElement('li', {
     className: 'mobile-settings-panel',
@@ -357,7 +397,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     ),
     mobileRootPanel,
     mobilePasswordPanel,
-    mobileThemePanel
+    mobileThemePanel,
+    mobilePlaybackPanel
   );
   mobileNavList.appendChild(mobileSettingsPanel);
 
@@ -376,7 +417,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     ),
     rootPanel,
     passwordPanel,
-    themePanel
+    themePanel,
+    playbackPanel
   );
 
   const settingsBackdrop = createElement('div', {
@@ -577,13 +619,16 @@ export function Navbar({ onLogout, onChangePassword }) {
       ? 'Passwort'
       : settingsView === 'theme'
         ? 'Thema'
-        : 'Einstellungen';
+        : settingsView === 'playback'
+          ? 'Wiedergabe'
+          : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
     settingsDialog.dataset.view = settingsView;
     rootPanel.hidden = settingsView !== 'root';
     passwordPanel.hidden = settingsView !== 'password';
     themePanel.hidden = settingsView !== 'theme';
+    playbackPanel.hidden = settingsView !== 'playback';
 
     if (settingsView !== 'password') {
       setStatus(settingsStatus, '');
@@ -603,11 +648,14 @@ export function Navbar({ onLogout, onChangePassword }) {
       ? 'Passwort'
       : mobileSettingsView === 'theme'
         ? 'Thema'
-        : 'Einstellungen';
+        : mobileSettingsView === 'playback'
+          ? 'Wiedergabe'
+          : 'Einstellungen';
 
     mobileRootPanel.hidden = mobileSettingsView !== 'root';
     mobilePasswordPanel.hidden = mobileSettingsView !== 'password';
     mobileThemePanel.hidden = mobileSettingsView !== 'theme';
+    mobilePlaybackPanel.hidden = mobileSettingsView !== 'playback';
 
     if (mobileSettingsView === 'root') {
       loadSettingsStats();
@@ -676,6 +724,8 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   setSettingsView('root');
   setMobileSettingsView('nav');
+  syncPlaybackChoices();
+  settingsStore.subscribe(syncPlaybackChoices);
   loadGenres();
 
   return { element, update };
@@ -803,6 +853,16 @@ function createPaletteIcon() {
       <circle cx="10.5" cy="7.5" r=".8"></circle>
       <circle cx="14.5" cy="7.5" r=".8"></circle>
       <circle cx="16.5" cy="11" r=".8"></circle>
+    </svg>
+  `);
+}
+
+function createPlaybackIcon() {
+  return createIcon('settings-row-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 4.5v15l13-7.5z"></path>
+      <path d="M4 4v16"></path>
+      <path d="M20 6v12"></path>
     </svg>
   `);
 }
