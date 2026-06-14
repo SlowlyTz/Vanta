@@ -1,16 +1,9 @@
 import helmet from 'helmet';
+import cspDirectives from '../config/csp.js';
 
 export const securityHeaders = helmet({
   contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      mediaSrc: ["'self'", "blob:"],
-      connectSrc: ["'self'"],
-    },
+    directives: cspDirectives
   },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: false,
