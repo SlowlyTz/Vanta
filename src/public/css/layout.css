@@ -641,6 +641,11 @@ body.mobile-nav-open .mobile-nav-backdrop {
 
 .settings-choice.active .settings-check {
   color: var(--success-color);
+  opacity: 1;
+}
+
+.settings-choice .settings-check {
+  opacity: 0;
 }
 
 .settings-panel-theme .settings-choice {

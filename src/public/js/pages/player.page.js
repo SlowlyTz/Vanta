@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
+import { PLAYBACK_MODE_OPTIONS, PLAYBACK_MODES, settingsStore } from '../store/settings.store.js';
 import { formatTime } from '../utils/format.js';
 
 export default function PlayerPage({ id }) {
@@ -7,6 +8,11 @@ export default function PlayerPage({ id }) {
   let isMuted = false;
   let savedVolume = 0.8;
   let mediaDuration = 0; // True duration in seconds from metadata
+  let playableId = id;
+  let activePlaybackMode = settingsStore.getPlaybackMode();
+  let playbackLoadVersion = 0;
+  let fallbackAttempted = false;
+  let isCleaningUp = false;
 
   const container = createElement('div', { className: 'player-page' });
 
@@ -39,6 +45,13 @@ export default function PlayerPage({ id }) {
 
   const fullscreenBtn = createElement('button', { className: 'player-btn' });
   const backBtn = createElement('button', { className: 'player-back-btn' });
+  const playbackSelect = createElement('select', {
+    className: 'player-playback-select',
+    'aria-label': 'Wiedergabemodus'
+  }, PLAYBACK_MODE_OPTIONS.map(option => createElement('option', {
+    value: option.value
+  }, option.shortLabel)));
+  playbackSelect.value = activePlaybackMode;
   
   const loader = createElement('div', { className: 'player-loader hidden' },
     createElement('div', { className: 'player-loader-spinner' })
@@ -69,6 +82,7 @@ export default function PlayerPage({ id }) {
         )
       ),
       createElement('div', { className: 'player-controls-right' },
+        createElement('div', { className: 'player-playback-container' }, playbackSelect),
         fullscreenBtn
       )
     )
@@ -232,6 +246,29 @@ export default function PlayerPage({ id }) {
     toggleFullscreen();
   });
 
+  playbackSelect.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  playbackSelect.addEventListener('change', async (e) => {
+    e.stopPropagation();
+    const mode = e.target.value;
+    settingsStore.setPlaybackMode(mode);
+    fallbackAttempted = false;
+
+    if (playableId) {
+      try {
+        await loadPlaybackSource(playableId, mode, {
+          autoplay: true,
+          preserveTime: true
+        });
+      } catch (error) {
+        loader.classList.add('hidden');
+        showError('Ladefehler', error.message || 'Der Medienstrom konnte nicht geladen werden.');
+      }
+    }
+  });
+
   const handleFullscreenChange = () => {
     if (document.fullscreenElement) {
       fullscreenBtn.innerHTML = fullscreenExitIcon;
@@ -241,6 +278,12 @@ export default function PlayerPage({ id }) {
   };
 
   document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+  const syncPlaybackSelect = () => {
+    playbackSelect.value = settingsStore.getPlaybackMode();
+  };
+
+  const unsubscribeSettings = settingsStore.subscribe(syncPlaybackSelect);
 
   const handleKeyDown = (e) => {
     resetControlTimeout();
@@ -281,8 +324,24 @@ export default function PlayerPage({ id }) {
   });
 
   // HTML5 Media Errors
-  video.addEventListener('error', () => {
+  video.addEventListener('error', async () => {
+    if (isCleaningUp) return;
+
     loader.classList.add('hidden');
+    if (playableId && activePlaybackMode !== PLAYBACK_MODES.TRANSCODE && !fallbackAttempted) {
+      fallbackAttempted = true;
+
+      try {
+        await loadPlaybackSource(playableId, PLAYBACK_MODES.TRANSCODE, {
+          autoplay: true,
+          preserveTime: true
+        });
+        return;
+      } catch (fallbackError) {
+        console.error('[Player Fallback Error]', fallbackError);
+      }
+    }
+
     const err = video.error;
     let msg = 'Ein unbekannter Stream-Fehler ist aufgetreten.';
     if (err) {
@@ -320,12 +379,14 @@ export default function PlayerPage({ id }) {
   };
 
   const cleanupAndGoBack = () => {
+    isCleaningUp = true;
     video.pause();
     video.src = '';
     video.load();
 
     window.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    unsubscribeSettings();
     
     if (controlTimeout) clearTimeout(controlTimeout);
     document.body.style.cursor = 'default';
@@ -346,7 +407,7 @@ export default function PlayerPage({ id }) {
     loader.classList.remove('hidden');
     try {
       let item = await MediaApi.getItem(id);
-      let playableId = id;
+      playableId = id;
 
       if (item.Type === 'Series') {
         const seasons = await MediaApi.getSeasons(id);
@@ -383,17 +444,48 @@ export default function PlayerPage({ id }) {
         timeDuration.textContent = formatTime(mediaDuration);
       }
 
-      video.src = MediaApi.getStreamUrl(playableId);
-      video.load();
-
-      video.play().catch(err => {
-        console.warn('Autoplay blocked by browser. User action required.', err);
+      fallbackAttempted = false;
+      await loadPlaybackSource(playableId, settingsStore.getPlaybackMode(), {
+        autoplay: true
       });
 
     } catch (err) {
       console.error('[Player Initialisation Error]', err);
       loader.classList.add('hidden');
       showError('Ladefehler', err.message || 'Der Medienstrom konnte nicht geladen werden.');
+    }
+  };
+
+  const loadPlaybackSource = async (id, mode = settingsStore.getPlaybackMode(), options = {}) => {
+    const { autoplay = true, preserveTime = false } = options;
+    const loadVersion = ++playbackLoadVersion;
+    const resumeTime = preserveTime && Number.isFinite(video.currentTime) ? video.currentTime : 0;
+
+    activePlaybackMode = mode;
+    playbackSelect.value = mode;
+    loader.classList.remove('hidden');
+    errorOverlay.classList.add('hidden');
+
+    const playback = await MediaApi.getPlayback(id, mode);
+    if (loadVersion !== playbackLoadVersion) return;
+
+    video.src = playback.url;
+
+    if (resumeTime > 0) {
+      video.addEventListener('loadedmetadata', () => {
+        const duration = mediaDuration || video.duration;
+        if (duration && resumeTime < duration) {
+          video.currentTime = resumeTime;
+        }
+      }, { once: true });
+    }
+
+    video.load();
+
+    if (autoplay) {
+      video.play().catch(err => {
+        console.warn('Autoplay blocked by browser. User action required.', err);
+      });
     }
   };
 

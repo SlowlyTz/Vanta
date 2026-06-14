@@ -85,5 +85,15 @@ export const MediaApi = {
 
   getStreamUrl(id) {
     return `/api/media/stream/${id}`;
+  },
+
+  getPlayback(id, mode) {
+    const params = new URLSearchParams();
+    if (mode) {
+      params.set('mode', mode);
+    }
+
+    const query = params.toString();
+    return request(`/api/media/playback/${id}${query ? '?' + query : ''}`);
   }
 };
