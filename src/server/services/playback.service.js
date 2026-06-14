@@ -94,16 +94,18 @@ export class PlaybackService {
     const transcodableSources = sources.filter(source => source.SupportsTranscoding !== false);
     const candidates = transcodableSources.length > 0 ? transcodableSources : sources;
     const preferHls = this.shouldPreferHls(userAgent);
-    const preferredSource = candidates.find(source =>
-      source.TranscodingUrl && this.isHlsPath(source.TranscodingUrl) === preferHls
-    );
-    const transcodingSource = preferredSource || candidates.find(source => source.TranscodingUrl);
-    const source = transcodingSource || this.getPreferredSource(candidates);
+    const hlsSource = candidates.find(source => source.TranscodingUrl && this.isHlsPath(source.TranscodingUrl));
+    const httpSource = candidates.find(source => source.TranscodingUrl && !this.isHlsPath(source.TranscodingUrl));
+    const source = (preferHls ? hlsSource || httpSource : httpSource)
+      || this.getPreferredSource(candidates);
+    const targetPath = preferHls
+      ? source?.TranscodingUrl || this.buildTranscodingFallbackPath(itemId, source)
+      : httpSource?.TranscodingUrl || this.buildTranscodingFallbackPath(itemId, source);
 
     return {
       mode: PLAYBACK_MODES.TRANSCODE,
       source,
-      targetPath: source?.TranscodingUrl || this.buildTranscodingFallbackPath(itemId, source),
+      targetPath,
       isTranscoded: true,
       reason
     };
