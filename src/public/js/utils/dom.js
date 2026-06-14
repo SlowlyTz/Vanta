@@ -19,6 +19,10 @@ export function createElement(tag, props = {}, ...children) {
       Object.assign(element.style, value);
     } else if (key === 'dataset' && typeof value === 'object') {
       Object.assign(element.dataset, value);
+    } else if (value === true) {
+      element.setAttribute(key, '');
+    } else if (value === false) {
+      element.removeAttribute(key);
     } else if (value !== null && value !== undefined) {
       element.setAttribute(key, value);
     }
