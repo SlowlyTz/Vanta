@@ -277,8 +277,9 @@ export class JellyfinService {
     return data.Items || [];
   }
 
-  static async getLibrary(userId, token, type, genre = null, studio = null) {
-    let url = `${JELLYFIN_BASE_URL}/Users/${userId}/Items?IncludeItemTypes=${type}&Recursive=true&Fields=${encodeURIComponent(COMMON_ITEM_FIELDS)}&SortBy=SortName&SortOrder=Ascending&Limit=100`;
+  static async getLibrary(userId, token, type, genre = null, studio = null, page = 1, limit = 50) {
+    const startIndex = (page - 1) * limit;
+    let url = `${JELLYFIN_BASE_URL}/Users/${userId}/Items?IncludeItemTypes=${type}&Recursive=true&Fields=${encodeURIComponent(COMMON_ITEM_FIELDS)}&SortBy=SortName&SortOrder=Ascending&StartIndex=${startIndex}&Limit=${limit}`;
     if (genre) {
       url += `&Genres=${encodeURIComponent(genre)}`;
     }
@@ -298,7 +299,10 @@ export class JellyfinService {
     }
 
     const data = await response.json();
-    return data.Items || [];
+    return {
+      items: data.Items || [],
+      totalRecordCount: data.TotalRecordCount || 0
+    };
   }
 
   static async fetchImageStream(itemId, token, type = 'Primary', query = {}) {
