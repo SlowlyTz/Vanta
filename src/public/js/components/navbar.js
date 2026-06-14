@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { key: 'home', label: 'Startseite', href: '#/home' },
   { key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie', menuId: 'movies-dropdown-menu' },
   { key: 'series', label: 'Serien', href: '#/series', type: 'Series', menuId: 'series-dropdown-menu' },
+  { key: 'publishers', label: 'Publisher', href: '#/publishers', menuId: 'publishers-dropdown-menu', isStudios: true },
   { key: 'search', label: 'Suche', href: '#/search' }
 ];
 
@@ -24,7 +25,7 @@ export function Navbar({ onLogout, onChangePassword }) {
       onClick: () => setMobileNavOpen(false)
     }, link.label);
 
-    if (!link.type) {
+    if (!link.type && !link.isStudios) {
       navList.appendChild(createElement('li', { className: 'navbar-item' }, anchor));
       return;
     }
@@ -32,8 +33,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     const dropdownMenu = createElement('ul', {
       className: 'dropdown-menu',
       id: link.menuId,
-      'aria-label': `${link.label} Genres`
-    }, createElement('li', { className: 'dropdown-item-loading' }, 'Lade Genres...'));
+      'aria-label': link.isStudios ? 'Publisher' : `${link.label} Genres`
+    }, createElement('li', { className: 'dropdown-item-loading' }, link.isStudios ? 'Lade Publisher...' : 'Lade Genres...'));
 
     navList.appendChild(
       createElement('li', { className: 'navbar-item dropdown' },
@@ -401,6 +402,20 @@ export function Navbar({ onLogout, onChangePassword }) {
           menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Keine Genres gefunden'));
         });
     });
+
+    const studiosLink = NAV_LINKS.find(link => link.isStudios);
+    if (studiosLink) {
+      const menu = $(`#${studiosLink.menuId}`, element);
+      if (menu) {
+        MediaApi.getStudios()
+          .then(studios => renderStudiosMenu(menu, studios))
+          .catch(error => {
+            console.error('Failed to load studios:', error);
+            menu.innerHTML = '';
+            menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Keine Publisher gefunden'));
+          });
+      }
+    }
   };
 
   const update = ({ currentHash, user, scrolled }) => {
@@ -414,6 +429,7 @@ export function Navbar({ onLogout, onChangePassword }) {
         (link.key === 'home' && currentHash === '#/home') ||
         (link.key === 'movies' && (currentHash === '#/movies' || currentHash.startsWith('#/genre/Movie'))) ||
         (link.key === 'series' && (currentHash === '#/series' || currentHash.startsWith('#/genre/Series'))) ||
+        (link.key === 'publishers' && (currentHash === '#/publishers' || currentHash.startsWith('#/publisher/'))) ||
         (link.key === 'search' && currentHash === '#/search');
 
       linkEl.classList.toggle('active', isActive);
@@ -648,6 +664,59 @@ function renderGenreMenu(menu, genres, type) {
           className: 'dropdown-item',
           href: `#/genre/${type}/${encodeURIComponent(genre.Name)}`
         }, genre.Name)
+      )
+    );
+  });
+}
+
+const FEATURED_STUDIOS = [
+  { match: ['disney', 'walt disney', 'walt disney pictures', 'walt disney studios', 'walt disney animation studios'], label: 'Disney' },
+  { match: ['20th century', '20th century studios', '20th century fox', 'twentieth century fox'], label: '20th Century Studios' },
+  { match: ['warner bros', 'warner bros pictures', 'warner brothers', 'warner bros.'], label: 'Warner Bros' },
+  { match: ['netflix'], label: 'Netflix' },
+  { match: ['apple tv', 'apple tv+', 'appletv', 'apple'], label: 'Apple TV' },
+  { match: ['amazon', 'prime video', 'amazon studios', 'amazon prime', 'amazon mgm studios'], label: 'Prime Video' },
+  { match: ['hbo', 'hbo max', 'hbo films', 'home box office'], label: 'HBO' }
+];
+
+function matchFeaturedStudio(studioName) {
+  const lower = studioName.toLowerCase();
+  for (const entry of FEATURED_STUDIOS) {
+    if (entry.match.some(pattern => lower === pattern || lower.startsWith(pattern))) {
+      return entry;
+    }
+  }
+  return null;
+}
+
+function renderStudiosMenu(menu, studios) {
+  menu.innerHTML = '';
+
+  const featured = [];
+  const seen = new Set();
+
+  for (const studio of studios) {
+    const match = matchFeaturedStudio(studio.Name);
+    if (match && !seen.has(match.label)) {
+      seen.add(match.label);
+      featured.push({ ...studio, displayLabel: match.label, order: FEATURED_STUDIOS.indexOf(match) });
+    }
+  }
+
+  featured.sort((a, b) => a.order - b.order);
+
+  if (featured.length === 0) {
+    menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Keine Publisher gefunden'));
+    return;
+  }
+
+  featured.forEach(studio => {
+    menu.appendChild(
+      createElement('li', { className: 'dropdown-list-item' },
+        createElement('a', {
+          className: 'dropdown-item dropdown-item-publisher',
+          href: `#/publisher/${encodeURIComponent(studio.Name)}`
+        }, studio.displayLabel)
       )
     );
   });

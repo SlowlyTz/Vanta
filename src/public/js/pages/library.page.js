@@ -4,16 +4,17 @@ import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 
 export default function LibraryPage(params) {
-  // Extract parameters from router match
-  const type = params.type || (params.type === 'Series' ? 'Series' : 'Movie');
+  const type = params.type || 'Movie';
   const genre = params.genreName || params.genre || null;
+  const studio = params.studioName || params.studio || null;
+  const isMixedType = type.includes(',');
 
   const container = createElement('div', { className: 'page-container content-section' });
 
   const loadLibrary = async () => {
     appStore.setLoading(true);
     try {
-      const items = await MediaApi.getLibrary(type, genre);
+      const items = await MediaApi.getLibrary(type, genre, studio);
       renderLibrary(items);
     } catch (error) {
       console.error('[Library Page Load Error]', error);
@@ -42,7 +43,14 @@ export default function LibraryPage(params) {
     container.innerHTML = '';
 
     const labelType = type === 'Series' ? 'Serien' : 'Filme';
-    const pageTitle = genre ? `${labelType}: ${genre}` : `Alle ${labelType}`;
+    let pageTitle;
+    if (studio) {
+      pageTitle = studio;
+    } else if (genre) {
+      pageTitle = isMixedType ? `${genre}` : `${labelType}: ${genre}`;
+    } else {
+      pageTitle = isMixedType ? 'Alle Titel' : `Alle ${labelType}`;
+    }
 
     const titleEl = createElement('h1', { 
       style: { 

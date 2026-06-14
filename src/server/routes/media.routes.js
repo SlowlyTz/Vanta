@@ -127,16 +127,28 @@ router.get('/genres', requireAuth, asyncHandler(async (req, res) => {
   }
 }));
 
+router.get('/studios', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+
+  try {
+    const studios = await JellyfinService.getStudios(userId, accessToken);
+    return res.json(studios);
+  } catch (error) {
+    console.error('[Media Studios Error]', error.message);
+    return res.status(500).json({ error: 'Failed to fetch studios' });
+  }
+}));
+
 router.get('/library', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
-  const { type, genre } = req.query;
+  const { type, genre, studio } = req.query;
 
   if (!type) {
     return res.status(400).json({ error: 'Type is required' });
   }
 
   try {
-    const items = await JellyfinService.getLibrary(userId, accessToken, type, genre);
+    const items = await JellyfinService.getLibrary(userId, accessToken, type, genre, studio);
     return res.json(items);
   } catch (error) {
     console.error('[Media Library Error]', error.message);
