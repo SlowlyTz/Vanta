@@ -260,10 +260,30 @@ export class JellyfinService {
     return data.Items || [];
   }
 
-  static async getLibrary(userId, token, type, genre = null) {
+  static async getStudios(userId, token) {
+    const url = `${JELLYFIN_BASE_URL}/Studios?userId=${userId}&Recursive=true&SortBy=SortName&SortOrder=Ascending`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Emby-Authorization': getAuthHeader(token)
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch studios: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.Items || [];
+  }
+
+  static async getLibrary(userId, token, type, genre = null, studio = null) {
     let url = `${JELLYFIN_BASE_URL}/Users/${userId}/Items?IncludeItemTypes=${type}&Recursive=true&Fields=${encodeURIComponent(COMMON_ITEM_FIELDS)}&SortBy=SortName&SortOrder=Ascending&Limit=100`;
     if (genre) {
       url += `&Genres=${encodeURIComponent(genre)}`;
+    }
+    if (studio) {
+      url += `&Studios=${encodeURIComponent(studio)}`;
     }
 
     const response = await fetch(url, {

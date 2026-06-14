@@ -33,10 +33,17 @@ export const MediaApi = {
     return request(`/api/media/genres?type=${type}`);
   },
 
-  getLibrary(type, genre = null) {
-    let url = `/api/media/library?type=${type}`;
+  getStudios() {
+    return request('/api/media/studios');
+  },
+
+  getLibrary(type, genre = null, studio = null) {
+    let url = `/api/media/library?type=${encodeURIComponent(type)}`;
     if (genre) {
       url += `&genre=${encodeURIComponent(genre)}`;
+    }
+    if (studio) {
+      url += `&studio=${encodeURIComponent(studio)}`;
     }
     return request(url);
   },
