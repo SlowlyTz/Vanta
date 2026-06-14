@@ -45,7 +45,7 @@ export function HeroCarousel({ items = [] }) {
     });
 
     const content = createElement('div', {
-      className: 'home-hero-content hero-slide-content',
+      className: `home-hero-content hero-slide-content${index === 0 ? ' active' : ''}`,
       style: {
         opacity: index === 0 ? '1' : '0',
         pointerEvents: index === 0 ? 'auto' : 'none'
@@ -95,12 +95,14 @@ export function HeroCarousel({ items = [] }) {
     slide.backdrop.style.opacity = '0';
     slide.content.style.opacity = '0';
     slide.content.style.pointerEvents = 'none';
+    slide.content.classList.remove('active');
   };
 
   const activateSlide = (slide) => {
     slide.backdrop.style.opacity = '1';
     slide.content.style.opacity = '1';
     slide.content.style.pointerEvents = 'auto';
+    slide.content.classList.add('active');
   };
 
   const goToSlide = (index) => {

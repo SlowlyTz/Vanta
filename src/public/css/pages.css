@@ -1314,29 +1314,32 @@ body.actor-modal-open {
 
 @media (max-width: 600px) {
   .home-hero {
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    padding-top: 48px;
-    margin-bottom: 8px;
+    height: clamp(300px, 48dvh, 380px);
+    min-height: 300px;
+    max-height: 380px;
+    padding-top: 0;
+    margin-bottom: var(--spacing-md);
   }
 
   .home-hero::before {
     content: '';
-    display: block;
-    min-height: 30dvh;
+    display: none;
   }
 
   .home-hero-content {
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    width: 100%;
+    position: absolute;
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    bottom: 34px;
+    width: auto;
     max-width: 100%;
     min-width: 0;
-    padding: 0 var(--spacing-md) 18px;
+    padding: 0;
     gap: 9px;
+  }
+
+  .hero-slide-content:not(.active) {
+    display: none;
   }
 
   .home-hero-title {
@@ -1401,11 +1404,14 @@ body.actor-modal-open {
 
 @media (max-width: 480px) {
   .home-hero {
-    padding-top: 40px;
+    height: clamp(300px, 48dvh, 350px);
+    min-height: 300px;
+    max-height: 350px;
+    padding-top: 0;
   }
 
   .home-hero::before {
-    min-height: 26dvh;
+    min-height: 0;
   }
 
   .publishers-featured-grid {
