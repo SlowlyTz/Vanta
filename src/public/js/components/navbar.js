@@ -110,7 +110,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   const mobileMenuButton = createElement('button', {
     className: 'mobile-menu-button',
     type: 'button',
-    'aria-label': 'Navigation oeffnen',
+    'aria-label': 'Navigation öffnen',
     'aria-expanded': 'false',
     'aria-controls': 'mobile-navigation',
     onClick: (event) => {
@@ -293,14 +293,14 @@ export function Navbar({ onLogout, onChangePassword }) {
   const backButton = createElement('button', {
     className: 'settings-header-button invisible',
     type: 'button',
-    'aria-label': 'Zurueck',
+    'aria-label': 'Zurück',
     onClick: () => setSettingsView('root')
   }, createBackIcon());
 
   const closeButton = createElement('button', {
     className: 'settings-header-button',
     type: 'button',
-    'aria-label': 'Einstellungen schliessen',
+    'aria-label': 'Einstellungen schließen',
     onClick: () => setSettingsOpen(false)
   }, createCloseIcon());
 
@@ -359,7 +359,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   const mobileSettingsBackButton = createElement('button', {
     className: 'mobile-settings-back-button',
     type: 'button',
-    'aria-label': 'Zurueck',
+    'aria-label': 'Zurück',
     onClick: () => {
       setMobileSettingsView(mobileSettingsView === 'root' ? 'nav' : 'root');
     }
@@ -731,7 +731,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     mobileNavOpen = open;
     element.classList.toggle('mobile-open', mobileNavOpen);
     mobileMenuButton.setAttribute('aria-expanded', mobileNavOpen ? 'true' : 'false');
-    mobileMenuButton.setAttribute('aria-label', mobileNavOpen ? 'Navigation schliessen' : 'Navigation oeffnen');
+    mobileMenuButton.setAttribute('aria-label', mobileNavOpen ? 'Navigation schließen' : 'Navigation öffnen');
     document.body.classList.toggle('mobile-nav-open', mobileNavOpen);
 
     if (!mobileNavOpen) {

@@ -9,7 +9,7 @@ const STATUS_MAP = {
   2: { label: 'genehmigt', cls: 'approved' },
   3: { label: 'abgelehnt', cls: 'declined' },
   4: { label: 'verarbeitung', cls: 'processing' },
-  5: { label: 'verfuegbar', cls: 'available' }
+  5: { label: 'verfügbar', cls: 'available' }
 };
 
 export default function RequestsPage() {
@@ -21,7 +21,7 @@ export default function RequestsPage() {
   if (!authStore.getState().seerEnabled) {
     container.appendChild(
       createElement('div', { className: 'search-empty-state' },
-        createElement('h3', {}, 'Nicht verfuegbar'),
+        createElement('h3', {}, 'Nicht verfügbar'),
         createElement('p', {}, 'Die Anfragen-Funktion ist nicht aktiviert.')
       )
     );
@@ -85,7 +85,7 @@ export default function RequestsPage() {
       if (results.length === 0) {
         statusContainer.innerHTML = '';
         statusContainer.appendChild(createElement('h3', {}, 'Keine Ergebnisse gefunden'));
-        statusContainer.appendChild(createElement('p', {}, `Fuer "${query}" konnten keine Ergebnisse gefunden werden.`));
+        statusContainer.appendChild(createElement('p', {}, `Für "${query}" konnten keine Ergebnisse gefunden werden.`));
         statusContainer.classList.remove('hidden');
       } else {
         statusContainer.classList.add('hidden');
@@ -149,11 +149,11 @@ export default function RequestsPage() {
     const typeLabel = item.mediaType === 'tv' ? 'Serie' : 'Film';
     const year = item.releaseDate || item.firstAirDate || '';
     const yearShort = year ? year.substring(0, 4) : '';
-    const overview = item.overview || 'Keine Beschreibung verfuegbar.';
+    const overview = item.overview || 'Keine Beschreibung verfügbar.';
 
     let actionBtn;
     if (isAvailable) {
-      actionBtn = createElement('span', { className: 'btn-requested' }, 'Verfuegbar');
+      actionBtn = createElement('span', { className: 'btn-requested' }, 'Verfügbar');
     } else if (statusInfo && item.mediaInfo.status !== 3) {
       actionBtn = createElement('span', { className: `btn-requested request-status-inline-${statusInfo.cls}` }, statusInfo.label);
     } else {
