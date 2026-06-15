@@ -113,7 +113,17 @@ export default function RequestsPage() {
     const statusInfo = isRequested ? STATUS_MAP[item.mediaInfo.status] : null;
     const isAvailable = item.mediaInfo && (item.mediaInfo.status === 5 || item.mediaInfo.jellyfinMediaId);
 
-    const card = createElement('div', { className: 'request-card' });
+    const card = createElement('div', {
+      className: 'request-card request-card-clickable',
+      onClick: (e) => {
+        if (e.target.closest('.btn-primary, .btn-requested, .btn-request-error, .request-card-btn, .request-item-delete')) return;
+        if (isAvailable && item.mediaInfo && item.mediaInfo.jellyfinMediaId) {
+          window.location.hash = `#/item/${item.mediaInfo.jellyfinMediaId}`;
+        } else {
+          window.location.hash = `#/seer-detail/${item.mediaType}/${item.id}`;
+        }
+      }
+    });
 
     const posterUrl = item.posterPath
       ? `${TMDB_IMAGE_BASE}${item.posterPath}`
