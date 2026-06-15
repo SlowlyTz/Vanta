@@ -9,6 +9,7 @@ router.add('#/genre/:type/:genreName', () => import('./pages/library.page.js'), 
 router.add('#/publishers', () => import('./pages/publishers.page.js'), { requiresAuth: true });
 router.add('#/publisher/:studioName', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie,Series' } });
 router.add('#/search', () => import('./pages/search.page.js'), { requiresAuth: true });
+router.add('#/requests', () => import('./pages/requests.page.js'), { requiresAuth: true });
 router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth: true });
 router.add('#/player/:id', () => import('./pages/player.page.js'), { requiresAuth: true });
 

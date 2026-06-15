@@ -7,4 +7,9 @@ export default {
   JELLYFIN_BASE_URL: process.env.JELLYFIN_BASE_URL,
   SESSION_SECRET: process.env.SESSION_SECRET || 'change-this-long-random-secret',
   COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
+  SEER_API_KEY: process.env.SEER_API_KEY || '',
+  SEER_BASE_URL: process.env.SEER_BASE_URL || '',
+  get SEER_ENABLED() {
+    return this.SEER_API_KEY.length > 0;
+  }
 };

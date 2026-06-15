@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie', menuId: 'movies-dropdown-menu' },
   { key: 'series', label: 'Serien', href: '#/series', type: 'Series', menuId: 'series-dropdown-menu' },
   { key: 'publishers', label: 'Publisher', href: '#/publishers', menuId: 'publishers-dropdown-menu', isStudios: true },
+  { key: 'requests', label: 'Anfragen', href: '#/requests', seerOnly: true },
   { key: 'search', label: 'Suche', href: '#/search' }
 ];
 
@@ -28,8 +29,15 @@ export function Navbar({ onLogout, onChangePassword }) {
       onClick: () => setMobileNavOpen(false)
     }, link.label);
 
+    if (link.seerOnly) {
+      anchor.hidden = true;
+      anchor.dataset.seerOnly = 'true';
+    }
+
     if (!link.type && !link.isStudios) {
-      navList.appendChild(createElement('li', { className: 'navbar-item' }, anchor));
+      const li = createElement('li', { className: 'navbar-item' }, anchor);
+      if (link.seerOnly) li.hidden = true;
+      navList.appendChild(li);
       return;
     }
 
@@ -78,13 +86,19 @@ export function Navbar({ onLogout, onChangePassword }) {
   const mobileNavItems = [];
 
   NAV_LINKS.forEach(link => {
-    const item = createElement('li', { className: 'navbar-item mobile-nav-link-item' },
-        createElement('a', {
-          className: 'navbar-link',
-          href: link.href,
-          onClick: () => setMobileNavOpen(false)
-        }, link.label)
-    );
+    const anchor = createElement('a', {
+      className: 'navbar-link',
+      href: link.href,
+      onClick: () => setMobileNavOpen(false)
+    }, link.label);
+
+    if (link.seerOnly) {
+      anchor.hidden = true;
+      anchor.dataset.seerOnly = 'true';
+    }
+
+    const item = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, anchor);
+    if (link.seerOnly) item.hidden = true;
     mobileNavItems.push(item);
     mobileNavList.appendChild(item);
   });
@@ -491,7 +505,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     }
   };
 
-  const update = ({ currentHash, user, scrolled }) => {
+  const update = ({ currentHash, user, scrolled, seerEnabled }) => {
     element.classList.toggle('scrolled', !!scrolled);
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
@@ -502,11 +516,18 @@ export function Navbar({ onLogout, onChangePassword }) {
       const linkEl = $(`#nav-${link.key}`, element);
       if (!linkEl) return;
 
+      if (link.seerOnly) {
+        linkEl.hidden = !seerEnabled;
+        const li = linkEl.closest('li');
+        if (li) li.hidden = !seerEnabled;
+      }
+
       const isActive =
         (link.key === 'home' && currentHash === '#/home') ||
         (link.key === 'movies' && (currentHash === '#/movies' || currentHash.startsWith('#/genre/Movie'))) ||
         (link.key === 'series' && (currentHash === '#/series' || currentHash.startsWith('#/genre/Series'))) ||
         (link.key === 'publishers' && (currentHash === '#/publishers' || currentHash.startsWith('#/publisher/'))) ||
+        (link.key === 'requests' && currentHash === '#/requests') ||
         (link.key === 'search' && currentHash === '#/search');
 
       linkEl.classList.toggle('active', isActive);
@@ -514,6 +535,17 @@ export function Navbar({ onLogout, onChangePassword }) {
         linkEl.setAttribute('aria-current', 'page');
       } else {
         linkEl.removeAttribute('aria-current');
+      }
+    });
+
+    mobileNavItems.forEach((item, index) => {
+      const link = NAV_LINKS[index];
+      if (link?.seerOnly) {
+        const anchor = item.querySelector('.navbar-link');
+        if (anchor) {
+          anchor.hidden = !seerEnabled;
+        }
+        item.hidden = !seerEnabled;
       }
     });
   };

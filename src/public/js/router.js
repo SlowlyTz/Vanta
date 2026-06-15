@@ -10,6 +10,7 @@ class Router {
     this.shell = null;
     this.navbar = null;
     this.main = null;
+    this.unsubscribeAuth = null;
   }
 
   add(path, pageLoader, options = {}) {
@@ -19,6 +20,10 @@ class Router {
   init() {
     window.addEventListener('hashchange', () => this.handleRoute());
     window.addEventListener('scroll', () => this.updateShellState());
+
+    this.unsubscribeAuth = authStore.subscribe(({ user }) => {
+      this.updateShellState(window.location.hash || '#/home', user);
+    });
 
     this.handleRoute();
   }
@@ -64,10 +69,13 @@ class Router {
   updateShellState(hash = window.location.hash || '#/home', user = authStore.getState().user) {
     if (!this.navbar) return;
 
+    const { seerEnabled } = authStore.getState();
+
     this.navbar.update({
       currentHash: hash,
       user,
-      scrolled: window.scrollY > 16
+      scrolled: window.scrollY > 16,
+      seerEnabled
     });
   }
 
