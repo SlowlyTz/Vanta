@@ -7,6 +7,8 @@ export const errorHandler = (err, req, res, next) => {
 
   const status = err.status || 500;
   res.status(status).json({
-    error: err.message || 'Internal Server Error'
+    error: status < 500 || process.env.NODE_ENV === 'development'
+      ? err.message || 'Internal Server Error'
+      : 'Internal Server Error'
   });
 };
