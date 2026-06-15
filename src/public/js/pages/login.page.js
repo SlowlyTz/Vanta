@@ -64,7 +64,11 @@ export default function LoginPage() {
   const container = createElement('div', { className: 'login-page' },
     createElement('div', { className: 'login-card' },
       createElement('div', { className: 'login-header' },
-        createElement('h1', {}, 'Slowly Stream'),
+        createElement('img', {
+          className: 'login-logo',
+          src: '/assets/logo-vanta.png',
+          alt: 'VANTA'
+        }),
         createElement('p', {}, 'Melde dich mit deinem Jellyfin-Konto an')
       ),
       loginForm

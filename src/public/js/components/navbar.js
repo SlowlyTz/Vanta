@@ -20,6 +20,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   let lastFocusedElement = null;
   let settingsStatsLoaded = false;
   let settingsStatsLoading = false;
+  let currentSeerEnabled = false;
 
   NAV_LINKS.forEach(link => {
     const anchor = createElement('a', {
@@ -75,22 +76,47 @@ export function Navbar({ onLogout, onChangePassword }) {
     onClick: () => {
       setMobileSettingsView('root');
     }
-  }, 'Einstellungen');
+  },
+    createNavIcon('settings'),
+    createElement('span', { className: 'mobile-nav-label' }, 'Einstellungen')
+  );
 
-  const mobileNavList = createElement('ul', {
+  const mobileNavList = createElement('nav', {
     className: 'mobile-drawer-nav',
     id: 'mobile-navigation',
     'aria-label': 'Mobile Navigation'
   });
 
   const mobileNavItems = [];
+  const mobileNavEntries = new Map();
+
+  const mobileDrawerHeader = createElement('div', { className: 'mobile-drawer-header' },
+    createElement('img', {
+      className: 'mobile-drawer-logo',
+      src: '/assets/logo-vanta.png',
+      alt: 'VANTA'
+    }),
+    createElement('button', {
+      className: 'mobile-drawer-close',
+      type: 'button',
+      'aria-label': 'Navigation schließen',
+      onClick: () => setMobileNavOpen(false)
+    }, createCloseIcon())
+  );
+
+  const mobileNavLinksList = createElement('ul', { className: 'mobile-drawer-list' });
+  mobileNavList.appendChild(mobileDrawerHeader);
+  mobileNavList.appendChild(mobileNavLinksList);
 
   NAV_LINKS.forEach(link => {
     const anchor = createElement('a', {
       className: 'navbar-link',
       href: link.href,
       onClick: () => setMobileNavOpen(false)
-    }, link.label);
+    },
+      createNavIcon(link.key),
+      createElement('span', { className: 'mobile-nav-label' }, link.label)
+    );
 
     if (link.seerOnly) {
       anchor.hidden = true;
@@ -100,12 +126,13 @@ export function Navbar({ onLogout, onChangePassword }) {
     const item = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, anchor);
     if (link.seerOnly) item.hidden = true;
     mobileNavItems.push(item);
-    mobileNavList.appendChild(item);
+    mobileNavEntries.set(link.key, { item, anchor });
+    mobileNavLinksList.appendChild(item);
   });
 
   const mobileSettingsItem = createElement('li', { className: 'navbar-item navbar-mobile-settings-item mobile-nav-link-item' }, mobileSettingsButton);
   mobileNavItems.push(mobileSettingsItem);
-  mobileNavList.appendChild(mobileSettingsItem);
+  mobileNavLinksList.appendChild(mobileSettingsItem);
 
   const mobileMenuButton = createElement('button', {
     className: 'mobile-menu-button',
@@ -305,10 +332,8 @@ export function Navbar({ onLogout, onChangePassword }) {
   }, createCloseIcon());
 
   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
-  const themeOption = createSettingsOption('Thema', () => setSettingsView('theme'), createPaletteIcon());
   const playbackOption = createSettingsOption('Wiedergabe', () => setSettingsView('playback'), createPlaybackIcon());
   const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
-  const mobileThemeOption = createSettingsOption('Thema', () => setMobileSettingsView('theme'), createPaletteIcon());
   const mobilePlaybackOption = createSettingsOption('Wiedergabe', () => setMobileSettingsView('playback'), createPlaybackIcon());
 
   const rootPanel = createElement('div', {
@@ -324,7 +349,6 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         passwordOption,
-        themeOption,
         playbackOption
       ),
       createElement('div', { className: 'settings-logout-section' }, logoutBtn)
@@ -335,19 +359,6 @@ export function Navbar({ onLogout, onChangePassword }) {
     className: 'settings-panel settings-panel-password',
     dataset: { view: 'password' }
   }, passwordForm);
-
-  const themePanel = createElement('div', {
-    className: 'settings-panel settings-panel-theme',
-    dataset: { view: 'theme' }
-  },
-    createElement('button', {
-      className: 'settings-choice active',
-      type: 'button'
-    },
-      createElement('span', { className: 'settings-choice-label' }, 'Dunkel'),
-      createCheckIcon()
-    )
-  );
 
   const playbackPanel = createElement('div', {
     className: 'settings-panel settings-panel-playback',
@@ -379,7 +390,6 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         mobilePasswordOption,
-        mobileThemeOption,
         mobilePlaybackOption
       ),
       createElement('div', { className: 'settings-logout-section' }, mobileLogoutBtn)
@@ -387,20 +397,11 @@ export function Navbar({ onLogout, onChangePassword }) {
   );
 
   const mobilePasswordPanel = createElement('div', { className: 'settings-panel settings-panel-password' }, mobilePasswordForm);
-  const mobileThemePanel = createElement('div', { className: 'settings-panel settings-panel-theme' },
-    createElement('button', {
-      className: 'settings-choice active',
-      type: 'button'
-    },
-      createElement('span', { className: 'settings-choice-label' }, 'Dunkel'),
-      createCheckIcon()
-    )
-  );
   const mobilePlaybackPanel = createElement('div', { className: 'settings-panel settings-panel-playback' },
     createElement('div', { className: 'settings-options' }, createPlaybackChoices())
   );
 
-  const mobileSettingsPanel = createElement('li', {
+  const mobileSettingsPanel = createElement('div', {
     className: 'mobile-settings-panel',
     hidden: true
   },
@@ -411,7 +412,6 @@ export function Navbar({ onLogout, onChangePassword }) {
     ),
     mobileRootPanel,
     mobilePasswordPanel,
-    mobileThemePanel,
     mobilePlaybackPanel
   );
   mobileNavList.appendChild(mobileSettingsPanel);
@@ -431,7 +431,6 @@ export function Navbar({ onLogout, onChangePassword }) {
     ),
     rootPanel,
     passwordPanel,
-    themePanel,
     playbackPanel
   );
 
@@ -457,9 +456,16 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   const brandLink = createElement('a', {
     className: 'navbar-brand',
+    'aria-label': 'VANTA Startseite',
     href: '#/home',
     onClick: () => setMobileNavOpen(false)
-  }, 'Slowly Stream');
+  },
+    createElement('img', {
+      className: 'navbar-brand-logo',
+      src: '/assets/logo-vanta.png',
+      alt: 'VANTA'
+    })
+  );
 
   const navbarActions = createElement('div', { className: 'navbar-actions' },
     mobileMenuButton,
@@ -507,6 +513,7 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   const update = ({ currentHash, user, scrolled, seerEnabled }) => {
     element.classList.toggle('scrolled', !!scrolled);
+    currentSeerEnabled = !!seerEnabled;
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
     settingsUsername.textContent = displayName;
@@ -535,6 +542,16 @@ export function Navbar({ onLogout, onChangePassword }) {
         linkEl.setAttribute('aria-current', 'page');
       } else {
         linkEl.removeAttribute('aria-current');
+      }
+
+      const mobileEntry = mobileNavEntries.get(link.key);
+      if (mobileEntry) {
+        mobileEntry.anchor.classList.toggle('active', isActive);
+        if (isActive) {
+          mobileEntry.anchor.setAttribute('aria-current', 'page');
+        } else {
+          mobileEntry.anchor.removeAttribute('aria-current');
+        }
       }
     });
 
@@ -649,17 +666,14 @@ export function Navbar({ onLogout, onChangePassword }) {
     settingsView = view;
     settingsTitle.textContent = settingsView === 'password'
       ? 'Passwort'
-      : settingsView === 'theme'
-        ? 'Thema'
-        : settingsView === 'playback'
-          ? 'Wiedergabe'
-          : 'Einstellungen';
+      : settingsView === 'playback'
+        ? 'Wiedergabe'
+        : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
     settingsDialog.dataset.view = settingsView;
     rootPanel.hidden = settingsView !== 'root';
     passwordPanel.hidden = settingsView !== 'password';
-    themePanel.hidden = settingsView !== 'theme';
     playbackPanel.hidden = settingsView !== 'playback';
 
     if (settingsView !== 'password') {
@@ -671,22 +685,22 @@ export function Navbar({ onLogout, onChangePassword }) {
     mobileSettingsView = view;
     const inSettings = mobileSettingsView !== 'nav';
 
-    mobileNavItems.forEach(item => {
-      item.hidden = inSettings;
+    mobileDrawerHeader.hidden = inSettings;
+    mobileNavLinksList.hidden = inSettings;
+    mobileNavItems.forEach((item, index) => {
+      const link = NAV_LINKS[index];
+      item.hidden = inSettings || (link?.seerOnly && !currentSeerEnabled);
     });
 
     mobileSettingsPanel.hidden = !inSettings;
     mobileSettingsTitle.textContent = mobileSettingsView === 'password'
       ? 'Passwort'
-      : mobileSettingsView === 'theme'
-        ? 'Thema'
-        : mobileSettingsView === 'playback'
-          ? 'Wiedergabe'
-          : 'Einstellungen';
+      : mobileSettingsView === 'playback'
+        ? 'Wiedergabe'
+        : 'Einstellungen';
 
     mobileRootPanel.hidden = mobileSettingsView !== 'root';
     mobilePasswordPanel.hidden = mobileSettingsView !== 'password';
-    mobileThemePanel.hidden = mobileSettingsView !== 'theme';
     mobilePlaybackPanel.hidden = mobileSettingsView !== 'playback';
 
     if (mobileSettingsView === 'root') {
@@ -732,6 +746,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     element.classList.toggle('mobile-open', mobileNavOpen);
     mobileMenuButton.setAttribute('aria-expanded', mobileNavOpen ? 'true' : 'false');
     mobileMenuButton.setAttribute('aria-label', mobileNavOpen ? 'Navigation schließen' : 'Navigation öffnen');
+    document.documentElement.classList.toggle('mobile-nav-open', mobileNavOpen);
     document.body.classList.toggle('mobile-nav-open', mobileNavOpen);
 
     if (!mobileNavOpen) {
@@ -781,8 +796,7 @@ function createSettingsProfile(usernameElement) {
   return createElement('div', { className: 'settings-profile' },
     createElement('div', { className: 'settings-profile-avatar' }, createUserIcon()),
     createElement('div', { className: 'settings-profile-copy' },
-      usernameElement,
-      createElement('span', { className: 'settings-profile-subtitle' }, 'Premium Mitglied')
+      usernameElement
     )
   );
 }
@@ -819,6 +833,64 @@ function createIcon(className, svgMarkup) {
   });
   icon.innerHTML = svgMarkup;
   return icon;
+}
+
+function createNavIcon(key) {
+  const icons = {
+    home: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 11 9-8 9 8"></path>
+        <path d="M5 10v10h5v-6h4v6h5V10"></path>
+      </svg>
+    `,
+    movies: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="6" width="18" height="14" rx="2"></rect>
+        <path d="m7 6-2-4"></path>
+        <path d="m12 6-2-4"></path>
+        <path d="m17 6-2-4"></path>
+      </svg>
+    `,
+    series: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="13" rx="2"></rect>
+        <path d="M8 21h8"></path>
+        <path d="M12 17v4"></path>
+      </svg>
+    `,
+    publishers: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"></path>
+        <path d="M5 21V9l5-3v15"></path>
+        <path d="M10 21V5l6 3v13"></path>
+        <path d="M16 21v-8h3v8"></path>
+        <path d="M7 12h1"></path>
+        <path d="M12 11h1"></path>
+      </svg>
+    `,
+    requests: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.2-4.4A8.4 8.4 0 1 1 21 11.5Z"></path>
+        <path d="M8 12h.01"></path>
+        <path d="M12 12h.01"></path>
+        <path d="M16 12h.01"></path>
+      </svg>
+    `,
+    search: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m20 20-4-4"></path>
+      </svg>
+    `,
+    settings: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.08V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.28.37.66.62 1.08.7H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"></path>
+      </svg>
+    `
+  };
+
+  return createIcon('mobile-nav-icon', icons[key] || icons.home);
 }
 
 function createSettingsIcon() {
