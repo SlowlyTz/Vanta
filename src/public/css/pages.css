@@ -454,6 +454,10 @@
   margin: var(--spacing-xl) auto 0 auto;
 }
 
+.search-page .mobile-search-input-wrapper {
+  display: none;
+}
+
 .search-input-field {
   width: 100%;
   background: var(--bg-secondary);
@@ -1171,6 +1175,10 @@ body.actor-modal-open {
   .home-hero-actions {
     flex-wrap: wrap;
     gap: 10px;
+  }
+
+  .search-page .mobile-search-input-wrapper {
+    display: block;
   }
 
   .search-input-wrapper {
