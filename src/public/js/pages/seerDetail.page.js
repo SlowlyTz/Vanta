@@ -5,8 +5,6 @@ import { DetailView } from '../components/detailView.js';
 import { normalizeTmdbItem } from '../utils/normalize.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
-
 export default function SeerDetailPage({ type, id }) {
   const container = createElement('div', { className: 'page-container' });
 
@@ -119,9 +117,7 @@ export default function SeerDetailPage({ type, id }) {
 
   const buildSeerCastSection = (actors) => {
     const cards = actors.map(actor => {
-      const imageUrl = actor.profilePath
-        ? `${TMDB_IMAGE_BASE}/w185${actor.profilePath}`
-        : createPosterPlaceholder(actor.Name || '?');
+      const imageUrl = actor.profileUrl || createPosterPlaceholder(actor.Name || '?');
 
       const card = createElement('div', { className: 'cast-card' },
         createElement('img', {
@@ -156,9 +152,7 @@ export default function SeerDetailPage({ type, id }) {
 
   const buildSeerSeasonsSection = (seasons) => {
     const seasonItems = seasons.map(season => {
-      const posterUrl = season.posterPath
-        ? `${TMDB_IMAGE_BASE}/w300${season.posterPath}`
-        : createPosterPlaceholder(season.name || '?');
+      const posterUrl = season.posterUrl || createPosterPlaceholder(season.name || '?');
 
       const card = createElement('div', { className: 'seer-season-card' },
         createElement('img', {
