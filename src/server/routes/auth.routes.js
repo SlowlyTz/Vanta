@@ -1,7 +1,9 @@
 import express from 'express';
 import { JellyfinService } from '../services/jellyfin.service.js';
+import { SeerService } from '../services/seer.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
+import env from '../config/env.js';
 
 const router = express.Router();
 
@@ -21,12 +23,24 @@ router.post('/login', asyncHandler(async (req, res) => {
     req.session.userId = data.User.Id;
     req.session.username = data.User.Name;
 
-    return res.json({
+    const response = {
       user: {
         id: data.User.Id,
         name: data.User.Name
+      },
+      seerEnabled: env.SEER_ENABLED
+    };
+
+    if (env.SEER_ENABLED) {
+      try {
+        const seerData = await SeerService.signIn(username, password || '');
+        req.session.seerToken = seerData.token || seerData.accessToken || seerData.id_token;
+      } catch (error) {
+        console.warn('[Seer Login] Could not authenticate with Jellyseer:', error.message);
       }
-    });
+    }
+
+    return res.json(response);
   } catch (error) {
     console.error('[Login Error]', error.message);
     return res.status(401).json({ error: 'Invalid username or password' });
@@ -39,7 +53,8 @@ router.get('/me', (req, res) => {
       user: {
         id: req.session.userId,
         name: req.session.username
-      }
+      },
+      seerEnabled: env.SEER_ENABLED
     });
   }
   return res.status(401).json({ error: 'Not authenticated' });
