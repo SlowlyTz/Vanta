@@ -26,8 +26,8 @@ if (env.NODE_ENV === 'development') {
 }
 
 // Parse request bodies and cookies
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
 // Setup HTTP-only session cookies
@@ -38,6 +38,7 @@ app.use(session({
   cookie: {
     secure: env.COOKIE_SECURE,
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
