@@ -3,6 +3,7 @@ import { AuthApi } from '../api/auth.api.js';
 class AuthStore {
   constructor() {
     this.user = null;
+    this.seerEnabled = false;
     this.loading = false;
     this.listeners = new Set();
   }
@@ -22,6 +23,7 @@ class AuthStore {
   getState() {
     return {
       user: this.user,
+      seerEnabled: this.seerEnabled,
       isAuthenticated: !!this.user,
       loading: this.loading
     };
@@ -33,10 +35,12 @@ class AuthStore {
     try {
       const data = await AuthApi.login(username, password);
       this.user = data.user;
+      this.seerEnabled = data.seerEnabled === true;
       this.notify();
       return data.user;
     } catch (error) {
       this.user = null;
+      this.seerEnabled = false;
       this.notify();
       throw error;
     } finally {
@@ -52,6 +56,7 @@ class AuthStore {
       console.error('Logout error:', error);
     } finally {
       this.user = null;
+      this.seerEnabled = false;
       this.notify();
       window.location.hash = '#/login';
     }
@@ -68,10 +73,12 @@ class AuthStore {
     try {
       const data = await AuthApi.getCurrentUser();
       this.user = data.user;
+      this.seerEnabled = data.seerEnabled === true;
       this.notify();
       return true;
     } catch (error) {
       this.user = null;
+      this.seerEnabled = false;
       this.notify();
       return false;
     } finally {
