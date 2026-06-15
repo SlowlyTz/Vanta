@@ -1,10 +1,38 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
-import { PLAYBACK_MODE_OPTIONS, PLAYBACK_MODES, settingsStore } from '../store/settings.store.js';
+import { PLAYBACK_MODES, settingsStore } from '../store/settings.store.js';
 import { formatTime } from '../utils/format.js';
+
+const STREAM_METHOD_OPTIONS = [
+  {
+    value: PLAYBACK_MODES.TRANSCODE,
+    label: 'Immer transkodieren',
+    platform: 'iOS',
+    recommended: true,
+    description: 'Jellyfin wandelt Video und Audio in ein kompatibles Format um. Beste Wahl fuer iPhone und iPad.'
+  },
+  {
+    value: PLAYBACK_MODES.DIRECT,
+    label: 'Direktstream',
+    platform: 'Android',
+    recommended: true,
+    description: 'Nutzt den originalen Stream, wenn Android ihn abspielen kann. Spart Serverleistung und startet oft schneller.'
+  },
+  {
+    value: PLAYBACK_MODES.COMPATIBLE,
+    label: 'Automatisch',
+    platform: null,
+    recommended: false,
+    description: 'Die App entscheidet anhand von Browser und Medienformat zwischen Direktstream und Transcoding.'
+  }
+];
+
+const getStreamMethodOption = (mode) =>
+  STREAM_METHOD_OPTIONS.find(option => option.value === mode) || STREAM_METHOD_OPTIONS[0];
 
 export default function PlayerPage({ id }) {
   let controlTimeout = null;
+  let streamMenuCloseTimeout = null;
   let isMuted = false;
   let savedVolume = 0.8;
   let mediaDuration = 0; // True duration in seconds from metadata
@@ -13,6 +41,8 @@ export default function PlayerPage({ id }) {
   let playbackLoadVersion = 0;
   let fallbackAttempted = false;
   let isCleaningUp = false;
+  let streamMenuOpen = false;
+  let scrollLockY = 0;
 
   const container = createElement('div', { className: 'player-page' });
 
@@ -45,13 +75,61 @@ export default function PlayerPage({ id }) {
 
   const fullscreenBtn = createElement('button', { className: 'player-btn' });
   const backBtn = createElement('button', { className: 'player-back-btn' });
-  const playbackSelect = createElement('select', {
-    className: 'player-playback-select',
-    'aria-label': 'Wiedergabemodus'
-  }, PLAYBACK_MODE_OPTIONS.map(option => createElement('option', {
-    value: option.value
-  }, option.shortLabel)));
-  playbackSelect.value = activePlaybackMode;
+  const streamMenuButtonLabel = createElement('span', { className: 'player-stream-button-label' });
+  const streamMenuButton = createElement('button', {
+    className: 'player-stream-button',
+    type: 'button',
+    'aria-haspopup': 'menu',
+    'aria-expanded': 'false'
+  },
+    createElement('span', { className: 'player-stream-button-kicker' }, 'Stream'),
+    streamMenuButtonLabel
+  );
+  const streamMenuItems = [];
+  const streamMenu = createElement('div', {
+    className: 'player-stream-menu',
+    role: 'menu',
+    hidden: true
+  },
+    createElement('div', { className: 'player-stream-menu-header' },
+      createElement('div', { className: 'player-stream-menu-title' }, 'Stream-Methode'),
+      createElement('div', { className: 'player-stream-menu-copy' },
+        'Ändert, ob Jellyfin direkt streamt oder das Video in ein kompatibles Format umwandelt.'
+      )
+    ),
+    STREAM_METHOD_OPTIONS.map(option => {
+      const check = createElement('span', { className: 'player-stream-option-check' });
+      check.innerHTML = `<svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>`;
+
+      const item = createElement('button', {
+        className: 'player-stream-option',
+        type: 'button',
+        role: 'menuitemradio',
+        'aria-checked': 'false',
+        onClick: async (event) => {
+          event.stopPropagation();
+          await applyPlaybackMode(option.value);
+        }
+      },
+        createElement('span', { className: 'player-stream-option-main' },
+          createElement('span', { className: 'player-stream-option-title' },
+            option.label,
+            option.platform ? createElement('span', { className: 'player-stream-option-platform' }, `(${option.platform})`) : null,
+            option.recommended ? createElement('span', { className: 'player-stream-recommend' }, 'Recommend') : null
+          ),
+          createElement('span', { className: 'player-stream-option-description' }, option.description)
+        ),
+        check
+      );
+
+      streamMenuItems.push({ item, check, value: option.value });
+      return item;
+    })
+  );
+  const streamMenuWrapper = createElement('div', { className: 'player-stream-menu-wrapper' },
+    streamMenuButton,
+    streamMenu
+  );
   
   const loader = createElement('div', { className: 'player-loader hidden' },
     createElement('div', { className: 'player-loader-spinner' })
@@ -82,11 +160,13 @@ export default function PlayerPage({ id }) {
         )
       ),
       createElement('div', { className: 'player-controls-right' },
-        createElement('div', { className: 'player-playback-container' }, playbackSelect),
+        streamMenuWrapper,
         fullscreenBtn
       )
     )
   );
+  const topbar = createElement('div', { className: 'player-topbar' }, backBtn);
+  const stage = createElement('div', { className: 'player-stage' }, video);
 
   // SVGs
   const playIcon = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
@@ -102,16 +182,27 @@ export default function PlayerPage({ id }) {
   fullscreenBtn.innerHTML = fullscreenEnterIcon;
   backBtn.innerHTML = `${backIcon}Zurück`;
 
-  const resetControlTimeout = () => {
+  const showControls = () => {
     controls.classList.remove('hidden-controls');
+    topbar.classList.remove('hidden-controls');
     document.body.style.cursor = 'default';
+  };
+
+  const hideControls = () => {
+    if (streamMenuOpen) return;
+    controls.classList.add('hidden-controls');
+    topbar.classList.add('hidden-controls');
+    document.body.style.cursor = 'none';
+  };
+
+  const resetControlTimeout = () => {
+    showControls();
 
     if (controlTimeout) clearTimeout(controlTimeout);
 
     controlTimeout = setTimeout(() => {
       if (!video.paused) {
-        controls.classList.add('hidden-controls');
-        document.body.style.cursor = 'none';
+        hideControls();
       }
     }, 3500);
   };
@@ -196,13 +287,16 @@ export default function PlayerPage({ id }) {
     seek(e);
   });
 
-  window.addEventListener('mousemove', (e) => {
+  const handleWindowMouseMove = (e) => {
     if (isDragging) seek(e);
-  });
+  };
 
-  window.addEventListener('mouseup', () => {
+  const handleWindowMouseUp = () => {
     isDragging = false;
-  });
+  };
+
+  window.addEventListener('mousemove', handleWindowMouseMove);
+  window.addEventListener('mouseup', handleWindowMouseUp);
 
   const updateVolume = (val) => {
     video.volume = val;
@@ -246,28 +340,98 @@ export default function PlayerPage({ id }) {
     toggleFullscreen();
   });
 
-  playbackSelect.addEventListener('click', (e) => {
-    e.stopPropagation();
-  });
+  const isHoverStreamMenu = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-  playbackSelect.addEventListener('change', async (e) => {
-    e.stopPropagation();
-    const mode = e.target.value;
+  const updateStreamMenuState = () => {
+    const currentMode = activePlaybackMode || settingsStore.getPlaybackMode();
+    const currentOption = getStreamMethodOption(currentMode);
+    streamMenuButtonLabel.textContent = currentOption.platform
+      ? `${currentOption.label} (${currentOption.platform})`
+      : currentOption.label;
+
+    streamMenuItems.forEach(({ item, value }) => {
+      const active = value === currentMode;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  };
+
+  const setStreamMenuOpen = (open) => {
+    if (streamMenuOpen === open) return;
+
+    streamMenuOpen = open;
+    streamMenu.hidden = !open;
+    streamMenuWrapper.classList.toggle('open', open);
+    streamMenuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+    if (open) {
+      showControls();
+      if (controlTimeout) clearTimeout(controlTimeout);
+    } else if (!isCleaningUp) {
+      resetControlTimeout();
+    }
+  };
+
+  const closeStreamMenuSoon = () => {
+    if (streamMenuCloseTimeout) clearTimeout(streamMenuCloseTimeout);
+    streamMenuCloseTimeout = setTimeout(() => setStreamMenuOpen(false), 140);
+  };
+
+  const applyPlaybackMode = async (mode) => {
     settingsStore.setPlaybackMode(mode);
     fallbackAttempted = false;
+    setStreamMenuOpen(false);
 
-    if (playableId) {
-      try {
-        await loadPlaybackSource(playableId, mode, {
-          autoplay: true,
-          preserveTime: true
-        });
-      } catch (error) {
-        loader.classList.add('hidden');
-        showError('Ladefehler', error.message || 'Der Medienstrom konnte nicht geladen werden.');
-      }
+    if (!playableId) return;
+
+    try {
+      await loadPlaybackSource(playableId, mode, {
+        autoplay: true,
+        preserveTime: true
+      });
+    } catch (error) {
+      loader.classList.add('hidden');
+      showError('Ladefehler', error.message || 'Der Medienstrom konnte nicht geladen werden.');
+    }
+  };
+
+  streamMenuWrapper.addEventListener('mouseenter', () => {
+    if (!isHoverStreamMenu()) return;
+    if (streamMenuCloseTimeout) clearTimeout(streamMenuCloseTimeout);
+    setStreamMenuOpen(true);
+  });
+
+  streamMenuWrapper.addEventListener('mouseleave', () => {
+    if (!isHoverStreamMenu()) return;
+    closeStreamMenuSoon();
+  });
+
+  streamMenuButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setStreamMenuOpen(!streamMenuOpen);
+  });
+
+  streamMenuButton.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setStreamMenuOpen(!streamMenuOpen);
+    }
+
+    if (event.key === 'Escape') {
+      setStreamMenuOpen(false);
     }
   });
+
+  streamMenu.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  const handleDocumentPointerDown = (event) => {
+    if (!streamMenuOpen || streamMenuWrapper.contains(event.target)) return;
+    setStreamMenuOpen(false);
+  };
+
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
 
   const handleFullscreenChange = () => {
     if (document.fullscreenElement) {
@@ -279,11 +443,7 @@ export default function PlayerPage({ id }) {
 
   document.addEventListener('fullscreenchange', handleFullscreenChange);
 
-  const syncPlaybackSelect = () => {
-    playbackSelect.value = settingsStore.getPlaybackMode();
-  };
-
-  const unsubscribeSettings = settingsStore.subscribe(syncPlaybackSelect);
+  const unsubscribeSettings = settingsStore.subscribe(updateStreamMenuState);
 
   const handleKeyDown = (e) => {
     resetControlTimeout();
@@ -376,27 +536,68 @@ export default function PlayerPage({ id }) {
     errorOverlay.appendChild(backToDetailBtn);
     errorOverlay.classList.remove('hidden');
     controls.classList.add('hidden-controls');
+    topbar.classList.add('hidden-controls');
   };
 
-  const cleanupAndGoBack = () => {
+  const handleTouchMove = (event) => {
+    if (event.target.closest('.player-controls, .player-topbar, .player-error')) return;
+    event.preventDefault();
+  };
+
+  const lockPlayerViewport = () => {
+    scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.documentElement.classList.add('player-active');
+    document.body.classList.add('player-active');
+    document.body.style.top = `-${scrollLockY}px`;
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+  };
+
+  const unlockPlayerViewport = () => {
+    window.removeEventListener('touchmove', handleTouchMove);
+    document.documentElement.classList.remove('player-active');
+    document.body.classList.remove('player-active');
+    document.body.style.top = '';
+    window.scrollTo(0, scrollLockY);
+  };
+
+  const cleanupPlayer = () => {
+    if (isCleaningUp) return;
     isCleaningUp = true;
     video.pause();
     video.src = '';
     video.load();
 
     window.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('mousemove', handleWindowMouseMove);
+    window.removeEventListener('mouseup', handleWindowMouseUp);
+    window.removeEventListener('hashchange', handleHashChange);
+    document.removeEventListener('pointerdown', handleDocumentPointerDown);
     document.removeEventListener('fullscreenchange', handleFullscreenChange);
     unsubscribeSettings();
     
     if (controlTimeout) clearTimeout(controlTimeout);
+    if (streamMenuCloseTimeout) clearTimeout(streamMenuCloseTimeout);
+    setStreamMenuOpen(false);
+    unlockPlayerViewport();
     document.body.style.cursor = 'default';
 
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
+  };
 
+  const cleanupAndGoBack = () => {
+    cleanupPlayer();
     window.history.back();
   };
+
+  const handleHashChange = () => {
+    if (!window.location.hash.startsWith('#/player')) {
+      cleanupPlayer();
+    }
+  };
+
+  window.addEventListener('hashchange', handleHashChange);
 
   backBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -462,7 +663,7 @@ export default function PlayerPage({ id }) {
     const resumeTime = preserveTime && Number.isFinite(video.currentTime) ? video.currentTime : 0;
 
     activePlaybackMode = mode;
-    playbackSelect.value = mode;
+    updateStreamMenuState();
     loader.classList.remove('hidden');
     errorOverlay.classList.add('hidden');
 
@@ -491,11 +692,13 @@ export default function PlayerPage({ id }) {
 
   // Synchronise starting volume UI and video volume
   updateVolume(0.8);
+  updateStreamMenuState();
+  lockPlayerViewport();
   initPlayer();
 
-  container.appendChild(video);
+  container.appendChild(stage);
+  container.appendChild(topbar);
   container.appendChild(controls);
-  container.appendChild(backBtn);
   container.appendChild(loader);
   container.appendChild(errorOverlay);
 
