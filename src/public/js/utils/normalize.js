@@ -1,7 +1,6 @@
 import { formatTicksToDuration, formatYear } from './format.js';
 import { getItemImageUrl } from './image.js';
-
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
+import { getTmdbImageUrl } from './poster.js';
 
 export function normalizeJellyfinItem(item) {
   const isEpisode = item.Type === 'Episode';
@@ -72,13 +71,13 @@ export function normalizeJellyfinItem(item) {
 
 export function normalizeTmdbItem(data, type) {
   const name = data.title || data.name || 'Unbekannt';
-  const originalTitle = (data.original_title || data.original_name || null);
+  const originalTitle = data.original_title || data.originalTitle || data.original_name || data.originalName || null;
   const hasOriginal = originalTitle && originalTitle !== name;
 
   const overview = data.overview || 'Keine Beschreibung verfügbar.';
   const genres = Array.isArray(data.genres) ? data.genres.map(g => g.name) : [];
 
-  const dateStr = data.release_date || data.first_air_date || '';
+  const dateStr = data.release_date || data.releaseDate || data.first_air_date || data.firstAirDate || '';
   const year = dateStr ? dateStr.substring(0, 4) : null;
 
   let duration = null;
@@ -86,19 +85,15 @@ export function normalizeTmdbItem(data, type) {
     const h = Math.floor(data.runtime / 60);
     const m = data.runtime % 60;
     duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-  } else if (type === 'tv' && data.number_of_seasons) {
-    duration = data.number_of_seasons === 1 ? '1 Staffel' : `${data.number_of_seasons} Staffeln`;
+  } else if (type === 'tv' && (data.number_of_seasons || data.numberOfSeasons)) {
+    const seasonCount = data.number_of_seasons || data.numberOfSeasons;
+    duration = seasonCount === 1 ? '1 Staffel' : `${seasonCount} Staffeln`;
   }
 
   const typeLabel = type === 'tv' ? 'Serie' : 'Film';
 
-  const posterUrl = data.poster_path
-    ? `${TMDB_IMAGE_BASE}/w500${data.poster_path}`
-    : null;
-
-  const backdropUrl = data.backdrop_path
-    ? `${TMDB_IMAGE_BASE}/w1280${data.backdrop_path}`
-    : null;
+  const posterUrl = getTmdbImageUrl(data.poster_path || data.posterPath, 'w500');
+  const backdropUrl = getTmdbImageUrl(data.backdrop_path || data.backdropPath, 'w1280');
 
   const tagline = data.tagline || null;
 
@@ -121,7 +116,7 @@ export function normalizeTmdbItem(data, type) {
       actors.push({
         Name: c.name,
         Role: c.character || null,
-        profilePath: c.profile_path || null,
+        profileUrl: getTmdbImageUrl(c.profile_path || c.profilePath, 'w185'),
         Id: null
       });
     });
@@ -130,12 +125,13 @@ export function normalizeTmdbItem(data, type) {
   const seasons = [];
   if (type === 'tv' && Array.isArray(data.seasons)) {
     data.seasons.forEach(s => {
-      if (s.season_number > 0) {
+      const seasonNumber = s.season_number || s.seasonNumber;
+      if (seasonNumber > 0) {
         seasons.push({
-          name: s.name || `Staffel ${s.season_number}`,
-          seasonNumber: s.season_number,
-          episodeCount: s.episode_count || 0,
-          posterPath: s.poster_path || null,
+          name: s.name || `Staffel ${seasonNumber}`,
+          seasonNumber,
+          episodeCount: s.episode_count || s.episodeCount || 0,
+          posterUrl: getTmdbImageUrl(s.poster_path || s.posterPath, 'w300'),
           overview: s.overview || null
         });
       }

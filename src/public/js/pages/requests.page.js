@@ -2,8 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { SeerApi } from '../api/seer.api.js';
 import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
-
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+import { createPosterPlaceholder, getTmdbImageUrl } from '../utils/poster.js';
 
 const STATUS_MAP = {
   1: { label: 'ausstehend', cls: 'pending' },
@@ -125,9 +124,7 @@ export default function RequestsPage() {
       }
     });
 
-    const posterUrl = item.posterPath
-      ? `${TMDB_IMAGE_BASE}${item.posterPath}`
-      : null;
+    const posterUrl = getTmdbImageUrl(item.posterPath || item.poster_path, 'w500');
 
     let posterEl;
     if (posterUrl) {
@@ -213,21 +210,6 @@ export default function RequestsPage() {
       }
       appStore.showToast(msg, 'error');
     }
-  };
-
-  const createPosterPlaceholder = (text) => {
-    const initials = text
-      .split(' ')
-      .map(w => w[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300">
-      <rect width="200" height="300" fill="hsl(240, 10%, 12%)"/>
-      <text x="100" y="155" text-anchor="middle" dominant-baseline="middle" font-family="-apple-system, sans-serif" font-weight="600" font-size="36" fill="hsl(240, 5%, 50%)">${initials || '?'}</text>
-    </svg>`;
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   };
 
   const loadMyRequests = async () => {
