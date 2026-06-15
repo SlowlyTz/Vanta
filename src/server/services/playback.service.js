@@ -153,7 +153,7 @@ export class PlaybackService {
     }
 
     if (metadata.audioChannels > 2) {
-      return `${metadata.audioChannels} Audiokanaele werden fuer breite Browserkompatibilitaet transkodiert.`;
+      return `${metadata.audioChannels} Audiokanäle werden für breite Browserkompatibilität transkodiert.`;
     }
 
     return null;

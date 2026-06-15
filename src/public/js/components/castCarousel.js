@@ -16,7 +16,7 @@ export function CastCarousel({ actors = [], onActorClick }) {
       }
     },
       createElement('img', {
-        src: getPersonImageUrl(actor, 120),
+        src: actor.profileUrl || getPersonImageUrl(actor, 120),
         alt: actor.Name,
         className: 'cast-avatar',
         loading: 'lazy',

@@ -9,7 +9,7 @@ const STREAM_METHOD_OPTIONS = [
     label: 'Immer transkodieren',
     platform: 'iOS',
     recommended: true,
-    description: 'Jellyfin wandelt Video und Audio in ein kompatibles Format um. Beste Wahl fuer iPhone und iPad.'
+    description: 'Jellyfin wandelt Video und Audio in ein kompatibles Format um. Beste Wahl für iPhone und iPad.'
   },
   {
     value: PLAYBACK_MODES.DIRECT,
@@ -622,7 +622,7 @@ export default function PlayerPage({ id }) {
             throw new Error('Keine Episoden in der ersten Staffel dieser Serie gefunden.');
           }
         } else {
-          throw new Error('Keine Staffeln fuer diese Serie gefunden.');
+          throw new Error('Keine Staffeln für diese Serie gefunden.');
         }
       } else if (item.Type === 'Season') {
         const seriesId = item.SeriesId;
