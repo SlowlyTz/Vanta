@@ -3,7 +3,7 @@ import env from '../config/env.js';
 const JELLYFIN_BASE_URL = env.JELLYFIN_BASE_URL;
 
 const getAuthHeader = (token = null) => {
-  let header = 'MediaBrowser Client="Slowly Stream", Device="Web Browser", DeviceId="slowly-stream-client-id", Version="1.0.0"';
+  let header = 'MediaBrowser Client="VANTA", Device="Web Browser", DeviceId="vanta-web-client-id", Version="1.0.0"';
   if (token) {
     header += `, Token="${token}"`;
   }
@@ -64,7 +64,7 @@ const buildBrowserDeviceProfile = ({ forceTranscode = false, preferHls = false }
   };
 
   return {
-    Name: 'Slowly Stream HTML5',
+    Name: 'VANTA HTML5',
     MaxStreamingBitrate: 40000000,
     MaxStaticBitrate: 100000000,
     MusicStreamingTranscodingBitrate: 384000,

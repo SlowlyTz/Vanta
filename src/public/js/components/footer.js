@@ -9,7 +9,13 @@ export function Footer() {
   ];
 
   return createElement('footer', { className: 'app-footer' },
-    createElement('div', { className: 'footer-brand' }, 'Slowly Stream'),
+    createElement('div', { className: 'footer-brand' },
+      createElement('img', {
+        className: 'footer-brand-logo',
+        src: '/assets/logo-vanta.png',
+        alt: 'VANTA'
+      })
+    ),
     createElement('nav', { className: 'footer-nav', 'aria-label': 'Footer Navigation' },
       navLinks.map(link => createElement('a', { href: link.href }, link.label))
     )
