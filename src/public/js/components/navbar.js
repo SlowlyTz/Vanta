@@ -21,8 +21,19 @@ export function Navbar({ onLogout, onChangePassword }) {
   let settingsStatsLoaded = false;
   let settingsStatsLoading = false;
   let currentSeerEnabled = false;
+  let navbarSearchDebounce = null;
 
-  NAV_LINKS.forEach(link => {
+  const isDesktopNav = () => window.matchMedia('(min-width: 769px)').matches;
+  const getSearchQueryFromHash = (hash = window.location.hash) => {
+    const [, queryString = ''] = hash.split('?');
+    return new URLSearchParams(queryString).get('q') || '';
+  };
+  const getSearchHash = (query) => {
+    const trimmed = query.trim();
+    return trimmed ? `#/search?q=${encodeURIComponent(trimmed)}` : '#/search';
+  };
+
+  NAV_LINKS.filter(link => link.key !== 'search').forEach(link => {
     const anchor = createElement('a', {
       className: 'navbar-link',
       href: link.href,
@@ -55,20 +66,6 @@ export function Navbar({ onLogout, onChangePassword }) {
       )
     );
   });
-
-  const settingsButton = createElement('button', {
-    className: 'settings-button',
-    type: 'button',
-    'aria-label': 'Einstellungen',
-    'aria-expanded': 'false',
-    'aria-controls': 'settings-dialog',
-    onClick: (event) => {
-      event.stopPropagation();
-      setMobileNavOpen(false);
-      setSettingsOpen(!settingsOpen);
-    }
-  });
-  settingsButton.appendChild(createSettingsIcon());
 
   const mobileSettingsButton = createElement('button', {
     className: 'navbar-link navbar-mobile-settings',
@@ -139,9 +136,15 @@ export function Navbar({ onLogout, onChangePassword }) {
     type: 'button',
     'aria-label': 'Navigation öffnen',
     'aria-expanded': 'false',
-    'aria-controls': 'mobile-navigation',
+    'aria-controls': 'mobile-navigation settings-dialog',
     onClick: (event) => {
       event.stopPropagation();
+      if (isDesktopNav()) {
+        setMobileNavOpen(false);
+        setSettingsOpen(!settingsOpen);
+        return;
+      }
+
       setSettingsOpen(false);
       setMobileNavOpen(!mobileNavOpen);
     }
@@ -444,10 +447,6 @@ export function Navbar({ onLogout, onChangePassword }) {
     settingsDialog
   );
 
-  const settingsWrapper = createElement('div', { className: 'settings-wrapper' },
-    settingsButton
-  );
-
   const mobileNavBackdrop = createElement('div', {
     className: 'mobile-nav-backdrop',
     'aria-hidden': 'true',
@@ -467,9 +466,43 @@ export function Navbar({ onLogout, onChangePassword }) {
     })
   );
 
+  const navbarSearchInput = createElement('input', {
+    className: 'navbar-search-input',
+    type: 'search',
+    placeholder: 'Suche',
+    autocomplete: 'off',
+    'aria-label': 'Suche',
+    onFocus: () => {
+      if (isDesktopNav() && !window.location.hash.startsWith('#/search')) {
+        window.location.hash = '#/search';
+      }
+    },
+    onInput: (event) => {
+      if (!isDesktopNav()) return;
+      if (navbarSearchDebounce) clearTimeout(navbarSearchDebounce);
+      const query = event.target.value;
+      navbarSearchDebounce = setTimeout(() => {
+        window.location.hash = getSearchHash(query);
+      }, 350);
+    }
+  });
+
+  const navbarSearchForm = createElement('form', {
+    className: 'navbar-search-form',
+    role: 'search',
+    onSubmit: (event) => {
+      event.preventDefault();
+      if (!isDesktopNav()) return;
+      window.location.hash = getSearchHash(navbarSearchInput.value);
+    }
+  },
+    createNavIcon('search'),
+    navbarSearchInput
+  );
+
   const navbarActions = createElement('div', { className: 'navbar-actions' },
-    mobileMenuButton,
-    settingsWrapper
+    navbarSearchForm,
+    mobileMenuButton
   );
 
   const element = createElement('nav', { className: 'navbar' },
@@ -514,6 +547,9 @@ export function Navbar({ onLogout, onChangePassword }) {
   const update = ({ currentHash, user, scrolled, seerEnabled }) => {
     element.classList.toggle('scrolled', !!scrolled);
     currentSeerEnabled = !!seerEnabled;
+    if (!settingsOpen && !mobileNavOpen) {
+      mobileMenuButton.setAttribute('aria-label', isDesktopNav() ? 'Einstellungen öffnen' : 'Navigation öffnen');
+    }
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
     settingsUsername.textContent = displayName;
@@ -521,12 +557,13 @@ export function Navbar({ onLogout, onChangePassword }) {
 
     NAV_LINKS.forEach(link => {
       const linkEl = $(`#nav-${link.key}`, element);
-      if (!linkEl) return;
 
       if (link.seerOnly) {
-        linkEl.hidden = !seerEnabled;
-        const li = linkEl.closest('li');
-        if (li) li.hidden = !seerEnabled;
+        if (linkEl) {
+          linkEl.hidden = !seerEnabled;
+          const li = linkEl.closest('li');
+          if (li) li.hidden = !seerEnabled;
+        }
       }
 
       const isActive =
@@ -535,13 +572,15 @@ export function Navbar({ onLogout, onChangePassword }) {
         (link.key === 'series' && (currentHash === '#/series' || currentHash.startsWith('#/genre/Series'))) ||
         (link.key === 'publishers' && (currentHash === '#/publishers' || currentHash.startsWith('#/publisher/'))) ||
         (link.key === 'requests' && currentHash === '#/requests') ||
-        (link.key === 'search' && currentHash === '#/search');
+        (link.key === 'search' && currentHash.startsWith('#/search'));
 
-      linkEl.classList.toggle('active', isActive);
-      if (isActive) {
-        linkEl.setAttribute('aria-current', 'page');
-      } else {
-        linkEl.removeAttribute('aria-current');
+      if (linkEl) {
+        linkEl.classList.toggle('active', isActive);
+        if (isActive) {
+          linkEl.setAttribute('aria-current', 'page');
+        } else {
+          linkEl.removeAttribute('aria-current');
+        }
       }
 
       const mobileEntry = mobileNavEntries.get(link.key);
@@ -554,6 +593,18 @@ export function Navbar({ onLogout, onChangePassword }) {
         }
       }
     });
+
+    const searchIsActive = currentHash.startsWith('#/search');
+    navbarSearchForm.classList.toggle('active', searchIsActive);
+    if (searchIsActive) {
+      navbarSearchForm.setAttribute('aria-current', 'page');
+    } else {
+      navbarSearchForm.removeAttribute('aria-current');
+    }
+
+    if (document.activeElement !== navbarSearchInput) {
+      navbarSearchInput.value = searchIsActive ? getSearchQueryFromHash(currentHash) : '';
+    }
 
     mobileNavItems.forEach((item, index) => {
       const link = NAV_LINKS[index];
@@ -720,9 +771,13 @@ export function Navbar({ onLogout, onChangePassword }) {
     }
 
     settingsOpen = open;
-    settingsWrapper.classList.toggle('open', settingsOpen);
+    element.classList.toggle('settings-open', settingsOpen);
     settingsBackdrop.classList.toggle('open', settingsOpen);
-    settingsButton.setAttribute('aria-expanded', settingsOpen ? 'true' : 'false');
+    mobileMenuButton.setAttribute('aria-expanded', settingsOpen ? 'true' : 'false');
+    mobileMenuButton.setAttribute(
+      'aria-label',
+      settingsOpen ? 'Einstellungen schließen' : (isDesktopNav() ? 'Einstellungen öffnen' : 'Navigation öffnen')
+    );
     settingsBackdrop.setAttribute('aria-hidden', settingsOpen ? 'false' : 'true');
     document.body.classList.toggle('settings-modal-open', settingsOpen);
 
@@ -891,15 +946,6 @@ function createNavIcon(key) {
   };
 
   return createIcon('mobile-nav-icon', icons[key] || icons.home);
-}
-
-function createSettingsIcon() {
-  return createIcon('settings-button-icon', `
-    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"></circle>
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.08V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.28.37.66.62 1.08.7H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"></path>
-    </svg>
-  `);
 }
 
 function createUserIcon() {

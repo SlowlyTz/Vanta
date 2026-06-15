@@ -6,12 +6,18 @@ import { appStore } from '../store/app.store.js';
 export default function SearchPage() {
   let debounceTimeout = null;
 
-  const container = createElement('div', { className: 'page-container content-section' });
+  const getQueryFromHash = () => {
+    const [, queryString = ''] = window.location.hash.split('?');
+    return new URLSearchParams(queryString).get('q') || '';
+  };
+
+  const initialQuery = getQueryFromHash();
+  const container = createElement('div', { className: 'page-container content-section search-page' });
 
   const resultsGrid = createElement('div', { className: 'grid-container' });
   const statusContainer = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Finde deine Lieblingsinhalte'),
-    createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in das Suchfeld oben ein.')
+    createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in die Suche oben ein.')
   );
 
   const performSearch = async (query) => {
@@ -19,7 +25,7 @@ export default function SearchPage() {
       resultsGrid.innerHTML = '';
       statusContainer.innerHTML = '';
       statusContainer.appendChild(createElement('h3', {}, 'Finde deine Lieblingsinhalte'));
-      statusContainer.appendChild(createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in das Suchfeld oben ein.'));
+      statusContainer.appendChild(createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in die Suche oben ein.'));
       statusContainer.classList.remove('hidden');
       return;
     }
@@ -70,23 +76,29 @@ export default function SearchPage() {
     type: 'text',
     className: 'search-input-field',
     placeholder: 'Filme oder Serien suchen...',
+    value: initialQuery,
     onInput: handleInput,
     autocomplete: 'off'
   });
 
-  // Safe autofocus hook
-  setTimeout(() => {
-    try {
-      searchInput.focus();
-    } catch (_) {}
-  }, 100);
+  if (!initialQuery) {
+    setTimeout(() => {
+      if (!window.matchMedia('(max-width: 768px)').matches) return;
+      try {
+        searchInput.focus();
+      } catch (_) {}
+    }, 100);
+  }
 
   const searchWrapper = createElement('div', { className: 'search-container' },
-    createElement('div', { className: 'search-input-wrapper' }, searchInput),
+    createElement('div', { className: 'search-input-wrapper mobile-search-input-wrapper' }, searchInput),
     resultsGrid,
     statusContainer
   );
 
   container.appendChild(searchWrapper);
+  if (initialQuery) {
+    performSearch(initialQuery);
+  }
   return container;
 }

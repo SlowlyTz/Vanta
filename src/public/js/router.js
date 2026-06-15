@@ -80,9 +80,11 @@ class Router {
   }
 
   findRoute(hash) {
+    const routeHash = hash.split('?')[0];
+
     for (const route of this.routes) {
       const regexPath = '^' + route.path.replace(/:([^/]+)/g, '([^/]+)') + '$';
-      const match = hash.match(new RegExp(regexPath));
+      const match = routeHash.match(new RegExp(regexPath));
 
       if (!match) continue;
 
