@@ -1,3 +1,13 @@
+const AUTH_UNAUTHORIZED_EVENT = 'vanta:auth-unauthorized';
+
+const createApiError = (message, response, options = {}) => {
+  const error = new Error(message);
+  error.status = response?.status;
+  error.isAuthError = response?.status === 401;
+  error.silent = Boolean(options.silent);
+  return error;
+};
+
 export async function request(url, options = {}) {
   const defaultHeaders = {
     'Content-Type': 'application/json',
@@ -16,17 +26,21 @@ export async function request(url, options = {}) {
     const response = await fetch(url, options);
 
     if (response.status === 401) {
-      // Redirect to login if user session is invalid or expired
+      const errJson = await response.json().catch(() => ({}));
+      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true });
+
+      window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
+
       if (window.location.hash !== '#/login') {
         window.location.hash = '#/login';
       }
-      const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson.error || 'Unauthorized');
+
+      throw error;
     }
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson.error || `Request failed with status ${response.status}`);
+      throw createApiError(errJson.error || `Request failed with status ${response.status}`, response);
     }
 
     const contentType = response.headers.get('content-type');
@@ -36,7 +50,9 @@ export async function request(url, options = {}) {
 
     return await response.text();
   } catch (error) {
-    console.error(`[API Request Error] ${url}:`, error.message);
+    if (!error.silent) {
+      console.error(`[API Request Error] ${url}:`, error.message);
+    }
     throw error;
   }
 }

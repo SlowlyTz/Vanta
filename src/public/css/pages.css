@@ -1620,6 +1620,11 @@ body.actor-modal-open {
   margin-right: auto;
 }
 
+.requests-admin-toggle {
+  margin: 0 auto var(--spacing-lg);
+  display: block;
+}
+
 .requests-section.hidden {
   display: none;
 }
@@ -1719,7 +1724,17 @@ body.actor-modal-open {
   color: #4caf50;
 }
 
+.request-status-imported {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
 .request-status-declined {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
+
+.request-status-rejected {
   background: rgba(244, 67, 54, 0.15);
   color: #f44336;
 }
@@ -1780,6 +1795,30 @@ body.actor-modal-open {
   background: rgba(255, 60, 60, 0.1);
 }
 
+.request-item-admin {
+  align-items: stretch;
+}
+
+.request-item-info-admin {
+  flex: 1;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.request-item-detail {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.request-admin-actions {
+  gap: var(--spacing-sm);
+}
+
+.request-admin-action {
+  white-space: nowrap;
+}
+
 .seearch-container {
   display: flex;
   flex-direction: column;
@@ -1823,63 +1862,4 @@ body.actor-modal-open {
 
 .request-card-clickable:hover {
   border-color: rgba(255, 255, 255, 0.18);
-}
-
-/* ---------------------------------
-   SEER DETAIL — SEASON GRID
-   --------------------------------- */
-.seer-seasons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-md);
-}
-
-.seer-season-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all var(--transition-fast);
-}
-
-.seer-season-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.seer-season-poster {
-  width: 100%;
-  aspect-ratio: 2/3;
-  object-fit: cover;
-  background: var(--bg-tertiary);
-}
-
-.seer-season-info {
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.seer-season-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.seer-season-episodes {
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-}
-
-@media (max-width: 600px) {
-  .seer-seasons-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: var(--spacing-md);
-  }
 }

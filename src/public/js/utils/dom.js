@@ -8,6 +8,7 @@ export function $$(selector, context = document) {
 
 export function createElement(tag, props = {}, ...children) {
   const element = document.createElement(tag);
+  props = props || {};
 
   for (const [key, value] of Object.entries(props)) {
     if (key.startsWith('on') && typeof value === 'function') {

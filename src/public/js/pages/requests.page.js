@@ -1,37 +1,32 @@
 import { createElement } from '../utils/dom.js';
-import { SeerApi } from '../api/seer.api.js';
-import { authStore } from '../store/auth.store.js';
+import { RequestsApi } from '../api/requests.api.js';
+import { AuthApi } from '../api/auth.api.js';
 import { appStore } from '../store/app.store.js';
-import { createPosterPlaceholder, getTmdbImageUrl } from '../utils/poster.js';
+import { createPosterPlaceholder } from '../utils/poster.js';
 
 const STATUS_MAP = {
-  1: { label: 'ausstehend', cls: 'pending' },
-  2: { label: 'genehmigt', cls: 'approved' },
-  3: { label: 'abgelehnt', cls: 'declined' },
-  4: { label: 'verarbeitung', cls: 'processing' },
-  5: { label: 'verfügbar', cls: 'available' }
+  pending: { label: 'ausstehend', cls: 'pending' },
+  approved: { label: 'genehmigt', cls: 'approved' },
+  imported: { label: 'importiert', cls: 'imported' },
+  rejected: { label: 'abgelehnt', cls: 'rejected' }
 };
+
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
 export default function RequestsPage() {
   let debounceTimeout = null;
   let myRequests = [];
+  let adminRequests = [];
+  let searchResults = [];
+  let adminRequestsVisible = false;
+  let searchRunId = 0;
 
   const container = createElement('div', { className: 'page-container content-section' });
-
-  if (!authStore.getState().seerEnabled) {
-    container.appendChild(
-      createElement('div', { className: 'search-empty-state' },
-        createElement('h3', {}, 'Nicht verfügbar'),
-        createElement('p', {}, 'Die Anfragen-Funktion ist nicht aktiviert.')
-      )
-    );
-    return container;
-  }
 
   const searchInput = createElement('input', {
     type: 'text',
     className: 'search-input-field',
-    placeholder: 'Film oder Serie zum Anfragen suchen...',
+    placeholder: 'Film oder Serie suchen und anfragen...',
     onInput: (e) => {
       const query = e.target.value.trim();
       if (debounceTimeout) clearTimeout(debounceTimeout);
@@ -41,12 +36,26 @@ export default function RequestsPage() {
   });
 
   const searchInputWrapper = createElement('div', { className: 'search-input-wrapper' }, searchInput);
-
   const resultsGrid = createElement('div', { className: 'requests-grid' });
+
+  const adminToggleButton = createElement('button', {
+    className: 'btn-secondary requests-admin-toggle',
+    type: 'button',
+    hidden: true,
+    onClick: async () => {
+      adminRequestsVisible = !adminRequestsVisible;
+      adminSection.classList.toggle('hidden', !adminRequestsVisible);
+      adminToggleButton.textContent = adminRequestsVisible ? 'Offene Anfragen ausblenden' : 'Offene Anfragen anzeigen';
+
+      if (adminRequestsVisible) {
+        await loadAdminRequests();
+      }
+    }
+  }, 'Offene Anfragen anzeigen');
 
   const statusContainer = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
-    createElement('p', {}, 'Suche nach Filmen oder Serien die noch nicht in der Mediathek sind.')
+    createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.')
   );
 
   const requestsSection = createElement('div', { className: 'requests-section hidden' },
@@ -55,21 +64,34 @@ export default function RequestsPage() {
 
   const requestsList = createElement('div', { className: 'requests-list' });
 
+  const adminSection = createElement('div', { className: 'requests-section hidden' },
+    createElement('h2', { className: 'requests-section-title' }, 'Offene Anfragen')
+  );
+
+  const adminStatus = createElement('div', { className: 'search-empty-state hidden' });
+  const adminRequestsList = createElement('div', { className: 'requests-list' });
+
   const searchSection = createElement('div', { className: 'search-container' },
     searchInputWrapper,
     resultsGrid,
     statusContainer
   );
 
+  container.appendChild(adminToggleButton);
   container.appendChild(searchSection);
+  container.appendChild(adminSection);
   container.appendChild(requestsSection);
 
   const performSearch = async (query) => {
+    const runId = ++searchRunId;
+    resultsGrid.innerHTML = '';
+    searchResults = [];
+
     if (!query) {
-      resultsGrid.innerHTML = '';
+      appStore.setLoading(false);
       statusContainer.innerHTML = '';
       statusContainer.appendChild(createElement('h3', {}, 'Medien anfragen'));
-      statusContainer.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien die noch nicht in der Mediathek sind.'));
+      statusContainer.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
       statusContainer.classList.remove('hidden');
       return;
     }
@@ -78,149 +100,116 @@ export default function RequestsPage() {
     appStore.setLoading(true);
 
     try {
-      const data = await SeerApi.search(query);
-      const results = data.results || [];
+      const data = await RequestsApi.search(query);
+      if (runId !== searchRunId) return;
+
+      searchResults = data.results || [];
       resultsGrid.innerHTML = '';
 
-      if (results.length === 0) {
+      if (searchResults.length === 0) {
         statusContainer.innerHTML = '';
-        statusContainer.appendChild(createElement('h3', {}, 'Keine Ergebnisse gefunden'));
-        statusContainer.appendChild(createElement('p', {}, `Für "${query}" konnten keine Ergebnisse gefunden werden.`));
+        statusContainer.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
+        statusContainer.appendChild(createElement('p', {}, `Nichts gefunden fuer "${query}".`));
         statusContainer.classList.remove('hidden');
+        appStore.setLoading(false);
       } else {
         statusContainer.classList.add('hidden');
-        results.forEach(item => {
-          const card = createSearchResultCard(item);
-          resultsGrid.appendChild(card);
+        searchResults.forEach(item => {
+          resultsGrid.appendChild(createSearchResultCard(item));
         });
+        appStore.setLoading(false);
+        refreshSearchAvailability(runId, searchResults);
       }
     } catch (error) {
+      if (runId !== searchRunId) return;
+      if (error.isAuthError) {
+        appStore.setLoading(false);
+        return;
+      }
+
       console.error('[Requests Search Error]', error);
-      appStore.showToast('Fehler bei der Suche', 'error');
-      resultsGrid.innerHTML = '';
-      statusContainer.innerHTML = '';
-      statusContainer.appendChild(createElement('h3', {}, 'Suche fehlgeschlagen'));
-      statusContainer.appendChild(createElement('p', {}, error.message));
-      statusContainer.classList.remove('hidden');
-    } finally {
+      appStore.showToast('Suche fehlgeschlagen', 'error');
       appStore.setLoading(false);
     }
   };
 
+  const refreshSearchAvailability = (runId, results) => {
+    results.forEach(async (item) => {
+      const tmdbId = item.id;
+      const tmdbType = item.media_type;
+
+      try {
+        const check = await RequestsApi.crossCheck(tmdbId, tmdbType);
+        if (runId !== searchRunId) return;
+
+        const existingCard = resultsGrid.querySelector(`[data-tmdb-id="${tmdbId}"]`);
+        if (existingCard && check.exists) {
+          const btn = existingCard.querySelector('.search-available-badge');
+          if (btn) btn.hidden = false;
+        }
+      } catch {}
+    });
+  };
+
+  const getTmdbImageUrl = (path, size = 'w500') => {
+    if (!path) return null;
+    return `https://image.tmdb.org/t/p/${size}${path}`;
+  };
+
   const createSearchResultCard = (item) => {
-    const isRequested = item.mediaInfo && item.mediaInfo.status !== undefined;
-    const statusInfo = isRequested ? STATUS_MAP[item.mediaInfo.status] : null;
-    const isAvailable = item.mediaInfo && (item.mediaInfo.status === 5 || item.mediaInfo.jellyfinMediaId);
+    const isMovie = item.media_type === 'movie';
+    const title = item.title || item.name || 'Unbekannt';
+    const posterUrl = getTmdbImageUrl(item.poster_path);
+    const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+    const typeLabel = isMovie ? 'Film' : 'Serie';
+    const overview = item.overview || 'Keine Beschreibung.';
+    const tmdbId = item.id;
+    const tmdbType = item.media_type;
 
     const card = createElement('div', {
       className: 'request-card request-card-clickable',
-      onClick: (e) => {
-        if (e.target.closest('.btn-primary, .btn-requested, .btn-request-error, .request-card-btn, .request-item-delete')) return;
-        if (isAvailable && item.mediaInfo && item.mediaInfo.jellyfinMediaId) {
-          window.location.hash = `#/item/${item.mediaInfo.jellyfinMediaId}`;
-        } else {
-          window.location.hash = `#/seer-detail/${item.mediaType}/${item.id}`;
-        }
+      'data-tmdb-id': tmdbId,
+      onClick: () => {
+        window.location.hash = `#/request-detail/${tmdbType}/${tmdbId}`;
       }
     });
 
-    const posterUrl = getTmdbImageUrl(item.posterPath || item.poster_path, 'w500');
-
-    let posterEl;
-    if (posterUrl) {
-      posterEl = createElement('img', {
-        className: 'request-card-poster',
-        src: posterUrl,
-        alt: item.title || item.name,
-        loading: 'lazy',
-        onError: (e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = createPosterPlaceholder(item.title || item.name || '?');
-        }
-      });
-    } else {
-      posterEl = createElement('img', {
-        className: 'request-card-poster',
-        src: createPosterPlaceholder(item.title || item.name || '?'),
-        alt: item.title || item.name
-      });
-    }
-
-    const typeLabel = item.mediaType === 'tv' ? 'Serie' : 'Film';
-    const year = item.releaseDate || item.firstAirDate || '';
-    const yearShort = year ? year.substring(0, 4) : '';
-    const overview = item.overview || 'Keine Beschreibung verfügbar.';
-
-    let actionBtn;
-    if (isAvailable) {
-      actionBtn = createElement('span', { className: 'btn-requested' }, 'Verfügbar');
-    } else if (statusInfo && item.mediaInfo.status !== 3) {
-      actionBtn = createElement('span', { className: `btn-requested request-status-inline-${statusInfo.cls}` }, statusInfo.label);
-    } else {
-      actionBtn = createElement('button', {
-        className: 'btn-primary request-card-btn',
-        onClick: () => handleRequest(item, actionBtn)
-      }, 'Anfragen');
-    }
+    const poster = createElement('img', {
+      className: 'request-card-poster',
+      src: posterUrl || createPosterPlaceholder(title),
+      alt: title,
+      loading: 'lazy',
+      onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPosterPlaceholder(title); }
+    });
 
     const info = createElement('div', { className: 'request-card-info' },
       createElement('div', { className: 'request-card-meta' },
         createElement('span', { className: 'request-card-type' }, typeLabel),
-        yearShort ? createElement('span', { className: 'request-card-year' }, yearShort) : null
+        year ? createElement('span', { className: 'request-card-year' }, year) : null
       ),
-      createElement('h3', { className: 'request-card-title' }, item.title || item.name),
+      createElement('h3', { className: 'request-card-title' }, title),
       createElement('p', { className: 'request-card-overview' }, overview.length > 150 ? overview.substring(0, 150) + '...' : overview)
     );
 
-    const actions = createElement('div', { className: 'request-card-actions' }, actionBtn);
+    const actions = createElement('div', { className: 'request-card-actions' },
+      createElement('span', {
+        className: 'search-available-badge',
+        hidden: true,
+        style: 'color: var(--color-primary); font-size: 0.85rem;'
+      }, 'In Mediathek verfuegbar')
+    );
 
-    card.appendChild(posterEl);
+    card.appendChild(poster);
     card.appendChild(info);
     card.appendChild(actions);
 
     return card;
   };
 
-  const handleRequest = async (item, btn) => {
-    btn.disabled = true;
-    btn.textContent = 'Anfragen...';
-
-    try {
-      await SeerApi.createRequest(item.mediaType, item.id);
-      btn.textContent = 'Angefragt';
-      btn.classList.add('btn-requested');
-      btn.classList.remove('btn-primary');
-      appStore.showToast('Anfrage erfolgreich gesendet!', 'success');
-      loadMyRequests();
-    } catch (error) {
-      console.error('[Request Error]', error);
-      const msg = error.message || 'Fehler beim Anfragen';
-      if (msg.includes('already') || msg.includes('exist') || msg.includes('duplicate')) {
-        btn.textContent = 'Bereits angefragt';
-        btn.classList.add('btn-requested');
-        btn.classList.remove('btn-primary');
-      } else {
-        btn.textContent = 'Fehler';
-        btn.classList.add('btn-request-error');
-        setTimeout(() => {
-          btn.textContent = 'Anfragen';
-          btn.disabled = false;
-          btn.classList.remove('btn-request-error');
-        }, 2000);
-      }
-      appStore.showToast(msg, 'error');
-    }
-  };
-
   const loadMyRequests = async () => {
     try {
-      const data = await SeerApi.getMyRequests({ take: 50 });
-      myRequests = data.results || [];
-
-      if (!Array.isArray(myRequests)) {
-        myRequests = [];
-      }
-
+      myRequests = await RequestsApi.getMyRequests();
+      if (!Array.isArray(myRequests)) myRequests = [];
       renderMyRequests();
     } catch (error) {
       console.warn('[My Requests Load Error]', error);
@@ -229,38 +218,32 @@ export default function RequestsPage() {
     }
   };
 
-  const getRequestTitle = (req) => {
-    const media = req.media;
-    if (!media) return `Anfrage #${req.id}`;
-
-    const url = media.externalServiceSlug || media.mediaUrl || '';
-    if (req.title) return req.title;
-
-    return `Anfrage #${req.id}`;
-  };
-
   const renderMyRequests = () => {
     requestsSection.classList.toggle('hidden', myRequests.length === 0);
     requestsList.innerHTML = '';
 
-    if (myRequests.length === 0) return;
-
     myRequests.forEach(req => {
-      const statusInfo = STATUS_MAP[req.status] || { label: 'unbekannt', cls: 'unknown' };
-      const type = (req.type || req.media?.mediaType) === 'tv' ? 'Serie' : 'Film';
-
-      const mediaTitle = getRequestTitle(req);
+      const statusInfo = STATUS_MAP[req.status] || { label: req.status, cls: 'unknown' };
+      const type = req.media_type === 'tv' ? 'Serie' : 'Film';
+      const posterUrl = req.poster_path ? getTmdbImageUrl(req.poster_path) : null;
 
       const item = createElement('div', { className: 'request-item' },
+        posterUrl ? createElement('img', {
+          className: 'request-card-poster',
+          src: posterUrl,
+          alt: req.title,
+          style: 'width: 40px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 12px;',
+          loading: 'lazy'
+        }) : null,
         createElement('div', { className: 'request-item-info' },
-          createElement('span', { className: 'request-item-title' }, mediaTitle),
+          createElement('span', { className: 'request-item-title' }, req.title),
           createElement('span', { className: 'request-item-type' }, type)
         ),
         createElement('div', { className: 'request-item-right' },
           createElement('span', { className: `request-status request-status-${statusInfo.cls}` }, statusInfo.label),
           createElement('button', {
             className: 'request-item-delete',
-            onClick: () => deleteRequest(req.id)
+            onClick: (e) => { e.stopPropagation(); deleteRequest(req.id); }
           }, createDeleteIcon())
         )
       );
@@ -272,13 +255,141 @@ export default function RequestsPage() {
     }
   };
 
-  const deleteRequest = async (requestId) => {
+  const loadAdminState = async () => {
     try {
-      await SeerApi.deleteRequest(requestId);
-      myRequests = myRequests.filter(r => r.id !== requestId);
+      const data = await AuthApi.getCurrentUser();
+      const isAdmin = Boolean(data?.user?.isAdmin);
+      adminToggleButton.hidden = !isAdmin;
+
+      if (!isAdmin) {
+        adminRequestsVisible = false;
+        adminSection.classList.add('hidden');
+      }
+    } catch {
+      adminToggleButton.hidden = true;
+      adminRequestsVisible = false;
+      adminSection.classList.add('hidden');
+    }
+  };
+
+  const loadAdminRequests = async () => {
+    adminStatus.classList.add('hidden');
+    adminRequestsList.innerHTML = '';
+    appStore.setLoading(true);
+
+    try {
+      adminRequests = await RequestsApi.getOpenRequests();
+      if (!Array.isArray(adminRequests)) adminRequests = [];
+      renderAdminRequests();
+    } catch (error) {
+      if (error.isAuthError) return;
+
+      console.warn('[Admin Requests Load Error]', error);
+      adminRequests = [];
+      adminStatus.innerHTML = '';
+      adminStatus.appendChild(createElement('h3', {}, 'Nicht verfuegbar'));
+      adminStatus.appendChild(createElement('p', {}, 'Offene Anfragen konnten nicht geladen werden.'));
+      adminStatus.classList.remove('hidden');
+    } finally {
+      appStore.setLoading(false);
+    }
+  };
+
+  const renderAdminRequests = () => {
+    adminRequestsList.innerHTML = '';
+    adminStatus.innerHTML = '';
+
+    if (adminRequests.length === 0) {
+      adminStatus.appendChild(createElement('h3', {}, 'Keine offenen Anfragen'));
+      adminStatus.appendChild(createElement('p', {}, 'Aktuell wartet keine Anfrage auf eine Entscheidung.'));
+      adminStatus.classList.remove('hidden');
+    } else {
+      adminStatus.classList.add('hidden');
+    }
+
+    adminRequests.forEach(req => {
+      adminRequestsList.appendChild(createAdminRequestItem(req));
+    });
+
+    if (!adminSection.contains(adminStatus)) {
+      adminSection.appendChild(adminStatus);
+    }
+
+    if (!adminSection.contains(adminRequestsList)) {
+      adminSection.appendChild(adminRequestsList);
+    }
+  };
+
+  const createAdminRequestItem = (req) => {
+    const type = req.media_type === 'tv' ? 'Serie' : 'Film';
+    const posterUrl = req.poster_path ? getTmdbImageUrl(req.poster_path) : null;
+    const requester = req.username || req.user_id || 'Unbekannt';
+    const createdAt = req.created_at ? new Date(req.created_at).toLocaleDateString('de-DE') : '';
+    const note = req.note ? `Notiz: ${req.note}` : 'Keine Notiz';
+
+    return createElement('div', { className: 'request-item request-item-admin' },
+      posterUrl ? createElement('img', {
+        className: 'request-card-poster',
+        src: posterUrl,
+        alt: req.title,
+        style: 'width: 40px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 12px;',
+        loading: 'lazy'
+      }) : null,
+      createElement('div', { className: 'request-item-info request-item-info-admin' },
+        createElement('span', { className: 'request-item-title' }, req.title),
+        createElement('span', { className: 'request-item-type' }, type),
+        createElement('span', { className: 'request-item-detail' }, `Von ${requester}${createdAt ? ` am ${createdAt}` : ''}`),
+        createElement('span', { className: 'request-item-detail' }, note)
+      ),
+      createElement('div', { className: 'request-item-right request-admin-actions' },
+        createElement('button', {
+          className: 'btn-secondary request-admin-action',
+          type: 'button',
+          onClick: () => moderateRequest(req.id, 'approve')
+        }, 'Genehmigen'),
+        createElement('button', {
+          className: 'request-item-delete request-admin-action',
+          type: 'button',
+          onClick: () => moderateRequest(req.id, 'reject')
+        }, 'Ablehnen')
+      )
+    );
+  };
+
+  const moderateRequest = async (id, action) => {
+    appStore.setLoading(true);
+
+    try {
+      if (action === 'approve') {
+        await RequestsApi.approveRequest(id);
+        appStore.showToast('Anfrage genehmigt', 'success');
+      } else {
+        await RequestsApi.rejectRequest(id);
+        appStore.showToast('Anfrage abgelehnt', 'success');
+      }
+
+      adminRequests = adminRequests.filter(req => req.id !== id);
+      renderAdminRequests();
+      await loadMyRequests();
+    } catch (error) {
+      if (error.isAuthError) return;
+
+      console.error('[Moderate Request Error]', error);
+      appStore.showToast(error.message || 'Aktion fehlgeschlagen', 'error');
+    } finally {
+      appStore.setLoading(false);
+    }
+  };
+
+  const deleteRequest = async (id) => {
+    try {
+      await RequestsApi.deleteRequest(id);
+      myRequests = myRequests.filter(r => r.id !== id);
       renderMyRequests();
       appStore.showToast('Anfrage entfernt', 'success');
     } catch (error) {
+      if (error.isAuthError) return;
+
       console.error('[Delete Request Error]', error);
       appStore.showToast('Fehler beim Entfernen', 'error');
     }
@@ -290,6 +401,7 @@ export default function RequestsPage() {
     return icon;
   };
 
+  loadAdminState();
   loadMyRequests();
 
   return container;

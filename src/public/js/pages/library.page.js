@@ -36,6 +36,8 @@ export default function LibraryPage(params) {
       totalPages = result.totalPages;
       renderLibrary(result.items);
     } catch (error) {
+      if (error.isAuthError) return;
+
       console.error('[Library Page Load Error]', error);
       appStore.showToast('Fehler beim Laden der Inhalte', 'error');
       renderError(error.message);

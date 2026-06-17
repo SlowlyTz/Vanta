@@ -9,7 +9,7 @@ import { securityHeaders } from './middleware/security.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import mediaRoutes from './routes/media.routes.js';
-import seerRoutes from './routes/seer.routes.js';
+import requestsRoutes from './routes/requests.routes.js';
 import pageRoutes from './routes/page.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -49,9 +49,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // API and UI Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
-if (env.SEER_ENABLED) {
-  app.use('/api/seer', seerRoutes);
-}
+app.use('/api/requests', requestsRoutes);
 app.use('/', pageRoutes);
 
 // Error Middleware
