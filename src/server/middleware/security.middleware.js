@@ -5,6 +5,7 @@ export const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: cspDirectives
   },
+  permissionsPolicy: false,
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: false,
 });
