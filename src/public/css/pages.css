@@ -1625,6 +1625,10 @@ body.actor-modal-open {
   display: block;
 }
 
+.requests-admin-toggle[hidden] {
+  display: none;
+}
+
 .requests-section.hidden {
   display: none;
 }

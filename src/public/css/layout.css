@@ -526,10 +526,6 @@ body.mobile-nav-open .mobile-drawer-nav {
     gap: clamp(16px, 1.45vw, 30px);
   }
 
-  .navbar-nav .navbar-item-publishers {
-    display: none;
-  }
-
   .navbar > .navbar-nav .navbar-link {
     min-height: 88px;
     gap: 10px;

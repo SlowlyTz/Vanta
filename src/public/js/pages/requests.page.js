@@ -1,6 +1,5 @@
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
-import { AuthApi } from '../api/auth.api.js';
 import { appStore } from '../store/app.store.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
@@ -16,9 +15,7 @@ const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 export default function RequestsPage() {
   let debounceTimeout = null;
   let myRequests = [];
-  let adminRequests = [];
   let searchResults = [];
-  let adminRequestsVisible = false;
   let searchRunId = 0;
 
   const container = createElement('div', { className: 'page-container content-section' });
@@ -38,21 +35,6 @@ export default function RequestsPage() {
   const searchInputWrapper = createElement('div', { className: 'search-input-wrapper' }, searchInput);
   const resultsGrid = createElement('div', { className: 'requests-grid' });
 
-  const adminToggleButton = createElement('button', {
-    className: 'btn-secondary requests-admin-toggle',
-    type: 'button',
-    hidden: true,
-    onClick: async () => {
-      adminRequestsVisible = !adminRequestsVisible;
-      adminSection.classList.toggle('hidden', !adminRequestsVisible);
-      adminToggleButton.textContent = adminRequestsVisible ? 'Offene Anfragen ausblenden' : 'Offene Anfragen anzeigen';
-
-      if (adminRequestsVisible) {
-        await loadAdminRequests();
-      }
-    }
-  }, 'Offene Anfragen anzeigen');
-
   const statusContainer = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
     createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.')
@@ -64,22 +46,13 @@ export default function RequestsPage() {
 
   const requestsList = createElement('div', { className: 'requests-list' });
 
-  const adminSection = createElement('div', { className: 'requests-section hidden' },
-    createElement('h2', { className: 'requests-section-title' }, 'Offene Anfragen')
-  );
-
-  const adminStatus = createElement('div', { className: 'search-empty-state hidden' });
-  const adminRequestsList = createElement('div', { className: 'requests-list' });
-
   const searchSection = createElement('div', { className: 'search-container' },
     searchInputWrapper,
     resultsGrid,
     statusContainer
   );
 
-  container.appendChild(adminToggleButton);
   container.appendChild(searchSection);
-  container.appendChild(adminSection);
   container.appendChild(requestsSection);
 
   const performSearch = async (query) => {
@@ -255,132 +228,6 @@ export default function RequestsPage() {
     }
   };
 
-  const loadAdminState = async () => {
-    try {
-      const data = await AuthApi.getCurrentUser();
-      const isAdmin = Boolean(data?.user?.isAdmin);
-      adminToggleButton.hidden = !isAdmin;
-
-      if (!isAdmin) {
-        adminRequestsVisible = false;
-        adminSection.classList.add('hidden');
-      }
-    } catch {
-      adminToggleButton.hidden = true;
-      adminRequestsVisible = false;
-      adminSection.classList.add('hidden');
-    }
-  };
-
-  const loadAdminRequests = async () => {
-    adminStatus.classList.add('hidden');
-    adminRequestsList.innerHTML = '';
-    appStore.setLoading(true);
-
-    try {
-      adminRequests = await RequestsApi.getOpenRequests();
-      if (!Array.isArray(adminRequests)) adminRequests = [];
-      renderAdminRequests();
-    } catch (error) {
-      if (error.isAuthError) return;
-
-      console.warn('[Admin Requests Load Error]', error);
-      adminRequests = [];
-      adminStatus.innerHTML = '';
-      adminStatus.appendChild(createElement('h3', {}, 'Nicht verfuegbar'));
-      adminStatus.appendChild(createElement('p', {}, 'Offene Anfragen konnten nicht geladen werden.'));
-      adminStatus.classList.remove('hidden');
-    } finally {
-      appStore.setLoading(false);
-    }
-  };
-
-  const renderAdminRequests = () => {
-    adminRequestsList.innerHTML = '';
-    adminStatus.innerHTML = '';
-
-    if (adminRequests.length === 0) {
-      adminStatus.appendChild(createElement('h3', {}, 'Keine offenen Anfragen'));
-      adminStatus.appendChild(createElement('p', {}, 'Aktuell wartet keine Anfrage auf eine Entscheidung.'));
-      adminStatus.classList.remove('hidden');
-    } else {
-      adminStatus.classList.add('hidden');
-    }
-
-    adminRequests.forEach(req => {
-      adminRequestsList.appendChild(createAdminRequestItem(req));
-    });
-
-    if (!adminSection.contains(adminStatus)) {
-      adminSection.appendChild(adminStatus);
-    }
-
-    if (!adminSection.contains(adminRequestsList)) {
-      adminSection.appendChild(adminRequestsList);
-    }
-  };
-
-  const createAdminRequestItem = (req) => {
-    const type = req.media_type === 'tv' ? 'Serie' : 'Film';
-    const posterUrl = req.poster_path ? getTmdbImageUrl(req.poster_path) : null;
-    const requester = req.username || req.user_id || 'Unbekannt';
-    const createdAt = req.created_at ? new Date(req.created_at).toLocaleDateString('de-DE') : '';
-    const note = req.note ? `Notiz: ${req.note}` : 'Keine Notiz';
-
-    return createElement('div', { className: 'request-item request-item-admin' },
-      posterUrl ? createElement('img', {
-        className: 'request-card-poster',
-        src: posterUrl,
-        alt: req.title,
-        style: 'width: 40px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 12px;',
-        loading: 'lazy'
-      }) : null,
-      createElement('div', { className: 'request-item-info request-item-info-admin' },
-        createElement('span', { className: 'request-item-title' }, req.title),
-        createElement('span', { className: 'request-item-type' }, type),
-        createElement('span', { className: 'request-item-detail' }, `Von ${requester}${createdAt ? ` am ${createdAt}` : ''}`),
-        createElement('span', { className: 'request-item-detail' }, note)
-      ),
-      createElement('div', { className: 'request-item-right request-admin-actions' },
-        createElement('button', {
-          className: 'btn-secondary request-admin-action',
-          type: 'button',
-          onClick: () => moderateRequest(req.id, 'approve')
-        }, 'Genehmigen'),
-        createElement('button', {
-          className: 'request-item-delete request-admin-action',
-          type: 'button',
-          onClick: () => moderateRequest(req.id, 'reject')
-        }, 'Ablehnen')
-      )
-    );
-  };
-
-  const moderateRequest = async (id, action) => {
-    appStore.setLoading(true);
-
-    try {
-      if (action === 'approve') {
-        await RequestsApi.approveRequest(id);
-        appStore.showToast('Anfrage genehmigt', 'success');
-      } else {
-        await RequestsApi.rejectRequest(id);
-        appStore.showToast('Anfrage abgelehnt', 'success');
-      }
-
-      adminRequests = adminRequests.filter(req => req.id !== id);
-      renderAdminRequests();
-      await loadMyRequests();
-    } catch (error) {
-      if (error.isAuthError) return;
-
-      console.error('[Moderate Request Error]', error);
-      appStore.showToast(error.message || 'Aktion fehlgeschlagen', 'error');
-    } finally {
-      appStore.setLoading(false);
-    }
-  };
-
   const deleteRequest = async (id) => {
     try {
       await RequestsApi.deleteRequest(id);
@@ -401,7 +248,6 @@ export default function RequestsPage() {
     return icon;
   };
 
-  loadAdminState();
   loadMyRequests();
 
   return container;

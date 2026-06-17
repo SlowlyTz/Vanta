@@ -68,6 +68,12 @@ class RequestsService {
       ? await TmdbService.getTvDetails(tmdbId)
       : await TmdbService.getMovieDetails(tmdbId);
 
+    if (!details || !details.id) {
+      const error = new Error('Medium konnte nicht in der Datenbank gefunden werden');
+      error.status = 502;
+      throw error;
+    }
+
     if (this.isBanned(tmdbId, tmdbType)) {
       const error = new Error('Dieses Medium wurde abgelehnt und kann nicht erneut angefragt werden');
       error.status = 409;
