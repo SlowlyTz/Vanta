@@ -329,12 +329,16 @@ export function Navbar({ onLogout, onChangePassword }) {
     onClick: () => setSettingsOpen(false)
   }, createCloseIcon());
 
-  const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
-  const playbackOption = createSettingsOption('Wiedergabe', () => setSettingsView('playback'), createPlaybackIcon());
-const adminOption = createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(), createAdminIcon());
-const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
-  const mobilePlaybackOption = createSettingsOption('Wiedergabe', () => setMobileSettingsView('playback'), createPlaybackIcon());
-const mobileAdminOption = createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(true), createAdminIcon());
+   const adminOption = createElement('div', { className: 'admin-option-container' },
+     createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(false), createAdminIcon())
+   );
+   const mobileAdminOption = createElement('div', { className: 'admin-option-container' },
+     createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(true), createAdminIcon())
+   );
+   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
+   const playbackOption = createSettingsOption('Wiedergabe', () => setSettingsView('playback'), createPlaybackIcon());
+   const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
+   const mobilePlaybackOption = createSettingsOption('Wiedergabe', () => setMobileSettingsView('playback'), createPlaybackIcon());
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
@@ -368,17 +372,61 @@ const mobileAdminOption = createSettingsOption('Admin tools', () => checkAdminAn
     createElement('div', { className: 'settings-options' }, createPlaybackChoices())
   );
 
-  const adminRequestsListContainer = createElement('div', { className: 'admin-requests-list' });
-  const adminRequestsStatus = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
+   const adminToolsGrid = createElement('div', { className: 'admin-tools-grid' });
+   const adminRequestsList = createElement('div', { className: 'admin-requests-list' });
+   const adminRequestsStatus = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
+   const adminRequestsEmpty = createElement('div', { className: 'admin-requests-empty search-empty-state hidden' });
+   let adminRequestsView = 'tools';
 
-  const adminPanel = createElement('div', {
-    className: 'settings-panel settings-panel-admin',
-    dataset: { view: 'admin' }
-  },
-    createElement('h2', { className: 'admin-tools-title' }, 'Offene Anfragen'),
-    adminRequestsStatus,
-    adminRequestsListContainer
-  );
+   const requestsCard = createElement('button', {
+     className: 'admin-tool-card',
+     type: 'button',
+     onClick: () => {
+       adminRequestsView = 'requests';
+       adminToolsGrid.parentElement.hidden = true;
+       adminRequestsViewPanel.hidden = false;
+       loadAdminRequests(adminRequestsList, adminRequestsStatus, adminRequestsEmpty, false);
+     }
+   },
+     createElement('div', { className: 'admin-tool-card-icon' }, createChatIcon()),
+     createElement('div', { className: 'admin-tool-card-info' },
+       createElement('span', { className: 'admin-tool-card-title' }, 'Anfragen'),
+       createElement('span', { className: 'admin-tool-card-desc' }, 'Offene Medienanfragen verwalten')
+     ),
+     createChevronIcon()
+   );
+
+   adminToolsGrid.appendChild(requestsCard);
+
+   const adminToolsPanel = createElement('div', { className: 'admin-tools-panel' },
+     createElement('h2', { className: 'admin-tools-title' }, 'Admin tools'),
+     adminToolsGrid
+   );
+
+   const adminRequestsViewPanel = createElement('div', { className: 'admin-requests-view' },
+     createElement('div', { className: 'admin-view-header' },
+       createElement('button', {
+         className: 'admin-view-back-button',
+         type: 'button',
+         onClick: () => {
+           adminRequestsView = 'tools';
+           adminRequestsViewPanel.hidden = true;
+           adminToolsPanel.hidden = false;
+         }
+       }, createBackIcon(), 'Anfragen'),
+     ),
+     adminRequestsStatus,
+     adminRequestsEmpty,
+     adminRequestsList
+   );
+
+   const adminPanel = createElement('div', {
+     className: 'settings-panel settings-panel-admin',
+     dataset: { view: 'admin' }
+   },
+     adminToolsPanel,
+     adminRequestsViewPanel
+   );
 
   const mobileSettingsBackButton = createElement('button', {
     className: 'mobile-settings-back-button',
@@ -410,22 +458,66 @@ const mobileAdminOption = createSettingsOption('Admin tools', () => checkAdminAn
     )
   );
 
-  const mobilePasswordPanel = createElement('div', { className: 'settings-panel settings-panel-password' }, mobilePasswordForm);
-  const mobilePlaybackPanel = createElement('div', { className: 'settings-panel settings-panel-playback' },
-    createElement('div', { className: 'settings-options' }, createPlaybackChoices())
-  );
+   const mobilePasswordPanel = createElement('div', { className: 'settings-panel settings-panel-password' }, mobilePasswordForm);
+   const mobilePlaybackPanel = createElement('div', { className: 'settings-panel settings-panel-playback' },
+     createElement('div', { className: 'settings-options' }, createPlaybackChoices())
+   );
 
-  const mobileAdminRequestsListContainer = createElement('div', { className: 'admin-requests-list' });
-  const mobileAdminRequestsStatus = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
+   const mobileAdminToolsGrid = createElement('div', { className: 'admin-tools-grid' });
+   const mobileAdminRequestsList = createElement('div', { className: 'admin-requests-list' });
+   const mobileAdminRequestsStatus = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
+   const mobileAdminRequestsEmpty = createElement('div', { className: 'admin-requests-empty search-empty-state hidden' });
+   let mobileAdminRequestsView = 'tools';
 
-  const mobileAdminPanel = createElement('div', {
-    className: 'settings-panel settings-panel-admin',
-    dataset: { view: 'admin' }
-  },
-    createElement('h2', { className: 'admin-tools-title' }, 'Offene Anfragen'),
-    mobileAdminRequestsStatus,
-    mobileAdminRequestsListContainer
-  );
+   const mobileRequestsCard = createElement('button', {
+     className: 'admin-tool-card',
+     type: 'button',
+     onClick: () => {
+       mobileAdminRequestsView = 'requests';
+       mobileAdminToolsPanel.hidden = true;
+       mobileAdminRequestsViewPanel.hidden = false;
+       loadAdminRequests(mobileAdminRequestsList, mobileAdminRequestsStatus, mobileAdminRequestsEmpty, true);
+     }
+   },
+     createElement('div', { className: 'admin-tool-card-icon' }, createChatIcon()),
+     createElement('div', { className: 'admin-tool-card-info' },
+       createElement('span', { className: 'admin-tool-card-title' }, 'Anfragen'),
+       createElement('span', { className: 'admin-tool-card-desc' }, 'Offene Medienanfragen verwalten')
+     ),
+     createChevronIcon()
+   );
+
+   mobileAdminToolsGrid.appendChild(mobileRequestsCard);
+
+   const mobileAdminToolsPanel = createElement('div', { className: 'admin-tools-panel' },
+     createElement('h2', { className: 'admin-tools-title' }, 'Admin tools'),
+     mobileAdminToolsGrid
+   );
+
+   const mobileAdminRequestsViewPanel = createElement('div', { className: 'admin-requests-view' },
+     createElement('div', { className: 'admin-view-header' },
+       createElement('button', {
+         className: 'admin-view-back-button',
+         type: 'button',
+         onClick: () => {
+           mobileAdminRequestsView = 'tools';
+           mobileAdminRequestsViewPanel.hidden = true;
+           mobileAdminToolsPanel.hidden = false;
+         }
+       }, createBackIcon(), 'Anfragen'),
+     ),
+     mobileAdminRequestsStatus,
+     mobileAdminRequestsEmpty,
+     mobileAdminRequestsList
+   );
+
+   const mobileAdminPanel = createElement('div', {
+     className: 'settings-panel settings-panel-admin',
+     dataset: { view: 'admin' }
+   },
+     mobileAdminToolsPanel,
+     mobileAdminRequestsViewPanel
+   );
 
   const mobileSettingsPanel = createElement('div', {
     className: 'mobile-settings-panel',
@@ -835,6 +927,98 @@ const mobileAdminOption = createSettingsOption('Admin tools', () => checkAdminAn
     if (window.innerWidth > 768) setMobileNavOpen(false);
   });
 
+  const checkAdminAndOpenAdmin = async (isMobile) => {
+    try {
+      const data = await AuthApi.getCurrentUser();
+      if (data?.user?.isAdmin !== true) return;
+      if (isMobile) {
+        setMobileSettingsView('admin');
+      } else {
+        setSettingsView('admin');
+      }
+    } catch (error) {
+      console.error('Admin check failed:', error);
+    }
+  };
+
+  const loadAdminVisibility = async () => {
+    try {
+      const data = await AuthApi.getCurrentUser();
+      const isAdmin = data?.user?.isAdmin === true;
+      adminOption.hidden = !isAdmin;
+      mobileAdminOption.hidden = !isAdmin;
+      isUserAdmin = isAdmin;
+    } catch (error) {
+      console.error('Could not load admin visibility:', error);
+      adminOption.hidden = true;
+      mobileAdminOption.hidden = true;
+    }
+  };
+
+  const loadAdminRequests = async (listContainer, statusElement, emptyElement) => {
+    try {
+      statusElement.textContent = 'Lade Anfragen...';
+      statusElement.classList.remove('hidden');
+      emptyElement.classList.add('hidden');
+      listContainer.innerHTML = '';
+
+      const requests = await RequestsApi.getOpenRequests();
+
+      statusElement.classList.add('hidden');
+
+      if (!requests || requests.length === 0) {
+        emptyElement.textContent = 'Keine offenen Anfragen';
+        emptyElement.classList.remove('hidden');
+        return;
+      }
+
+      emptyElement.classList.add('hidden');
+
+      requests.forEach(request => {
+        const item = createElement('div', { className: 'request-item request-item-admin' },
+          createElement('div', { className: 'request-item-info request-item-info-admin' },
+            createElement('span', { className: 'request-item-title' }, request.title || `TMDB: ${request.tmdbId}`),
+            createElement('span', { className: 'request-item-detail' },
+              `${request.requestedBy} — ${request.tmdbType} — ${request.status}`)
+          ),
+          createElement('div', { className: 'request-item-right request-admin-actions' },
+            createElement('button', {
+              className: 'btn btn-sm request-admin-action request-approve',
+              type: 'button',
+              title: 'Anfrage genehmigen',
+              onClick: async () => {
+                try {
+                  await RequestsApi.approveRequest(request.id);
+                  loadAdminRequests(listContainer, statusElement, emptyElement);
+                } catch (error) {
+                  console.error('Failed to approve request:', error);
+                }
+              }
+            }, '✓'),
+            createElement('button', {
+              className: 'btn btn-sm btn-danger request-admin-action request-reject',
+              type: 'button',
+              title: 'Anfrage ablehnen',
+              onClick: async () => {
+                try {
+                  await RequestsApi.rejectRequest(request.id);
+                  loadAdminRequests(listContainer, statusElement, emptyElement);
+                } catch (error) {
+                  console.error('Failed to reject request:', error);
+                }
+              }
+            }, '✗')
+          )
+        );
+        listContainer.appendChild(item);
+      });
+    } catch (error) {
+      console.error('Failed to load admin requests:', error);
+      statusElement.textContent = 'Fehler beim Laden der Anfragen';
+      statusElement.classList.remove('hidden');
+    }
+  };
+
   setSettingsView('root');
   setMobileSettingsView('nav');
   syncPlaybackChoices();
@@ -1042,6 +1226,14 @@ function createLogoutIcon() {
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
       <path d="M16 17l5-5-5-5"></path>
       <path d="M21 12H9"></path>
+    </svg>
+  `);
+}
+
+function createChatIcon() {
+  return createIcon('admin-tool-card-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
   `);
 }
