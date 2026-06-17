@@ -17,7 +17,7 @@ export default function LibraryPage(params) {
   let totalItems = 0;
   let totalPages = 0;
 
-  const container = createElement('div', { className: 'page-container content-section' });
+  const container = createElement('div', { className: 'page-container content-section library-page' });
 
   const labelType = type === 'Series' ? 'Serien' : 'Filme';
   const pageTitle = studio
@@ -35,6 +35,7 @@ export default function LibraryPage(params) {
       totalItems = result.totalItems;
       totalPages = result.totalPages;
       renderLibrary(result.items);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       if (error.isAuthError) return;
 
@@ -64,19 +65,12 @@ export default function LibraryPage(params) {
     container.innerHTML = '';
 
     const titleEl = createElement('h1', {
-      style: {
-        fontSize: '2rem',
-        fontWeight: '700',
-        marginBottom: 'var(--spacing-xl)',
-        background: 'linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%)',
-        '-webkit-background-clip': 'text',
-        '-webkit-text-fill-color': 'transparent'
-      }
+      className: 'library-title'
     }, pageTitle);
 
     if (items.length === 0) {
       container.appendChild(
-        createElement('div', {},
+        createElement('div', { className: 'library-content' },
           titleEl,
           createElement('div', { className: 'search-empty-state' },
             createElement('h3', {}, 'Keine Inhalte gefunden'),
@@ -87,7 +81,7 @@ export default function LibraryPage(params) {
       return;
     }
 
-    const grid = createElement('div', { className: 'grid-container' });
+    const grid = createElement('div', { className: 'library-grid' });
     items.forEach(item => {
       const cardEl = MediaCard({ item, landscape: false });
       if (cardEl) grid.appendChild(cardEl);
@@ -96,7 +90,7 @@ export default function LibraryPage(params) {
     const pagination = createPagination();
 
     container.appendChild(
-      createElement('div', {},
+      createElement('div', { className: 'library-content' },
         titleEl,
         grid,
         pagination
@@ -119,7 +113,12 @@ export default function LibraryPage(params) {
     }, 'Zurück');
 
     const pageInfo = createElement('span', { className: 'pagination-info' },
-      `Seite ${currentPage} von ${totalPages} · ${totalItems} ${totalItems === 1 ? 'Eintrag' : 'Einträge'}`
+      createElement('span', { className: 'pagination-info-desktop' },
+        `Seite ${currentPage} von ${totalPages} · ${totalItems} ${totalItems === 1 ? 'Eintrag' : 'Einträge'}`
+      ),
+      createElement('span', { className: 'pagination-info-mobile' },
+        `${currentPage} / ${totalPages} · ${totalItems}`
+      )
     );
 
     const nextBtn = createElement('button', {

@@ -6,7 +6,7 @@ import { createPasswordForm } from './settingsPassword.js';
 import { createPlaybackChoices } from './settingsPlayback.js';
 import { createAdminPanel } from './adminPanel.js';
 
-export function createMobileSettings({ onLogout, onChangePassword }) {
+export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   const mobileSettingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
   const mobileSettingsOverview = createSettingsOverview();
   const { form: mobilePasswordForm, setStatus: setMobilePasswordStatus } = createPasswordForm(onChangePassword);
@@ -89,13 +89,15 @@ export function createMobileSettings({ onLogout, onChangePassword }) {
   const setMobileSettingsView = (view) => {
     mobileSettingsView = view;
 
+    mobileSettingsPanel.hidden = mobileSettingsView === 'nav';
+
     mobileSettingsTitle.textContent = mobileSettingsView === 'password'
       ? 'Passwort'
       : mobileSettingsView === 'playback'
         ? 'Wiedergabe'
         : mobileSettingsView === 'admin'
           ? 'Admin tools'
-          : 'Einstellungen';
+          : '';
 
     mobileRootPanel.hidden = mobileSettingsView !== 'root';
     mobilePasswordPanel.hidden = mobileSettingsView !== 'password';
@@ -108,6 +110,10 @@ export function createMobileSettings({ onLogout, onChangePassword }) {
 
     if (mobileSettingsView !== 'password') {
       setMobilePasswordStatus('');
+    }
+
+    if (mobileSettingsView === 'nav') {
+      onNav?.();
     }
   };
 

@@ -7,33 +7,6 @@ import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js
 
 const router = express.Router();
 
-router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  const { id } = req.params;
-  const { mode } = req.query;
-
-  try {
-    const playbackMode = PlaybackService.normalizeMode(mode);
-    const userAgent = req.headers['user-agent'] || '';
-    const playbackInfo = await PlaybackApiService.getPlaybackInfo(
-      userId,
-      accessToken,
-      id,
-      PlaybackService.getPlaybackInfoOptions(playbackMode, userAgent)
-    );
-    const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
-      mode: playbackMode,
-      userAgent
-    });
-
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json(playback);
-  } catch (error) {
-    console.error(`[Playback Resolve Error] Failed to resolve playback for ${id}:`, error.message);
-    return res.status(500).json({ error: 'Failed to resolve playback media source' });
-  }
-}));
-
 router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
   const { accessToken } = req.session;
   const { path: targetPath } = req.query;
@@ -64,6 +37,33 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
     if (!res.headersSent) {
       return res.status(500).json({ error: 'Failed to proxy playback resource' });
     }
+  }
+}));
+
+router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+  const { id } = req.params;
+  const { mode } = req.query;
+
+  try {
+    const playbackMode = PlaybackService.normalizeMode(mode);
+    const userAgent = req.headers['user-agent'] || '';
+    const playbackInfo = await PlaybackApiService.getPlaybackInfo(
+      userId,
+      accessToken,
+      id,
+      PlaybackService.getPlaybackInfoOptions(playbackMode, userAgent)
+    );
+    const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
+      mode: playbackMode,
+      userAgent
+    });
+
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(playback);
+  } catch (error) {
+    console.error(`[Playback Resolve Error] Failed to resolve playback for ${id}:`, error.message);
+    return res.status(500).json({ error: 'Failed to resolve playback media source' });
   }
 }));
 

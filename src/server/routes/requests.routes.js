@@ -7,12 +7,31 @@ import { TmdbService } from '../services/tmdb.service.js';
 const router = express.Router();
 
 // Search TMDB
-router.get('/search', asyncHandler(async (req, res) => {
+router.get('/search', requireAuth, asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Query required' });
 
-  const results = await TmdbService.search(q);
-  res.json(results);
+  const { userId, accessToken } = req.session;
+  const { results } = await TmdbService.search(q);
+
+  const enriched = await Promise.all(results.map(async (item) => {
+    const tmdbId = item.id;
+    const tmdbType = item.media_type;
+    const [banned, requested, crossCheck] = await Promise.all([
+      RequestsService.isBanned(tmdbId, tmdbType),
+      RequestsService.exists(tmdbId, tmdbType),
+      RequestsService.crossCheck(userId, accessToken, tmdbId, tmdbType).catch(() => ({ exists: false }))
+    ]);
+
+    return {
+      ...item,
+      banned,
+      requested,
+      exists: crossCheck.exists
+    };
+  }));
+
+  res.json(enriched);
 }));
 
 // Get TMDB details

@@ -6,7 +6,7 @@ import { createPosterPlaceholder } from '../utils/poster.js';
 const STATUS_MAP = {
   pending: { label: 'ausstehend', cls: 'pending' },
   approved: { label: 'genehmigt', cls: 'approved' },
-  imported: { label: 'importiert', cls: 'imported' },
+  imported: { label: 'genehmigt', cls: 'approved' },
   rejected: { label: 'abgelehnt', cls: 'rejected' }
 };
 
@@ -18,9 +18,26 @@ export default function RequestsPage() {
   let searchResults = [];
   let searchRunId = 0;
 
-  const container = createElement('div', { className: 'page-container content-section' });
+  const container = createElement('div', { className: 'page-container content-section requests-page' });
 
-  const searchInput = createElement('input', {
+  const pageTitle = createElement('h1', { className: 'requests-page-title' }, 'Anfragen');
+
+  const choiceView = createElement('div', { className: 'requests-choice-view' });
+  const newRequestBtn = createElement('button', {
+    className: 'requests-choice-btn',
+    onClick: () => setView('new')
+  }, 'Neue Anfrage');
+  const myRequestsBtn = createElement('button', {
+    className: 'requests-choice-btn',
+    onClick: () => {
+      loadMyRequests();
+      setView('list');
+    }
+  }, 'Meine Anfragen');
+  choiceView.appendChild(newRequestBtn);
+  choiceView.appendChild(myRequestsBtn);
+
+  const newRequestSearchInput = createElement('input', {
     type: 'text',
     className: 'search-input-field',
     placeholder: 'Film oder Serie suchen und anfragen...',
@@ -31,67 +48,110 @@ export default function RequestsPage() {
     },
     autocomplete: 'off'
   });
-
-  const searchInputWrapper = createElement('div', { className: 'search-input-wrapper' }, searchInput);
-  const resultsGrid = createElement('div', { className: 'requests-grid' });
-
-  const statusContainer = createElement('div', { className: 'search-empty-state' },
+  const newRequestSearchWrapper = createElement('div', { className: 'search-input-wrapper' }, newRequestSearchInput);
+  const newRequestResultsGrid = createElement('div', { className: 'requests-grid' });
+  const newRequestStatus = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
     createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.')
   );
-
-  const requestsSection = createElement('div', { className: 'requests-section hidden' },
-    createElement('h2', { className: 'requests-section-title' }, 'Meine Anfragen')
+  const newRequestBackBtn = createElement('button', {
+    className: 'btn-secondary requests-back-btn',
+    onClick: () => setView('choice')
+  }, 'Zurueck');
+  const newRequestView = createElement('div', { className: 'requests-new-view hidden' },
+    newRequestBackBtn,
+    newRequestSearchWrapper,
+    newRequestResultsGrid,
+    newRequestStatus
   );
 
-  const requestsList = createElement('div', { className: 'requests-list' });
-
-  const searchSection = createElement('div', { className: 'search-container' },
-    searchInputWrapper,
-    resultsGrid,
-    statusContainer
+  const myRequestsSearchInput = createElement('input', {
+    type: 'text',
+    className: 'search-input-field',
+    placeholder: 'Eigene Anfragen durchsuchen...',
+    onInput: (e) => {
+      const query = e.target.value.trim();
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => renderMyRequests(query), 250);
+    },
+    autocomplete: 'off'
+  });
+  const myRequestsSearchWrapper = createElement('div', { className: 'search-input-wrapper' }, myRequestsSearchInput);
+  const myRequestsList = createElement('div', { className: 'my-requests-grid' });
+  const myRequestsStatus = createElement('div', { className: 'search-empty-state' },
+    createElement('h3', {}, 'Keine Anfragen'),
+    createElement('p', {}, 'Du hast noch keine Medien angefragt.')
+  );
+  const myRequestsBackBtn = createElement('button', {
+    className: 'btn-secondary requests-back-btn',
+    onClick: () => setView('choice')
+  }, 'Zurueck');
+  const myRequestsView = createElement('div', { className: 'requests-list-view hidden' },
+    myRequestsBackBtn,
+    myRequestsSearchWrapper,
+    myRequestsList,
+    myRequestsStatus
   );
 
-  container.appendChild(searchSection);
-  container.appendChild(requestsSection);
+  container.appendChild(pageTitle);
+  container.appendChild(choiceView);
+  container.appendChild(newRequestView);
+  container.appendChild(myRequestsView);
+
+  const setView = (view) => {
+    choiceView.classList.toggle('hidden', view !== 'choice');
+    newRequestView.classList.toggle('hidden', view !== 'new');
+    myRequestsView.classList.toggle('hidden', view !== 'list');
+
+    if (view === 'new') {
+      newRequestSearchInput.value = '';
+      newRequestResultsGrid.innerHTML = '';
+      newRequestStatus.innerHTML = '';
+      newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
+      newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
+      newRequestStatus.classList.remove('hidden');
+      setTimeout(() => newRequestSearchInput.focus(), 100);
+    }
+
+    if (view === 'list') {
+      myRequestsSearchInput.value = '';
+      renderMyRequests();
+    }
+  };
 
   const performSearch = async (query) => {
     const runId = ++searchRunId;
-    resultsGrid.innerHTML = '';
+    newRequestResultsGrid.innerHTML = '';
     searchResults = [];
 
     if (!query) {
       appStore.setLoading(false);
-      statusContainer.innerHTML = '';
-      statusContainer.appendChild(createElement('h3', {}, 'Medien anfragen'));
-      statusContainer.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
-      statusContainer.classList.remove('hidden');
+      newRequestStatus.innerHTML = '';
+      newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
+      newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
+      newRequestStatus.classList.remove('hidden');
       return;
     }
 
-    statusContainer.classList.add('hidden');
+    newRequestStatus.classList.add('hidden');
     appStore.setLoading(true);
 
     try {
       const data = await RequestsApi.search(query);
       if (runId !== searchRunId) return;
 
-      searchResults = data.results || [];
-      resultsGrid.innerHTML = '';
+      searchResults = data || [];
+      newRequestResultsGrid.innerHTML = '';
 
       if (searchResults.length === 0) {
-        statusContainer.innerHTML = '';
-        statusContainer.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
-        statusContainer.appendChild(createElement('p', {}, `Nichts gefunden fuer "${query}".`));
-        statusContainer.classList.remove('hidden');
-        appStore.setLoading(false);
+        newRequestStatus.innerHTML = '';
+        newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
+        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden fuer "${query}".`));
+        newRequestStatus.classList.remove('hidden');
       } else {
-        statusContainer.classList.add('hidden');
         searchResults.forEach(item => {
-          resultsGrid.appendChild(createSearchResultCard(item));
+          newRequestResultsGrid.appendChild(createSearchResultCard(item));
         });
-        appStore.setLoading(false);
-        refreshSearchAvailability(runId, searchResults);
       }
     } catch (error) {
       if (runId !== searchRunId) return;
@@ -102,26 +162,9 @@ export default function RequestsPage() {
 
       console.error('[Requests Search Error]', error);
       appStore.showToast('Suche fehlgeschlagen', 'error');
+    } finally {
       appStore.setLoading(false);
     }
-  };
-
-  const refreshSearchAvailability = (runId, results) => {
-    results.forEach(async (item) => {
-      const tmdbId = item.id;
-      const tmdbType = item.media_type;
-
-      try {
-        const check = await RequestsApi.crossCheck(tmdbId, tmdbType);
-        if (runId !== searchRunId) return;
-
-        const existingCard = resultsGrid.querySelector(`[data-tmdb-id="${tmdbId}"]`);
-        if (existingCard && check.exists) {
-          const btn = existingCard.querySelector('.search-available-badge');
-          if (btn) btn.hidden = false;
-        }
-      } catch {}
-    });
   };
 
   const getTmdbImageUrl = (path, size = 'w500') => {
@@ -139,10 +182,13 @@ export default function RequestsPage() {
     const tmdbId = item.id;
     const tmdbType = item.media_type;
 
+    const isDisabled = item.banned || item.exists || item.requested;
+
     const card = createElement('div', {
-      className: 'request-card request-card-clickable',
+      className: `request-card request-card-clickable${isDisabled ? ' request-card-disabled' : ''}`,
       'data-tmdb-id': tmdbId,
       onClick: () => {
+        if (isDisabled) return;
         window.location.hash = `#/request-detail/${tmdbType}/${tmdbId}`;
       }
     });
@@ -164,13 +210,30 @@ export default function RequestsPage() {
       createElement('p', { className: 'request-card-overview' }, overview.length > 150 ? overview.substring(0, 150) + '...' : overview)
     );
 
-    const actions = createElement('div', { className: 'request-card-actions' },
-      createElement('span', {
+    const actions = createElement('div', { className: 'request-card-actions' });
+
+    if (item.banned) {
+      actions.appendChild(createElement('span', {
+        className: 'btn-request-error',
+        style: 'cursor: default;'
+      }, 'Gebannt'));
+    } else if (item.exists) {
+      actions.appendChild(createElement('span', {
         className: 'search-available-badge',
-        hidden: true,
-        style: 'color: var(--color-primary); font-size: 0.85rem;'
-      }, 'In Mediathek verfuegbar')
-    );
+        style: 'color: var(--color-primary); font-size: 0.85rem; cursor: default;'
+      }, 'In Mediathek verfuegbar'));
+    } else if (item.requested) {
+      actions.appendChild(createElement('span', { className: 'btn-requested', style: 'cursor: default;' }, 'Bereits angefragt'));
+    } else {
+      const requestBtn = createElement('button', {
+        className: 'btn-primary request-card-btn',
+        onClick: (e) => {
+          e.stopPropagation();
+          window.location.hash = `#/request-detail/${tmdbType}/${tmdbId}`;
+        }
+      }, 'Anfragen');
+      actions.appendChild(requestBtn);
+    }
 
     card.appendChild(poster);
     card.appendChild(info);
@@ -191,64 +254,58 @@ export default function RequestsPage() {
     }
   };
 
-  const renderMyRequests = () => {
-    requestsSection.classList.toggle('hidden', myRequests.length === 0);
-    requestsList.innerHTML = '';
+  const renderMyRequests = (query = '') => {
+    const filtered = query
+      ? myRequests.filter(req => (req.title || '').toLowerCase().includes(query.toLowerCase()))
+      : myRequests;
 
-    myRequests.forEach(req => {
+    myRequestsList.innerHTML = '';
+
+    if (filtered.length === 0) {
+      myRequestsStatus.classList.remove('hidden');
+      myRequestsStatus.innerHTML = '';
+      myRequestsStatus.appendChild(createElement('h3', {}, query ? 'Keine Treffer' : 'Keine Anfragen'));
+      myRequestsStatus.appendChild(createElement('p', {}, query
+        ? `Keine Anfragen passen zu "${query}".`
+        : 'Du hast noch keine Medien angefragt.'));
+      return;
+    }
+
+    myRequestsStatus.classList.add('hidden');
+
+    filtered.forEach(req => {
       const statusInfo = STATUS_MAP[req.status] || { label: req.status, cls: 'unknown' };
       const type = req.media_type === 'tv' ? 'Serie' : 'Film';
       const posterUrl = req.poster_path ? getTmdbImageUrl(req.poster_path) : null;
+      const date = req.created_at ? new Date(req.created_at).toLocaleDateString('de-DE') : '-';
 
-      const item = createElement('div', { className: 'request-item' },
-        posterUrl ? createElement('img', {
-          className: 'request-card-poster',
-          src: posterUrl,
-          alt: req.title,
-          style: 'width: 40px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 12px;',
-          loading: 'lazy'
-        }) : null,
-        createElement('div', { className: 'request-item-info' },
-          createElement('span', { className: 'request-item-title' }, req.title),
-          createElement('span', { className: 'request-item-type' }, type)
+      const card = createElement('div', {
+        className: 'request-card my-request-card',
+        onClick: () => {
+          window.location.hash = `#/request-detail/${req.tmdb_type}/${req.tmdb_id}`;
+        }
+      },
+        createElement('div', { className: 'my-request-poster-wrap' },
+          createElement('img', {
+            className: 'request-card-poster',
+            src: posterUrl || createPosterPlaceholder(req.title),
+            alt: req.title,
+            loading: 'lazy',
+            onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPosterPlaceholder(req.title); }
+          })
         ),
-        createElement('div', { className: 'request-item-right' },
-          createElement('span', { className: `request-status request-status-${statusInfo.cls}` }, statusInfo.label),
-          createElement('button', {
-            className: 'request-item-delete',
-            onClick: (e) => { e.stopPropagation(); deleteRequest(req.id); }
-          }, createDeleteIcon())
+        createElement('div', { className: 'request-card-info' },
+          createElement('div', { className: 'request-card-meta' },
+            createElement('span', { className: 'request-card-type' }, type),
+            createElement('span', { className: 'request-card-year' }, date)
+          ),
+          createElement('h3', { className: 'request-card-title' }, req.title),
+          createElement('span', { className: `request-status request-status-${statusInfo.cls}` }, statusInfo.label)
         )
       );
-      requestsList.appendChild(item);
+      myRequestsList.appendChild(card);
     });
-
-    if (!requestsSection.contains(requestsList)) {
-      requestsSection.appendChild(requestsList);
-    }
   };
-
-  const deleteRequest = async (id) => {
-    try {
-      await RequestsApi.deleteRequest(id);
-      myRequests = myRequests.filter(r => r.id !== id);
-      renderMyRequests();
-      appStore.showToast('Anfrage entfernt', 'success');
-    } catch (error) {
-      if (error.isAuthError) return;
-
-      console.error('[Delete Request Error]', error);
-      appStore.showToast('Fehler beim Entfernen', 'error');
-    }
-  };
-
-  const createDeleteIcon = () => {
-    const icon = createElement('span', { className: 'delete-icon', 'aria-hidden': 'true' });
-    icon.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-    return icon;
-  };
-
-  loadMyRequests();
 
   return container;
 }

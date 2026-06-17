@@ -1,4 +1,4 @@
-import { JELLYFIN_BASE_URL, jellyfinRawFetch } from './client.js';
+import { JELLYFIN_BASE_URL, jellyfinJson, jellyfinRawFetch } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
@@ -14,7 +14,7 @@ export class PlaybackApiService {
     const forceTranscode = options.forceTranscode === true;
     const preferHls = options.preferHls === true;
 
-    return jellyfinRawFetch(`/Items/${itemId}/PlaybackInfo`, {
+    return jellyfinJson(`/Items/${itemId}/PlaybackInfo`, {
       token,
       method: 'POST',
       query: { UserId: userId },

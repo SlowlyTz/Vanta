@@ -53,6 +53,7 @@ export function createAdminPanel({ onOpen }) {
     adminRequestsEmpty,
     adminRequestsList
   );
+  adminRequestsViewPanel.hidden = true;
 
   const adminPanel = createElement('div', {
     className: 'settings-panel settings-panel-admin',
@@ -111,10 +112,11 @@ export function createAdminPanel({ onOpen }) {
           ),
           createElement('div', { className: 'request-item-right request-admin-actions' },
             createElement('button', {
-              className: 'btn btn-sm request-admin-action request-approve',
+              className: 'request-admin-action request-approve',
               type: 'button',
               title: 'Anfrage genehmigen',
-              onClick: async () => {
+              onClick: async (e) => {
+                e.stopPropagation();
                 try {
                   await RequestsApi.approveRequest(request.id);
                   loadAdminRequests(listContainer, statusElement, emptyElement);
@@ -122,12 +124,13 @@ export function createAdminPanel({ onOpen }) {
                   console.error('Failed to approve request:', error);
                 }
               }
-            }, '✓'),
+            }, 'Genehmigen'),
             createElement('button', {
-              className: 'btn btn-sm btn-danger request-admin-action request-reject',
+              className: 'request-admin-action request-reject',
               type: 'button',
               title: 'Anfrage ablehnen',
-              onClick: async () => {
+              onClick: async (e) => {
+                e.stopPropagation();
                 try {
                   await RequestsApi.rejectRequest(request.id);
                   loadAdminRequests(listContainer, statusElement, emptyElement);
@@ -135,7 +138,7 @@ export function createAdminPanel({ onOpen }) {
                   console.error('Failed to reject request:', error);
                 }
               }
-            }, '✗')
+            }, 'Ablehnen')
           )
         );
         listContainer.appendChild(item);
