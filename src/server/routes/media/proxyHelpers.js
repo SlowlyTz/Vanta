@@ -1,4 +1,5 @@
 import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
 
 export const FORWARD_HEADERS = {
   stream: [
@@ -23,14 +24,23 @@ export function forwardHeaders(response, res, headers) {
   });
 }
 
-export function pipeReadable(response, req, res) {
+export async function pipeReadable(response, req, res) {
   const readable = Readable.fromWeb(response.body);
 
-  req.on('close', () => {
-    readable.destroy();
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      readable.destroy();
+    }
   });
 
-  return readable.pipe(res);
+  try {
+    await pipeline(readable, res);
+  } catch (error) {
+    if (error.code === 'ERR_STREAM_PREMATURE_CLOSE' || res.destroyed || !res.writable) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export function getSvgPlaceholder(type) {
