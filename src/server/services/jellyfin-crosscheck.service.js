@@ -1,4 +1,5 @@
-import { JellyfinService } from './jellyfin.service.js';
+import { LibraryService } from './jellyfin/library.service.js';
+import { ItemsService } from './jellyfin/items.service.js';
 
 class JellyfinCrossCheck {
   static async checkMediaExists(userId, token, tmdbMedia) {
@@ -6,7 +7,7 @@ class JellyfinCrossCheck {
     if (!title) return { exists: false, jellyfinItems: [] };
 
     try {
-      const items = await JellyfinService.search(userId, token, title);
+      const items = await LibraryService.search(userId, token, title);
       const exact = items.filter(item =>
         (item.Name || '').toLowerCase() === title.toLowerCase()
       );
@@ -23,7 +24,7 @@ class JellyfinCrossCheck {
 
   static async checkSeriesSeasons(userId, token, jellyfinSeriesId, tmdbSeasons) {
     try {
-      const jellyfinSeasons = await JellyfinService.getSeasons(userId, token, jellyfinSeriesId);
+      const jellyfinSeasons = await ItemsService.getSeasons(userId, token, jellyfinSeriesId);
       const existingSeasons = new Map();
       for (const s of jellyfinSeasons) {
         existingSeasons.set(s.IndexNumber, s);

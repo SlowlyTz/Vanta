@@ -1,5 +1,5 @@
 import express from 'express';
-import { JellyfinService } from '../services/jellyfin.service.js';
+import { AuthService } from '../services/jellyfin/auth.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 
@@ -13,8 +13,8 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   try {
-    const data = await JellyfinService.login(username, password || '');
-    const isAdmin = JellyfinService.isAdministrator(data.User);
+    const data = await AuthService.login(username, password || '');
+    const isAdmin = AuthService.isAdministrator(data.User);
 
     req.session.accessToken = data.AccessToken;
     req.session.userId = data.User.Id;
@@ -39,7 +39,7 @@ router.get('/me', asyncHandler(async (req, res) => {
     let isAdmin = false;
 
     try {
-      isAdmin = await JellyfinService.isUserAdmin(req.session.userId, req.session.accessToken);
+      isAdmin = await AuthService.isUserAdmin(req.session.userId, req.session.accessToken);
     } catch (error) {
       console.warn('[Auth Me Admin Check Error]', error.message);
     }
@@ -66,7 +66,7 @@ router.post('/password', requireAuth, asyncHandler(async (req, res) => {
   }
 
   try {
-    await JellyfinService.changePassword(userId, accessToken, currentPassword || '', newPassword);
+    await AuthService.changePassword(userId, accessToken, currentPassword || '', newPassword);
     return res.json({ success: true });
   } catch (error) {
     console.error('[Change Password Error]', error.message);

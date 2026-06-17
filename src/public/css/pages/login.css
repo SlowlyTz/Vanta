@@ -1,0 +1,108 @@
+/* ---------------------------------
+   LOGIN PAGE
+--------------------------------- */
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: radial-gradient(circle at center, hsl(240, 10%, 12%) 0%, var(--bg-primary) 100%);
+  padding: var(--spacing-md);
+}
+
+.login-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  max-width: 440px;
+  padding: var(--spacing-xl) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  text-align: center;
+}
+
+.login-logo {
+  display: block;
+  width: min(210px, 72%);
+  height: auto;
+  margin: 0 auto var(--spacing-sm);
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.42));
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  text-align: left;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+.form-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.form-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  transform: scale(1.01);
+}
+
+.btn-login {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 1.05rem;
+  transition: all var(--transition-fast);
+  margin-top: var(--spacing-sm);
+}
+
+.btn-login:hover {
+  background: #ffffff;
+  transform: scale(1.02);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .login-card {
+    max-width: 420px;
+    padding: 28px 20px;
+    border-radius: 16px;
+    gap: var(--spacing-lg);
+  }
+  .login-logo {
+    width: min(190px, 76%);
+  }
+}

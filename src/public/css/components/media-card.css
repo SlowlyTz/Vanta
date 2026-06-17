@@ -1,0 +1,111 @@
+/* Media Card Component - Apple TV Parallax hover effect */
+.media-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  width: 100%;
+}
+
+.media-card-image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3; /* Poster Aspect Ratio */
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+  background-color: var(--bg-tertiary);
+  transform-style: preserve-3d;
+}
+
+/* Landscape Mode (Continue Watching, Backdrops) */
+.media-card.landscape .media-card-image-container {
+  aspect-ratio: 16/9;
+}
+
+.media-card-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-smooth);
+}
+
+.media-card:hover .media-card-image-container {
+  transform: translateY(-8px) scale(1.04);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.media-card:hover .media-card-image {
+  transform: scale(1.02);
+}
+
+.media-card-details {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.media-card-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+}
+
+.media-card:hover .media-card-title {
+  color: #ffffff;
+}
+
+.media-card-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Playback Progress Bar (Resumable Items) */
+.media-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  overflow: hidden;
+  z-index: 3;
+}
+
+.media-progress-fill {
+  height: 100%;
+  background-color: #ffffff;
+  width: 0%;
+}
+
+/* Badge overlay */
+.media-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+

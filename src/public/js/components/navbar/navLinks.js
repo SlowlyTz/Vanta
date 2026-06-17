@@ -1,0 +1,8 @@
+export const NAV_LINKS = [
+  { key: 'home', label: 'Home', href: '#/home' },
+  { key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie', menuId: 'movies-dropdown-menu' },
+  { key: 'series', label: 'Serien', href: '#/series', type: 'Series', menuId: 'series-dropdown-menu' },
+  { key: 'publishers', label: 'Publisher', href: '#/publishers', menuId: 'publishers-dropdown-menu', isStudios: true },
+  { key: 'requests', label: 'Anfragen', href: '#/requests' },
+  { key: 'search', label: 'Suche', href: '#/search' }
+];

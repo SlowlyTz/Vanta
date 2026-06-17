@@ -1,0 +1,84 @@
+/* Media Carousel Component */
+.horizontal-carousel-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.media-carousel-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  margin-bottom: var(--spacing-xl);
+}
+
+.carousel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  min-width: 0;
+}
+
+.carousel-title-text {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carousel-track {
+  max-width: 100%;
+  min-width: 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x pan-y;
+}
+
+.media-carousel {
+  display: flex;
+  align-items: flex-start; /* Prevent vertical stretching of items with varying title lengths */
+  gap: var(--spacing-lg);
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
+  scroll-behavior: smooth;
+  scroll-padding-inline: 4px;
+  padding: 10px 4px 20px; /* padding prevent shadow cropping */
+  scrollbar-width: none;
+}
+
+.media-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.media-carousel-item {
+  flex: 0 0 160px; /* Default Poster width */
+  min-width: 0;
+}
+
+.media-carousel.landscape-carousel .media-carousel-item {
+  flex: 0 0 280px; /* Landscape width */
+}
+
+@media (min-width: 768px) {
+  .media-carousel-item {
+    flex: 0 0 180px;
+  }
+  .media-carousel.landscape-carousel .media-carousel-item {
+    flex: 0 0 320px;
+  }
+}
+
