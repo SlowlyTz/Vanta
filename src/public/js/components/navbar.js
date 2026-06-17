@@ -3,11 +3,11 @@ import { PLAYBACK_MODE_OPTIONS, settingsStore } from '../store/settings.store.js
 import { createElement, $ } from '../utils/dom.js';
 
 const NAV_LINKS = [
-  { key: 'home', label: 'Startseite', href: '#/home' },
+  { key: 'home', label: 'Home', href: '#/home' },
   { key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie', menuId: 'movies-dropdown-menu' },
   { key: 'series', label: 'Serien', href: '#/series', type: 'Series', menuId: 'series-dropdown-menu' },
   { key: 'publishers', label: 'Publisher', href: '#/publishers', menuId: 'publishers-dropdown-menu', isStudios: true },
-  { key: 'requests', label: 'Anfragen', href: '#/requests', seerOnly: true },
+  { key: 'requests', label: 'Anfragen', href: '#/requests' },
   { key: 'search', label: 'Suche', href: '#/search' }
 ];
 
@@ -20,7 +20,6 @@ export function Navbar({ onLogout, onChangePassword }) {
   let lastFocusedElement = null;
   let settingsStatsLoaded = false;
   let settingsStatsLoading = false;
-  let currentSeerEnabled = false;
   let navbarSearchDebounce = null;
 
   const isDesktopNav = () => window.matchMedia('(min-width: 769px)').matches;
@@ -39,16 +38,13 @@ export function Navbar({ onLogout, onChangePassword }) {
       href: link.href,
       id: `nav-${link.key}`,
       onClick: () => setMobileNavOpen(false)
-    }, link.label);
-
-    if (link.seerOnly) {
-      anchor.hidden = true;
-      anchor.dataset.seerOnly = 'true';
-    }
+    },
+      createNavIcon(link.key),
+      createElement('span', { className: 'navbar-link-label' }, link.label)
+    );
 
     if (!link.type && !link.isStudios) {
-      const li = createElement('li', { className: 'navbar-item' }, anchor);
-      if (link.seerOnly) li.hidden = true;
+      const li = createElement('li', { className: `navbar-item navbar-item-${link.key}` }, anchor);
       navList.appendChild(li);
       return;
     }
@@ -60,7 +56,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     }, createElement('li', { className: 'dropdown-item-loading' }, link.isStudios ? 'Lade Publisher...' : 'Lade Genres...'));
 
     navList.appendChild(
-      createElement('li', { className: 'navbar-item dropdown' },
+      createElement('li', { className: `navbar-item navbar-item-${link.key} dropdown` },
         anchor,
         dropdownMenu
       )
@@ -90,7 +86,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   const mobileDrawerHeader = createElement('div', { className: 'mobile-drawer-header' },
     createElement('img', {
       className: 'mobile-drawer-logo',
-      src: '/assets/logo-vanta.png',
+      src: '/assets/logo2.png',
       alt: 'VANTA'
     }),
     createElement('button', {
@@ -115,13 +111,7 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('span', { className: 'mobile-nav-label' }, link.label)
     );
 
-    if (link.seerOnly) {
-      anchor.hidden = true;
-      anchor.dataset.seerOnly = 'true';
-    }
-
     const item = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, anchor);
-    if (link.seerOnly) item.hidden = true;
     mobileNavItems.push(item);
     mobileNavEntries.set(link.key, { item, anchor });
     mobileNavLinksList.appendChild(item);
@@ -461,7 +451,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   },
     createElement('img', {
       className: 'navbar-brand-logo',
-      src: '/assets/logo-vanta.png',
+      src: '/assets/logo2.png',
       alt: 'VANTA'
     })
   );
@@ -469,7 +459,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   const navbarSearchInput = createElement('input', {
     className: 'navbar-search-input',
     type: 'search',
-    placeholder: 'Suche',
+    placeholder: 'Suche nach Filmen, Serien, Darstellern...',
     autocomplete: 'off',
     'aria-label': 'Suche',
     onFocus: () => {
@@ -544,9 +534,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     }
   };
 
-  const update = ({ currentHash, user, scrolled, seerEnabled }) => {
+  const update = ({ currentHash, user, scrolled }) => {
     element.classList.toggle('scrolled', !!scrolled);
-    currentSeerEnabled = !!seerEnabled;
     if (!settingsOpen && !mobileNavOpen) {
       mobileMenuButton.setAttribute('aria-label', isDesktopNav() ? 'Einstellungen öffnen' : 'Navigation öffnen');
     }
@@ -557,14 +546,6 @@ export function Navbar({ onLogout, onChangePassword }) {
 
     NAV_LINKS.forEach(link => {
       const linkEl = $(`#nav-${link.key}`, element);
-
-      if (link.seerOnly) {
-        if (linkEl) {
-          linkEl.hidden = !seerEnabled;
-          const li = linkEl.closest('li');
-          if (li) li.hidden = !seerEnabled;
-        }
-      }
 
       const isActive =
         (link.key === 'home' && currentHash === '#/home') ||
@@ -605,17 +586,6 @@ export function Navbar({ onLogout, onChangePassword }) {
     if (document.activeElement !== navbarSearchInput) {
       navbarSearchInput.value = searchIsActive ? getSearchQueryFromHash(currentHash) : '';
     }
-
-    mobileNavItems.forEach((item, index) => {
-      const link = NAV_LINKS[index];
-      if (link?.seerOnly) {
-        const anchor = item.querySelector('.navbar-link');
-        if (anchor) {
-          anchor.hidden = !seerEnabled;
-        }
-        item.hidden = !seerEnabled;
-      }
-    });
   };
 
   const setStatus = (statusElement, message, type = '') => {
@@ -738,9 +708,8 @@ export function Navbar({ onLogout, onChangePassword }) {
 
     mobileDrawerHeader.hidden = inSettings;
     mobileNavLinksList.hidden = inSettings;
-    mobileNavItems.forEach((item, index) => {
-      const link = NAV_LINKS[index];
-      item.hidden = inSettings || (link?.seerOnly && !currentSeerEnabled);
+    mobileNavItems.forEach((item) => {
+      item.hidden = inSettings;
     });
 
     mobileSettingsPanel.hidden = !inSettings;

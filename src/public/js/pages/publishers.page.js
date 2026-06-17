@@ -31,6 +31,8 @@ export default function PublishersPage() {
       const studios = await MediaApi.getStudios();
       renderStudios(studios);
     } catch (error) {
+      if (error.isAuthError) return;
+
       console.error('[Publishers Page Load Error]', error);
       appStore.showToast('Fehler beim Laden der Publisher', 'error');
       renderError(error.message);

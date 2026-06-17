@@ -69,13 +69,10 @@ class Router {
   updateShellState(hash = window.location.hash || '#/home', user = authStore.getState().user) {
     if (!this.navbar) return;
 
-    const { seerEnabled } = authStore.getState();
-
     this.navbar.update({
       currentHash: hash,
       user,
-      scrolled: window.scrollY > 16,
-      seerEnabled
+      scrolled: window.scrollY > 16
     });
   }
 
@@ -187,7 +184,7 @@ function waitForRouteExit() {
   }
 
   return new Promise(resolve => {
-    window.setTimeout(resolve, 120);
+    window.setTimeout(resolve, 160);
   });
 }
 

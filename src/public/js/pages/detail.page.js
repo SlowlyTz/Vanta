@@ -337,6 +337,8 @@ export default function DetailPage({ id }) {
       }
 
     } catch (error) {
+      if (error.isAuthError) return;
+
       console.error('[Detail Page Load Error]', error);
       appStore.showToast('Fehler beim Laden der Details', 'error');
       container.innerHTML = '';

@@ -22,6 +22,9 @@ pids
 *.pid
 *.seed
 *.pid.lock
+.cache/
+db/*.db
+db/*.db-*
 
 # Testing / Coverage
 coverage/

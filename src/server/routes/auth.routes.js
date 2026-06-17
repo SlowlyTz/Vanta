@@ -1,9 +1,7 @@
 import express from 'express';
 import { JellyfinService } from '../services/jellyfin.service.js';
-import { SeerService } from '../services/seer.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
-import env from '../config/env.js';
 
 const router = express.Router();
 
@@ -14,51 +12,50 @@ router.post('/login', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Username is required' });
   }
 
-  // Jellyfin allows empty passwords, but let's pass whatever we get
   try {
     const data = await JellyfinService.login(username, password || '');
-    
-    // Store critical data in the session
+    const isAdmin = JellyfinService.isAdministrator(data.User);
+
     req.session.accessToken = data.AccessToken;
     req.session.userId = data.User.Id;
     req.session.username = data.User.Name;
+    req.session.isAdmin = isAdmin;
 
-    const response = {
+    return res.json({
       user: {
         id: data.User.Id,
-        name: data.User.Name
-      },
-      seerEnabled: env.SEER_ENABLED
-    };
-
-    if (env.SEER_ENABLED) {
-      try {
-        const seerData = await SeerService.signIn(username, password || '');
-        req.session.seerToken = seerData.token || seerData.accessToken || seerData.id_token;
-      } catch (error) {
-        console.warn('[Seer Login] Could not authenticate with Jellyseer:', error.message);
+        name: data.User.Name,
+        isAdmin
       }
-    }
-
-    return res.json(response);
+    });
   } catch (error) {
     console.error('[Login Error]', error.message);
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 }));
 
-router.get('/me', (req, res) => {
+router.get('/me', asyncHandler(async (req, res) => {
   if (req.session && req.session.accessToken && req.session.userId) {
+    let isAdmin = false;
+
+    try {
+      isAdmin = await JellyfinService.isUserAdmin(req.session.userId, req.session.accessToken);
+    } catch (error) {
+      console.warn('[Auth Me Admin Check Error]', error.message);
+    }
+
+    req.session.isAdmin = isAdmin;
+
     return res.json({
       user: {
         id: req.session.userId,
-        name: req.session.username
-      },
-      seerEnabled: env.SEER_ENABLED
+        name: req.session.username,
+        isAdmin
+      }
     });
   }
   return res.status(401).json({ error: 'Not authenticated' });
-});
+}));
 
 router.post('/password', requireAuth, asyncHandler(async (req, res) => {
   const { currentPassword = '', newPassword } = req.body;

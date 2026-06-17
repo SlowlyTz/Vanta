@@ -122,6 +122,15 @@ export class JellyfinService {
     return await response.json();
   }
 
+  static isAdministrator(user) {
+    return Boolean(user?.Policy?.IsAdministrator);
+  }
+
+  static async isUserAdmin(userId, token) {
+    const user = await this.getCurrentUser(userId, token);
+    return this.isAdministrator(user);
+  }
+
   static async changePassword(userId, token, currentPassword, newPassword) {
     const url = `${JELLYFIN_BASE_URL}/Users/${userId}/Password`;
     const response = await fetch(url, {

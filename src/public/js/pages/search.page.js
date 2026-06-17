@@ -49,6 +49,8 @@ export default function SearchPage() {
         });
       }
     } catch (error) {
+      if (error.isAuthError) return;
+
       console.error('[Search Page Error]', error);
       appStore.showToast('Fehler bei der Suche', 'error');
       statusContainer.innerHTML = '';

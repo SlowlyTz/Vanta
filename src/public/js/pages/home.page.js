@@ -21,6 +21,8 @@ export default function HomePage() {
       const data = await MediaApi.getHome();
       renderHome(data);
     } catch (error) {
+      if (error.isAuthError) return;
+
       console.error('[Home Page Load Error]', error);
       appStore.showToast('Fehler beim Laden der Mediathek', 'error');
       renderError(error.message);
