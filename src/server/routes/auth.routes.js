@@ -1,7 +1,7 @@
 import express from 'express';
 import { AuthService } from '../services/jellyfin/auth.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { requireAuth } from '../middleware/auth.middleware.js';
+import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -36,23 +36,26 @@ router.post('/login', asyncHandler(async (req, res) => {
 
 router.get('/me', asyncHandler(async (req, res) => {
   if (req.session && req.session.accessToken && req.session.userId) {
-    let isAdmin = false;
-
     try {
-      isAdmin = await AuthService.isUserAdmin(req.session.userId, req.session.accessToken);
+      const user = await AuthService.getCurrentUser(req.session.userId, req.session.accessToken);
+      const isAdmin = AuthService.isAdministrator(user);
+      req.session.isAdmin = isAdmin;
+
+      return res.json({
+        user: {
+          id: req.session.userId,
+          name: user.Name || req.session.username,
+          isAdmin
+        }
+      });
     } catch (error) {
-      console.warn('[Auth Me Admin Check Error]', error.message);
-    }
-
-    req.session.isAdmin = isAdmin;
-
-    return res.json({
-      user: {
-        id: req.session.userId,
-        name: req.session.username,
-        isAdmin
+      if (isUpstreamUnauthorized(error)) {
+        return destroyInvalidSession(req, res);
       }
-    });
+
+      console.warn('[Auth Me Admin Check Error]', error.message);
+      return res.status(503).json({ error: 'Could not verify Jellyfin session' });
+    }
   }
   return res.status(401).json({ error: 'Not authenticated' });
 }));

@@ -1,7 +1,7 @@
 import express from 'express';
 import { LibraryService } from '../../services/jellyfin/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
-import { requireAuth } from '../../middleware/auth.middleware.js';
+import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 
 const router = express.Router();
@@ -19,6 +19,9 @@ router.get('/home', requireAuth, asyncHandler(async (req, res) => {
     return res.json({ resume, movies, series });
   } catch (error) {
     console.error('[Media Home Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch media library data' });
   }
 }));
@@ -34,6 +37,9 @@ router.get('/search', requireAuth, asyncHandler(async (req, res) => {
     return res.json(results);
   } catch (error) {
     console.error('[Media Search Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to search media items' });
   }
 }));
@@ -47,6 +53,9 @@ router.get('/item/:id', requireAuth, asyncHandler(async (req, res) => {
     return res.json(item);
   } catch (error) {
     console.error('[Media Item Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch item details' });
   }
 }));
@@ -60,6 +69,9 @@ router.get('/item/:id/similar', requireAuth, asyncHandler(async (req, res) => {
     return res.json(items);
   } catch (error) {
     console.error('[Media Similar Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch similar items' });
   }
 }));
@@ -73,6 +85,9 @@ router.get('/item/:id/seasons', requireAuth, asyncHandler(async (req, res) => {
     return res.json(seasons);
   } catch (error) {
     console.error('[Media Seasons Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch seasons' });
   }
 }));
@@ -87,6 +102,9 @@ router.get('/item/:id/episodes', requireAuth, asyncHandler(async (req, res) => {
     return res.json(episodes);
   } catch (error) {
     console.error('[Media Episodes Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch episodes' });
   }
 }));
@@ -102,6 +120,9 @@ router.get('/genres', requireAuth, asyncHandler(async (req, res) => {
     return res.json(genres);
   } catch (error) {
     console.error('[Media Genres Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch genres' });
   }
 }));
@@ -114,6 +135,9 @@ router.get('/studios', requireAuth, asyncHandler(async (req, res) => {
     return res.json(studios);
   } catch (error) {
     console.error('[Media Studios Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch studios' });
   }
 }));
@@ -138,6 +162,9 @@ router.get('/library', requireAuth, asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('[Media Library Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to fetch library items' });
   }
 }));
