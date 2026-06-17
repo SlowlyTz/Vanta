@@ -80,7 +80,7 @@ class TmdbService {
     // Check cache
     const cached = getCached.get(movieId);
     if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
-      return { ...cached, media_type: 'movie' };
+      return { ...cached, id: cached.tmdb_id, media_type: 'movie' };
     }
 
     const [details, credits] = await Promise.all([
@@ -91,6 +91,7 @@ class TmdbService {
     cacheMovie.run(movieId, details.title, details.overview, details.poster_path, details.backdrop_path, details.release_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
 
     return {
+      id: movieId,
       ...details,
       media_type: 'movie',
       cast: credits.cast?.slice(0, 10) || [],
@@ -101,7 +102,7 @@ class TmdbService {
   static async getTvDetails(tvId) {
     const cached = getCached.get(tvId);
     if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
-      return { ...cached, media_type: 'tv' };
+      return { ...cached, id: cached.tmdb_id, media_type: 'tv' };
     }
 
     const [details, credits] = await Promise.all([

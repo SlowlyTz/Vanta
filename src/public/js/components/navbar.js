@@ -1,6 +1,9 @@
 import { MediaApi } from '../api/media.api.js';
+import { AuthApi } from '../api/auth.api.js';
+import { RequestsApi } from '../api/requests.api.js';
 import { PLAYBACK_MODE_OPTIONS, settingsStore } from '../store/settings.store.js';
 import { createElement, $ } from '../utils/dom.js';
+import { appStore } from '../store/app.store.js';
 
 const NAV_LINKS = [
   { key: 'home', label: 'Home', href: '#/home' },
@@ -21,6 +24,8 @@ export function Navbar({ onLogout, onChangePassword }) {
   let settingsStatsLoaded = false;
   let settingsStatsLoading = false;
   let navbarSearchDebounce = null;
+  let isUserAdmin = null;
+  let adminRequestsLoaded = false;
 
   const isDesktopNav = () => window.matchMedia('(min-width: 769px)').matches;
   const getSearchQueryFromHash = (hash = window.location.hash) => {
@@ -86,7 +91,7 @@ export function Navbar({ onLogout, onChangePassword }) {
   const mobileDrawerHeader = createElement('div', { className: 'mobile-drawer-header' },
     createElement('img', {
       className: 'mobile-drawer-logo',
-      src: '/assets/logo2.png',
+      src: '/assets/logo-vanta.png',
       alt: 'VANTA'
     }),
     createElement('button', {
@@ -326,8 +331,10 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
   const playbackOption = createSettingsOption('Wiedergabe', () => setSettingsView('playback'), createPlaybackIcon());
-  const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
+const adminOption = createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(), createAdminIcon());
+const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
   const mobilePlaybackOption = createSettingsOption('Wiedergabe', () => setMobileSettingsView('playback'), createPlaybackIcon());
+const mobileAdminOption = createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(true), createAdminIcon());
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
@@ -342,7 +349,8 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         passwordOption,
-        playbackOption
+        playbackOption,
+        adminOption
       ),
       createElement('div', { className: 'settings-logout-section' }, logoutBtn)
     )
@@ -358,6 +366,18 @@ export function Navbar({ onLogout, onChangePassword }) {
     dataset: { view: 'playback' }
   },
     createElement('div', { className: 'settings-options' }, createPlaybackChoices())
+  );
+
+  const adminRequestsListContainer = createElement('div', { className: 'admin-requests-list' });
+  const adminRequestsStatus = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
+
+  const adminPanel = createElement('div', {
+    className: 'settings-panel settings-panel-admin',
+    dataset: { view: 'admin' }
+  },
+    createElement('h2', { className: 'admin-tools-title' }, 'Offene Anfragen'),
+    adminRequestsStatus,
+    adminRequestsListContainer
   );
 
   const mobileSettingsBackButton = createElement('button', {
@@ -383,7 +403,8 @@ export function Navbar({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         mobilePasswordOption,
-        mobilePlaybackOption
+        mobilePlaybackOption,
+        mobileAdminOption
       ),
       createElement('div', { className: 'settings-logout-section' }, mobileLogoutBtn)
     )
@@ -392,6 +413,18 @@ export function Navbar({ onLogout, onChangePassword }) {
   const mobilePasswordPanel = createElement('div', { className: 'settings-panel settings-panel-password' }, mobilePasswordForm);
   const mobilePlaybackPanel = createElement('div', { className: 'settings-panel settings-panel-playback' },
     createElement('div', { className: 'settings-options' }, createPlaybackChoices())
+  );
+
+  const mobileAdminRequestsListContainer = createElement('div', { className: 'admin-requests-list' });
+  const mobileAdminRequestsStatus = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
+
+  const mobileAdminPanel = createElement('div', {
+    className: 'settings-panel settings-panel-admin',
+    dataset: { view: 'admin' }
+  },
+    createElement('h2', { className: 'admin-tools-title' }, 'Offene Anfragen'),
+    mobileAdminRequestsStatus,
+    mobileAdminRequestsListContainer
   );
 
   const mobileSettingsPanel = createElement('div', {
@@ -405,7 +438,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     ),
     mobileRootPanel,
     mobilePasswordPanel,
-    mobilePlaybackPanel
+    mobilePlaybackPanel,
+    mobileAdminPanel
   );
   mobileNavList.appendChild(mobileSettingsPanel);
 
@@ -424,7 +458,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     ),
     rootPanel,
     passwordPanel,
-    playbackPanel
+    playbackPanel,
+    adminPanel
   );
 
   const settingsBackdrop = createElement('div', {
@@ -689,13 +724,16 @@ export function Navbar({ onLogout, onChangePassword }) {
       ? 'Passwort'
       : settingsView === 'playback'
         ? 'Wiedergabe'
-        : 'Einstellungen';
+        : settingsView === 'admin'
+          ? 'Admin tools'
+          : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
     settingsDialog.dataset.view = settingsView;
     rootPanel.hidden = settingsView !== 'root';
     passwordPanel.hidden = settingsView !== 'password';
     playbackPanel.hidden = settingsView !== 'playback';
+    adminPanel.hidden = settingsView !== 'admin';
 
     if (settingsView !== 'password') {
       setStatus(settingsStatus, '');
@@ -717,11 +755,14 @@ export function Navbar({ onLogout, onChangePassword }) {
       ? 'Passwort'
       : mobileSettingsView === 'playback'
         ? 'Wiedergabe'
-        : 'Einstellungen';
+        : mobileSettingsView === 'admin'
+          ? 'Admin tools'
+          : 'Einstellungen';
 
     mobileRootPanel.hidden = mobileSettingsView !== 'root';
     mobilePasswordPanel.hidden = mobileSettingsView !== 'password';
     mobilePlaybackPanel.hidden = mobileSettingsView !== 'playback';
+    mobileAdminPanel.hidden = mobileSettingsView !== 'admin';
 
     if (mobileSettingsView === 'root') {
       loadSettingsStats();
@@ -760,6 +801,7 @@ export function Navbar({ onLogout, onChangePassword }) {
 
     setSettingsView('root');
     loadSettingsStats();
+    loadAdminVisibility();
     window.requestAnimationFrame(() => settingsDialog.focus());
   };
 
@@ -982,6 +1024,14 @@ function createPlaybackIcon() {
       <path d="M6 4.5v15l13-7.5z"></path>
       <path d="M4 4v16"></path>
       <path d="M20 6v12"></path>
+    </svg>
+  `);
+}
+
+function createAdminIcon() {
+  return createIcon('settings-row-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
     </svg>
   `);
 }
