@@ -10,7 +10,7 @@ const DEFAULT_PLAYBACK_MODE = PLAYBACK_MODES.TRANSCODE;
 const SAFE_CONTAINERS = new Set(['mp4', 'm4v', 'mov']);
 const SAFE_VIDEO_CODECS = new Set(['h264', 'avc', 'avc1']);
 const SAFE_AUDIO_CODECS = new Set(['aac', 'mp3', 'alac']);
-const SENSITIVE_QUERY_PARAMS = ['api_key', 'access_token', 'x-emby-token', 'X-Emby-Token'];
+const SENSITIVE_QUERY_PARAMS = ['api_key', 'access_token', 'x-emby-token', 'X-Emby-Token', 'ApiKey'];
 
 const getFirstValue = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -220,7 +220,7 @@ export class PlaybackService {
 
   static toProxyUrl(pathOrUrl) {
     const path = this.normalizeJellyfinPath(pathOrUrl);
-    return `/api/media/playback-proxy?path=${encodeURIComponent(path)}`;
+    return `/api/media/playback/proxy?path=${encodeURIComponent(path)}`;
   }
 
   static isHlsPath(pathOrUrl) {

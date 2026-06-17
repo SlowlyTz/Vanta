@@ -34,13 +34,15 @@
   transition: transform var(--transition-smooth);
 }
 
-.media-card:hover .media-card-image-container {
-  transform: translateY(-8px) scale(1.04);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.2);
-}
+@media (hover: hover) and (pointer: fine) {
+  .media-card:hover .media-card-image-container {
+    transform: translateY(-8px) scale(1.04);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
 
-.media-card:hover .media-card-image {
-  transform: scale(1.02);
+  .media-card:hover .media-card-image {
+    transform: scale(1.02);
+  }
 }
 
 .media-card-details {
@@ -60,8 +62,10 @@
   transition: color var(--transition-fast);
 }
 
-.media-card:hover .media-card-title {
-  color: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .media-card:hover .media-card-title {
+    color: #ffffff;
+  }
 }
 
 .media-card-subtitle {

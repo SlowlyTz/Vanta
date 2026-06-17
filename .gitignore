@@ -25,6 +25,7 @@ pids
 .cache/
 db/*.db
 db/*.db-*
+db/*
 
 # Testing / Coverage
 coverage/

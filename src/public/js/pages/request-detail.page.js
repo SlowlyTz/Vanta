@@ -4,9 +4,10 @@ import { appStore } from '../store/app.store.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+const TMDB_BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
 
 export default function RequestDetailPage({ type, id }) {
-  const container = createElement('div', { className: 'page-container' });
+  const container = createElement('div', { className: 'page-container request-detail-page' });
 
   const loadDetails = async () => {
     appStore.setLoading(true);
@@ -21,63 +22,61 @@ export default function RequestDetailPage({ type, id }) {
       const posterPath = details.poster_path;
       const posterUrl = posterPath ? `${TMDB_IMAGE_BASE}${posterPath}` : null;
       const backdropPath = details.backdrop_path;
-      const backdropUrl = backdropPath ? `${TMDB_IMAGE_BASE.replace('w500', 'w1280')}${backdropPath}` : null;
+      const backdropUrl = backdropPath ? `${TMDB_BACKDROP_BASE}${backdropPath}` : null;
       const year = (details.release_date || details.first_air_date || '').substring(0, 4);
       const runtime = details.runtime ? `${details.runtime} min` : '';
-      const rating = details.vote_average ? details.vote_average.toFixed(1) : '-';
+      const rating = details.vote_average ? details.vote_average.toFixed(1) : null;
       const mediaType = type === 'tv' ? 'Serie' : 'Film';
       const isBanned = Boolean(details.banned || crossCheck.banned);
       const isRequested = Boolean(details.requested) || await isAlreadyRequested(parseInt(id), type);
 
       if (backdropUrl) {
         const backdropWrapper = createElement('div', {
-          className: 'detail-backdrop',
-          style: `height: 300px; background: url(${backdropUrl}) center/cover no-repeat;`
+          className: 'request-detail-backdrop',
+          style: `background-image: url(${backdropUrl});`
         });
         container.appendChild(backdropWrapper);
       }
 
-      const content = createElement('div', { className: 'content-section' });
+      const content = createElement('div', { className: 'content-section request-detail-content' });
 
-      const mainRow = createElement('div', {
-        className: 'detail-main',
-        style: 'display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px;'
-      });
+      const mainRow = createElement('div', { className: 'request-detail-main' });
 
-      const posterWrap = createElement('div', {});
-      const poster = createElement('img', {
-        src: posterUrl || createPosterPlaceholder(title),
-        alt: title,
-        loading: 'lazy',
-        style: 'width: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);',
-        onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPosterPlaceholder(title); }
-      });
-      posterWrap.appendChild(poster);
-      mainRow.appendChild(posterWrap);
+      const posterWrap = createElement('div', { className: 'request-detail-poster-wrap' },
+        createElement('img', {
+          className: 'request-detail-poster',
+          src: posterUrl || createPosterPlaceholder(title),
+          alt: title,
+          loading: 'lazy',
+          onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPosterPlaceholder(title); }
+        })
+      );
 
-      const info = createElement('div', { style: 'flex: 1; min-width: 250px;' });
-      info.appendChild(createElement('h2', null, title));
-      const meta = createElement('div', { style: 'display: flex; gap: 12px; margin-bottom: 16px; color: #999;' });
-      meta.appendChild(createElement('span', null, `${year}`));
-      meta.appendChild(createElement('span', null, `${mediaType}`));
-      if (runtime) meta.appendChild(createElement('span', null, runtime));
+      const info = createElement('div', { className: 'request-detail-info' });
+
+      info.appendChild(createElement('h1', { className: 'request-detail-title' }, title));
+
+      const meta = createElement('div', { className: 'request-detail-meta' });
+      if (year) meta.appendChild(createElement('span', {}, year));
+      meta.appendChild(createElement('span', {}, mediaType));
+      if (runtime) meta.appendChild(createElement('span', {}, runtime));
+      if (rating) meta.appendChild(createElement('span', { className: 'request-detail-rating' }, `★ ${rating}`));
       info.appendChild(meta);
 
       if (details.overview) {
-        info.appendChild(createElement('p', { style: 'color: #ccc; line-height: 1.6;' }, details.overview));
+        info.appendChild(createElement('p', { className: 'request-detail-overview' }, details.overview));
       }
 
+      const badges = createElement('div', { className: 'request-detail-badges' });
+
       if (crossCheck.exists) {
-        const badge = createElement('div', {
-          style: 'display: inline-block; padding: 6px 12px; background: rgba(34,197,94,0.15); color: #22c55e; border-radius: 6px; margin-top: 12px; font-size: 0.85rem;'
-        }, 'Bereits in der Mediathek verfuegbar');
-        info.appendChild(badge);
+        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-available' }, 'In Mediathek verfuegbar'));
 
         if (type === 'tv' && crossCheck.seasons && crossCheck.seasons.length > 0) {
-          const seasonList = createElement('div', { style: 'margin-top: 8px; font-size: 0.85rem;' });
+          const seasonList = createElement('div', { className: 'request-detail-seasons' });
           crossCheck.seasons.forEach(s => {
             seasonList.appendChild(createElement('div', {
-              style: `color: ${s.exists ? '#22c55e' : '#ef4444'};`,
+              className: `request-detail-season${s.exists ? ' season-available' : ' season-missing'}`
             }, `${s.name} ${s.exists ? '(vorhanden)' : '(nicht vorhanden)'}`));
           });
           info.appendChild(seasonList);
@@ -85,82 +84,25 @@ export default function RequestDetailPage({ type, id }) {
       }
 
       if (isBanned) {
-        const rejectedBadge = createElement('div', {
-          style: 'display: inline-block; padding: 6px 12px; background: rgba(239,68,68,0.15); color: #ef4444; border-radius: 6px; margin-top: 12px; font-size: 0.85rem;'
-        }, 'Diese Anfrage wurde abgelehnt und kann nicht erneut gestellt werden');
-        info.appendChild(rejectedBadge);
+        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-banned' }, 'Abgelehnt'));
+      } else if (isRequested) {
+        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-requested' }, 'Bereits angefragt'));
       }
 
-      mainRow.appendChild(info);
-      content.appendChild(mainRow);
-
-      if (details.cast && details.cast.length > 0) {
-        const castSection = createElement('div', { className: 'detail-cast' });
-        castSection.appendChild(createElement('h3', { className: 'cast-title' }, 'Besetzung'));
-        const castGrid = createElement('div', {
-          style: 'display: flex; gap: 12px; flex-wrap: wrap;'
-        });
-        details.cast.forEach(actor => {
-          const actorItem = createElement('div', {
-            style: 'text-align: center;'
-          });
-          if (actor.profile_path) {
-            const img = createElement('img', {
-              src: `https://image.tmdb.org/t/p/w185${actor.profile_path}`,
-              alt: actor.name,
-              loading: 'lazy',
-              style: 'width: 80px; height: 80px; border-radius: 50%; object-fit: cover;',
-              onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
-            });
-            actorItem.appendChild(img);
-          }
-          actorItem.appendChild(createElement('div', { style: 'font-size: 0.85rem; margin-top: 4px;' }, actor.name));
-          if (actor.character) {
-            actorItem.appendChild(createElement('div', { style: 'font-size: 0.75rem; color: #888;' }, actor.character));
-          }
-          castGrid.appendChild(actorItem);
-        });
-        castSection.appendChild(castGrid);
-        content.appendChild(castSection);
+      if (badges.children.length > 0) {
+        info.appendChild(badges);
       }
 
-      if (type === 'tv' && details.seasons && details.seasons.length > 0) {
-        const seasonsGrid = createElement('div', { style: 'margin-top: 24px;' });
-        seasonsGrid.appendChild(createElement('h3', { className: 'cast-title' }, 'Staffel'));
-        const grid = createElement('div', { style: 'display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px;' });
-        (details.seasons || []).filter(s => s.season_number >= 0).forEach(season => {
-          const seasonCard = createElement('div', {
-            style: 'border-radius: 8px; padding: 8px; background: rgba(255,255,255,0.05);'
-          });
-          if (season.poster_path) {
-            seasonCard.appendChild(createElement('img', {
-              src: `${TMDB_IMAGE_BASE}${season.poster_path}`,
-              alt: season.name,
-              loading: 'lazy',
-              style: 'width: 100%; border-radius: 6px;',
-              onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
-            }));
-          }
-          seasonCard.appendChild(createElement('div', { style: 'margin-top: 4px; font-size: 0.85rem;' }, season.name));
-          seasonCard.appendChild(createElement('div', { style: 'font-size: 0.75rem; color: #888;' }, `${season.episode_count || 0} Folgen`));
-          grid.appendChild(seasonCard);
-        });
-        seasonsGrid.appendChild(grid);
-        content.appendChild(seasonsGrid);
-      }
-
-      const actions = createElement('div', { style: 'display: flex; gap: 12px; margin-top: 24px;' });
-
-      let requestBtnNote;
+      const actions = createElement('div', { className: 'request-detail-actions' });
 
       if (!isRequested && !crossCheck.exists && !isBanned) {
         const requestBtn = createElement('button', {
-          className: 'btn-primary',
+          className: 'btn-primary request-detail-request-btn',
           onClick: async () => {
             requestBtn.disabled = true;
             requestBtn.textContent = 'Wird angefragt...';
             try {
-              await RequestsApi.createRequest(parseInt(id), type, requestBtnNote?.value || '');
+              await RequestsApi.createRequest(parseInt(id), type, '');
               requestBtn.textContent = 'Angefragt';
               requestBtn.classList.remove('btn-primary');
               requestBtn.classList.add('btn-requested');
@@ -173,30 +115,69 @@ export default function RequestDetailPage({ type, id }) {
             }
           }
         }, 'Anfragen');
-        actions.appendChild(requestBtn);
 
-        requestBtnNote = createElement('input', {
-          type: 'text',
-          placeholder: 'Notiz (optional)',
-          className: 'search-input-field',
-          style: 'flex: 1; min-width: 200px;'
-        });
-        actions.appendChild(requestBtnNote);
-      } else if (isRequested) {
-        actions.appendChild(createElement('span', { className: 'btn-requested', style: 'cursor: default;' }, 'Bereits angefragt'));
-      } else if (crossCheck.exists) {
-        actions.appendChild(createElement('span', { className: 'btn-requested', style: 'cursor: default;' }, 'In Mediathek'));
-      } else if (isBanned) {
-        actions.appendChild(createElement('span', { className: 'btn-request-error', style: 'cursor: default;' }, 'Abgelehnt'));
+        actions.appendChild(requestBtn);
       }
 
       const backBtn = createElement('button', {
-        className: 'btn-secondary',
+        className: 'btn-secondary request-detail-back-btn',
         onClick: () => { window.history.back(); }
       }, 'Zurueck');
       actions.appendChild(backBtn);
 
-      content.appendChild(actions);
+      info.appendChild(actions);
+
+      mainRow.appendChild(posterWrap);
+      mainRow.appendChild(info);
+      content.appendChild(mainRow);
+
+      if (details.cast && details.cast.length > 0) {
+        const castSection = createElement('div', { className: 'request-detail-cast' });
+        castSection.appendChild(createElement('h3', { className: 'request-detail-section-title' }, 'Besetzung'));
+        const castGrid = createElement('div', { className: 'request-detail-cast-grid' });
+        details.cast.forEach(actor => {
+          const actorItem = createElement('div', { className: 'request-detail-cast-item' });
+          if (actor.profile_path) {
+            const img = createElement('img', {
+              src: `https://image.tmdb.org/t/p/w185${actor.profile_path}`,
+              alt: actor.name,
+              loading: 'lazy',
+              onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
+            });
+            actorItem.appendChild(img);
+          }
+          actorItem.appendChild(createElement('div', { className: 'request-detail-cast-name' }, actor.name));
+          if (actor.character) {
+            actorItem.appendChild(createElement('div', { className: 'request-detail-cast-role' }, actor.character));
+          }
+          castGrid.appendChild(actorItem);
+        });
+        castSection.appendChild(castGrid);
+        content.appendChild(castSection);
+      }
+
+      if (type === 'tv' && details.seasons && details.seasons.length > 0) {
+        const seasonsSection = createElement('div', { className: 'request-detail-seasons-section' });
+        seasonsSection.appendChild(createElement('h3', { className: 'request-detail-section-title' }, 'Staffeln'));
+        const seasonsGrid = createElement('div', { className: 'request-detail-seasons-grid' });
+        (details.seasons || []).filter(s => s.season_number >= 0).forEach(season => {
+          const seasonCard = createElement('div', { className: 'request-detail-season-card' });
+          if (season.poster_path) {
+            seasonCard.appendChild(createElement('img', {
+              src: `${TMDB_IMAGE_BASE}${season.poster_path}`,
+              alt: season.name,
+              loading: 'lazy',
+              onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
+            }));
+          }
+          seasonCard.appendChild(createElement('div', { className: 'request-detail-season-name' }, season.name));
+          seasonCard.appendChild(createElement('div', { className: 'request-detail-season-episodes' }, `${season.episode_count || 0} Folgen`));
+          seasonsGrid.appendChild(seasonCard);
+        });
+        seasonsSection.appendChild(seasonsGrid);
+        content.appendChild(seasonsSection);
+      }
+
       container.appendChild(content);
 
     } catch (error) {

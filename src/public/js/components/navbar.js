@@ -56,6 +56,8 @@ export function Navbar({ onLogout, onChangePassword }) {
     className: 'navbar-link navbar-mobile-settings',
     type: 'button',
     onClick: () => {
+      mobileDrawerHeader.hidden = true;
+      mobileNavLinksList.hidden = true;
       mobileSettings.setMobileSettingsView('root');
     }
   },
@@ -136,7 +138,14 @@ export function Navbar({ onLogout, onChangePassword }) {
   navList.id = 'primary-navigation';
 
   const settingsDialog = createSettingsDialog({ onLogout, onChangePassword });
-  const mobileSettings = createMobileSettings({ onLogout, onChangePassword });
+  const mobileSettings = createMobileSettings({
+    onLogout,
+    onChangePassword,
+    onNav: () => {
+      mobileDrawerHeader.hidden = false;
+      mobileNavLinksList.hidden = false;
+    }
+  });
 
   mobileNavList.appendChild(mobileSettings.element);
 
