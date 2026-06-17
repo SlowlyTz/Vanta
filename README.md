@@ -22,17 +22,59 @@ jellyfin-client/
 ├── .env                          # Environment variables (not committed)
 ├── .env.example                  # Template for environment variables
 ├── README.md
+├── plan.md                       # Refactor plan and progress tracker
 └── src/
     ├── public/                   # Frontend SPA (Vanilla JS, HTML, CSS)
     │   ├── index.html
-    │   ├── css/                  # Styles (base, layout, components, pages, player)
-    │   └── js/                   # Modules (api, components, pages, store, utils)
+    │   ├── css/                  # Styles
+    │   │   ├── base.css
+    │   │   ├── layout.css        # App shell, navbar, settings (documented exception)
+    │   │   ├── player.css        # Video player (documented exception)
+    │   │   ├── components/       # Reusable UI components
+    │   │   │   ├── buttons.css
+    │   │   │   ├── carousel.css
+    │   │   │   ├── loader.css
+    │   │   │   ├── media-card.css
+    │   │   │   └── toast.css
+    │   │   └── pages/            # Page-specific styles
+    │   │       ├── actor-modal.css
+    │   │       ├── detail.css
+    │   │       ├── home.css
+    │   │       ├── library.css
+    │   │       ├── login.css
+    │   │       ├── publishers.css
+    │   │       ├── requests.css
+    │   │       └── search.css
+    │   └── js/                   # Modules
+    │       ├── api/              # API clients
+    │       ├── components/       # UI components
+    │       │   └── navbar/       # Navbar submodules
+    │       ├── pages/            # Page components
+    │       │   ├── detail/
+    │       │   ├── player/
+    │       │   └── ...
+    │       ├── store/            # State stores
+    │       └── utils/            # Utility functions
     └── server/                   # Backend API (Node, Express)
         ├── app.js
         ├── config/               # Environment configuration
         ├── middleware/           # Auth, error handling, security headers
-        ├── routes/               # Auth, media, and page routes
-        ├── services/             # Jellyfin API service
+        ├── routes/               # Auth, media, requests, page routes
+        │   └── media/            # Split media routes
+        ├── services/             # Jellyfin API services
+        │   ├── jellyfin/         # Domain-split Jellyfin services
+        │   │   ├── auth.service.js
+        │   │   ├── client.js
+        │   │   ├── fields.js
+        │   │   ├── images.service.js
+        │   │   ├── items.service.js
+        │   │   ├── library.service.js
+        │   │   ├── people.service.js
+        │   │   └── playback-api.service.js
+        │   ├── playback.service.js
+        │   ├── requests.service.js
+        │   ├── tmdb.service.js
+        │   └── ...
         └── utils/                # Utility functions
 ```
 

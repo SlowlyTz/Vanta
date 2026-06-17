@@ -1,0 +1,258 @@
+/* ---------------------------------
+   ACTOR DETAILS MODAL
+--------------------------------- */
+body.actor-modal-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.actor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  background: rgba(4, 4, 6, 0.985);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  transition: opacity var(--transition-smooth), visibility var(--transition-smooth);
+}
+
+.actor-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.actor-modal {
+  background: var(--bg-glass);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 800px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: var(--spacing-xl);
+  position: relative;
+  transform: scale(0.9);
+  transition: transform var(--transition-smooth);
+}
+
+.actor-modal::-webkit-scrollbar {
+  width: 6px;
+}
+.actor-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.actor-modal::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.actor-modal-overlay.active .actor-modal {
+  transform: scale(1);
+}
+
+.actor-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 10;
+}
+
+.actor-modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.actor-profile-row {
+  display: flex;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+  margin-top: var(--spacing-md);
+}
+
+.actor-modal-avatar {
+  flex: 0 0 140px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
+  background-color: var(--bg-tertiary);
+}
+
+.actor-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  justify-content: center;
+}
+
+.actor-modal-name {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+}
+
+.actor-modal-role {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.actor-metadata-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: var(--spacing-xs);
+}
+
+.actor-bio {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xl);
+}
+
+@media (max-width: 768px) {
+  .carousel-arrows {
+    gap: 6px;
+  }
+
+  .carousel-arrow {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (max-width: 600px) {
+  .actor-profile-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .actor-profile-info {
+    align-items: center;
+  }
+}
+
+.seasons-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  overflow: hidden;
+}
+
+.seasons-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.seasons-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.season-tab {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.season-tab:hover, .season-tab.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.episodes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-sm);
+}
+
+.detail-similar-section {
+  position: relative;
+  z-index: 4;
+  margin-top: 0;
+  padding-top: 10px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.detail-similar-section .media-carousel-container {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .actor-modal-overlay {
+    width: 100%;
+    height: 100dvh;
+    padding: 12px;
+  }
+  .actor-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+  .actor-modal-close {
+    top: 12px;
+    right: 12px;
+  }
+  .actor-profile-row {
+    gap: var(--spacing-md);
+    margin-top: 8px;
+    margin-bottom: var(--spacing-lg);
+  }
+  .actor-modal-avatar {
+    flex: 0 0 112px;
+    width: 112px;
+    height: 112px;
+  }
+  .actor-modal-name {
+    font-size: 1.65rem;
+    letter-spacing: 0;
+  }
+  .actor-bio {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+}

@@ -1,0 +1,58 @@
+/* Toast Notifications */
+#toast-container {
+  position: fixed;
+  bottom: var(--spacing-xl);
+  right: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.toast-message {
+  pointer-events: auto;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-size: 0.95rem;
+  max-width: 350px;
+  transform: translateY(30px);
+  opacity: 0;
+  animation: toast-in 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.toast-message.error {
+  border-left: 4px solid var(--error-color);
+}
+
+.toast-message.success {
+  border-left: 4px solid var(--success-color);
+}
+
+@keyframes toast-in {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.toast-message.fade-out {
+  animation: toast-out 0.3s ease-in forwards;
+}
+
+@keyframes toast-out {
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+

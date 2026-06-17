@@ -8,7 +8,7 @@ import env from './config/env.js';
 import { securityHeaders } from './middleware/security.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
-import mediaRoutes from './routes/media.routes.js';
+import mediaRoutes from './routes/media/index.js';
 import requestsRoutes from './routes/requests.routes.js';
 import pageRoutes from './routes/page.routes.js';
 

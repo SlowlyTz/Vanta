@@ -1,4 +1,4 @@
-import { JellyfinService } from '../services/jellyfin.service.js';
+import { AuthService } from '../services/jellyfin/auth.service.js';
 
 export const requireAuth = (req, res, next) => {
   if (!req.session || !req.session.accessToken || !req.session.userId) {
@@ -9,7 +9,7 @@ export const requireAuth = (req, res, next) => {
 
 export const requireFreshAdmin = async (req, res, next) => {
   try {
-    const isAdmin = await JellyfinService.isUserAdmin(req.session.userId, req.session.accessToken);
+    const isAdmin = await AuthService.isUserAdmin(req.session.userId, req.session.accessToken);
     req.session.isAdmin = isAdmin;
 
     if (!isAdmin) {
