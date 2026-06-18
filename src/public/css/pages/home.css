@@ -219,8 +219,55 @@
 }
 
 .home-hero-actions .btn-secondary {
-  flex: 1 1 0;
-  min-width: 0;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .home-hero-content {
+        bottom: 58px;
+    }
+
+    .home-hero-metadata span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 0 9px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.86);
+        font-weight: 650;
+    }
+
+    .home-hero-actions {
+        align-items: center;
+        margin-top: 4px;
+        margin-bottom: 8px;
+    }
+
+    .home-hero-actions .btn-primary,
+    .home-hero-actions .btn-secondary {
+        flex: 0 0 auto;
+    }
+
+    .home-hero-actions .btn-secondary {
+        width: 144px;
+        min-width: 0;
+        max-width: 44vw;
+        padding-inline: 18px;
+    }
+
+    .hero-carousel-dots {
+        bottom: 16px;
+    }
+}
+
+@media (max-width: 380px) {
+    .home-hero-actions .btn-secondary {
+        width: 128px;
+        max-width: 42vw;
+    }
 }
 
 .home-hero::before {
