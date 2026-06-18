@@ -1,369 +1,581 @@
-# Implementierungsplan: Startseite mit Genre- und Publisher-Kategorien
+# Implementierungsplan: Neue modulare Startseiten-Logik
 
 ## Ziel
 
-Die Startseite soll nicht mehr nur die groben Reihen `Filme` und `Serien` anzeigen. Stattdessen soll sie kuratierte Kategorien zeigen:
+Die Startseite soll technisch neu geplant werden. Die Entscheidung, welche Filme und Serien auf der Startseite erscheinen, soll in eine eigene, klar abgegrenzte Home-Logik ausgelagert werden.
 
-- Film-Kategorien: dieselben Genres, die im Desktop-Dropdown beim Hover über `Filme` verfügbar sind.
-- Serien-Kategorien: dieselben Genres, die im Desktop-Dropdown beim Hover über `Serien` verfügbar sind.
-- Publisher-Kategorien: nur die großen Publisher, die auf der Publisher-Seite ganz oben als Featured-Publisher angezeigt werden.
+Diese Home-Logik soll:
 
-Die Kategorien sollen direkt auf der Startseite als Inhalte sichtbar sein, idealerweise als horizontale Carousels mit Medienkarten. Die bestehenden Routen für vollständige Listen bleiben erhalten.
+- normale gemeinsame Kategorien aus Filmen und Serien bauen
+- besondere Kategorien zwischen normalen Kategorien platzieren
+- TMDB-Daten für besondere Kategorien nutzen
+- ausschließlich Inhalte anzeigen, die tatsächlich auf dem Jellyfin-Server vorhanden sind
+- getrennt von UI-Komponenten und reiner API-Routenlogik bleiben
 
-## Ist-Zustand
+Es wird in diesem Schritt nichts implementiert.
 
-Startseite:
+## Grundsatz
 
-- Datei: `src/public/js/pages/home.page.js`
-- Lädt aktuell nur `MediaApi.getHome()`.
-- Rendert:
-  - Hero aus zufälligen Filmen/Serien
-  - `Weiter schauen`
-  - `Filme`
-  - `Serien`
+Die Startseite soll keine harte UI-Sammlung mehr sein, die direkt selbst entscheidet, welche Carousels angezeigt werden.
 
-Dropdowns:
+Stattdessen soll es eine eigene fachliche Schicht geben:
 
-- Datei: `src/public/js/components/navbar/dropdownMenus.js`
-- Film- und Serien-Dropdowns nutzen `MediaApi.getGenres(type)`.
-- Angezeigt werden jeweils `genres.slice(0, 12)`.
-- Links zeigen auf `#/genre/Movie/:genreName` bzw. `#/genre/Series/:genreName`.
+```text
+Home Page UI
+  -> MediaApi.getHomeSections()
+    -> Backend Route /api/media/home-sections
+      -> HomeSectionsService
+        -> Jellyfin Library Services
+        -> TMDB Service
+        -> Matching / Filtering / Ranking
+```
 
-Publisher:
+Die UI rendert am Ende nur noch eine fertige Liste von Sections.
 
-- Datei: `src/public/js/pages/publishers.page.js`
-- Featured-Publisher sind:
-  - Disney
-  - 20th Century Studios
-  - Warner Bros
-  - Netflix
-  - Apple TV
-  - Prime Video
-  - HBO
-- Die gleiche Logik existiert fast doppelt in `dropdownMenus.js`.
+## Neue zentrale Home-Logik
 
-Library:
-
-- Datei: `src/public/js/pages/library.page.js`
-- Unterstützt bereits:
-  - Typ-Filter: `Movie`, `Series`, `Movie,Series`
-  - Genre-Filter
-  - Studio-/Publisher-Filter
-- API: `MediaApi.getLibrary(type, genre, studio, page, limit)`
-
-## Zielbild der Startseite
-
-Reihenfolge:
-
-1. Hero
-2. `Weiter schauen`, falls vorhanden
-3. Film-Genre-Kategorien, z. B. `Filme: Action`, `Filme: Drama`
-4. Serien-Genre-Kategorien, z. B. `Serien: Comedy`, `Serien: Crime`
-5. Publisher-Kategorien, z. B. `Disney`, `Netflix`, `Warner Bros`
-
-Jede Kategorie wird als `MediaCarousel` gerendert.
-
-- Genre-Carousels zeigen Poster-Karten.
-- Publisher-Carousels zeigen ebenfalls Poster-Karten aus `Movie,Series`.
-- Eine Kategorie wird nur angezeigt, wenn sie mindestens einen Titel enthält.
-- Jede Kategorie soll einen Weg zur vollständigen Liste haben, entweder über einen `Alle anzeigen`-Link im Carousel-Header oder als Titel-Link.
-
-## Datenmodell im Frontend
-
-Eine gemeinsame Konfiguration für Featured-Publisher auslagern, damit Publisher-Seite, Dropdown und Startseite dieselben Daten nutzen.
+### Backend-Service
 
 Neue Datei:
 
-- `src/public/js/constants/featuredStudios.js`
+- `src/server/services/home-sections.service.js`
 
-Inhalt:
+Aufgabe:
 
-- `FEATURED_STUDIOS`
-- `matchFeaturedStudio(studioName)`
-- Optional: `getFeaturedStudiosFromLibraryStudios(studios)`
+- Startseiten-Kategorien zusammenstellen
+- Filme und Serien gemeinsam betrachten
+- normale Genre-Kategorien bauen
+- besondere Kategorien berechnen
+- TMDB-Ergebnisse gegen Jellyfin-Bestand abgleichen
+- fertige Section-Struktur zurückgeben
 
-Danach anpassen:
+Mögliche Hauptfunktion:
 
-- `src/public/js/components/navbar/dropdownMenus.js`
-- `src/public/js/pages/publishers.page.js`
-- `src/public/js/pages/home.page.js`
-
-Vorteil:
-
-- Die großen Publisher werden nur noch an einer Stelle gepflegt.
-- Startseite und Publisher-Seite können nicht auseinanderlaufen.
-
-## API-Strategie
-
-### Variante A: Minimal und schnell
-
-Im Frontend:
-
-- `MediaApi.getHome()` weiter für Hero, Resume und Fallback nutzen.
-- Zusätzlich laden:
-  - `MediaApi.getGenres('Movie')`
-  - `MediaApi.getGenres('Series')`
-  - `MediaApi.getStudios()`
-- Für jede Startseiten-Kategorie:
-  - Genre: `MediaApi.getLibrary(type, genre, null, 1, 20)`
-  - Publisher: `MediaApi.getLibrary('Movie,Series', null, studio.Name, 1, 20)`
-
-Limit:
-
-- Pro Kategorie reichen 15 bis 20 Items.
-- Genres werden exakt wie im Dropdown auf `slice(0, 12)` begrenzt.
-- Featured-Publisher werden nach der bestehenden Featured-Reihenfolge sortiert.
-
-Nachteil:
-
-- Viele parallele API-Requests auf der Startseite.
-- Bei 12 Filmgenres, 12 Seriengenres und bis zu 7 Publishern können bis zu 31 zusätzliche Requests entstehen.
-
-### Variante B: Sauberer Backend-Endpunkt
-
-Neuer Backend-Endpunkt:
-
-```text
-GET /api/media/home-categories
+```js
+async function getHomeSections(userId, accessToken) {
+  return {
+    hero: [],
+    resume: [],
+    sections: []
+  };
+}
 ```
 
-Response-Beispiel:
+Wichtig:
+
+- Der Service entscheidet über Inhalte und Reihenfolge.
+- Die Route gibt nur JSON zurück.
+- Die Frontend-Seite rendert nur noch die gelieferten Sections.
+
+## Gemeinsame Kategorien
+
+Aktuell sollen Filme und Serien nicht mehr getrennt gruppiert werden.
+
+Statt:
+
+- `Filme: Familie`
+- `Serien: Familie`
+
+Soll es geben:
+
+- `Familie`
+
+In dieser Kategorie befinden sich gemeinsam:
+
+- Filme mit Genre `Familie`
+- Serien mit Genre `Familie`
+
+Das gilt genauso für:
+
+- Drama
+- Action
+- Comedy
+- Thriller
+- Science Fiction
+- Fantasy
+- Abenteuer
+- Animation
+- Dokumentation
+- Krimi
+- Horror
+- weitere vorhandene Jellyfin-Genres
+
+## Kategorie-Building
+
+### Datenquellen
+
+Normale Kategorien nutzen Jellyfin:
+
+- Filmgenres aus Jellyfin
+- Seriengenres aus Jellyfin
+- Library-Items mit `type=Movie,Series`
+
+Bestehende Funktionen prüfen und weiterverwenden:
+
+- `LibraryService.getGenres(userId, accessToken, 'Movie')`
+- `LibraryService.getGenres(userId, accessToken, 'Series')`
+- `LibraryService.getLibrary(userId, accessToken, 'Movie,Series', genre, null, page, limit)`
+
+### Genre-Zusammenführung
+
+Vorgehen:
+
+1. Filmgenres laden.
+2. Seriengenres laden.
+3. Genres normalisieren.
+4. Doppelte Genres zusammenführen.
+5. Originalnamen erhalten, damit Jellyfin-Queries funktionieren.
+
+Normalisierung:
+
+- trimmen
+- lowercase
+- einfache Sonderzeichen-/Whitespace-Normalisierung
+
+Beispiel:
+
+```js
+{
+  key: 'familie',
+  label: 'Familie',
+  movieGenreName: 'Familie',
+  seriesGenreName: 'Familie'
+}
+```
+
+Wenn ein Genre nur bei Filmen oder nur bei Serien existiert, bleibt es trotzdem erhalten.
+
+### Items pro Kategorie
+
+Für jede gemeinsame Kategorie:
+
+- passende Filme und Serien aus Jellyfin laden
+- leere Kategorien entfernen
+- Items mischen, aber stabil sortieren
+- Limit pro Kategorie setzen, z. B. 18 bis 24 Items
+
+Mögliche Sortierung:
+
+1. neuere Titel bevorzugen
+2. vorhandene Jellyfin-Sortierung übernehmen
+3. optional zufällig leicht mischen, aber nicht bei jedem Request komplett chaotisch
+
+Empfehlung:
+
+- Erst stabil und nachvollziehbar sortieren.
+- Zufälligkeit später nur einbauen, wenn gewünscht.
+
+## Besondere Kategorien
+
+Nach jeweils ca. 2 bis 3 normalen Kategorien soll eine besondere Kategorie erscheinen.
+
+Beispiel-Reihenfolge:
+
+```text
+Weiter schauen
+Familie
+Drama
+Top 5 Filme & Serien der letzten 20 Tage
+Action
+Comedy
+Aktuell beliebt
+Thriller
+Science Fiction
+Besonders oft gesehen
+```
+
+Die genaue Platzierung übernimmt die Home-Logik.
+
+### Section-Typen
+
+Normale Kategorie:
 
 ```json
 {
-  "movieGenres": [
+  "type": "standard",
+  "title": "Familie",
+  "href": "#/genre/Familie",
+  "items": []
+}
+```
+
+Besondere Kategorie:
+
+```json
+{
+  "type": "featured",
+  "title": "Top 5 Filme & Serien der letzten 20 Tage",
+  "subtitle": "Beliebte Titel, die in deiner Mediathek verfuegbar sind",
+  "items": [],
+  "cardSize": "large"
+}
+```
+
+Das Frontend kann anhand von `type: "featured"` eine andere Darstellung wählen.
+
+## Visuelle Planung für besondere Kategorien
+
+Besondere Kategorien sollen anders aussehen als normale Kategorien.
+
+Frontend-Komponenten:
+
+- normale Sections nutzen bestehende `MediaCarousel`-Darstellung
+- besondere Sections nutzen eine neue oder erweiterte Carousel-Variante
+
+Mögliche Komponente:
+
+- `FeaturedMediaCarousel`
+
+Oder Erweiterung:
+
+- `MediaCarousel({ variant: 'featured' })`
+
+Anforderungen:
+
+- größere Cards als normale Film-/Serien-Cards
+- visuell klar abgesetzt
+- nicht wie eine normale Genre-Reihe wirken
+- auf Mobile horizontal scrollbar bleiben
+- keine überladenen Texte
+- Titel und ggf. Rang/Badge dürfen sichtbar sein
+
+Beispiel:
+
+- normale Cards: Posterformat ca. 160–180px breit
+- besondere Cards: Posterformat ca. 220–260px breit oder Landscape-Cards
+
+## TMDB + Jellyfin kombinieren
+
+Besondere Kategorien sollen TMDB-Daten nutzen, aber nur Jellyfin-verfügbare Inhalte anzeigen.
+
+Wichtig:
+
+- TMDB darf nur Ranking-/Trend-Quelle sein.
+- Jellyfin bleibt die Quelle dafür, was tatsächlich angezeigt werden darf.
+- Kein Titel anzeigen, der nicht auf Jellyfin existiert.
+
+## Matching-Strategie
+
+### Bevorzugt: Externe Provider-IDs
+
+Der Abgleich soll, wenn möglich, über IDs erfolgen:
+
+- TMDB-ID
+- IMDb-ID
+- andere externe Provider-IDs aus Jellyfin
+
+Jellyfin-Items prüfen auf Felder wie:
+
+- `ProviderIds`
+- `ProviderIds.Tmdb`
+- `ProviderIds.Imdb`
+- externe ID-Felder im normalisierten Item
+
+Falls diese Felder aktuell nicht geladen werden:
+
+- Jellyfin Fields erweitern
+- `ProviderIds` in den Item-Abfragen einbeziehen
+
+### Fallback: Titel + Jahr
+
+Falls keine Provider-ID vorhanden ist:
+
+- normalisierter Titel
+- Originaltitel, falls vorhanden
+- Produktionsjahr / Erscheinungsjahr
+- Typ: Film oder Serie
+
+Fallback nur defensiv nutzen:
+
+- Keine unsicheren Matches anzeigen.
+- Bei Mehrdeutigkeit lieber auslassen.
+
+## TMDB-Datenquellen für besondere Kategorien
+
+Mögliche besondere Kategorien:
+
+### Top 5 Filme & Serien der letzten 20 Tage
+
+Technisch mögliche Interpretation:
+
+- TMDB Trending Endpoint mit Zeitraum `day`/`week`
+- zusätzlich lokal auf Veröffentlichungs-/Hinzugefügt-Zeitraum oder Jellyfin-Verfügbarkeit prüfen
+
+Offener Punkt:
+
+- TMDB bietet nicht direkt "letzte 20 Tage" für lokale Mediathek.
+- Wenn "letzte 20 Tage" lokal gemeint ist, braucht Jellyfin `DateCreated` oder ähnliches.
+
+Empfehlung:
+
+- Kategorie technisch definieren als:
+  - TMDB Trending als Ranking
+  - Jellyfin-Abgleich
+  - optional nur Jellyfin-Items, die in den letzten 20 Tagen hinzugefügt wurden, wenn `DateCreated` zuverlässig verfügbar ist
+
+### Aktuell beliebt
+
+Mögliche TMDB-Quelle:
+
+- Trending Movies/TV
+- Popular Movies/TV
+
+Dann:
+
+- TMDB-Liste holen
+- gegen Jellyfin matchen
+- Top N anzeigen
+
+### Besonders oft gesehen
+
+Mögliche Datenquelle:
+
+- Wenn Jellyfin Nutzungs-/PlayCount-Daten verfügbar sind: Jellyfin bevorzugen
+- Falls nicht verfügbar: TMDB Popularity als Ersatz ist semantisch nicht dasselbe
+
+Empfehlung:
+
+- Nur "Besonders oft gesehen" verwenden, wenn Jellyfin Nutzungsdaten verfügbar sind.
+- Sonst besser umbenennen in `Beliebt auf TMDB, verfuegbar bei dir`.
+
+## Backend-API
+
+Neue Route:
+
+```text
+GET /api/media/home-sections
+```
+
+Response:
+
+```json
+{
+  "hero": [],
+  "resume": [],
+  "sections": [
     {
-      "name": "Action",
-      "href": "#/genre/Movie/Action",
+      "type": "standard",
+      "title": "Familie",
+      "href": "#/genre/Familie",
       "items": []
-    }
-  ],
-  "seriesGenres": [
+    },
     {
-      "name": "Comedy",
-      "href": "#/genre/Series/Comedy",
-      "items": []
-    }
-  ],
-  "publishers": [
-    {
-      "name": "Disney",
-      "studioName": "Walt Disney Pictures",
-      "href": "#/publisher/Walt%20Disney%20Pictures",
-      "items": []
+      "type": "featured",
+      "title": "Aktuell beliebt",
+      "items": [],
+      "cardSize": "large"
     }
   ]
 }
 ```
 
-Backend-Aufgaben:
+Route-Aufgaben:
 
-- In `src/server/routes/media/library.routes.js` neuen `/home-categories`-Handler ergänzen.
-- Genres mit `LibraryService.getGenres(userId, accessToken, type)` laden.
-- Studios mit `LibraryService.getStudios(userId, accessToken)` laden.
-- Für die ersten 12 Genres je Typ und die Featured-Publisher jeweils `LibraryService.getLibrary(...)` mit kleinem Limit laden.
-- Leere Kategorien aus der Response entfernen oder im Frontend ignorieren.
+- Auth prüfen
+- `HomeSectionsService.getHomeSections(userId, accessToken)` aufrufen
+- JSON zurückgeben
+- Unauthorized wie bestehende Media-Routen behandeln
 
-Vorteil:
+Keine komplexe Logik in der Route.
 
-- Startseite bekommt eine kompakte, fertig vorbereitete Struktur.
-- Sortierung, Limits und Featured-Matching sind zentral.
-- Weniger UI-seitige Orchestrierung.
-
-Empfehlung:
-
-- Variante B implementieren, wenn Performance und Wartbarkeit wichtig sind.
-- Variante A reicht, wenn die Änderung möglichst klein bleiben soll.
-
-## Frontend-Umsetzung
-
-### 1. `MediaApi` erweitern
+## Frontend-API
 
 Datei:
 
 - `src/public/js/api/media.api.js`
 
-Bei Variante B:
+Neue Methode:
 
 ```js
-getHomeCategories() {
-  return request('/api/media/home-categories');
+getHomeSections() {
+  return request('/api/media/home-sections');
 }
 ```
 
-Bei Variante A ist keine neue API-Methode nötig, weil `getGenres`, `getStudios` und `getLibrary` bereits existieren.
+Langfristig kann `getHome()` ersetzt oder nur noch als Fallback genutzt werden.
 
-### 2. `home.page.js` umbauen
+## Frontend-Startseite
 
 Datei:
 
 - `src/public/js/pages/home.page.js`
 
-Änderungen:
+Plan:
 
-- `loadData` lädt Home-Daten und Kategorie-Daten parallel.
-- `renderHome(data, categories)` rendert nach `Weiter schauen` die neuen Kategorie-Carousels.
-- Die alten pauschalen `Filme`- und `Serien`-Carousels entfernen oder nur als Fallback behalten.
+- `HomePage` lädt künftig `MediaApi.getHomeSections()`.
+- Hero, Resume und Sections kommen aus einer fertigen Backend-Struktur.
+- Die Seite entscheidet nicht mehr selbst, welche Genres/Publisher/Rankings erscheinen.
 
-Fallback-Regel:
+Rendering:
 
-- Wenn keine Kategorien geladen werden können, weiter die alten Reihen `Filme` und `Serien` anzeigen.
-- Wenn einzelne Kategorien leer sind, diese Kategorie überspringen.
+- `hero` -> `HeroCarousel`
+- `resume` -> `MediaCarousel` mit `landscape: true`
+- `section.type === 'standard'` -> normale `MediaCarousel`
+- `section.type === 'featured'` -> besondere Carousel-Darstellung
 
-### 3. Carousel-Header klickbar machen
+Fallback:
 
-Aktuell:
+- Falls `/home-sections` fehlschlägt, kann temporär das bestehende `/home` genutzt werden.
+- Falls einzelne Sections leer sind, nicht rendern.
 
-- `MediaCarousel` nimmt nur `title`, `items`, `landscape`.
-- `HorizontalCarousel` muss geprüft werden, ob es bereits Header-Actions unterstützt.
+## Publisher und bisherige auswählbare Inhalte
+
+Anforderung:
+
+- Alles, was aktuell auf der Startseite auswählbar ist, soll weiterhin angezeigt werden.
+
+Aktueller Stand prüfen:
+
+- Genre-Kategorien
+- Featured-Publisher-Kategorien
+- ggf. weitere Home-Sections
 
 Plan:
 
-- `MediaCarousel` optional erweitern:
-  - `href`
-  - `actionLabel = 'Alle anzeigen'`
-- `HorizontalCarousel` optional erweitern:
-  - Header rechts mit Link/Button, wenn `href` gesetzt ist.
+- Bestehende auswählbare Home-Inhalte in die neue Section-Struktur übernehmen.
+- Publisher können weiterhin eigene Sections bleiben, weil sie keine Genre-Typ-Trennung haben.
+- Genre-Sections werden zusammengeführt.
 
-Beispiele:
-
-- `Filme: Action` -> `#/genre/Movie/Action`
-- `Serien: Comedy` -> `#/genre/Series/Comedy`
-- `Disney` -> `#/publisher/<studioName>`
-
-### 4. Publisher-Matching zentralisieren
-
-Neue Datei:
-
-- `src/public/js/constants/featuredStudios.js`
-
-Danach Imports anpassen:
-
-- `dropdownMenus.js`
-- `publishers.page.js`
-- `home.page.js`
-
-Wichtig:
-
-- Für Links immer den tatsächlichen `studio.Name` aus Jellyfin verwenden.
-- Für Labels das kuratierte Label verwenden, z. B. `Prime Video`.
-
-## Backend-Umsetzung bei Variante B
-
-### 1. Gemeinsame Featured-Studio-Konfiguration
-
-Da Backend und Frontend getrennte Module haben, entweder:
-
-- eine Backend-Konstante in `src/server/services/jellyfin/featured-studios.js` anlegen, oder
-- die Logik nur im Frontend behalten und Variante A wählen.
-
-Wenn Variante B gewählt wird:
-
-- Backend braucht dieselbe Match-Liste wie das Frontend.
-- Doppelte Listen sind unschön, aber akzeptabel, wenn klar dokumentiert.
-
-### 2. Route ergänzen
-
-Datei:
-
-- `src/server/routes/media/library.routes.js`
-
-Neue Route:
+Beispiel:
 
 ```text
-GET /home-categories
+Familie
+Drama
+Disney
+Top 5 Filme & Serien der letzten 20 Tage
+Action
+Comedy
+Netflix
+Aktuell beliebt
 ```
 
-Logik:
+Offener Entscheidungspunkt:
 
-- Auth wie bei `/home`, `/genres`, `/studios`.
-- Parallel laden:
-  - `genres(Movie)`
-  - `genres(Series)`
-  - `studios`
-- Kategorien bauen:
-  - `movieGenres = genres.slice(0, 12)`
-  - `seriesGenres = genres.slice(0, 12)`
-  - `publishers = featured studios from studios`
-- Pro Kategorie Library-Items laden.
-- Kategorien ohne Items nicht zurückgeben.
-- Fehler bei Jellyfin-Unauthorized wie bestehend behandeln.
+- Sollen Publisher-Sections zwischen Genre-Sections bleiben oder gebündelt an einer festen Position erscheinen?
 
-### 3. Service-Helfer optional auslagern
-
-Wenn die Route zu groß wird:
-
-- Neuer Service: `src/server/services/home-categories.service.js`
-- Aufgabe:
-  - Kategorie-Definitionen bauen
-  - Items laden
-  - leere Kategorien entfernen
-
-## Styling
-
-Wahrscheinlich reichen bestehende Styles:
-
-- `src/public/css/components/carousel.css`
-- `src/public/css/pages/home.css`
-
-Mögliche Ergänzungen:
-
-- Header-Link `Alle anzeigen` dezent rechts im Carousel-Header.
-- Auf Mobile darf der Link als kleines Icon oder kurze Textaktion erscheinen.
-- Lange Kategorienamen müssen ellipsisiert werden und dürfen den Header nicht sprengen.
-
-Keine neuen Card-Designs nötig, wenn Kategorien als Medien-Carousels umgesetzt werden.
-
-## Performance
+## Daten- und Performance-Plan
 
 Wichtig:
 
-- Kategorie-Requests parallel laden.
-- Pro Kategorie niedriges Limit verwenden, z. B. 15 oder 20.
-- Kategorien ohne Items nicht rendern.
-- Bei Variante A `Promise.allSettled` nutzen, damit ein einzelner Fehler nicht die ganze Startseite kaputt macht.
-- Bei Variante B serverseitig ebenfalls einzelne Kategoriefehler defensiv behandeln oder gesammelt als 500 zurückgeben.
+- Nicht pro Startseitenaufruf zu viele Jellyfin- und TMDB-Requests auslösen.
+- Ergebnisse kurzzeitig cachen.
 
-Empfehlung für erste Umsetzung:
+Empfehlung:
 
-- Maximal 12 Filmgenres
-- Maximal 12 Seriengenres
-- Maximal 7 Publisher
-- 15 Items pro Kategorie
+- Cache für Home-Sections pro User oder pro Jellyfin-User:
+  - TTL: 10 bis 30 Minuten
+- TMDB-Trending/Popular separat cachen:
+  - TTL: 1 bis 6 Stunden
+- Jellyfin-Bestand mit ProviderIds cachen:
+  - TTL: 10 bis 30 Minuten
 
-## Tests und Prüfung
+Bei Cache-Invalidierung:
 
-Manuell prüfen:
+- manuell nicht nötig für ersten Schritt
+- später optional bei Admin-Aktionen oder Library-Refresh
 
-- Desktop:
-  - Dropdown `Filme` zeigt dieselben Genres wie die Startseite bei Film-Kategorien.
-  - Dropdown `Serien` zeigt dieselben Genres wie die Startseite bei Serien-Kategorien.
-  - Publisher auf der Startseite entsprechen den großen Publishern oben auf der Publisher-Seite.
-  - `Alle anzeigen`/Titel-Link führt zur korrekten Library-Seite.
-- Mobile:
-  - Carousels scrollen sauber horizontal.
-  - Header laufen nicht über.
-  - Startseite bleibt bedienbar und lädt nicht sichtbar blockierend.
-- Fehlerfälle:
-  - Jellyfin liefert keine Genres.
-  - Ein Genre hat keine Inhalte.
-  - Featured-Publisher existiert in Jellyfin nicht.
-  - Kategorien-API schlägt fehl, aber alte Home-Daten laden.
+## Fehlerverhalten
 
-Automatisiert, falls vorhandene Teststruktur ergänzt wird:
+Normale Kategorien:
 
-- Unit-Test für `matchFeaturedStudio`.
-- Unit-Test für Kategorie-Building.
-- Integrationstest für `/api/media/home-categories`, falls Variante B gewählt wird.
+- Wenn ein Genre nicht geladen werden kann, Kategorie auslassen.
+- Wenn alle Genres fehlschlagen, Fallback auf alte Home-Daten.
+
+Besondere Kategorien:
+
+- Wenn TMDB nicht erreichbar ist, besondere Kategorie auslassen.
+- Startseite darf dadurch nicht komplett fehlschlagen.
+- Keine leeren besonderen Kategorien anzeigen.
+
+Matching:
+
+- Unsichere TMDB-Matches auslassen.
+- Lieber weniger Items anzeigen als falsche Titel.
+
+## Relevante Dateien
+
+Backend:
+
+- `src/server/routes/media/library.routes.js`
+- `src/server/services/home-sections.service.js` neu
+- `src/server/services/tmdb.service.js`
+- `src/server/services/jellyfin/library.service.js`
+- `src/server/services/jellyfin/items.service.js`
+- `src/server/services/jellyfin/fields.js`
+- optional: `src/server/services/home-sections-cache.service.js`
+
+Frontend:
+
+- `src/public/js/pages/home.page.js`
+- `src/public/js/api/media.api.js`
+- `src/public/js/components/mediaCarousel.js`
+- optional neu: `src/public/js/components/featuredMediaCarousel.js`
+- `src/public/css/pages/home.css`
+- `src/public/css/components/carousel.css`
+
+## Umsetzungsschritte
+
+### Schritt 1: Bestehende Daten prüfen
+
+- Prüfen, welche Jellyfin-Items bereits `ProviderIds` enthalten.
+- Prüfen, ob `DateCreated`, `UserData.PlayCount` oder ähnliche Felder verfügbar sind.
+- Prüfen, welche TMDB-Funktionen in `tmdb.service.js` bereits existieren.
+
+### Schritt 2: Section-Contract definieren
+
+- JSON-Struktur für Home-Sections final festlegen.
+- Normale und besondere Sections unterscheiden.
+- Card-Variant-Feld definieren.
+
+### Schritt 3: HomeSectionsService bauen
+
+- Resume/Hero übernehmen oder neu zusammenstellen.
+- gemeinsame Genre-Kategorien bauen.
+- Publisher-Sections übernehmen.
+- besondere Kategorien über TMDB + Jellyfin-Matching bauen.
+- Reihenfolge final mischen.
+
+### Schritt 4: Backend-Route ergänzen
+
+- `/api/media/home-sections`
+- Auth und Fehlerhandling wie bestehende Media-Routen.
+
+### Schritt 5: Frontend anpassen
+
+- `MediaApi.getHomeSections()`
+- `home.page.js` rendert nur noch Sections.
+- besondere Carousel-Darstellung ergänzen.
+
+### Schritt 6: Fallbacks und Tests
+
+- TMDB-Ausfall testen.
+- Jellyfin ohne ProviderIds testen.
+- leere Kategorien testen.
+- Mobile/Desktop Layout prüfen.
+
+## Akzeptanzkriterien
+
+- Startseiten-Inhaltslogik ist in einem eigenen Service/einer eigenen Funktion gekapselt.
+- Filme und Serien werden in gemeinsamen Genre-Kategorien angezeigt.
+- Es gibt nicht mehr getrennte Kategorien wie `Filme: Familie` und `Serien: Familie`.
+- Besondere Kategorien erscheinen nach ca. 2 bis 3 normalen Kategorien.
+- Besondere Kategorien sind visuell anders und nutzen größere Cards.
+- TMDB-basierte Kategorien zeigen ausschließlich Titel, die auf Jellyfin vorhanden sind.
+- Keine unsicheren oder nicht vorhandenen TMDB-Titel erscheinen auf der Startseite.
+- UI-Code entscheidet nicht mehr fachlich, welche Inhalte auf der Startseite erscheinen.
 
 ## Offene Rückfragen
 
-1. Sollen die alten Reihen `Filme` und `Serien` komplett verschwinden, oder als Fallback/zusätzliche Reihe am Ende bleiben?
-2. Soll die Startseite wirklich für alle 12 Filmgenres und alle 12 Seriengenres Carousels zeigen, oder sollen auf der Startseite weniger Kategorien erscheinen als im Dropdown?
-3. Bevorzugst du die schnelle Frontend-Variante A oder den saubereren Backend-Endpunkt Variante B?
+1. Soll `Top 5 Filme & Serien der letzten 20 Tage` die letzten 20 Tage in TMDB-Trends meinen oder die letzten 20 Tage seit Hinzufügen zur eigenen Jellyfin-Mediathek?
+2. Sind Publisher-Sections weiterhin Teil der Startseite, und falls ja: zwischen den Genre-Kategorien oder gesammelt an einer festen Position?
+3. Darf `Besonders oft gesehen` nur erscheinen, wenn Jellyfin echte PlayCount-/Nutzungsdaten liefert, oder soll TMDB-Popularität als Ersatz akzeptiert werden?
+4. Soll die Startseite pro User personalisiert sein, z. B. mit individuellen Resume-/PlayCount-Daten, oder für alle Nutzer gleich außer `Weiter schauen`?
 
-Meine Empfehlung:
+## Empfehlung
 
-- Alte `Filme`/`Serien`-Reihen entfernen, aber als technischer Fallback behalten.
-- Dieselben 12 Dropdown-Genres pro Typ verwenden, damit die Anforderung exakt erfüllt ist.
-- Variante B umsetzen, damit die Startseite nicht dutzende einzelne Requests koordinieren muss.
+- HomeSectionsService serverseitig bauen.
+- Genre-Kategorien aus `Movie` und `Series` zusammenführen.
+- TMDB nur als Ranking-Quelle nutzen.
+- Jellyfin-Verfügbarkeit über `ProviderIds` matchen.
+- Unsichere Matches auslassen.
+- Besondere Kategorien nur anzeigen, wenn ausreichend sichere Jellyfin-Treffer vorhanden sind.

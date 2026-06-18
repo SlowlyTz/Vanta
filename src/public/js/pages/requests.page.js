@@ -11,36 +11,72 @@ const STATUS_MAP = {
 };
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+const REQUEST_SEARCH_STATE_KEY = 'vanta.requests.searchState';
 
-export default function RequestsPage() {
+function loadRequestSearchState() {
+  try {
+    const raw = sessionStorage.getItem(REQUEST_SEARCH_STATE_KEY);
+    return raw ? JSON.parse(raw) : { query: '', results: [] };
+  } catch {
+    return { query: '', results: [] };
+  }
+}
+
+function saveRequestSearchState(query, results = []) {
+  try {
+    sessionStorage.setItem(REQUEST_SEARCH_STATE_KEY, JSON.stringify({ query, results }));
+  } catch {
+    // Ignore unavailable storage; search still works without restoration.
+  }
+}
+
+function clearRequestSearchState() {
+  try {
+    sessionStorage.removeItem(REQUEST_SEARCH_STATE_KEY);
+  } catch {
+    // Ignore unavailable storage.
+  }
+}
+
+export default function RequestsPage(params = {}) {
   let debounceTimeout = null;
   let myRequests = [];
   let searchResults = [];
   let searchRunId = 0;
+  const restoredSearchState = loadRequestSearchState();
 
   const container = createElement('div', { className: 'page-container content-section requests-page' });
 
-  const pageTitle = createElement('h1', { className: 'requests-page-title' }, 'Anfragen');
+  const pageHeader = createElement('div', { className: 'requests-page-header' },
+    createElement('h1', { className: 'requests-page-title' }, 'Anfragen'),
+    createElement('p', { className: 'requests-page-subtitle' }, 'Suche neue Titel oder verfolge den Status deiner bisherigen Anfragen.')
+  );
 
   const choiceView = createElement('div', { className: 'requests-choice-view' });
   const newRequestBtn = createElement('button', {
     className: 'requests-choice-btn',
-    onClick: () => setView('new')
-  }, 'Neue Anfrage');
+    onClick: () => {
+      clearRequestSearchState();
+      window.location.hash = '#/requests/new';
+    }
+  },
+    createElement('span', { className: 'requests-choice-label' }, 'Neue Anfrage'),
+    createElement('span', { className: 'requests-choice-copy' }, 'Film oder Serie suchen und direkt anfragen.')
+  );
   const myRequestsBtn = createElement('button', {
     className: 'requests-choice-btn',
-    onClick: () => {
-      loadMyRequests();
-      setView('list');
-    }
-  }, 'Meine Anfragen');
+    onClick: () => { window.location.hash = '#/requests/mine'; }
+  },
+    createElement('span', { className: 'requests-choice-label' }, 'Meine Anfragen'),
+    createElement('span', { className: 'requests-choice-copy' }, 'Status und Verlauf deiner Anfragen ansehen.')
+  );
   choiceView.appendChild(newRequestBtn);
   choiceView.appendChild(myRequestsBtn);
 
   const newRequestSearchInput = createElement('input', {
     type: 'text',
     className: 'search-input-field',
-    placeholder: 'Film oder Serie suchen und anfragen...',
+    placeholder: 'Film oder Serie suchen...',
     onInput: (e) => {
       const query = e.target.value.trim();
       if (debounceTimeout) clearTimeout(debounceTimeout);
@@ -50,17 +86,29 @@ export default function RequestsPage() {
   });
   const newRequestSearchWrapper = createElement('div', { className: 'search-input-wrapper' }, newRequestSearchInput);
   const newRequestResultsGrid = createElement('div', { className: 'requests-grid' });
+  const newRequestLoading = createElement('div', { className: 'requests-search-loading hidden' },
+    createElement('div', { className: 'loader-spinner' }),
+    createElement('span', {}, 'Suche laeuft...')
+  );
   const newRequestStatus = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
     createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.')
   );
   const newRequestBackBtn = createElement('button', {
     className: 'btn-secondary requests-back-btn',
-    onClick: () => setView('choice')
+    onClick: () => { window.location.hash = '#/requests'; }
   }, 'Zurueck');
-  const newRequestView = createElement('div', { className: 'requests-new-view hidden' },
+  const newRequestHeader = createElement('div', { className: 'requests-view-header' },
     newRequestBackBtn,
+    createElement('div', { className: 'requests-view-copy' },
+      createElement('h2', { className: 'requests-view-title' }, 'Neue Anfrage'),
+      createElement('p', { className: 'requests-view-subtitle' }, 'Titel suchen, Verfuegbarkeit pruefen und Anfrage starten.')
+    )
+  );
+  const newRequestView = createElement('div', { className: 'requests-new-view hidden' },
+    newRequestHeader,
     newRequestSearchWrapper,
+    newRequestLoading,
     newRequestResultsGrid,
     newRequestStatus
   );
@@ -84,33 +132,57 @@ export default function RequestsPage() {
   );
   const myRequestsBackBtn = createElement('button', {
     className: 'btn-secondary requests-back-btn',
-    onClick: () => setView('choice')
+    onClick: () => { window.location.hash = '#/requests'; }
   }, 'Zurueck');
-  const myRequestsView = createElement('div', { className: 'requests-list-view hidden' },
+  const myRequestsHeader = createElement('div', { className: 'requests-view-header' },
     myRequestsBackBtn,
+    createElement('div', { className: 'requests-view-copy' },
+      createElement('h2', { className: 'requests-view-title' }, 'Meine Anfragen'),
+      createElement('p', { className: 'requests-view-subtitle' }, 'Pruefe, was noch offen ist und was bereits entschieden wurde.')
+    )
+  );
+  const myRequestsView = createElement('div', { className: 'requests-list-view hidden' },
+    myRequestsHeader,
     myRequestsSearchWrapper,
     myRequestsList,
     myRequestsStatus
   );
 
-  container.appendChild(pageTitle);
+  container.appendChild(pageHeader);
   container.appendChild(choiceView);
   container.appendChild(newRequestView);
   container.appendChild(myRequestsView);
 
   const setView = (view) => {
+    pageHeader.classList.toggle('hidden', view !== 'choice');
     choiceView.classList.toggle('hidden', view !== 'choice');
     newRequestView.classList.toggle('hidden', view !== 'new');
     myRequestsView.classList.toggle('hidden', view !== 'list');
 
     if (view === 'new') {
-      newRequestSearchInput.value = '';
+      const shouldRestoreSearch = Boolean(restoredSearchState.query);
+      newRequestSearchInput.value = shouldRestoreSearch ? restoredSearchState.query : '';
       newRequestResultsGrid.innerHTML = '';
-      newRequestStatus.innerHTML = '';
-      newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
-      newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
-      newRequestStatus.classList.remove('hidden');
-      setTimeout(() => newRequestSearchInput.focus(), 100);
+      newRequestLoading.classList.add('hidden');
+      searchResults = Array.isArray(restoredSearchState.results) ? restoredSearchState.results : [];
+
+      if (shouldRestoreSearch && searchResults.length > 0) {
+        searchResults.forEach(item => {
+          newRequestResultsGrid.appendChild(createSearchResultCard(item));
+        });
+        newRequestStatus.classList.add('hidden');
+      } else if (shouldRestoreSearch) {
+        newRequestStatus.innerHTML = '';
+        newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
+        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden fuer "${restoredSearchState.query}".`));
+        newRequestStatus.classList.remove('hidden');
+      } else {
+        newRequestStatus.innerHTML = '';
+        newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
+        newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
+        newRequestStatus.classList.remove('hidden');
+        setTimeout(() => newRequestSearchInput.focus(), 100);
+      }
     }
 
     if (view === 'list') {
@@ -125,7 +197,8 @@ export default function RequestsPage() {
     searchResults = [];
 
     if (!query) {
-      appStore.setLoading(false);
+      clearRequestSearchState();
+      newRequestLoading.classList.add('hidden');
       newRequestStatus.innerHTML = '';
       newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
       newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
@@ -134,14 +207,16 @@ export default function RequestsPage() {
     }
 
     newRequestStatus.classList.add('hidden');
-    appStore.setLoading(true);
+    newRequestLoading.classList.remove('hidden');
 
     try {
       const data = await RequestsApi.search(query);
       if (runId !== searchRunId) return;
 
       searchResults = data || [];
+      saveRequestSearchState(query, searchResults);
       newRequestResultsGrid.innerHTML = '';
+      newRequestLoading.classList.add('hidden');
 
       if (searchResults.length === 0) {
         newRequestStatus.innerHTML = '';
@@ -156,14 +231,16 @@ export default function RequestsPage() {
     } catch (error) {
       if (runId !== searchRunId) return;
       if (error.isAuthError) {
-        appStore.setLoading(false);
+        newRequestLoading.classList.add('hidden');
         return;
       }
 
       console.error('[Requests Search Error]', error);
       appStore.showToast('Suche fehlgeschlagen', 'error');
     } finally {
-      appStore.setLoading(false);
+      if (runId === searchRunId) {
+        newRequestLoading.classList.add('hidden');
+      }
     }
   };
 
@@ -210,34 +287,22 @@ export default function RequestsPage() {
       createElement('p', { className: 'request-card-overview' }, overview.length > 150 ? overview.substring(0, 150) + '...' : overview)
     );
 
-    const actions = createElement('div', { className: 'request-card-actions' });
+    const statusBadge = createElement('div', { className: 'request-card-status-row' });
 
     if (item.banned) {
-      actions.appendChild(createElement('span', {
-        className: 'btn-request-error',
-        style: 'cursor: default;'
-      }, 'Gebannt'));
+      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-error' }, 'Gebannt'));
     } else if (item.exists) {
-      actions.appendChild(createElement('span', {
-        className: 'search-available-badge',
-        style: 'color: var(--color-primary); font-size: 0.85rem; cursor: default;'
-      }, 'In Mediathek verfuegbar'));
+      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-available' }, 'In Mediathek verfuegbar'));
     } else if (item.requested) {
-      actions.appendChild(createElement('span', { className: 'btn-requested', style: 'cursor: default;' }, 'Bereits angefragt'));
-    } else {
-      const requestBtn = createElement('button', {
-        className: 'btn-primary request-card-btn',
-        onClick: (e) => {
-          e.stopPropagation();
-          window.location.hash = `#/request-detail/${tmdbType}/${tmdbId}`;
-        }
-      }, 'Anfragen');
-      actions.appendChild(requestBtn);
+      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-requested' }, 'Bereits angefragt'));
+    }
+
+    if (statusBadge.children.length > 0) {
+      info.appendChild(statusBadge);
     }
 
     card.appendChild(poster);
     card.appendChild(info);
-    card.appendChild(actions);
 
     return card;
   };
@@ -306,6 +371,12 @@ export default function RequestsPage() {
       myRequestsList.appendChild(card);
     });
   };
+
+  const initialView = params.view === 'new' || params.view === 'list' ? params.view : 'choice';
+  setView(initialView);
+  if (initialView === 'list') {
+    loadMyRequests();
+  }
 
   return container;
 }

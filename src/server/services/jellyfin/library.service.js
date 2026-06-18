@@ -97,6 +97,18 @@ export class LibraryService {
     return { items: paginatedItems, totalRecordCount };
   }
 
+  static async getAllMoviesAndSeries(userId, token, limit = 2000) {
+    const data = await getItems(userId, token, {
+      IncludeItemTypes: 'Movie,Series',
+      Recursive: 'true',
+      Fields: COMMON_ITEM_FIELDS,
+      SortBy: 'SortName',
+      SortOrder: 'Ascending',
+      Limit: limit
+    });
+    return data.Items || [];
+  }
+
   static async _fetchLibraryPage(userId, token, type, genre, studio, page, limit) {
     const startIndex = (page - 1) * limit;
     const query = {

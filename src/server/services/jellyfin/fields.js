@@ -3,6 +3,7 @@ export const COMMON_ITEM_FIELDS = [
   'BasicSyncInfo',
   'Overview',
   'Genres',
+  'ProviderIds',
   'ImageTags',
   'BackdropImageTags',
   'ParentBackdropItemId',
