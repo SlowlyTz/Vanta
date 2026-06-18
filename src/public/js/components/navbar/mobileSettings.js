@@ -1,16 +1,14 @@
 import { createElement } from '../../utils/dom.js';
-import { createBackIcon, createChevronIcon, createPasswordIcon, createPlaybackIcon, createLogoutIcon } from './icons.js';
+import { createBackIcon, createChevronIcon, createPasswordIcon, createLogoutIcon } from './icons.js';
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
-import { createPlaybackChoices } from './settingsPlayback.js';
 import { createAdminPanel } from './adminPanel.js';
 
 export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   const mobileSettingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
   const mobileSettingsOverview = createSettingsOverview();
   const { form: mobilePasswordForm, setStatus: setMobilePasswordStatus } = createPasswordForm(onChangePassword);
-  const { buttons: mobilePlaybackButtons, syncPlaybackChoices: syncMobilePlaybackChoices } = createPlaybackChoices();
 
   const mobileLogoutBtn = createElement('button', {
     className: 'settings-logout-button',
@@ -30,7 +28,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   });
 
   const mobilePasswordOption = createSettingsOption('Passwort', () => setMobileSettingsView('password'), createPasswordIcon());
-  const mobilePlaybackOption = createSettingsOption('Wiedergabe', () => setMobileSettingsView('playback'), createPlaybackIcon());
 
   const mobileRootPanel = createElement('div', { className: 'settings-panel settings-panel-root' },
     createSettingsProfile(mobileSettingsUsername),
@@ -42,7 +39,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         mobilePasswordOption,
-        mobilePlaybackOption,
         mobileAdminOption
       ),
       createElement('div', { className: 'settings-logout-section' }, mobileLogoutBtn)
@@ -50,9 +46,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   );
 
   const mobilePasswordPanel = createElement('div', { className: 'settings-panel settings-panel-password' }, mobilePasswordForm);
-  const mobilePlaybackPanel = createElement('div', { className: 'settings-panel settings-panel-playback' },
-    createElement('div', { className: 'settings-options' }, ...mobilePlaybackButtons)
-  );
 
   const mobileSettingsBackButton = createElement('button', {
     className: 'mobile-settings-back-button',
@@ -78,7 +71,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
     ),
     mobileRootPanel,
     mobilePasswordPanel,
-    mobilePlaybackPanel,
     mobileAdminPanel
   );
 
@@ -93,15 +85,12 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
 
     mobileSettingsTitle.textContent = mobileSettingsView === 'password'
       ? 'Passwort'
-      : mobileSettingsView === 'playback'
-        ? 'Wiedergabe'
-        : mobileSettingsView === 'admin'
-          ? 'Admin tools'
-          : '';
+      : mobileSettingsView === 'admin'
+        ? 'Admin tools'
+        : '';
 
     mobileRootPanel.hidden = mobileSettingsView !== 'root';
     mobilePasswordPanel.hidden = mobileSettingsView !== 'password';
-    mobilePlaybackPanel.hidden = mobileSettingsView !== 'playback';
     mobileAdminPanel.hidden = mobileSettingsView !== 'admin';
 
     if (mobileSettingsView === 'root') {
@@ -170,7 +159,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   };
 
   setMobileSettingsView('nav');
-  syncMobilePlaybackChoices();
 
   return {
     element: mobileSettingsPanel,
@@ -179,7 +167,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
     mobileAdminOption,
     loadAdminVisibility,
     setMobileSettingsView,
-    syncMobilePlaybackChoices,
     isSettingsOpen: () => mobileSettingsView !== 'nav',
     checkAdminAndOpenAdmin
   };

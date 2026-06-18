@@ -1,15 +1,14 @@
 export function createPlayerEvents({
   video,
-  streamMenuWrapper,
   togglePlay,
-  setStreamMenuOpen,
   cleanupPlayer,
   updateFullscreenIcon,
   handleVideoError,
-  playableId,
-  getPlayableId,
-  resetControlTimeout
+  resetControlTimeout,
+  getDuration
 }) {
+  const isValidDuration = (duration) => Number.isFinite(duration) && duration > 0;
+
   const handleKeyDown = (e) => {
     resetControlTimeout?.();
     switch (e.code) {
@@ -17,21 +16,21 @@ export function createPlayerEvents({
         e.preventDefault();
         togglePlay();
         break;
-      case 'ArrowLeft':
+      case 'ArrowLeft': {
         e.preventDefault();
-        video.currentTime = Math.max(0, video.currentTime - 10);
+        const duration = getDuration?.();
+        if (!isValidDuration(duration)) break;
+        video.currentTime = Math.max(0, Math.min(duration, video.currentTime - 10));
         break;
+      }
       case 'ArrowRight': {
         e.preventDefault();
-        const duration = video.duration;
-        video.currentTime = Math.min(duration, video.currentTime + 10);
+        const duration = getDuration?.();
+        if (!isValidDuration(duration)) break;
+        video.currentTime = Math.min(duration, Math.max(0, video.currentTime + 10));
         break;
       }
     }
-  };
-
-  const handleDocumentPointerDown = (event) => {
-    if (!streamMenuWrapper.contains(event.target)) setStreamMenuOpen(false);
   };
 
   const handleFullscreenChange = () => {
@@ -43,13 +42,10 @@ export function createPlayerEvents({
   };
 
   const handleVideoErrorEvent = () => {
-    if (playableId || getPlayableId) {
-      handleVideoError(getPlayableId?.() || playableId);
-    }
+    handleVideoError();
   };
 
   window.addEventListener('keydown', handleKeyDown);
-  document.addEventListener('pointerdown', handleDocumentPointerDown);
   document.addEventListener('fullscreenchange', handleFullscreenChange);
   window.addEventListener('hashchange', handleHashChange);
   video.addEventListener('error', handleVideoErrorEvent);
@@ -57,7 +53,6 @@ export function createPlayerEvents({
   return {
     cleanup: () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('pointerdown', handleDocumentPointerDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       window.removeEventListener('hashchange', handleHashChange);
       video.removeEventListener('error', handleVideoErrorEvent);

@@ -57,30 +57,33 @@ export function createPlayerControls({
     playPauseBtn.innerHTML = video.paused ? playIcon : pauseIcon;
   };
 
+  const isValidDuration = (duration) => Number.isFinite(duration) && duration > 0;
+
   const seek = (e) => {
     const rect = timeline.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+    const pos = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
     const duration = getDuration();
-    if (duration) video.currentTime = pos * duration;
+    if (!isValidDuration(duration)) return;
+    const targetTime = Math.min(duration, Math.max(0, pos * duration));
+    if (Number.isFinite(targetTime)) video.currentTime = targetTime;
   };
 
   const updateTimeline = () => {
     const duration = getDuration();
-    if (!duration) return;
+    if (!isValidDuration(duration)) return;
     const current = video.currentTime;
     timeElapsed.textContent = formatTime(current);
     timeDuration.textContent = formatTime(duration);
-    const percent = (current / duration) * 100;
+    const percent = Math.min(100, Math.max(0, (current / duration) * 100));
     progressFill.style.width = `${percent}%`;
     progressHandle.style.left = `${percent}%`;
   };
 
   const updateBuffer = () => {
     const duration = getDuration();
-    if (duration && video.buffered.length > 0) {
-      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-      bufferFill.style.width = `${(bufferedEnd / duration) * 100}%`;
-    }
+    if (!isValidDuration(duration) || video.buffered.length === 0) return;
+    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+    bufferFill.style.width = `${Math.min(100, Math.max(0, (bufferedEnd / duration) * 100))}%`;
   };
 
   const updateVolume = (val) => {

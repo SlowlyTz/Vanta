@@ -1,16 +1,14 @@
 import { createElement } from '../../utils/dom.js';
-import { createBackIcon, createCloseIcon, createChevronIcon, createPasswordIcon, createPlaybackIcon, createLogoutIcon } from './icons.js';
+import { createBackIcon, createCloseIcon, createChevronIcon, createPasswordIcon, createLogoutIcon } from './icons.js';
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
-import { createPlaybackChoices } from './settingsPlayback.js';
 import { createAdminPanel } from './adminPanel.js';
 
 export function createSettingsDialog({ onLogout, onChangePassword }) {
   const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
   const settingsOverview = createSettingsOverview();
   const { form: passwordForm, setStatus: setPasswordStatus } = createPasswordForm(onChangePassword);
-  const { buttons: playbackButtons, syncPlaybackChoices } = createPlaybackChoices();
 
   const logoutBtn = createElement('button', {
     className: 'settings-logout-button',
@@ -30,7 +28,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   });
 
   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
-  const playbackOption = createSettingsOption('Wiedergabe', () => setSettingsView('playback'), createPlaybackIcon());
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
@@ -45,7 +42,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
       createElement('div', { className: 'settings-options' },
         passwordOption,
-        playbackOption,
         adminOption
       ),
       createElement('div', { className: 'settings-logout-section' }, logoutBtn)
@@ -56,13 +52,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     className: 'settings-panel settings-panel-password',
     dataset: { view: 'password' }
   }, passwordForm);
-
-  const playbackPanel = createElement('div', {
-    className: 'settings-panel settings-panel-playback',
-    dataset: { view: 'playback' }
-  },
-    createElement('div', { className: 'settings-options' }, ...playbackButtons)
-  );
 
   const settingsTitle = createElement('h2', {
     className: 'settings-dialog-title',
@@ -98,7 +87,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     ),
     rootPanel,
     passwordPanel,
-    playbackPanel,
     adminPanel
   );
 
@@ -122,17 +110,14 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     settingsView = view;
     settingsTitle.textContent = settingsView === 'password'
       ? 'Passwort'
-      : settingsView === 'playback'
-        ? 'Wiedergabe'
-        : settingsView === 'admin'
-          ? 'Admin tools'
-          : 'Einstellungen';
+      : settingsView === 'admin'
+        ? 'Admin tools'
+        : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
     settingsDialog.dataset.view = settingsView;
     rootPanel.hidden = settingsView !== 'root';
     passwordPanel.hidden = settingsView !== 'password';
-    playbackPanel.hidden = settingsView !== 'playback';
     adminPanel.hidden = settingsView !== 'admin';
 
     if (settingsView !== 'password') {
@@ -219,7 +204,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   };
 
   setSettingsView('root');
-  syncPlaybackChoices();
 
   return {
     element: settingsBackdrop,
@@ -230,7 +214,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     loadAdminVisibility,
     setSettingsView,
     setSettingsOpen,
-    syncPlaybackChoices,
     isOpen: () => settingsOpen,
     checkAdminAndOpenAdmin
   };

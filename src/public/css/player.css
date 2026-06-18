@@ -288,203 +288,6 @@ html.player-active #app {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.player-stream-menu-wrapper {
-  position: relative;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.player-stream-button {
-  min-width: 142px;
-  max-width: 198px;
-  height: 44px;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.07);
-  color: #ffffff;
-  padding: 0 16px;
-  text-align: left;
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.player-stream-button:hover,
-.player-stream-button:focus-visible,
-.player-stream-menu-wrapper.open .player-stream-button {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-1px);
-}
-
-.player-stream-button-kicker {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.68rem;
-  font-weight: 680;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
-.player-stream-button-label {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  color: #ffffff;
-  font-size: 0.84rem;
-  font-weight: 760;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.player-stream-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 12px);
-  width: min(380px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 18px;
-  background: rgba(12, 12, 14, 0.74);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  padding: 12px;
-  opacity: 0;
-  transform: translateY(8px) scale(0.98);
-  transform-origin: bottom right;
-  pointer-events: none;
-  animation: playerMenuIn 180ms ease forwards;
-}
-
-.player-stream-menu[hidden] {
-  display: none;
-}
-
-.player-stream-menu-wrapper.open .player-stream-menu {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
-}
-
-.player-stream-menu-header {
-  padding: 4px 4px 8px;
-}
-
-.player-stream-menu-title {
-  color: #ffffff;
-  font-size: 0.98rem;
-  font-weight: 780;
-  line-height: 1.2;
-}
-
-.player-stream-menu-copy {
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.78rem;
-  font-weight: 480;
-  line-height: 1.35;
-}
-
-.player-stream-option {
-  width: 100%;
-  min-height: 74px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-radius: 13px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.045);
-  padding: 12px;
-  text-align: left;
-  transition: background var(--transition-fast), transform var(--transition-fast);
-}
-
-.player-stream-option:hover,
-.player-stream-option:focus-visible,
-.player-stream-option.active {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.player-stream-option:active {
-  transform: scale(0.99);
-}
-
-.player-stream-option-main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.player-stream-option-title {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  color: #ffffff;
-  font-size: 0.88rem;
-  font-weight: 760;
-  line-height: 1.2;
-}
-
-.player-stream-option-platform {
-  color: rgba(255, 255, 255, 0.66);
-  font-weight: 640;
-}
-
-.player-stream-recommend {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.11);
-  color: rgba(255, 255, 255, 0.88);
-  padding: 2px 7px;
-  font-size: 0.62rem;
-  font-weight: 760;
-  line-height: 1.1;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
-.player-stream-option-description {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.76rem;
-  font-weight: 460;
-  line-height: 1.32;
-}
-
-.player-stream-option-check {
-  flex: 0 0 auto;
-  width: 21px;
-  height: 21px;
-  color: rgba(255, 255, 255, 0);
-  transition: color var(--transition-fast), transform var(--transition-fast);
-}
-
-.player-stream-option.active .player-stream-option-check {
-  color: #ffffff;
-  transform: scale(1.03);
-}
-
-.player-stream-option-check svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .player-loader {
   position: absolute;
   top: 50%;
@@ -543,17 +346,6 @@ html.player-active #app {
   line-height: 1.4;
 }
 
-@keyframes playerMenuIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 @media (max-width: 768px) {
   .player-controls {
     gap: 8px;
@@ -580,25 +372,6 @@ html.player-active #app {
     width: 58px;
   }
 
-  .player-stream-button {
-    min-width: 118px;
-    max-width: 132px;
-    height: 42px;
-    padding: 0 12px;
-  }
-
-  .player-stream-button-label {
-    font-size: 0.78rem;
-  }
-
-  .player-stream-menu {
-    right: 0;
-    bottom: calc(100% + 10px);
-    width: min(356px, calc(100vw - 24px));
-    max-width: calc(100vw - 24px);
-    padding: 10px;
-  }
-
   .player-back-btn {
     min-height: 40px;
     padding: 0 14px;
@@ -610,28 +383,9 @@ html.player-active #app {
   .player-volume-slider {
     display: none;
   }
-
-  .player-stream-button {
-    min-width: 106px;
-    max-width: 118px;
-  }
-
-  .player-stream-button-kicker {
-    font-size: 0.62rem;
-  }
-
-  .player-stream-button-label {
-    font-size: 0.73rem;
-  }
 }
 
 @media (max-width: 360px) {
-  .player-stream-button {
-    min-width: 92px;
-    max-width: 104px;
-    padding: 0 10px;
-  }
-
   .player-back-btn {
     padding: 0 12px;
   }
@@ -642,9 +396,6 @@ html.player-active #app {
   .player-controls,
   .player-btn,
   .player-back-btn,
-  .player-stream-button,
-  .player-stream-menu,
-  .player-stream-option,
   .player-progress-handle {
     animation: none !important;
     transition: none !important;

@@ -29,14 +29,14 @@ export const DETAIL_ITEM_FIELDS = [
   'OriginalTitle'
 ].join(',');
 
-export function buildBrowserDeviceProfile({ forceTranscode = false, preferHls = false } = {}) {
+export function buildBrowserDeviceProfile({ forceHlsTranscoding = false } = {}) {
   const hlsProfile = {
     Type: 'Video',
     Container: 'ts',
     Protocol: 'hls',
     Context: 'Streaming',
     VideoCodec: 'h264',
-    AudioCodec: 'aac,mp3',
+    AudioCodec: 'aac',
     MaxAudioChannels: '2',
     MinSegments: '2',
     BreakOnNonKeyFrames: true
@@ -56,7 +56,7 @@ export function buildBrowserDeviceProfile({ forceTranscode = false, preferHls = 
     MaxStreamingBitrate: 40000000,
     MaxStaticBitrate: 100000000,
     MusicStreamingTranscodingBitrate: 384000,
-    DirectPlayProfiles: forceTranscode ? [] : [
+    DirectPlayProfiles: forceHlsTranscoding ? [] : [
       {
         Type: 'Video',
         Container: 'mp4,m4v,mov',
@@ -64,7 +64,7 @@ export function buildBrowserDeviceProfile({ forceTranscode = false, preferHls = 
         AudioCodec: 'aac,mp3,alac'
       }
     ],
-    TranscodingProfiles: preferHls ? [hlsProfile, httpProfile] : [httpProfile, hlsProfile],
+    TranscodingProfiles: forceHlsTranscoding ? [hlsProfile] : [httpProfile, hlsProfile],
     ContainerProfiles: [],
     CodecProfiles: [],
     SubtitleProfiles: []
