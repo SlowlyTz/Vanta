@@ -138,20 +138,52 @@ export default function PublishersPage() {
       const divider = createElement('div', { className: 'publishers-divider' });
       wrapper.appendChild(divider);
 
-      const otherGrid = createElement('div', { className: 'publishers-grid' });
-
-      others.forEach(studio => {
-        const btn = createElement('button', {
-          className: 'publisher-button',
-          onClick: () => {
-            window.location.hash = `#/publisher/${encodeURIComponent(studio.Name)}`;
-          }
-        }, studio.Name);
-
-        otherGrid.appendChild(btn);
+      const searchInput = createElement('input', {
+        className: 'publisher-search-input',
+        type: 'text',
+        placeholder: 'Publisher suchen...',
+        'aria-label': 'Publisher suchen'
       });
 
+      const otherGrid = createElement('div', { className: 'publishers-grid' });
+
+      const renderFilteredOthers = (term) => {
+        const normalizedTerm = term.trim().toLowerCase();
+        const filtered = normalizedTerm === ''
+          ? others
+          : others.filter(studio => studio.Name.toLowerCase().includes(normalizedTerm));
+
+        otherGrid.innerHTML = '';
+
+        if (filtered.length === 0) {
+          otherGrid.appendChild(
+            createElement('div', { className: 'publisher-search-empty' },
+              'Keine Publisher gefunden'
+            )
+          );
+          return;
+        }
+
+        filtered.forEach(studio => {
+          const btn = createElement('button', {
+            className: 'publisher-button',
+            onClick: () => {
+              window.location.hash = `#/publisher/${encodeURIComponent(studio.Name)}`;
+            }
+          }, studio.Name);
+
+          otherGrid.appendChild(btn);
+        });
+      };
+
+      searchInput.addEventListener('input', (e) => {
+        renderFilteredOthers(e.target.value);
+      });
+
+      wrapper.appendChild(searchInput);
       wrapper.appendChild(otherGrid);
+
+      renderFilteredOthers('');
     }
 
     container.appendChild(
