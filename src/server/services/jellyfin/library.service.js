@@ -48,6 +48,7 @@ export class LibraryService {
   static async search(userId, token, query) {
     const data = await getItems(userId, token, {
       SearchTerm: query,
+      IncludeItemTypes: 'Movie,Series',
       Recursive: 'true',
       Limit: 50
     });
