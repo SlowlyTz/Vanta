@@ -1,26 +1,7 @@
 import { MediaApi } from '../../api/media.api.js';
 import { createElement, $ } from '../../utils/dom.js';
 import { NAV_LINKS } from './navLinks.js';
-
-export const FEATURED_STUDIOS = [
-  { match: ['disney', 'walt disney', 'walt disney pictures', 'walt disney studios', 'walt disney animation studios'], label: 'Disney' },
-  { match: ['20th century', '20th century studios', '20th century fox', 'twentieth century fox'], label: '20th Century Studios' },
-  { match: ['warner bros', 'warner bros pictures', 'warner brothers', 'warner bros.'], label: 'Warner Bros' },
-  { match: ['netflix'], label: 'Netflix' },
-  { match: ['apple tv', 'apple tv+', 'appletv', 'apple'], label: 'Apple TV' },
-  { match: ['amazon', 'prime video', 'amazon studios', 'amazon prime', 'amazon mgm studios'], label: 'Prime Video' },
-  { match: ['hbo', 'hbo max', 'hbo films', 'home box office'], label: 'HBO' }
-];
-
-export function matchFeaturedStudio(studioName) {
-  const lower = studioName.toLowerCase();
-  for (const entry of FEATURED_STUDIOS) {
-    if (entry.match.some(pattern => lower === pattern || lower.startsWith(pattern))) {
-      return entry;
-    }
-  }
-  return null;
-}
+import { FEATURED_STUDIOS, matchFeaturedStudio } from '../../constants/featuredStudios.js';
 
 export function renderGenreMenu(menu, genres, type) {
   menu.innerHTML = '';

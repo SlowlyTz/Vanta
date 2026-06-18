@@ -158,7 +158,8 @@
 
 @media (max-width: 768px) {
   .home-hero {
-    height: 68dvh;
+    height: 68vh;
+    height: 68svh;
     min-height: 420px;
     max-height: none;
     margin-bottom: var(--spacing-md);

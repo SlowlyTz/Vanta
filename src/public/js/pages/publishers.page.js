@@ -1,26 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
-
-const FEATURED_STUDIOS = [
-  { match: ['disney', 'walt disney', 'walt disney pictures', 'walt disney studios', 'walt disney animation studios'], label: 'Disney', image: '/assets/publisher/disney.webp' },
-  { match: ['20th century', '20th century studios', '20th century fox', 'twentieth century fox'], label: '20th Century Studios', image: '/assets/publisher/20th-century.webp' },
-  { match: ['warner bros', 'warner bros pictures', 'warner brothers', 'warner bros.'], label: 'Warner Bros', image: '/assets/publisher/warner-bros.webp' },
-  { match: ['netflix'], label: 'Netflix', image: '/assets/publisher/netflix.webp' },
-  { match: ['apple tv', 'apple tv+', 'appletv', 'apple'], label: 'Apple TV', image: '/assets/publisher/appletv.webp' },
-  { match: ['amazon', 'prime video', 'amazon studios', 'amazon prime', 'amazon mgm studios'], label: 'Prime Video', image: '/assets/publisher/prime.webp' },
-  { match: ['hbo', 'hbo max', 'hbo films', 'home box office'], label: 'HBO', image: '/assets/publisher/hbo.webp' }
-];
-
-function matchFeatured(studioName) {
-  const lower = studioName.toLowerCase();
-  for (const entry of FEATURED_STUDIOS) {
-    if (entry.match.some(pattern => lower === pattern || lower.startsWith(pattern))) {
-      return entry;
-    }
-  }
-  return null;
-}
+import { FEATURED_STUDIOS, matchFeaturedStudio } from '../constants/featuredStudios.js';
 
 export default function PublishersPage() {
   const container = createElement('div', { className: 'page-container content-section' });
@@ -87,7 +68,7 @@ export default function PublishersPage() {
     const others = [];
 
     studios.forEach(studio => {
-      const match = matchFeatured(studio.Name);
+      const match = matchFeaturedStudio(studio.Name);
       if (match && !seen.has(match.label)) {
         seen.add(match.label);
         featured.push({ ...studio, _featured: match });

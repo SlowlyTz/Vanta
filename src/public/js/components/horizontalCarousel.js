@@ -1,6 +1,6 @@
 import { createElement } from '../utils/dom.js';
 
-export function HorizontalCarousel({ title, items = [], trackClass = '', containerClass = '' }) {
+export function HorizontalCarousel({ title, items = [], trackClass = '', containerClass = '', href = null, actionLabel = 'Alle anzeigen' }) {
   if (!items || items.length === 0) return null;
 
   const prevBtn = createElement('button', {
@@ -101,13 +101,28 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
     requestArrowUpdate();
   };
 
-  const header = createElement('div', { className: 'carousel-header' },
-    createElement('h3', { className: 'carousel-title-text' }, title),
+  const headerChildren = [
+    createElement('h3', { className: 'carousel-title-text' }, title)
+  ];
+
+  if (href) {
+    headerChildren.push(
+      createElement('a', {
+        className: 'carousel-header-action',
+        href,
+        'aria-label': `${actionLabel}: ${title}`
+      }, actionLabel)
+    );
+  }
+
+  headerChildren.push(
     createElement('div', { className: 'carousel-arrows' },
       prevBtn,
       nextBtn
     )
   );
+
+  const header = createElement('div', { className: 'carousel-header' }, ...headerChildren);
 
   const container = createElement('div', {
     className: `horizontal-carousel-container ${containerClass}`

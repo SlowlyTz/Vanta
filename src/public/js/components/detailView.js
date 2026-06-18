@@ -106,9 +106,9 @@ export function DetailView({ item, actions, castSection, seasonsSection, similar
           metadataItems.length > 0 ? createElement('div', { className: 'detail-metadata' }, metadataItems) : null,
           genreTags.length > 0 ? createElement('div', { className: 'detail-genres' }, genreTags) : null,
           taglineEl,
+          actionButtons.length > 0 ? createElement('div', { className: 'detail-actions' }, actionButtons) : null,
           createElement('p', { className: 'detail-overview' }, item.overview),
-          crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null,
-          actionButtons.length > 0 ? createElement('div', { className: 'detail-actions' }, actionButtons) : null
+          crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null
         )
       ),
       castSection,
