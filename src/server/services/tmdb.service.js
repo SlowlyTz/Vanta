@@ -9,6 +9,22 @@ const cacheTv = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_typ
 const getCached = db.prepare('SELECT * FROM tmdb_media WHERE tmdb_id = ?');
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
+const memoryCache = new Map();
+
+function getMemoryCache(key, ttlMs) {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > ttlMs) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setMemoryCache(key, data) {
+  memoryCache.set(key, { data, timestamp: Date.now() });
+}
+
 const isV4Token = env.TMDB_API_KEY.startsWith('eyJ');
 
 const buildTmdbUrl = (path, params = {}) => {
@@ -117,6 +133,62 @@ class TmdbService {
       media_type: 'tv',
       cast: credits.cast?.slice(0, 10) || [],
     };
+  }
+
+  static async getTrending(timeWindow = 'week', limit = 20) {
+    const cacheKey = `tmdb_trending_${timeWindow}`;
+    const cached = getMemoryCache(cacheKey, 60 * 60 * 1000);
+    if (cached) return cached.slice(0, limit);
+
+    const data = await fetchTmdbJson(`/trending/all/${timeWindow}`, { language: 'de-DE' });
+    const results = (data.results || [])
+      .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
+      .map(item => ({
+        id: item.id,
+        title: item.title || item.name,
+        originalTitle: item.original_title || item.original_name,
+        mediaType: item.media_type,
+        releaseDate: item.release_date || item.first_air_date,
+        popularity: item.popularity || 0
+      }));
+
+    setMemoryCache(cacheKey, results);
+    return results.slice(0, limit);
+  }
+
+  static async getPopular(limit = 20) {
+    const cacheKey = 'tmdb_popular';
+    const cached = getMemoryCache(cacheKey, 60 * 60 * 1000);
+    if (cached) return cached.slice(0, limit);
+
+    const [movies, tv] = await Promise.all([
+      fetchTmdbJson('/movie/popular', { language: 'de-DE' }),
+      fetchTmdbJson('/tv/popular', { language: 'de-DE' })
+    ]);
+
+    const results = [
+      ...(movies.results || []).map(item => ({
+        id: item.id,
+        title: item.title,
+        originalTitle: item.original_title,
+        mediaType: 'movie',
+        releaseDate: item.release_date,
+        popularity: item.popularity || 0
+      })),
+      ...(tv.results || []).map(item => ({
+        id: item.id,
+        title: item.name,
+        originalTitle: item.original_name,
+        mediaType: 'tv',
+        releaseDate: item.first_air_date,
+        popularity: item.popularity || 0
+      }))
+    ];
+
+    results.sort((a, b) => b.popularity - a.popularity);
+
+    setMemoryCache(cacheKey, results);
+    return results.slice(0, limit);
   }
 
   static getImageUrl(path) {

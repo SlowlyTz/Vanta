@@ -2,6 +2,7 @@ import express from 'express';
 import { LibraryService } from '../../services/jellyfin/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
 import { HomeCategoriesService } from '../../services/home-categories.service.js';
+import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 
@@ -39,6 +40,21 @@ router.get('/home-categories', requireAuth, asyncHandler(async (req, res) => {
       return destroyInvalidSession(req, res);
     }
     return res.status(500).json({ error: 'Failed to fetch home categories' });
+  }
+}));
+
+router.get('/home-sections', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+
+  try {
+    const sections = await HomeSectionsService.getHomeSections(userId, accessToken);
+    return res.json(sections);
+  } catch (error) {
+    console.error('[Media Home Sections Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
+    return res.status(500).json({ error: 'Failed to fetch home sections' });
   }
 }));
 

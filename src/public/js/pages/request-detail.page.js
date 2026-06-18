@@ -53,8 +53,37 @@ export default function RequestDetailPage({ type, id }) {
       );
 
       const info = createElement('div', { className: 'request-detail-info' });
+      const titleRow = createElement('div', { className: 'request-detail-title-row' });
+      const actions = createElement('div', { className: 'request-detail-actions' });
+      let requestBtn = null;
 
-      info.appendChild(createElement('h1', { className: 'request-detail-title' }, title));
+      titleRow.appendChild(createElement('h1', { className: 'request-detail-title' }, title));
+
+      if (!isRequested && !crossCheck.exists && !isBanned) {
+        requestBtn = createElement('button', {
+          className: 'btn-primary request-detail-request-btn',
+          onClick: async () => {
+            requestBtn.disabled = true;
+            requestBtn.textContent = 'Wird angefragt...';
+            try {
+              await RequestsApi.createRequest(parseInt(id), type, '');
+              requestBtn.textContent = 'Angefragt';
+              requestBtn.classList.remove('btn-primary');
+              requestBtn.classList.add('btn-requested');
+              requestBtn.disabled = true;
+              appStore.showToast('Anfrage erfolgreich!', 'success');
+            } catch (error) {
+              requestBtn.disabled = false;
+              requestBtn.textContent = 'Anfragen';
+              appStore.showToast(error.message || 'Fehler beim Anfrage', 'error');
+            }
+          }
+        }, 'Anfragen');
+
+        titleRow.appendChild(requestBtn);
+      }
+
+      info.appendChild(titleRow);
 
       const meta = createElement('div', { className: 'request-detail-meta' });
       if (year) meta.appendChild(createElement('span', {}, year));
@@ -93,39 +122,15 @@ export default function RequestDetailPage({ type, id }) {
         info.appendChild(badges);
       }
 
-      const actions = createElement('div', { className: 'request-detail-actions' });
-
-      if (!isRequested && !crossCheck.exists && !isBanned) {
-        const requestBtn = createElement('button', {
-          className: 'btn-primary request-detail-request-btn',
-          onClick: async () => {
-            requestBtn.disabled = true;
-            requestBtn.textContent = 'Wird angefragt...';
-            try {
-              await RequestsApi.createRequest(parseInt(id), type, '');
-              requestBtn.textContent = 'Angefragt';
-              requestBtn.classList.remove('btn-primary');
-              requestBtn.classList.add('btn-requested');
-              requestBtn.disabled = true;
-              appStore.showToast('Anfrage erfolgreich!', 'success');
-            } catch (error) {
-              requestBtn.disabled = false;
-              requestBtn.textContent = 'Anfragen';
-              appStore.showToast(error.message || 'Fehler beim Anfrage', 'error');
-            }
-          }
-        }, 'Anfragen');
-
-        actions.appendChild(requestBtn);
-      }
-
       const backBtn = createElement('button', {
         className: 'btn-secondary request-detail-back-btn',
         onClick: () => { window.history.back(); }
       }, 'Zurueck');
       actions.appendChild(backBtn);
 
-      info.appendChild(actions);
+      if (actions.children.length > 0) {
+        info.appendChild(actions);
+      }
 
       mainRow.appendChild(posterWrap);
       mainRow.appendChild(info);

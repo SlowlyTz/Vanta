@@ -9,6 +9,10 @@ export const MediaApi = {
     return request('/api/media/home-categories');
   },
 
+  getHomeSections() {
+    return request('/api/media/home-sections');
+  },
+
   search(query) {
     return request(`/api/media/search?q=${encodeURIComponent(query)}`);
   },
