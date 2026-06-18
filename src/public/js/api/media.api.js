@@ -5,6 +5,10 @@ export const MediaApi = {
     return request('/api/media/home');
   },
 
+  getHomeCategories() {
+    return request('/api/media/home-categories');
+  },
+
   search(query) {
     return request(`/api/media/search?q=${encodeURIComponent(query)}`);
   },

@@ -18,8 +18,19 @@ export default function HomePage() {
   const loadData = async () => {
     appStore.setLoading(true);
     try {
-      const data = await MediaApi.getHome();
-      renderHome(data);
+      const homeData = await MediaApi.getHome();
+      let categories = { movieGenres: [], seriesGenres: [], publishers: [] };
+
+      try {
+        categories = await MediaApi.getHomeCategories();
+      } catch (categoryError) {
+        if (categoryError.isAuthError) throw categoryError;
+
+        console.error('[Home Categories Load Error]', categoryError);
+        appStore.showToast('Kategorien konnten nicht geladen werden', 'error');
+      }
+
+      renderHome(homeData, categories);
     } catch (error) {
       if (error.isAuthError) return;
 
@@ -47,14 +58,19 @@ export default function HomePage() {
     );
   };
 
-  const renderHome = (data) => {
+  const hasContent = (data, categories) => {
+    const hasResume = data.resume && data.resume.length > 0;
+    const hasHero = (data.movies && data.movies.length > 0) || (data.series && data.series.length > 0);
+    const hasMovieGenres = categories.movieGenres && categories.movieGenres.length > 0;
+    const hasSeriesGenres = categories.seriesGenres && categories.seriesGenres.length > 0;
+    const hasPublishers = categories.publishers && categories.publishers.length > 0;
+    return hasResume || hasHero || hasMovieGenres || hasSeriesGenres || hasPublishers;
+  };
+
+  const renderHome = (data, categories) => {
     container.innerHTML = '';
 
-    const hasResume = data.resume && data.resume.length > 0;
-    const hasMovies = data.movies && data.movies.length > 0;
-    const hasSeries = data.series && data.series.length > 0;
-
-    if (!hasResume && !hasMovies && !hasSeries) {
+    if (!hasContent(data, categories)) {
       container.appendChild(
         createElement('div', { className: 'content-section' },
           createElement('div', { className: 'search-empty-state' },
@@ -79,7 +95,7 @@ export default function HomePage() {
     const sectionsContainer = createElement('div', { className: 'content-section' });
 
     // 1. Continue Watching
-    if (hasResume) {
+    if (data.resume && data.resume.length > 0) {
       const resumeCarousel = MediaCarousel({
         title: 'Weiter schauen',
         items: data.resume,
@@ -88,24 +104,43 @@ export default function HomePage() {
       if (resumeCarousel) sectionsContainer.appendChild(resumeCarousel);
     }
 
-    // 2. Movies
-    if (hasMovies) {
-      const moviesCarousel = MediaCarousel({
-        title: 'Filme',
-        items: data.movies,
-        landscape: false
+    // 2. Movie Genre Categories
+    if (categories.movieGenres) {
+      categories.movieGenres.forEach(category => {
+        const carousel = MediaCarousel({
+          title: `Filme: ${category.name}`,
+          items: category.items,
+          landscape: false,
+          href: category.href
+        });
+        if (carousel) sectionsContainer.appendChild(carousel);
       });
-      if (moviesCarousel) sectionsContainer.appendChild(moviesCarousel);
     }
 
-    // 3. Series
-    if (hasSeries) {
-      const seriesCarousel = MediaCarousel({
-        title: 'Serien',
-        items: data.series,
-        landscape: false
+    // 3. Series Genre Categories
+    if (categories.seriesGenres) {
+      categories.seriesGenres.forEach(category => {
+        const carousel = MediaCarousel({
+          title: `Serien: ${category.name}`,
+          items: category.items,
+          landscape: false,
+          href: category.href
+        });
+        if (carousel) sectionsContainer.appendChild(carousel);
       });
-      if (seriesCarousel) sectionsContainer.appendChild(seriesCarousel);
+    }
+
+    // 4. Publisher Categories
+    if (categories.publishers) {
+      categories.publishers.forEach(category => {
+        const carousel = MediaCarousel({
+          title: category.name,
+          items: category.items,
+          landscape: false,
+          href: category.href
+        });
+        if (carousel) sectionsContainer.appendChild(carousel);
+      });
     }
 
     container.appendChild(sectionsContainer);

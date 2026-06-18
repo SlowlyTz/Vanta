@@ -1,6 +1,7 @@
 import express from 'express';
 import { LibraryService } from '../../services/jellyfin/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
+import { HomeCategoriesService } from '../../services/home-categories.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 
@@ -23,6 +24,21 @@ router.get('/home', requireAuth, asyncHandler(async (req, res) => {
       return destroyInvalidSession(req, res);
     }
     return res.status(500).json({ error: 'Failed to fetch media library data' });
+  }
+}));
+
+router.get('/home-categories', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+
+  try {
+    const categories = await HomeCategoriesService.getHomeCategories(userId, accessToken);
+    return res.json(categories);
+  } catch (error) {
+    console.error('[Media Home Categories Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
+    return res.status(500).json({ error: 'Failed to fetch home categories' });
   }
 }));
 

@@ -37,6 +37,23 @@
   white-space: nowrap;
 }
 
+.carousel-header-action {
+  flex: 0 0 auto;
+  margin-left: auto;
+  margin-right: var(--spacing-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.carousel-header-action:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
 .carousel-track {
   max-width: 100%;
   min-width: 0;

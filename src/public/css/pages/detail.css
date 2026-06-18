@@ -176,8 +176,8 @@
 .detail-actions {
   display: flex;
   gap: var(--spacing-md);
-  flex-wrap: wrap;
-  margin-top: 4px;
+  flex-wrap: nowrap;
+  margin: 2px 0 4px;
 }
 
 @media (max-width: 992px) {
@@ -412,11 +412,6 @@
     font-size: 0.98rem;
     line-height: 1.5;
     text-align: left;
-  }
-  .detail-actions .btn-primary,
-  .detail-actions .btn-secondary {
-    flex: 1 1 150px;
-    min-width: 0;
   }
   .cast-title {
     font-size: 1.15rem;

@@ -2,7 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaCard } from './mediaCard.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';
 
-export function MediaCarousel({ title, items = [], landscape = false }) {
+export function MediaCarousel({ title, items = [], landscape = false, href = null, actionLabel = 'Alle anzeigen' }) {
   if (!items || items.length === 0) return null;
 
   const carouselItems = items.map(item => {
@@ -14,6 +14,8 @@ export function MediaCarousel({ title, items = [], landscape = false }) {
     title,
     items: carouselItems,
     trackClass: `media-carousel ${landscape ? 'landscape-carousel' : ''}`,
-    containerClass: 'media-carousel-container'
+    containerClass: 'media-carousel-container',
+    href,
+    actionLabel
   });
 }
