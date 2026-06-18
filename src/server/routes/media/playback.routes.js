@@ -1,7 +1,8 @@
 import express from 'express';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
 import { PlaybackService } from '../../services/playback.service.js';
-import { requireAuth } from '../../middleware/auth.middleware.js';
+import { SettingsService } from '../../services/settings.service.js';
+import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js';
 
@@ -34,6 +35,9 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
     return pipeReadable(upstreamResponse, req, res);
   } catch (error) {
     console.error('[Playback Proxy Error] Failed to proxy playback resource:', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     if (!res.headersSent) {
       return res.status(500).json({ error: 'Failed to proxy playback resource' });
     }
@@ -43,26 +47,25 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
 router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
-  const { mode } = req.query;
 
   try {
-    const playbackMode = PlaybackService.normalizeMode(mode);
+    const { forceHlsTranscoding } = await SettingsService.getTranscodingSettings();
     const userAgent = req.headers['user-agent'] || '';
     const playbackInfo = await PlaybackApiService.getPlaybackInfo(
       userId,
       accessToken,
       id,
-      PlaybackService.getPlaybackInfoOptions(playbackMode, userAgent)
+      { userAgent, forceHlsTranscoding }
     );
-    const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
-      mode: playbackMode,
-      userAgent
-    });
+    const playback = PlaybackService.resolvePlayback(playbackInfo, id, { forceHlsTranscoding });
 
     res.setHeader('Cache-Control', 'no-store');
     return res.json(playback);
   } catch (error) {
     console.error(`[Playback Resolve Error] Failed to resolve playback for ${id}:`, error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
     return res.status(500).json({ error: 'Failed to resolve playback media source' });
   }
 }));

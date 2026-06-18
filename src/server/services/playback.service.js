@@ -1,27 +1,11 @@
 import env from '../config/env.js';
 
-export const PLAYBACK_MODES = Object.freeze({
-  TRANSCODE: 'transcode',
-  COMPATIBLE: 'compatible',
-  DIRECT: 'direct'
-});
-
-const DEFAULT_PLAYBACK_MODE = PLAYBACK_MODES.TRANSCODE;
-const SAFE_CONTAINERS = new Set(['mp4', 'm4v', 'mov']);
-const SAFE_VIDEO_CODECS = new Set(['h264', 'avc', 'avc1']);
-const SAFE_AUDIO_CODECS = new Set(['aac', 'mp3', 'alac']);
 const SENSITIVE_QUERY_PARAMS = ['api_key', 'access_token', 'x-emby-token', 'X-Emby-Token', 'ApiKey'];
 
 const getFirstValue = (value) => {
   if (!value || typeof value !== 'string') return '';
   return value.split(',')[0].trim().toLowerCase();
 };
-
-const isIosUserAgent = (userAgent = '') => /iPad|iPhone|iPod/.test(userAgent)
-  || (/Macintosh/.test(userAgent) && /Mobile\/\w+/.test(userAgent));
-
-const isSafariUserAgent = (userAgent = '') => /Safari/.test(userAgent)
-  && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPiOS/.test(userAgent);
 
 const getMediaStream = (source, type) => {
   const streams = Array.isArray(source?.MediaStreams) ? source.MediaStreams : [];
@@ -41,165 +25,79 @@ const getSourceMetadata = (source) => {
 };
 
 export class PlaybackService {
-  static normalizeMode(mode) {
-    return Object.values(PLAYBACK_MODES).includes(mode) ? mode : DEFAULT_PLAYBACK_MODE;
-  }
-
-  static getPlaybackInfoOptions(mode, userAgent = '') {
-    return {
-      forceTranscode: this.normalizeMode(mode) === PLAYBACK_MODES.TRANSCODE,
-      preferHls: this.shouldPreferHls(userAgent)
-    };
-  }
-
-  static resolvePlayback(playbackInfo, itemId, { mode, userAgent } = {}) {
-    const requestedMode = this.normalizeMode(mode);
+  static resolvePlayback(playbackInfo, itemId, { forceHlsTranscoding = false } = {}) {
     const sources = Array.isArray(playbackInfo?.MediaSources) ? playbackInfo.MediaSources : [];
 
     if (sources.length === 0) {
       throw new Error('Keine abspielbare Medienquelle gefunden.');
     }
 
-    if (requestedMode === PLAYBACK_MODES.TRANSCODE) {
+    const source = sources.find(s => !s.ErrorCode) || sources[0];
+
+    if (source.ErrorCode) {
+      throw new Error(source.ErrorMessage || 'Medienquelle kann nicht wiedergegeben werden.');
+    }
+
+    if (forceHlsTranscoding) {
+      const hlsUrl = source.TranscodingSubProtocol === 'hls'
+        ? source.TranscodingUrl
+        : (this.isHlsPath(source.TranscodingUrl) ? source.TranscodingUrl : null);
+
+      if (!hlsUrl) {
+        throw new Error('Jellyfin hat keinen HLS-Transcoding-Stream bereitgestellt.');
+      }
+
       return this.buildPlaybackResponse({
-        requestedMode,
-        ...this.selectTranscodingTarget(sources, itemId, 'Immer transkodieren ist aktiv.', userAgent)
+        source,
+        targetPath: hlsUrl,
+        isTranscoded: true,
+        forceHlsTranscoding: true
       });
     }
 
-    if (requestedMode === PLAYBACK_MODES.DIRECT) {
+    if (source.DirectStreamUrl) {
       return this.buildPlaybackResponse({
-        requestedMode,
-        ...this.selectDirectTarget(sources, itemId, 'Direktstream wurde bevorzugt.', userAgent)
+        source,
+        targetPath: source.DirectStreamUrl,
+        isTranscoded: false
       });
     }
 
-    const preferredSource = this.getPreferredSource(sources);
-    const compatibilityIssue = this.getCompatibilityIssue(preferredSource, userAgent);
-
-    if (compatibilityIssue) {
+    if (source.TranscodingUrl) {
       return this.buildPlaybackResponse({
-        requestedMode,
-        ...this.selectTranscodingTarget(sources, itemId, compatibilityIssue, userAgent)
+        source,
+        targetPath: source.TranscodingUrl,
+        isTranscoded: true
       });
     }
 
-    return this.buildPlaybackResponse({
-      requestedMode,
-      ...this.selectDirectTarget(sources, itemId, 'Quelle ist browserkompatibel.', userAgent)
-    });
-  }
-
-  static selectTranscodingTarget(sources, itemId, reason, userAgent = '') {
-    const transcodableSources = sources.filter(source => source.SupportsTranscoding !== false);
-    const candidates = transcodableSources.length > 0 ? transcodableSources : sources;
-    const preferHls = this.shouldPreferHls(userAgent);
-    const hlsSource = candidates.find(source => source.TranscodingUrl && this.isHlsPath(source.TranscodingUrl));
-    const httpSource = candidates.find(source => source.TranscodingUrl && !this.isHlsPath(source.TranscodingUrl));
-    const source = (preferHls ? hlsSource || httpSource : httpSource)
-      || this.getPreferredSource(candidates);
-    const targetPath = preferHls
-      ? source?.TranscodingUrl || this.buildTranscodingFallbackPath(itemId, source)
-      : httpSource?.TranscodingUrl || this.buildTranscodingFallbackPath(itemId, source);
-
-    return {
-      mode: PLAYBACK_MODES.TRANSCODE,
-      source,
-      targetPath,
-      isTranscoded: true,
-      reason
-    };
-  }
-
-  static selectDirectTarget(sources, itemId, reason, userAgent = '') {
-    const directSource = sources.find(source => source.DirectStreamUrl)
-      || sources.find(source => source.SupportsDirectPlay || source.SupportsDirectStream)
-      || this.getPreferredSource(sources);
-
-    if (!directSource?.DirectStreamUrl && !directSource?.SupportsDirectPlay && !directSource?.SupportsDirectStream) {
-      return this.selectTranscodingTarget(sources, itemId, 'Direktstream ist nicht verfügbar.', userAgent);
+    if ((source.SupportsDirectPlay || source.SupportsDirectStream) && itemId) {
+      const params = new URLSearchParams({ static: 'true' });
+      if (source.Id) params.set('mediaSourceId', source.Id);
+      return this.buildPlaybackResponse({
+        source,
+        targetPath: `/Videos/${encodeURIComponent(itemId)}/stream?${params.toString()}`,
+        isTranscoded: false
+      });
     }
 
-    return {
-      mode: PLAYBACK_MODES.DIRECT,
-      source: directSource,
-      targetPath: directSource.DirectStreamUrl || this.buildDirectFallbackPath(itemId, directSource),
-      isTranscoded: false,
-      reason
-    };
+    throw new Error('Jellyfin hat keine Wiedergabe-URL bereitgestellt.');
   }
 
-  static getPreferredSource(sources) {
-    return sources.find(source => !source.ErrorCode) || sources[0];
-  }
-
-  static getCompatibilityIssue(source, userAgent) {
-    if (isIosUserAgent(userAgent) || isSafariUserAgent(userAgent)) {
-      return 'Safari/iOS wird über einen kompatiblen HLS-Stream bedient.';
-    }
-
-    const metadata = getSourceMetadata(source);
-
-    if (metadata.container && !SAFE_CONTAINERS.has(metadata.container)) {
-      return `Container ${metadata.container.toUpperCase()} ist nicht universell browserkompatibel.`;
-    }
-
-    if (metadata.videoCodec && !SAFE_VIDEO_CODECS.has(metadata.videoCodec)) {
-      return `Video-Codec ${metadata.videoCodec.toUpperCase()} ist nicht universell browserkompatibel.`;
-    }
-
-    if (metadata.audioCodec && !SAFE_AUDIO_CODECS.has(metadata.audioCodec)) {
-      return `Audio-Codec ${metadata.audioCodec.toUpperCase()} ist nicht universell browserkompatibel.`;
-    }
-
-    if (metadata.audioChannels > 2) {
-      return `${metadata.audioChannels} Audiokanäle werden für breite Browserkompatibilität transkodiert.`;
-    }
-
-    return null;
-  }
-
-  static shouldPreferHls(userAgent = '') {
-    return isIosUserAgent(userAgent) || isSafariUserAgent(userAgent);
-  }
-
-  static buildPlaybackResponse({ requestedMode, mode, source, targetPath, isTranscoded, reason }) {
+  static buildPlaybackResponse({ source, targetPath, isTranscoded, forceHlsTranscoding = false }) {
     const normalizedPath = this.normalizeJellyfinPath(targetPath);
     const metadata = getSourceMetadata(source);
 
     return {
-      requestedMode,
-      mode,
       delivery: this.isHlsPath(normalizedPath) ? 'hls' : 'http',
       isTranscoded,
       url: this.toProxyUrl(normalizedPath),
-      reason,
+      forceHlsTranscoding,
       mediaSourceId: source?.Id || null,
       container: metadata.container || null,
       videoCodec: metadata.videoCodec || null,
       audioCodec: metadata.audioCodec || null
     };
-  }
-
-  static buildTranscodingFallbackPath(itemId, source) {
-    const params = new URLSearchParams({
-      container: 'mp4',
-      videoCodec: 'h264',
-      audioCodec: 'aac',
-      audioChannels: '2',
-      maxBitrate: '20000000',
-      videoBitrate: '18000000',
-      audioBitrate: '192000'
-    });
-
-    if (source?.Id) params.set('mediaSourceId', source.Id);
-    return `/Videos/${encodeURIComponent(itemId)}/stream?${params.toString()}`;
-  }
-
-  static buildDirectFallbackPath(itemId, source) {
-    const params = new URLSearchParams({ static: 'true' });
-    if (source?.Id) params.set('mediaSourceId', source.Id);
-    return `/Videos/${encodeURIComponent(itemId)}/stream?${params.toString()}`;
   }
 
   static normalizeJellyfinPath(pathOrUrl) {

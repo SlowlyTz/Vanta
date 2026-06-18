@@ -14,6 +14,8 @@ export const FORWARD_HEADERS = {
     'content-range',
     'accept-ranges',
     'cache-control'
+    // content-length is added selectively in playback.routes.js for non-HLS responses;
+    // HLS playlists must not receive content-length to avoid confusing Safari/hls.js.
   ]
 };
 

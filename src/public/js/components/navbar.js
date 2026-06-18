@@ -1,4 +1,3 @@
-import { settingsStore } from '../store/settings.store.js';
 import { createElement, $ } from '../utils/dom.js';
 import { NAV_LINKS } from './navbar/navLinks.js';
 import { createNavIcon, createCloseIcon } from './navbar/icons.js';
@@ -285,10 +284,6 @@ export function Navbar({ onLogout, onChangePassword }) {
     if (window.innerWidth > 768) setMobileNavOpen(false);
   });
 
-  settingsDialog.syncPlaybackChoices();
-  mobileSettings.syncMobilePlaybackChoices();
-  settingsStore.subscribe(settingsDialog.syncPlaybackChoices);
-  settingsStore.subscribe(mobileSettings.syncMobilePlaybackChoices);
   loadDropdowns(element);
   settingsDialog.loadAdminVisibility?.();
   mobileSettings.loadAdminVisibility?.();

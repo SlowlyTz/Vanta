@@ -1,4 +1,4 @@
-import { JELLYFIN_BASE_URL, jellyfinJson, jellyfinRawFetch } from './client.js';
+import { JELLYFIN_BASE_URL, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
@@ -10,26 +10,40 @@ export class PlaybackApiService {
     return fetch(url, { method: 'GET', headers });
   }
 
-  static async getPlaybackInfo(userId, token, itemId, options = {}) {
-    const forceTranscode = options.forceTranscode === true;
-    const preferHls = options.preferHls === true;
+  static async getPlaybackInfo(userId, token, itemId, { userAgent = '', forceHlsTranscoding = false } = {}) {
+    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding });
+
+    const forceHlsBody = {
+      UserId: userId,
+      MaxStreamingBitrate: 40000000,
+      MaxAudioChannels: 2,
+      EnableDirectPlay: false,
+      EnableDirectStream: false,
+      EnableTranscoding: true,
+      AllowVideoStreamCopy: false,
+      AllowAudioStreamCopy: false,
+      AutoOpenLiveStream: true,
+      DeviceProfile: deviceProfile
+    };
+
+    const neutralBody = {
+      UserId: userId,
+      MaxStreamingBitrate: 40000000,
+      MaxAudioChannels: 2,
+      EnableDirectPlay: true,
+      EnableDirectStream: true,
+      EnableTranscoding: true,
+      AllowVideoStreamCopy: true,
+      AllowAudioStreamCopy: true,
+      AutoOpenLiveStream: true,
+      DeviceProfile: deviceProfile
+    };
 
     return jellyfinJson(`/Items/${itemId}/PlaybackInfo`, {
       token,
       method: 'POST',
       query: { UserId: userId },
-      body: {
-        UserId: userId,
-        MaxStreamingBitrate: forceTranscode ? 20000000 : 40000000,
-        MaxAudioChannels: 2,
-        EnableDirectPlay: !forceTranscode,
-        EnableDirectStream: !forceTranscode,
-        EnableTranscoding: true,
-        AllowVideoStreamCopy: !forceTranscode,
-        AllowAudioStreamCopy: !forceTranscode,
-        AutoOpenLiveStream: true,
-        DeviceProfile: buildBrowserDeviceProfile({ forceTranscode, preferHls })
-      }
+      body: forceHlsTranscoding ? forceHlsBody : neutralBody
     });
   }
 

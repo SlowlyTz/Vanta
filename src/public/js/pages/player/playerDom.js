@@ -34,26 +34,6 @@ export function createPlayerDom() {
   });
   const fullscreenBtn = createElement('button', { className: 'player-btn' });
   const backBtn = createElement('button', { className: 'player-back-btn' });
-  const streamMenuButtonLabel = createElement('span', { className: 'player-stream-button-label' });
-  const streamMenuButton = createElement('button', {
-    className: 'player-stream-button',
-    type: 'button',
-    'aria-haspopup': 'menu',
-    'aria-expanded': 'false'
-  },
-    createElement('span', { className: 'player-stream-button-kicker' }, 'Stream'),
-    streamMenuButtonLabel
-  );
-  const streamMenuItems = [];
-  const streamMenu = createElement('div', {
-    className: 'player-stream-menu',
-    role: 'menu',
-    hidden: true
-  });
-  const streamMenuWrapper = createElement('div', { className: 'player-stream-menu-wrapper' },
-    streamMenuButton,
-    streamMenu
-  );
 
   const loader = createElement('div', { className: 'player-loader hidden' },
     createElement('div', { className: 'player-loader-spinner' })
@@ -83,7 +63,6 @@ export function createPlayerDom() {
         )
       ),
       createElement('div', { className: 'player-controls-right' },
-        streamMenuWrapper,
         fullscreenBtn
       )
     )
@@ -109,11 +88,6 @@ export function createPlayerDom() {
     volumeSlider,
     fullscreenBtn,
     backBtn,
-    streamMenuButtonLabel,
-    streamMenuButton,
-    streamMenu,
-    streamMenuItems,
-    streamMenuWrapper,
     loader,
     errorOverlay,
     timeline,

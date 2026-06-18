@@ -1,33 +1,97 @@
 import { MediaApi } from '../../api/media.api.js';
-import { PLAYBACK_MODES, settingsStore } from '../../store/settings.store.js';
 
 export function createPlaybackLoader({
   video,
   loader,
   errorOverlay,
   getDuration,
-  onModeChange,
   showError,
   showControls
 }) {
   let playbackLoadVersion = 0;
-  let fallbackAttempted = false;
-  let activePlaybackMode = settingsStore.getPlaybackMode();
+  let hls = null;
 
-  const loadPlaybackSource = async (id, mode = settingsStore.getPlaybackMode(), options = {}) => {
+  const destroyHls = () => {
+    if (!hls) return;
+    hls.destroy();
+    hls = null;
+  };
+
+  const playIfNeeded = (autoplay) => {
+    if (!autoplay) return;
+    video.play().catch(err => {
+      if (err.name === 'NotAllowedError') {
+        console.warn('Autoplay blocked by browser. Waiting for user interaction.');
+        showControls?.();
+      } else {
+        console.error('Video play error:', err);
+      }
+    });
+  };
+
+  const loadHlsSource = (url, { autoplay, loadVersion }) => {
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.load();
+      playIfNeeded(autoplay);
+      return;
+    }
+
+    if (!window.Hls?.isSupported()) {
+      loader.classList.add('hidden');
+      showError(
+        'Wiedergabefehler',
+        'Dieser Browser kann den von Jellyfin gelieferten HLS-Stream nicht abspielen.'
+      );
+      return;
+    }
+
+    hls = new window.Hls({ enableWorker: false });
+
+    hls.on(window.Hls.Events.ERROR, (_event, data) => {
+      if (!data?.fatal) return;
+
+      if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+        hls.startLoad();
+        return;
+      }
+
+      if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+        hls.recoverMediaError();
+        return;
+      }
+
+      loader.classList.add('hidden');
+      destroyHls();
+      showError('Wiedergabefehler', 'Der Jellyfin-HLS-Stream konnte nicht abgespielt werden.');
+    });
+
+    hls.on(window.Hls.Events.MEDIA_ATTACHED, () => {
+      if (loadVersion !== playbackLoadVersion) return;
+      hls.loadSource(url);
+    });
+
+    hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+      if (loadVersion !== playbackLoadVersion) return;
+      playIfNeeded(autoplay);
+    });
+
+    hls.attachMedia(video);
+  };
+
+  const loadPlaybackSource = async (id, options = {}) => {
     const { autoplay = true, preserveTime = false } = options;
     const loadVersion = ++playbackLoadVersion;
     const resumeTime = preserveTime && Number.isFinite(video.currentTime) ? video.currentTime : 0;
 
-    activePlaybackMode = mode;
-    onModeChange?.(mode);
     loader.classList.remove('hidden');
     errorOverlay.classList.add('hidden');
 
-    const playback = await MediaApi.getPlayback(id, mode);
+    const playback = await MediaApi.getPlayback(id);
     if (loadVersion !== playbackLoadVersion) return;
 
-    video.src = playback.url;
+    destroyHls();
+    video.removeAttribute('src');
 
     if (resumeTime > 0) {
       video.addEventListener('loadedmetadata', () => {
@@ -38,41 +102,18 @@ export function createPlaybackLoader({
       }, { once: true });
     }
 
+    if (playback.delivery === 'hls') {
+      loadHlsSource(playback.url, { autoplay, loadVersion });
+      return;
+    }
+
+    video.src = playback.url;
     video.load();
-
-    if (autoplay) {
-      video.play().catch(err => {
-        if (err.name === 'NotAllowedError') {
-          console.warn('Autoplay blocked by browser. Waiting for user interaction.');
-          showControls?.();
-        } else {
-          console.error('Video play error:', err);
-        }
-      });
-    }
+    playIfNeeded(autoplay);
   };
 
-  const tryFallback = async (id) => {
-    if (fallbackAttempted) return false;
-    fallbackAttempted = true;
-    try {
-      await loadPlaybackSource(id, PLAYBACK_MODES.TRANSCODE, {
-        autoplay: true,
-        preserveTime: true
-      });
-      return true;
-    } catch (fallbackError) {
-      console.error('[Player Fallback Error]', fallbackError);
-      return false;
-    }
-  };
-
-  const handleVideoError = async (id) => {
+  const handleVideoError = async () => {
     loader.classList.add('hidden');
-    if (id && activePlaybackMode !== PLAYBACK_MODES.TRANSCODE && !fallbackAttempted) {
-      const fallbackWorked = await tryFallback(id);
-      if (fallbackWorked) return;
-    }
 
     const err = video.error;
     let msg = 'Ein unbekannter Stream-Fehler ist aufgetreten.';
@@ -95,14 +136,9 @@ export function createPlaybackLoader({
     showError('Wiedergabefehler', msg);
   };
 
-  const resetFallback = () => {
-    fallbackAttempted = false;
-  };
-
   return {
     loadPlaybackSource,
     handleVideoError,
-    resetFallback,
-    getActiveMode: () => activePlaybackMode
+    cleanup: destroyHls
   };
 }

@@ -1,10 +1,8 @@
 import { createElement } from '../utils/dom.js';
 import { formatTime } from '../utils/format.js';
 import { MediaApi } from '../api/media.api.js';
-import { settingsStore } from '../store/settings.store.js';
 import { createPlayerDom } from './player/playerDom.js';
 import { createPlayerControls } from './player/playerControls.js';
-import { createStreamMenu } from './player/streamMenu.js';
 import { createPlaybackLoader } from './player/playbackLoader.js';
 import { createPlayerEvents } from './player/playerEvents.js';
 
@@ -28,11 +26,6 @@ export default function PlayerPage({ id }) {
     volumeSlider,
     fullscreenBtn,
     backBtn,
-    streamMenuButtonLabel,
-    streamMenuButton,
-    streamMenu,
-    streamMenuItems,
-    streamMenuWrapper,
     loader,
     errorOverlay,
     timeline,
@@ -42,7 +35,6 @@ export default function PlayerPage({ id }) {
   } = dom;
 
   const getDuration = () => mediaDuration || video.duration;
-  const getPlayableId = () => playableId;
 
   const showError = (title, msg) => {
     errorOverlay.innerHTML = '';
@@ -84,53 +76,19 @@ export default function PlayerPage({ id }) {
     loader,
     errorOverlay,
     getDuration,
-    onModeChange: updateStreamMenuState,
     showError,
     showControls: controlsApi.showControls
   });
 
-  const streamMenuApi = createStreamMenu({
-    streamMenuButton,
-    streamMenuButtonLabel,
-    streamMenu,
-    streamMenuWrapper,
-    streamMenuItems,
-    getActiveMode: playbackLoader.getActiveMode,
-    onSelect: async (mode) => {
-      settingsStore.setPlaybackMode(mode);
-      playbackLoader.resetFallback();
-      streamMenuApi.setStreamMenuOpen(false);
-      if (!playableId) return;
-      try {
-        await playbackLoader.loadPlaybackSource(playableId, mode, {
-          autoplay: true,
-          preserveTime: true
-        });
-      } catch (error) {
-        loader.classList.add('hidden');
-        showError('Ladefehler', error.message || 'Der Medienstrom konnte nicht geladen werden.');
-      }
-    }
-  });
-
-  function updateStreamMenuState() {
-    streamMenuApi.updateStreamMenuState();
-  }
-
   const eventsApi = createPlayerEvents({
     video,
-    streamMenuWrapper,
     togglePlay: controlsApi.togglePlay,
-    setStreamMenuOpen: streamMenuApi.setStreamMenuOpen,
     cleanupPlayer,
     updateFullscreenIcon: controlsApi.updateFullscreenIcon,
     handleVideoError: playbackLoader.handleVideoError,
-    playableId,
-    getPlayableId,
-    resetControlTimeout: controlsApi.resetControlTimeout
+    resetControlTimeout: controlsApi.resetControlTimeout,
+    getDuration
   });
-
-  const unsubscribeSettings = settingsStore.subscribe(updateStreamMenuState);
 
   const handleTouchMove = (event) => {
     if (event.target.closest('.player-controls, .player-topbar, .player-error')) return;
@@ -161,9 +119,8 @@ export default function PlayerPage({ id }) {
     video.load();
 
     controlsApi.cleanup();
-    streamMenuApi.cleanup();
     eventsApi.cleanup();
-    unsubscribeSettings();
+    playbackLoader.cleanup();
 
     document.body.style.cursor = 'default';
     unlockPlayerViewport();
@@ -221,8 +178,7 @@ export default function PlayerPage({ id }) {
         timeDuration.textContent = formatTime(mediaDuration);
       }
 
-      playbackLoader.resetFallback();
-      await playbackLoader.loadPlaybackSource(playableId, settingsStore.getPlaybackMode(), {
+      await playbackLoader.loadPlaybackSource(playableId, {
         autoplay: true
       });
     } catch (err) {
@@ -234,7 +190,6 @@ export default function PlayerPage({ id }) {
 
   // Initialize
   controlsApi.updateVolume(0.8);
-  updateStreamMenuState();
   lockPlayerViewport();
   initPlayer();
 

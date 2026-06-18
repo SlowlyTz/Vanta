@@ -164,6 +164,19 @@ export function createChatIcon() {
   `);
 }
 
+export function createTranscodingIcon() {
+  return createIcon('admin-tool-card-icon', `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7h4"></path>
+      <circle cx="14" cy="7" r="2"></circle>
+      <path d="M20 7h-2"></path>
+      <path d="M4 17h2"></path>
+      <circle cx="10" cy="17" r="2"></circle>
+      <path d="M20 17h-6"></path>
+    </svg>
+  `);
+}
+
 export function createChevronIcon() {
   return createIcon('settings-chevron', `
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
