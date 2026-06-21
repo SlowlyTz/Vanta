@@ -95,7 +95,15 @@ export const MediaApi = {
     return `/api/media/stream/${id}`;
   },
 
-  getPlayback(id) {
-    return request(`/api/media/playback/${id}`);
+  getPlayback(id, mode = 'auto') {
+    return request(`/api/media/playback/${id}?mode=${encodeURIComponent(mode)}`);
+  },
+
+  reportPlayback(event, payload, options = {}) {
+    return request(`/api/media/playback/report/${encodeURIComponent(event)}`, {
+      method: 'POST',
+      body: payload,
+      keepalive: Boolean(options.keepalive)
+    });
   }
 };

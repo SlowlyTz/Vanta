@@ -1,4 +1,4 @@
-import { JELLYFIN_BASE_URL, jellyfinJson } from './client.js';
+import { JELLYFIN_BASE_URL, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
@@ -55,5 +55,33 @@ export class PlaybackApiService {
     if (rangeHeader) headers.Range = rangeHeader;
 
     return fetch(url, { method: 'GET', headers });
+  }
+
+  static reportPlayback(token, event, payload) {
+    const endpoint = {
+      start: '/Sessions/Playing',
+      progress: '/Sessions/Playing/Progress',
+      stopped: '/Sessions/Playing/Stopped',
+      ended: '/Sessions/Playing/Stopped'
+    }[event];
+
+    if (!endpoint) {
+      const error = new Error(`Unsupported playback report event: ${event}`);
+      error.status = 400;
+      throw error;
+    }
+
+    return jellyfinFetch(endpoint, {
+      token,
+      method: 'POST',
+      body: payload
+    });
+  }
+
+  static markPlayed(userId, token, itemId) {
+    return jellyfinFetch(`/Users/${encodeURIComponent(userId)}/PlayedItems/${encodeURIComponent(itemId)}`, {
+      token,
+      method: 'POST'
+    });
   }
 }

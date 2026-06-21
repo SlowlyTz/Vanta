@@ -51,7 +51,9 @@ export class PlaybackService {
         source,
         targetPath: hlsUrl,
         isTranscoded: true,
-        forceHlsTranscoding: true
+        forceHlsTranscoding: true,
+        playSessionId: playbackInfo?.PlaySessionId,
+        playMethod: 'Transcode'
       });
     }
 
@@ -59,7 +61,9 @@ export class PlaybackService {
       return this.buildPlaybackResponse({
         source,
         targetPath: source.DirectStreamUrl,
-        isTranscoded: false
+        isTranscoded: false,
+        playSessionId: playbackInfo?.PlaySessionId,
+        playMethod: 'DirectStream'
       });
     }
 
@@ -67,7 +71,9 @@ export class PlaybackService {
       return this.buildPlaybackResponse({
         source,
         targetPath: source.TranscodingUrl,
-        isTranscoded: true
+        isTranscoded: true,
+        playSessionId: playbackInfo?.PlaySessionId,
+        playMethod: 'Transcode'
       });
     }
 
@@ -77,14 +83,23 @@ export class PlaybackService {
       return this.buildPlaybackResponse({
         source,
         targetPath: `/Videos/${encodeURIComponent(itemId)}/stream?${params.toString()}`,
-        isTranscoded: false
+        isTranscoded: false,
+        playSessionId: playbackInfo?.PlaySessionId,
+        playMethod: source.SupportsDirectPlay ? 'DirectPlay' : 'DirectStream'
       });
     }
 
     throw new Error('Jellyfin hat keine Wiedergabe-URL bereitgestellt.');
   }
 
-  static buildPlaybackResponse({ source, targetPath, isTranscoded, forceHlsTranscoding = false }) {
+  static buildPlaybackResponse({
+    source,
+    targetPath,
+    isTranscoded,
+    forceHlsTranscoding = false,
+    playSessionId = null,
+    playMethod = null
+  }) {
     const normalizedPath = this.normalizeJellyfinPath(targetPath);
     const metadata = getSourceMetadata(source);
 
@@ -94,6 +109,10 @@ export class PlaybackService {
       url: this.toProxyUrl(normalizedPath),
       forceHlsTranscoding,
       mediaSourceId: source?.Id || null,
+      playSessionId: playSessionId || null,
+      playMethod: playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay'),
+      audioStreamIndex: source?.DefaultAudioStreamIndex ?? null,
+      subtitleStreamIndex: source?.DefaultSubtitleStreamIndex ?? null,
       container: metadata.container || null,
       videoCodec: metadata.videoCodec || null,
       audioCodec: metadata.audioCodec || null
