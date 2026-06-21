@@ -98,13 +98,30 @@ jellyfin-client/
 
 ## Running the Server
 
+The video player is built with Vite into `src/public/vendor/player/`. You must build it at least once before starting the server.
+
+Initial player build:
+```bash
+npm run player:build
+```
+
 Development mode (with auto-reload):
 ```bash
 npm run dev
 ```
 
+When working on the player source, run the player watcher alongside the server:
+```bash
+# Terminal 1
+npm run player:watch
+
+# Terminal 2
+npm run dev
+```
+
 Production mode:
 ```bash
+npm run player:build
 npm start
 ```
 
