@@ -1,101 +1,24 @@
 import { createElement } from '../utils/dom.js';
-import { formatTime } from '../utils/format.js';
 import { MediaApi } from '../api/media.api.js';
-import { createPlayerDom } from './player/playerDom.js';
-import { createPlayerControls } from './player/playerControls.js';
-import { createPlaybackLoader } from './player/playbackLoader.js';
-import { createPlayerEvents } from './player/playerEvents.js';
+
+const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 
 export default function PlayerPage({ id }) {
-  let mediaDuration = 0;
+  const container = createElement('div', {
+    className: 'player-page vanta-player-root'
+  });
+
+  let controller = null;
   let playableId = id;
-  let isCleaningUp = false;
+  let cleaningUp = false;
   let scrollLockY = 0;
 
-  const dom = createPlayerDom();
-  const {
-    container,
-    video,
-    playPauseBtn,
-    timeElapsed,
-    timeDuration,
-    progressFill,
-    bufferFill,
-    progressHandle,
-    volumeBtn,
-    volumeSlider,
-    fullscreenBtn,
-    backBtn,
-    loader,
-    errorOverlay,
-    timeline,
-    controls,
-    topbar,
-    stage
-  } = dom;
-
-  const getDuration = () => mediaDuration || video.duration;
-
-  const showError = (title, msg) => {
-    errorOverlay.innerHTML = '';
-    errorOverlay.appendChild(createElement('div', { className: 'player-error-title' }, title));
-    errorOverlay.appendChild(createElement('div', { className: 'player-error-msg' }, msg));
-
-    const backToDetailBtn = document.createElement('button');
-    backToDetailBtn.className = 'btn-primary';
-    backToDetailBtn.textContent = 'Zurück';
-    backToDetailBtn.addEventListener('click', cleanupAndGoBack);
-
-    errorOverlay.appendChild(backToDetailBtn);
-    errorOverlay.classList.remove('hidden');
-    controls.classList.add('hidden-controls');
-    topbar.classList.add('hidden-controls');
-  };
-
-  const controlsApi = createPlayerControls({
-    video,
-    playPauseBtn,
-    timeline,
-    progressFill,
-    progressHandle,
-    bufferFill,
-    timeElapsed,
-    timeDuration,
-    volumeBtn,
-    volumeSlider,
-    fullscreenBtn,
-    controls,
-    topbar,
-    container,
-    loader,
-    getDuration
-  });
-
-  const playbackLoader = createPlaybackLoader({
-    video,
-    loader,
-    errorOverlay,
-    getDuration,
-    showError,
-    showControls: controlsApi.showControls
-  });
-
-  const eventsApi = createPlayerEvents({
-    video,
-    togglePlay: controlsApi.togglePlay,
-    cleanupPlayer,
-    updateFullscreenIcon: controlsApi.updateFullscreenIcon,
-    handleVideoError: playbackLoader.handleVideoError,
-    resetControlTimeout: controlsApi.resetControlTimeout,
-    getDuration
-  });
-
-  const handleTouchMove = (event) => {
-    if (event.target.closest('.player-controls, .player-topbar, .player-error')) return;
+  const handleTouchMove = event => {
+    if (event.target.closest('media-player, button, .vanta-player-error')) return;
     event.preventDefault();
   };
 
-  const lockPlayerViewport = () => {
+  const lockViewport = () => {
     scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
     document.documentElement.classList.add('player-active');
     document.body.classList.add('player-active');
@@ -103,101 +26,111 @@ export default function PlayerPage({ id }) {
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
   };
 
-  const unlockPlayerViewport = () => {
+  const unlockViewport = () => {
     window.removeEventListener('touchmove', handleTouchMove);
     document.documentElement.classList.remove('player-active');
     document.body.classList.remove('player-active');
     document.body.style.top = '';
+    document.body.style.cursor = 'default';
     window.scrollTo(0, scrollLockY);
   };
 
-  function cleanupPlayer() {
-    if (isCleaningUp) return;
-    isCleaningUp = true;
-    video.pause();
-    video.src = '';
-    video.load();
-
-    controlsApi.cleanup();
-    eventsApi.cleanup();
-    playbackLoader.cleanup();
-
-    document.body.style.cursor = 'default';
-    unlockPlayerViewport();
-
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
-  }
-
-  function cleanupAndGoBack() {
-    cleanupPlayer();
-    window.history.back();
-  }
-
-  backBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    cleanupAndGoBack();
-  });
-
-  const initPlayer = async () => {
-    loader.classList.remove('hidden');
+  const cleanup = async () => {
+    if (cleaningUp) return;
+    cleaningUp = true;
+    window.removeEventListener('hashchange', handleHashChange);
     try {
-      let item = await MediaApi.getItem(id);
-      playableId = id;
-
-      if (item.Type === 'Series') {
-        const seasons = await MediaApi.getSeasons(id);
-        if (seasons && seasons.length > 0) {
-          const episodes = await MediaApi.getEpisodes(id, seasons[0].Id);
-          if (episodes && episodes.length > 0) {
-            const unplayed = episodes.find(e => e.UserData && !e.UserData.Played);
-            playableId = unplayed ? unplayed.Id : episodes[0].Id;
-            item = await MediaApi.getItem(playableId);
-          } else {
-            throw new Error('Keine Episoden in der ersten Staffel dieser Serie gefunden.');
-          }
-        } else {
-          throw new Error('Keine Staffeln für diese Serie gefunden.');
-        }
-      } else if (item.Type === 'Season') {
-        const seriesId = item.SeriesId;
-        if (!seriesId) throw new Error('Hauptserien-ID konnte nicht ermittelt werden.');
-        const episodes = await MediaApi.getEpisodes(seriesId, id);
-        if (episodes && episodes.length > 0) {
-          const unplayed = episodes.find(e => e.UserData && !e.UserData.Played);
-          playableId = unplayed ? unplayed.Id : episodes[0].Id;
-          item = await MediaApi.getItem(playableId);
-        } else {
-          throw new Error('Keine Episoden in dieser Staffel gefunden.');
-        }
-      }
-
-      if (item.RunTimeTicks) {
-        mediaDuration = item.RunTimeTicks / 10000000;
-        timeDuration.textContent = formatTime(mediaDuration);
-      }
-
-      await playbackLoader.loadPlaybackSource(playableId, {
-        autoplay: true
-      });
-    } catch (err) {
-      console.error('[Player Initialisation Error]', err);
-      loader.classList.add('hidden');
-      showError('Ladefehler', err.message || 'Der Medienstrom konnte nicht geladen werden.');
+      await controller?.destroy();
+    } catch (error) {
+      console.warn('[Player Cleanup]', error);
+    } finally {
+      unlockViewport();
     }
   };
 
-  // Initialize
-  controlsApi.updateVolume(0.8);
-  lockPlayerViewport();
-  initPlayer();
+  const goBack = async () => {
+    await cleanup();
+    window.history.back();
+  };
 
-  container.appendChild(stage);
-  container.appendChild(topbar);
-  container.appendChild(controls);
-  container.appendChild(loader);
-  container.appendChild(errorOverlay);
+  function handleHashChange() {
+    if (!window.location.hash.startsWith('#/player')) cleanup();
+  }
+
+  const resolvePlayableItem = async () => {
+    let item = await MediaApi.getItem(id);
+
+    if (item.Type === 'Series') {
+      const seasons = await MediaApi.getSeasons(id);
+      if (!seasons?.length) throw new Error('Keine Staffeln für diese Serie gefunden.');
+      const episodes = await MediaApi.getEpisodes(id, seasons[0].Id);
+      if (!episodes?.length) throw new Error('Keine Episoden in der ersten Staffel gefunden.');
+      const nextEpisode = episodes.find(episode => episode.UserData && !episode.UserData.Played);
+      playableId = (nextEpisode || episodes[0]).Id;
+      item = await MediaApi.getItem(playableId);
+    } else if (item.Type === 'Season') {
+      if (!item.SeriesId) throw new Error('Hauptserien-ID konnte nicht ermittelt werden.');
+      const episodes = await MediaApi.getEpisodes(item.SeriesId, id);
+      if (!episodes?.length) throw new Error('Keine Episoden in dieser Staffel gefunden.');
+      const nextEpisode = episodes.find(episode => episode.UserData && !episode.UserData.Played);
+      playableId = (nextEpisode || episodes[0]).Id;
+      item = await MediaApi.getItem(playableId);
+    }
+
+    return item;
+  };
+
+  const getPosterUrl = item => {
+    const imageOwnerId = item.ParentBackdropItemId || item.Id || playableId;
+    const tag = item.ParentBackdropImageTags?.[0] || item.BackdropImageTags?.[0];
+    return MediaApi.getImageUrl(imageOwnerId, 'Backdrop', 1920, {
+      tag,
+      quality: 90
+    });
+  };
+
+  const showBootstrapError = error => {
+    container.innerHTML = '';
+    const overlay = createElement('div', { className: 'vanta-player-bootstrap-error' },
+      createElement('div', { className: 'vanta-player-bootstrap-error-title' }, 'Ladefehler'),
+      createElement('div', { className: 'vanta-player-bootstrap-error-msg' }, error.message || 'Der Player konnte nicht geladen werden.')
+    );
+    const backButton = createElement('button', { className: 'btn-primary' }, 'Zurück');
+    backButton.addEventListener('click', goBack);
+    overlay.appendChild(backButton);
+    container.appendChild(overlay);
+  };
+
+  const initialize = async () => {
+    try {
+      const [item, playerModule] = await Promise.all([
+        resolvePlayableItem(),
+        import(PLAYER_MODULE_URL)
+      ]);
+      if (cleaningUp) return;
+
+      const resumePosition = Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
+      controller = await playerModule.mountVantaPlayer({
+        root: container,
+        itemId: playableId,
+        title: item.Name || item.SeriesName || '',
+        poster: getPosterUrl(item),
+        resumePosition,
+        resolvePlayback: mode => MediaApi.getPlayback(playableId, mode),
+        reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
+        onBack: goBack
+      });
+
+      if (cleaningUp) await controller?.destroy();
+    } catch (error) {
+      console.error('[Player Initialisation Error]', error);
+      if (!cleaningUp) showBootstrapError(error);
+    }
+  };
+
+  lockViewport();
+  window.addEventListener('hashchange', handleHashChange);
+  initialize();
 
   return container;
 }

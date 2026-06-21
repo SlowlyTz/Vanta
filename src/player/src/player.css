@@ -1,0 +1,599 @@
+.vanta-player-root,
+.vanta-player-shell,
+.vanta-media-player {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.vanta-player-root {
+  background: #000;
+  color: #fff;
+}
+
+.vanta-player-shell {
+  overflow: hidden;
+  background: #000;
+}
+
+.vanta-media-player {
+  --video-border-radius: 0;
+  --video-border: 0;
+  --video-bg: #000;
+  --video-brand: #fff;
+  --media-font-family: Outfit, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --media-controls-color: #fff;
+  --media-button-color: #fff;
+  --media-button-size: 44px;
+  --media-button-icon-size: 22px;
+  --media-button-border-radius: 50%;
+  --media-button-hover-bg: rgb(255 255 255 / 0.14);
+  --media-button-hover-transform: scale(1.05);
+  --media-button-hover-transition: transform 160ms ease, background 160ms ease;
+  --media-fullscreen-button-size: 44px;
+  --media-focus-ring: 0 0 0 2px #fff, 0 0 0 4px rgb(255 255 255 / 0.35);
+
+  --media-slider-width: 100%;
+  --media-slider-height: 40px;
+  --media-slider-track-width: 100%;
+  --media-slider-track-height: 5px;
+  --media-slider-track-bg: rgb(255 255 255 / 0.22);
+  --media-slider-track-fill-bg: #fff;
+  --media-slider-track-progress-bg: rgb(255 255 255 / 0.35);
+  --media-slider-thumb-bg: #fff;
+  --media-slider-thumb-size: 14px;
+  --media-slider-thumb-border: none;
+  --media-slider-thumb-border-radius: 50%;
+  --media-slider-focused-thumb-shadow: 0 0 0 4px rgb(255 255 255 / 0.35);
+
+  --media-time-color: rgb(255 255 255 / 0.9);
+  --media-time-font-size: 0.84rem;
+  --media-time-font-weight: 560;
+
+  display: block;
+  border: 0;
+  background: #000;
+}
+
+.vanta-media-player media-outlet,
+.vanta-media-player media-outlet video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.vanta-media-player [data-media-button] {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.vanta-media-player [data-media-button] > svg {
+  display: none;
+  fill: currentColor;
+  pointer-events: none;
+}
+
+.vanta-media-player [data-media-button][data-focus] {
+  box-shadow: var(--media-focus-ring);
+  outline: none;
+}
+
+/* Gesture zones */
+.vanta-player-gesture {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.vanta-player-gesture-left {
+  left: 0;
+}
+
+.vanta-player-gesture-right {
+  right: 0;
+}
+
+/* Controls layer */
+.vanta-player-controls-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  opacity: 1;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.vanta-player-controls-layer > * {
+  pointer-events: auto;
+}
+
+.vanta-player-root[data-ui-state="booting"] .vanta-player-controls-layer,
+.vanta-player-root[data-ui-state="switching-source"] .vanta-player-controls-layer,
+.vanta-player-root[data-ui-state="error"] .vanta-player-controls-layer,
+.vanta-player-root[data-ui-state="ready-playing-idle"] .vanta-player-controls-layer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Top bar */
+.vanta-player-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.vanta-player-topbar > * {
+  pointer-events: auto;
+}
+
+.vanta-player-back {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #fff;
+  background: rgb(10 10 12 / 0.58);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  font: 650 0.94rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.vanta-player-back svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.vanta-player-back:hover,
+.vanta-player-back:focus-visible {
+  background: rgb(30 30 34 / 0.72);
+  transform: translateY(-1px);
+}
+
+.vanta-player-title {
+  max-width: min(520px, 60vw);
+  padding-top: 10px;
+  color: #fff;
+  font: 600 1.05rem Outfit, system-ui, sans-serif;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Center controls */
+.vanta-player-center-controls {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  pointer-events: none;
+}
+
+.vanta-player-center-controls > * {
+  pointer-events: auto;
+}
+
+.vanta-player-center-play {
+  --media-button-size: 72px;
+  --media-button-icon-size: 34px;
+  background: rgb(12 12 14 / 0.72);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 0.36);
+}
+
+.vanta-player-center-skip {
+  --media-button-size: 56px;
+  --media-button-icon-size: 28px;
+  background: rgb(12 12 14 / 0.58);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.3);
+}
+
+/* Bottom controls */
+.vanta-player-bottom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin:
+    0
+    calc(-1 * max(16px, env(safe-area-inset-right)))
+    calc(-1 * max(14px, env(safe-area-inset-bottom)))
+    calc(-1 * max(16px, env(safe-area-inset-left)));
+  padding:
+    56px
+    max(16px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  background: linear-gradient(to top, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.4) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.vanta-player-bottom-controls > * {
+  pointer-events: auto;
+}
+
+.vanta-player-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 40px;
+}
+
+.vanta-player-time-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vanta-player-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-player-time-separator {
+  opacity: 0.6;
+}
+
+.vanta-player-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.vanta-player-controls-left,
+.vanta-player-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vanta-player-volume-slider {
+  width: 100px;
+  margin-left: -2px;
+}
+
+/* Vidstack button focus */
+.vanta-media-player [data-media-button][data-focus] {
+  z-index: 1;
+}
+
+/* Loading overlay */
+.vanta-player-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.vanta-player-loading.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.vanta-player-loading-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #050505 center / cover no-repeat;
+}
+
+.vanta-player-loading-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.68);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.vanta-player-loading-inner {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  width: min(560px, calc(100vw - 40px));
+}
+
+.vanta-player-spinner {
+  width: 52px;
+  height: 52px;
+  border: 4px solid rgb(255 255 255 / 0.15);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vanta-player-spin 0.9s linear infinite;
+}
+
+.vanta-player-loading-label {
+  margin-top: 2px;
+  color: #fff;
+  font: 650 0.96rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-loading-log {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  min-height: 1.4em;
+  color: rgb(255 255 255 / 0.62);
+  font: 500 0.78rem ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.vanta-player-loading-log > [aria-hidden="true"] {
+  color: rgb(255 255 255 / 0.38);
+}
+
+.vanta-player-loading-status {
+  overflow-wrap: anywhere;
+}
+
+/* Inline loading spinner */
+.vanta-player-inline-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 23;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.vanta-player-inline-loading:not([hidden]) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.vanta-player-inline-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgb(255 255 255 / 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vanta-player-spin 0.9s linear infinite;
+}
+
+/* Error overlay */
+.vanta-player-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 40;
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid rgb(255 85 85 / 0.5);
+  border-radius: 18px;
+  padding: 24px;
+  background: rgb(8 8 10 / 0.88);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.vanta-player-error[hidden] {
+  display: none;
+}
+
+.vanta-player-error strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ff6262;
+  font-size: 1.2rem;
+}
+
+.vanta-player-error p {
+  color: rgb(255 255 255 / 0.75);
+  line-height: 1.45;
+}
+
+.vanta-player-error > div {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.vanta-player-error button {
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.vanta-player-error button:hover,
+.vanta-player-error button:focus-visible {
+  background: rgb(255 255 255 / 0.2);
+  transform: translateY(-1px);
+}
+
+.vanta-player-retry {
+  background: #fff !important;
+  color: #111 !important;
+}
+
+/* Platform-specific hiding */
+.vanta-player-root.is-ios .vanta-player-mute-button,
+.vanta-player-root.is-ios .vanta-player-volume-slider {
+  display: none !important;
+}
+
+.vanta-player-root.no-native-fullscreen .vanta-player-fullscreen-button {
+  display: none !important;
+}
+
+@keyframes vanta-player-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Desktop: keep a prominent play affordance when autoplay is blocked or paused. */
+@media (pointer: fine) and (min-width: 769px) {
+  .vanta-player-root:not([data-ui-state="ready-paused"]) .vanta-player-center-controls {
+    display: none;
+  }
+}
+
+/* Tablets and small desktops */
+@media (max-width: 900px) {
+  .vanta-player-volume-slider {
+    width: 86px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .vanta-player-gesture {
+    width: 28%;
+  }
+
+  .vanta-player-center-controls {
+    gap: 18px;
+  }
+
+  .vanta-player-center-play {
+    --media-button-size: 64px;
+    --media-button-icon-size: 30px;
+  }
+
+  .vanta-player-center-skip {
+    --media-button-size: 50px;
+    --media-button-icon-size: 24px;
+  }
+
+  .vanta-player-bottom-controls {
+    padding-top: 48px;
+  }
+
+  .vanta-player-timeline-row {
+    gap: 10px;
+  }
+
+  .vanta-player-controls-row {
+    min-height: 48px;
+  }
+
+  .vanta-player-title {
+    font-size: 0.95rem;
+    max-width: 55vw;
+    padding-top: 8px;
+  }
+
+  .vanta-player-back span {
+    display: none;
+  }
+
+  .vanta-player-back {
+    width: 42px;
+    padding: 0;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .vanta-player-center-controls {
+    gap: 12px;
+  }
+
+  .vanta-player-center-play {
+    --media-button-size: 56px;
+    --media-button-icon-size: 26px;
+  }
+
+  .vanta-player-center-skip {
+    --media-button-size: 44px;
+    --media-button-icon-size: 22px;
+  }
+
+  .vanta-media-player {
+    --media-button-size: 40px;
+    --media-button-icon-size: 20px;
+  }
+
+  .vanta-player-time-slider {
+    --media-slider-height: 44px;
+  }
+
+  .vanta-player-volume-slider {
+    width: 72px;
+  }
+
+  .vanta-player-time {
+    font-size: 0.78rem;
+  }
+}
+
+/* Very small viewports: prevent overflow */
+@media (max-width: 360px) {
+  .vanta-player-controls-row {
+    gap: 6px;
+  }
+
+  .vanta-player-controls-left,
+  .vanta-player-controls-right {
+    gap: 0;
+  }
+
+  .vanta-player-volume-slider {
+    width: 56px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .vanta-player-loading,
+  .vanta-player-inline-loading,
+  .vanta-player-controls-layer {
+    transition: none;
+  }
+}

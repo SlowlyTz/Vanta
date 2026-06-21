@@ -6,7 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "player:build": "vite build --config src/player/vite.config.js",
+    "player:watch": "vite build --watch --config src/player/vite.config.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",
@@ -16,6 +20,11 @@
     "helmet": "^7.1.0",
     "hls.js": "^1.6.16",
     "morgan": "^1.10.0",
-    "sql.js": "^1.14.1"
+    "sql.js": "^1.14.1",
+    "vidstack": "^0.6.15"
+  },
+  "devDependencies": {
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
   }
 }

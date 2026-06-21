@@ -4,7 +4,6 @@ body.player-active {
   height: 100%;
   overflow: hidden !important;
   overscroll-behavior: none;
-  touch-action: none;
 }
 
 body.player-active {
@@ -30,374 +29,51 @@ html.player-active #app {
   z-index: 99999;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
+  touch-action: manipulation;
   isolation: isolate;
   contain: layout paint size;
 }
 
-.player-stage {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #000000;
-}
-
-.player-video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  background: #000000;
-  touch-action: manipulation;
-}
-
-.player-topbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 16;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 240ms ease, transform 240ms ease;
-  pointer-events: none;
-}
-
-.player-topbar.hidden-controls {
-  opacity: 0;
-  transform: translateY(-10px);
-  pointer-events: none;
-}
-
-.player-back-btn {
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: rgba(10, 10, 12, 0.5);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  color: #ffffff;
-  padding: 0 16px;
-  font-size: 0.94rem;
-  font-weight: 680;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
-  pointer-events: auto;
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.player-back-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-1px);
-}
-
-.player-controls {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 15;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 84px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.48) 46%, rgba(0, 0, 0, 0) 100%);
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 280ms ease, transform 280ms ease;
-  pointer-events: none;
-}
-
-.player-controls.hidden-controls {
-  opacity: 0;
-  transform: translateY(14px);
-  pointer-events: none;
-}
-
-.player-controls > * {
-  pointer-events: auto;
-}
-
-.player-timeline-container,
-.player-buttons-row {
-  width: min(1080px, 100%);
-  margin: 0 auto;
-}
-
-.player-timeline-container {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding: 0 6px;
-}
-
-.player-timeline {
-  position: relative;
-  height: 6px;
-  border-radius: 999px;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.18);
-  overflow: visible;
-  transition: height var(--transition-fast), background var(--transition-fast);
-}
-
-.player-timeline:hover {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.24);
-}
-
-.player-progress-fill,
-.player-buffer-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  height: 100%;
-  border-radius: inherit;
-  width: 0%;
-}
-
-.player-progress-fill {
-  background: #ffffff;
-}
-
-.player-buffer-fill {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.player-progress-handle {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  transform: translate(-50%, -50%) scale(0);
-  transition: transform var(--transition-fast);
-}
-
-.player-timeline:hover .player-progress-handle {
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.player-time-row {
-  display: flex;
-  justify-content: space-between;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.84rem;
-  font-weight: 560;
-  line-height: 1;
-}
-
-.player-buttons-row {
-  min-height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 18px;
-  background: rgba(12, 12, 14, 0.58);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: 8px 10px;
-}
-
-.player-controls-left,
-.player-controls-right {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.player-controls-left {
-  flex: 1 1 auto;
-}
-
-.player-controls-right {
-  flex: 0 1 auto;
-  justify-content: flex-end;
-}
-
-.player-btn {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
-  opacity: 0.86;
-  transition: opacity var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
-}
-
-.player-btn:hover,
-.player-btn:focus-visible {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.13);
-  transform: translateY(-1px);
-}
-
-.player-btn svg {
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
-}
-
-.player-volume-container {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.player-volume-slider {
-  width: 86px;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  outline: none;
-}
-
-.player-volume-slider::-webkit-slider-thumb {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #ffffff;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-}
-
-.player-loader {
+.vanta-player-bootstrap-error {
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 17;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-  color: #ffffff;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
-
-.player-loader.hidden {
-  display: none !important;
-}
-
-.player-loader-spinner {
-  width: 56px;
-  height: 56px;
-  border: 4px solid rgba(255, 255, 255, 0.12);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.player-error {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 18;
+  z-index: 50;
   width: min(440px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  border: 1px solid rgba(255, 77, 77, 0.5);
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(255, 85, 85, 0.5);
   border-radius: 18px;
-  background: rgba(8, 8, 10, 0.82);
+  padding: 24px;
+  background: rgba(8, 8, 10, 0.88);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  padding: var(--spacing-lg) var(--spacing-xl);
   text-align: center;
   transform: translate(-50%, -50%);
 }
 
-.player-error-title {
-  color: var(--error-color);
-  font-size: 1.25rem;
-  font-weight: 780;
+.vanta-player-bootstrap-error-title {
+  color: #ff6262;
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
-.player-error-msg {
-  color: rgba(255, 255, 255, 0.72);
+.vanta-player-bootstrap-error-msg {
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.95rem;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
-@media (max-width: 768px) {
-  .player-controls {
-    gap: 8px;
-    padding-top: 72px;
-  }
-
-  .player-buttons-row {
-    min-height: 58px;
-    border-radius: 16px;
-    padding: 7px 8px;
-  }
-
-  .player-controls-left,
-  .player-controls-right {
-    gap: 7px;
-  }
-
-  .player-btn {
-    width: 42px;
-    height: 42px;
-  }
-
-  .player-volume-slider {
-    width: 58px;
-  }
-
-  .player-back-btn {
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 0.9rem;
-  }
+.vanta-player-bootstrap-error .btn-primary {
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 20px;
 }
 
-@media (max-width: 430px) {
-  .player-volume-slider {
-    display: none;
-  }
-}
-
-@media (max-width: 360px) {
-  .player-back-btn {
-    padding: 0 12px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .player-topbar,
-  .player-controls,
-  .player-btn,
-  .player-back-btn,
-  .player-progress-handle {
-    animation: none !important;
-    transition: none !important;
+@media (max-width: 600px) {
+  .vanta-player-bootstrap-error {
+    padding: 20px;
   }
 }
