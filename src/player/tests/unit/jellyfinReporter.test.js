@@ -201,6 +201,55 @@ describe('createJellyfinReporter', () => {
     reporter.destroy();
   });
 
+  it('passes keepalive option through to report on stop', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 20, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: (event, payload, options) => {
+        reports.push({ event, payload, options });
+        return Promise.resolve();
+      }
+    });
+
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    await reporter.stop({ keepalive: true });
+
+    const stoppedReports = reports.filter(r => r.event === 'stopped');
+    expect(stoppedReports).toHaveLength(1);
+    expect(stoppedReports[0].options.keepalive).toBe(true);
+
+    reporter.destroy();
+  });
+
+  it('does not send a second stopped report after destroy', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 25, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: (event, payload) => {
+        reports.push({ event, payload });
+        return Promise.resolve();
+      }
+    });
+
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const stopPromise = reporter.stop({ keepalive: true });
+    reporter.destroy();
+    await stopPromise;
+
+    const stoppedReports = reports.filter(r => r.event === 'stopped');
+    expect(stoppedReports).toHaveLength(1);
+  });
+
   it('does not reset confirmed position backwards to 0', async () => {
     const reports = [];
     const player = createMockPlayer({ currentTime: 60, paused: false });

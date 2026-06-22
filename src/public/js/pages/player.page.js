@@ -35,21 +35,20 @@ export default function PlayerPage({ id }) {
     window.scrollTo(0, scrollLockY);
   };
 
-  const cleanup = async () => {
+  const cleanup = () => {
     if (cleaningUp) return;
     cleaningUp = true;
     window.removeEventListener('hashchange', handleHashChange);
     try {
-      await controller?.destroy();
+      controller?.destroy();
     } catch (error) {
       console.warn('[Player Cleanup]', error);
-    } finally {
-      unlockViewport();
     }
+    unlockViewport();
   };
 
-  const goBack = async () => {
-    await cleanup();
+  const goBack = () => {
+    cleanup();
     window.history.back();
   };
 
@@ -121,7 +120,7 @@ export default function PlayerPage({ id }) {
         onBack: goBack
       });
 
-      if (cleaningUp) await controller?.destroy();
+      if (cleaningUp) controller?.destroy();
     } catch (error) {
       console.error('[Player Initialisation Error]', error);
       if (!cleaningUp) showBootstrapError(error);
