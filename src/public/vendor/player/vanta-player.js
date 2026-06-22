@@ -19064,7 +19064,9 @@ function uf({ player: e, reporter: t, ui: n, callbacks: { setLoading: r, setLoad
 			if (s !== _ || (w(), r !== void 0 && !v(r))) return;
 			d || (a(!1), E());
 		}
-	}, O = async (o, m = {}) => {
+	}, O = (e, { success: t = !1 } = {}) => {
+		v(e) && (d = !1, t && (r(!1), E()));
+	}, k = async (o, m = {}) => {
 		let h = ++f, g = y(), _ = {
 			...g,
 			position: Math.max(0, Number(m.position) ?? g.position),
@@ -19074,23 +19076,22 @@ function uf({ player: e, reporter: t, ui: n, callbacks: { setLoading: r, setLoad
 		if (d = !0, w(), s(), r(!0, _.label), a(!1), n.setState(m.isBoot ? "booting" : "switching-source"), u && await t.beforeSourceSwitch(), v(h)) {
 			t.afterSourceSwitch(), u = o, p = _.position, t.setPlayback(o), i(o.delivery === "hls" ? "HLS-Stream wird verbunden …" : "Direkter Videostream wird verbunden …"), c?.(), e.src = lf(o);
 			try {
-				if (await tf(e, "can-play", nf, ["error"]), !v(h) || (i("Medienquelle ist bereit. Laufzeit wird geprüft …"), b(_), await C(3e3), !v(h)) || (await D(_.position, { version: h }), !v(h)) || (d = !1, await S({ shouldPlay: _.shouldPlay && !l?.() }), !v(h))) return;
-				d || (r(!1), E());
+				if (await tf(e, "can-play", nf, ["error"]), !v(h) || (i("Medienquelle ist bereit. Laufzeit wird geprüft …"), b(_), await C(3e3), !v(h)) || (await D(_.position, { version: h }), !v(h)) || (await S({ shouldPlay: _.shouldPlay && !l?.() }), !v(h))) return;
+				O(h, { success: !0 });
 			} catch (e) {
-				if (!v(h)) return;
-				throw d = !1, e;
+				throw O(h, { success: !1 }), e;
 			}
 		}
 	};
 	return {
-		loadPlayback: O,
+		loadPlayback: k,
 		switchTo: async (e, t = {}) => {
 			let n = u, r = y();
 			try {
-				return await O(e, t), { success: !0 };
+				return await k(e, t), { success: !0 };
 			} catch (e) {
 				if (n && n !== u && !t.noRollback) try {
-					return await O(n, {
+					return await k(n, {
 						...t,
 						position: r.position,
 						shouldPlay: r.shouldPlay,
@@ -19469,7 +19470,7 @@ async function Df({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 	}, k = (e) => {
 		e && (c.loadingStatus.textContent = e);
 	}, j = (e) => {
-		c.inlineLoading.hidden = !e;
+		e && !c.loading.classList.contains("is-hidden") || (c.inlineLoading.hidden = !e);
 	}, M = () => {
 		c.error.hidden = !0;
 	}, N = (e) => {
@@ -19614,8 +19615,15 @@ async function Df({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 	}
 	return {
 		player: l,
-		destroy: async () => {
-			f || (f = !0, x = !1, S = !1, D(), P.clearSeekTimer(), C.destroy(), b && await Yd().catch(() => {}), await Ld().catch(() => {}), await y.stop({ keepalive: !0 }), y.destroy(), d.destroy(), u.splice(0).forEach((e) => e()), l.destroy?.(), e.innerHTML = "");
+		destroy: () => {
+			if (f) return;
+			f = !0, x = !1, S = !1, D(), P.clearSeekTimer();
+			let t = y.stop({ keepalive: !0 }), n = Ld().catch(() => {});
+			C.destroy(), y.destroy(), d.destroy(), u.splice(0).forEach((e) => e()), l.destroy?.(), e.innerHTML = "", Promise.all([
+				b ? Yd().catch(() => {}) : Promise.resolve(),
+				n,
+				t?.catch(() => {})
+			]).catch(() => {});
 		}
 	};
 }

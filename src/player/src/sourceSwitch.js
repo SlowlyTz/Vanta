@@ -224,6 +224,15 @@ export function createSourceSwitch({
     }
   };
 
+  const finalizeSwitch = (version, { success = false } = {}) => {
+    if (!isCurrentLoad(version)) return;
+    switching = false;
+    if (success) {
+      setLoading(false);
+      syncPlayingState();
+    }
+  };
+
   const loadPlayback = async (playback, options = {}) => {
     const version = ++loadVersion;
     const previousState = captureState();
@@ -264,17 +273,12 @@ export function createSourceSwitch({
       if (!isCurrentLoad(version)) return;
       await performSeek(state.position, { version });
       if (!isCurrentLoad(version)) return;
-      switching = false;
       const shouldPlay = state.shouldPlay && !shouldPreventPlayback?.();
       await applyPlaybackState({ shouldPlay });
       if (!isCurrentLoad(version)) return;
-      if (!switching) {
-        setLoading(false);
-        syncPlayingState();
-      }
+      finalizeSwitch(version, { success: true });
     } catch (error) {
-      if (!isCurrentLoad(version)) return;
-      switching = false;
+      finalizeSwitch(version, { success: false });
       throw error;
     }
   };

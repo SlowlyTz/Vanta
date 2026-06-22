@@ -325,6 +325,7 @@ export async function mountVantaPlayer({
   };
 
   const setInlineLoading = visible => {
+    if (visible && !dom.loading.classList.contains('is-hidden')) return;
     dom.inlineLoading.hidden = !visible;
   };
 
@@ -587,24 +588,33 @@ export async function mountVantaPlayer({
 
   return {
     player,
-    destroy: async () => {
+    destroy: () => {
       if (destroyed) return;
       destroyed = true;
       phoneOrientationActive = false;
       gateActive = false;
       clearWaitingTimer();
       sourceSwitch.clearSeekTimer();
+
+      // Start final reporting before tearing down reporter state so keepalive can flush.
+      const stopPromise = reporter.stop({ keepalive: true });
+
+      // Begin PiP cleanup while the video element is still present.
+      const pipPromise = exitPictureInPicture().catch(() => {});
+
       orientationGate.destroy();
-      if (isPhone) {
-        await exitSmartphoneFullscreen().catch(() => {});
-      }
-      await exitPictureInPicture().catch(() => {});
-      await reporter.stop({ keepalive: true });
       reporter.destroy();
       ui.destroy();
       disposers.splice(0).forEach(dispose => dispose());
       player.destroy?.();
       root.innerHTML = '';
+
+      // Complete browser cleanup and reporting in the background without blocking navigation.
+      Promise.all([
+        isPhone ? exitSmartphoneFullscreen().catch(() => {}) : Promise.resolve(),
+        pipPromise,
+        stopPromise?.catch(() => {})
+      ]).catch(() => {});
     }
   };
 }
