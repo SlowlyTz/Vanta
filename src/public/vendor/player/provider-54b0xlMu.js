@@ -1,7 +1,7 @@
 import { $ as e, B as t, F as n, c as r, z as i } from "./std-EJr84HPl.js";
-import { J as a, Y as o, Z as s, et as c } from "./media-ui-ZHU-o_6p.js";
-import { n as l } from "./provider-DUZ95Sv7.js";
-import { VideoProvider as u } from "./provider-D2AAyLE4.js";
+import { Q as a, X as o, Y as s, tt as c } from "./media-ui-Nu-6_9GI.js";
+import { n as l } from "./provider-sVMN4fkX.js";
+import { VideoProvider as u } from "./provider-DEhMb_t9.js";
 //#region node_modules/vidstack/dist/prod/providers/hls/lib-loader.js
 var d = class {
 	constructor(e, t, n) {
@@ -25,7 +25,7 @@ var d = class {
 		this.ph.player.dispatchEvent(new r("hls-lib-loaded", { detail: e })), this.jf(e);
 	}
 	Dh(e) {
-		let t = a(e);
+		let t = s(e);
 		this.ph.player.dispatchEvent(new r("hls-lib-load-error", { detail: t })), this.ph.delegate.p("error", { detail: {
 			message: t.message,
 			code: 4
@@ -49,7 +49,7 @@ async function p(e, t = {}) {
 	if (i(e)) {
 		t.onLoadStart?.();
 		try {
-			if (await s(e), !n(window.Hls)) throw Error("");
+			if (await a(e), !n(window.Hls)) throw Error("");
 			let r = window.Hls;
 			return t.onLoaded?.(r), r;
 		} catch (e) {

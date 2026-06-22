@@ -10,31 +10,22 @@ export class PlaybackApiService {
     return fetch(url, { method: 'GET', headers });
   }
 
-  static async getPlaybackInfo(userId, token, itemId, { userAgent = '', forceHlsTranscoding = false } = {}) {
+  static async getPlaybackInfo(userId, token, itemId, {
+    userAgent = '',
+    forceHlsTranscoding = false,
+    maxStreamingBitrate = null
+  } = {}) {
     const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding });
 
-    const forceHlsBody = {
+    const baseBody = {
       UserId: userId,
-      MaxStreamingBitrate: 40000000,
+      MaxStreamingBitrate: maxStreamingBitrate ?? 40_000_000,
       MaxAudioChannels: 2,
-      EnableDirectPlay: false,
-      EnableDirectStream: false,
+      EnableDirectPlay: !forceHlsTranscoding,
+      EnableDirectStream: !forceHlsTranscoding,
       EnableTranscoding: true,
-      AllowVideoStreamCopy: false,
-      AllowAudioStreamCopy: false,
-      AutoOpenLiveStream: true,
-      DeviceProfile: deviceProfile
-    };
-
-    const neutralBody = {
-      UserId: userId,
-      MaxStreamingBitrate: 40000000,
-      MaxAudioChannels: 2,
-      EnableDirectPlay: true,
-      EnableDirectStream: true,
-      EnableTranscoding: true,
-      AllowVideoStreamCopy: true,
-      AllowAudioStreamCopy: true,
+      AllowVideoStreamCopy: !forceHlsTranscoding,
+      AllowAudioStreamCopy: !forceHlsTranscoding,
       AutoOpenLiveStream: true,
       DeviceProfile: deviceProfile
     };
@@ -43,7 +34,7 @@ export class PlaybackApiService {
       token,
       method: 'POST',
       query: { UserId: userId },
-      body: forceHlsTranscoding ? forceHlsBody : neutralBody
+      body: baseBody
     });
   }
 

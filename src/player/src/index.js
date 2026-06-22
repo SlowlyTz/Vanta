@@ -9,34 +9,30 @@ import 'vidstack/define/media-time.js';
 import 'vidstack/define/media-mute-button.js';
 import 'vidstack/define/media-volume-slider.js';
 import 'vidstack/define/media-fullscreen-button.js';
+import 'vidstack/define/media-pip-button.js';
 import 'vidstack/define/media-gesture.js';
 import 'vidstack/styles/defaults.css';
 import './player.css';
 
 import { createJellyfinReporter } from './jellyfinReporter.js';
-import { isIOSLike, supportsFinePointer, canRequestFullscreen } from './platform.js';
-import { seekBy, clampSeekTarget } from './seek.js';
-import { once } from './promiseHelpers.js';
+import {
+  isIOSLike, supportsFinePointer, isPictureInPictureSupported,
+  isFullscreen, enterFullscreen, exitFullscreen, exitPictureInPicture } from './platform.js';
+import {
+  isSmartphone,
+  isLandscape,
+  enterSmartphoneFullscreen,
+  exitSmartphoneFullscreen,
+  createOrientationGate
+} from './orientation.js';
+import { seekBy } from './seek.js';
+import { createSourceSwitch } from './sourceSwitch.js';
+import { createQualityMenu } from './quality.js';
 import { createPlayerUi } from './ui/playerUi.js';
 
-const LOAD_TIMEOUT_MS = 25_000;
-const SEEK_TIMEOUT_MS = 6_000;
-const DIRECT_FIRST_FRAME_TIMEOUT_MS = 30_000;
-const HLS_FIRST_FRAME_TIMEOUT_MS = 210_000;
 const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
-const END_EPSILON_SECONDS = 0.25;
 const WHEEL_SEEK_DEBOUNCE_MS = 320;
 const POSTER_FALLBACK_GRADIENT = 'radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)';
-
-function formatLoadingPosition(seconds) {
-  const value = Math.max(0, Math.floor(Number(seconds) || 0));
-  const hours = Math.floor(value / 3600);
-  const minutes = Math.floor((value % 3600) / 60);
-  const remainder = value % 60;
-  return hours > 0
-    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
-    : `${minutes}:${String(remainder).padStart(2, '0')}`;
-}
 
 const ICONS = {
   arrowBack: '<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>',
@@ -48,7 +44,9 @@ const ICONS = {
   volumeLow: '<path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/>',
   volumeHigh: '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>',
   fullscreenEnter: '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>',
-  fullscreenExit: '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>'
+  fullscreenExit: '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>',
+  pipEnter: '<path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/>',
+  pipExit: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7.02-3H19V8h-1.98v6.18L11 8v6h.98l-2-2v2.82l2 2z"/>'
 };
 
 function svgIcon(name, slot) {
@@ -66,13 +64,6 @@ function escapeHtml(text) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
-
-const playbackSource = playback => ({
-  src: playback.url,
-  type: playback.delivery === 'hls'
-    ? 'application/vnd.apple.mpegurl'
-    : 'video/mp4'
-});
 
 function createPlayerMarkup(root, { title, poster }) {
   const escapedTitle = title ? escapeHtml(title) : '';
@@ -136,10 +127,13 @@ function createPlayerMarkup(root, { title, poster }) {
                   ${svgIcon('volumeHigh', 'volume-high')}
                 </media-mute-button>
                 <media-volume-slider class="vanta-player-volume-slider" aria-label="Lautstärke"></media-volume-slider>
-                <media-fullscreen-button class="vanta-player-fullscreen-button" aria-label="Vollbild">
-                  ${svgIcon('fullscreenEnter', 'enter')}
-                  ${svgIcon('fullscreenExit', 'exit')}
-                </media-fullscreen-button>
+                <media-pip-button class="vanta-player-pip-button" aria-label="Bild-in-Bild">
+                  ${svgIcon('pipEnter', 'enter')}
+                  ${svgIcon('pipExit', 'exit')}
+                </media-pip-button>
+                <button class="vanta-player-fullscreen-button" type="button" aria-label="Vollbild">
+                  ${svgIcon('fullscreenEnter')}
+                </button>
               </div>
             </div>
           </div>
@@ -228,22 +222,44 @@ export async function mountVantaPlayer({
   const ui = createPlayerUi(root);
 
   let destroyed = false;
-  let currentPlayback = null;
-  let switching = false;
   let fallbackAttempted = false;
-  let loadVersion = 0;
   let knownDuration = 0;
-  let intendsToPlay = true;
-  let lastRequestedPosition = Math.max(0, Number(resumePosition) || 0);
   let waitingTimer = null;
-  let seekTimer = null;
   let lastWheelSeekAt = 0;
-  let lastSeekTarget = 0;
-  let seekVersion = 0;
-  let autoplayBlocked = false;
 
   if (isIOSLike()) root.classList.add('is-ios');
-  if (!canRequestFullscreen()) root.classList.add('no-native-fullscreen');
+  if (!isPictureInPictureSupported()) root.classList.add('no-pip');
+
+  const shell = root.querySelector('.vanta-player-shell');
+  const fullscreenButton = root.querySelector('.vanta-player-fullscreen-button');
+  const updateFullscreenIcon = () => {
+    if (!fullscreenButton) return;
+    const inFullscreen = isFullscreen();
+    fullscreenButton.setAttribute('aria-label', inFullscreen ? 'Vollbild beenden' : 'Vollbild');
+    fullscreenButton.innerHTML = svgIcon(inFullscreen ? 'fullscreenExit' : 'fullscreenEnter');
+  };
+
+  if (fullscreenButton) {
+    const handleFullscreenClick = async () => {
+      try {
+        if (isFullscreen()) {
+          await exitFullscreen();
+        } else {
+          await enterFullscreen(shell);
+        }
+      } catch {
+        // ignore fullscreen errors
+      }
+    };
+    fullscreenButton.addEventListener('click', handleFullscreenClick);
+    disposers.push(() => fullscreenButton.removeEventListener('click', handleFullscreenClick));
+  }
+
+  const fullscreenChangeEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+  fullscreenChangeEvents.forEach(event => {
+    document.addEventListener(event, updateFullscreenIcon);
+    disposers.push(() => document.removeEventListener(event, updateFullscreenIcon));
+  });
 
   const reporter = createJellyfinReporter({
     player,
@@ -251,9 +267,52 @@ export async function mountVantaPlayer({
     report: reportPlayback
   });
 
-  const listen = (target, event, handler, options) => {
-    target.addEventListener(event, handler, options);
-    disposers.push(() => target.removeEventListener(event, handler, options));
+  const isPhone = isSmartphone();
+  let phoneOrientationActive = isPhone;
+  let orientationLocked = false;
+  let gateActive = false;
+  const orientationGate = createOrientationGate({
+    root,
+    onEnter: async () => {
+      try {
+        await enterSmartphoneFullscreen({ root, onError: () => {} });
+        orientationLocked = true;
+        if (isLandscape()) {
+          hideOrientationGate();
+        }
+      } catch {
+        // remain in gate state
+      }
+    }
+  });
+
+  const showOrientationGate = () => {
+    gateActive = true;
+    orientationGate.show();
+    player.paused = true;
+    sourceSwitch.setIntendsToPlay(false);
+  };
+
+  const hideOrientationGate = () => {
+    gateActive = false;
+    orientationGate.hide();
+    sourceSwitch.setIntendsToPlay(true);
+    player.play().catch(() => {});
+  };
+
+  const handleOrientationChange = () => {
+    if (!phoneOrientationActive) return;
+    if (isLandscape()) {
+      hideOrientationGate();
+    } else {
+      showOrientationGate();
+    }
+  };
+
+  const clearWaitingTimer = () => {
+    if (!waitingTimer) return;
+    window.clearTimeout(waitingTimer);
+    waitingTimer = null;
   };
 
   const setLoading = (visible, status) => {
@@ -269,33 +328,13 @@ export async function mountVantaPlayer({
     dom.inlineLoading.hidden = !visible;
   };
 
-  const clearWaitingTimer = () => {
-    if (!waitingTimer) return;
-    window.clearTimeout(waitingTimer);
-    waitingTimer = null;
-  };
-
-  const clearSeekTimer = () => {
-    if (!seekTimer) return;
-    window.clearTimeout(seekTimer);
-    seekTimer = null;
-  };
-
-  const startSeekTimer = () => {
-    clearSeekTimer();
-    seekTimer = window.setTimeout(() => {
-      seekTimer = null;
-      if (!switching && !destroyed) setInlineLoading(false);
-    }, SEEK_TIMEOUT_MS);
-  };
-
   const hideError = () => {
     dom.error.hidden = true;
   };
 
   const showError = message => {
     clearWaitingTimer();
-    clearSeekTimer();
+    sourceSwitch.clearSeekTimer();
     setLoading(false);
     setInlineLoading(false);
     ui.setState('error');
@@ -303,221 +342,82 @@ export async function mountVantaPlayer({
     dom.error.hidden = false;
   };
 
-  const isCurrentLoad = version => !destroyed && version === loadVersion;
-
-  const syncPlayingState = () => {
-    if (switching || destroyed) return;
-    ui.setState(player.paused ? 'ready-paused' : 'ready-playing-active');
-  };
-
-  const waitForPresentedFrame = timeoutMs => new Promise(resolve => {
-    const video = player.querySelector('video');
-    if (!video) {
-      resolve(false);
-      return;
-    }
-
-    let settled = false;
-    let frameId = null;
-    let progressHandler = null;
-    const timeout = window.setTimeout(() => finish(false), timeoutMs);
-
-    function finish(presented) {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timeout);
-      if (frameId !== null && video.cancelVideoFrameCallback) {
-        video.cancelVideoFrameCallback(frameId);
-      }
-      if (progressHandler) player.removeEventListener('time-update', progressHandler);
-      resolve(presented);
-    }
-
-    if (video.requestVideoFrameCallback) {
-      frameId = video.requestVideoFrameCallback(() => finish(true));
-      return;
-    }
-
-    progressHandler = () => {
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => finish(true)));
-    };
-    player.addEventListener('time-update', progressHandler, { once: true });
+  const sourceSwitch = createSourceSwitch({
+    player,
+    reporter,
+    ui,
+    callbacks: {
+      setLoading,
+      setLoadingStatus,
+      setInlineLoading,
+      showError,
+      hideError
+    },
+    onBeforeSourceChange: () => {
+      exitPictureInPicture().catch(() => {});
+    },
+    shouldPreventPlayback: () => gateActive
   });
 
-  const applyPlaybackState = async ({ shouldPlay }) => {
-    if (destroyed) return;
-    if (!shouldPlay) {
-      player.paused = true;
-      return;
-    }
-    try {
-      setLoadingStatus('Wiedergabe wird gestartet …');
-      await player.play();
-      autoplayBlocked = false;
-      const isHls = currentPlayback?.delivery === 'hls';
-      setLoadingStatus(isHls
-        ? 'Erstes HLS-Segment wird transkodiert und geladen …'
-        : 'Erster Videoframe wird dargestellt …');
-      const framePresented = await waitForPresentedFrame(
-        isHls ? HLS_FIRST_FRAME_TIMEOUT_MS : DIRECT_FIRST_FRAME_TIMEOUT_MS
-      );
-      if (!framePresented) {
-        throw new Error(isHls
-          ? 'Das erste HLS-Segment konnte nicht rechtzeitig geladen werden.'
-          : 'Der erste Videoframe konnte nicht rechtzeitig geladen werden.');
-      }
-    } catch (error) {
-      if (error?.name === 'NotAllowedError') {
-        autoplayBlocked = true;
-        setLoading(false);
-        setInlineLoading(false);
-      } else {
-        throw error;
-      }
-    }
-  };
+  if (isPhone) {
+    root.classList.add('is-smartphone');
+    window.addEventListener('orientationchange', handleOrientationChange);
+    disposers.push(() => window.removeEventListener('orientationchange', handleOrientationChange));
 
-  const captureState = () => ({
-    position: Math.max(reporter.getPosition(), lastRequestedPosition),
-    shouldPlay: intendsToPlay,
-    volume: Number(player.volume),
-    muted: Boolean(player.muted),
-    playbackRate: Number(player.playbackRate) || 1
+    (async () => {
+      try {
+        await enterSmartphoneFullscreen({ root, onError: () => {} });
+        orientationLocked = true;
+        if (!isLandscape()) {
+          showOrientationGate();
+        }
+      } catch {
+        showOrientationGate();
+      }
+    })();
+  }
+
+  const menuButtonContainer = root.querySelector('.vanta-player-controls-right');
+  const menuOverlayContainer = root.querySelector('.vanta-player-shell');
+
+  const qualityMenu = createQualityMenu({
+    buttonContainer: menuButtonContainer,
+    menuContainer: menuOverlayContainer,
+    onSelect: async profileId => {
+      const currentPlayback = sourceSwitch.getCurrentPlayback();
+      if (!currentPlayback) return;
+      try {
+        const playback = await resolvePlayback('auto', { qualityProfile: profileId });
+        if (destroyed) return;
+        await sourceSwitch.switchTo(playback, {
+          position: sourceSwitch.captureState().position,
+          shouldPlay: sourceSwitch.getIntendsToPlay(),
+          label: 'Qualität wird gewechselt …'
+        });
+        if (destroyed) return;
+        updateMenus(playback);
+      } catch (error) {
+        if (!destroyed) showError(error.message);
+      }
+    }
   });
 
-  const restoreState = state => {
-    if (destroyed) return;
-    if (Number.isFinite(state.volume)) player.volume = state.volume;
-    if (Number.isFinite(state.playbackRate) && state.playbackRate > 0) player.playbackRate = state.playbackRate;
-    player.muted = Boolean(state.muted);
+  const updateMenus = playback => {
+    qualityMenu.update(playback.quality.profiles, playback.quality.current);
   };
 
-  const waitForDurationOrSeekable = timeoutMs => new Promise(resolve => {
-    const hasDuration = () => Number.isFinite(player.duration) && player.duration > 0;
-    const hasSeekable = () => player.seekable?.length > 0 && Number.isFinite(player.seekable.end(0));
-
-    if (hasDuration() || hasSeekable()) {
-      resolve();
-      return;
-    }
-
-    let timeout;
-    const cleanup = () => {
-      window.clearTimeout(timeout);
-      player.removeEventListener('duration-change', onChange);
-      player.removeEventListener('loaded-metadata', onChange);
-    };
-
-    const onChange = () => {
-      if (hasDuration() || hasSeekable()) {
-        cleanup();
-        resolve();
-      }
-    };
-
-    timeout = window.setTimeout(() => {
-      cleanup();
-      resolve();
-    }, timeoutMs);
-
-    player.addEventListener('duration-change', onChange);
-    player.addEventListener('loaded-metadata', onChange);
-  });
-
-  const performSeek = async (targetPosition, { version } = {}) => {
-    const target = clampSeekTarget(targetPosition, player, END_EPSILON_SECONDS);
-    lastSeekTarget = target;
-    lastRequestedPosition = target;
-    const currentSeek = ++seekVersion;
-
-    if (switching && target > 0) {
-      setLoadingStatus(`Wiedergabeposition ${formatLoadingPosition(target)} wird wiederhergestellt …`);
-    }
-
-    if (Math.abs(Number(player.currentTime) - target) < 0.35) {
-      if (!switching && !destroyed) {
-        setInlineLoading(false);
-        syncPlayingState();
-      }
-      return;
-    }
-
-    if (!switching && !destroyed) {
-      ui.setState('seeking');
-      setInlineLoading(true);
-    }
-    startSeekTimer();
-
-    const seekedPromise = once(player, 'seeked', SEEK_TIMEOUT_MS);
-    player.currentTime = target;
-
-    try {
-      await seekedPromise;
-    } catch {
-      // Seek timeout or error – still clean up below
-    } finally {
-      if (currentSeek !== seekVersion) return;
-      clearSeekTimer();
-      if (version !== undefined && !isCurrentLoad(version)) return;
-      if (!switching && !destroyed) {
-        setInlineLoading(false);
-        syncPlayingState();
-      }
-    }
+  const listen = (target, event, handler, options) => {
+    target.addEventListener(event, handler, options);
+    disposers.push(() => target.removeEventListener(event, handler, options));
   };
 
-  const loadPlayback = async (playback, options = {}) => {
-    const version = ++loadVersion;
-    const previousState = captureState();
-    const state = {
-      ...previousState,
-      position: Math.max(0, Number(options.position) ?? previousState.position),
-      shouldPlay: options.shouldPlay !== false,
-      label: options.label || 'Video wird geladen …'
-    };
-
-    switching = true;
-    clearWaitingTimer();
-    clearSeekTimer();
-    hideError();
-    setLoading(true, state.label);
-    setInlineLoading(false);
-    ui.setState(options.isBoot ? 'booting' : 'switching-source');
-
-    if (currentPlayback) await reporter.beforeSourceSwitch();
-    if (!isCurrentLoad(version)) return;
-
-    reporter.afterSourceSwitch();
-    currentPlayback = playback;
-    lastRequestedPosition = state.position;
-    reporter.setPlayback(playback);
-
-    setLoadingStatus(playback.delivery === 'hls'
-      ? 'HLS-Stream wird verbunden …'
-      : 'Direkter Videostream wird verbunden …');
-    player.src = playbackSource(playback);
-
-    try {
-      await once(player, 'can-play', LOAD_TIMEOUT_MS, ['error']);
-      if (!isCurrentLoad(version)) return;
-      setLoadingStatus('Medienquelle ist bereit. Laufzeit wird geprüft …');
-      restoreState(state);
-      await waitForDurationOrSeekable(3_000);
-      if (!isCurrentLoad(version)) return;
-      await performSeek(state.position, { version });
-      if (!isCurrentLoad(version)) return;
-      switching = false;
-      await applyPlaybackState({ shouldPlay: state.shouldPlay });
-      if (!isCurrentLoad(version)) return;
-      if (!switching) {
-        setLoading(false);
-        syncPlayingState();
-      }
-    } catch (error) {
-      if (!isCurrentLoad(version)) return;
-      switching = false;
-      await handlePlaybackFailure(error);
+  const handlePlaybackFailure = async error => {
+    if (sourceSwitch.isSwitching() || destroyed) return;
+    if (sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
+      await switchToHls(error);
+      return;
     }
+    showError(error?.message);
   };
 
   const switchToHls = async reason => {
@@ -526,41 +426,33 @@ export async function mountVantaPlayer({
       return;
     }
     fallbackAttempted = true;
-    const state = captureState();
+    const state = sourceSwitch.captureState();
     setLoading(true, 'HLS-Fallback wird beim Server angefragt …');
 
     try {
       const hlsPlayback = await resolvePlayback('hls');
       if (destroyed) return;
-      await loadPlayback(hlsPlayback, {
+      await sourceSwitch.loadPlayback(hlsPlayback, {
         position: state.position,
         shouldPlay: state.shouldPlay,
         label: 'Stream wird gewechselt …'
       });
+      updateMenus(hlsPlayback);
     } catch (error) {
       if (destroyed) return;
       showError(error.message);
     }
   };
 
-  async function handlePlaybackFailure(error) {
-    if (switching || destroyed) return;
-    if (currentPlayback?.delivery !== 'hls') {
-      await switchToHls(error);
-      return;
-    }
-    showError(error?.message);
-  }
-
   const startWaitingTimeout = () => {
-    if (switching || destroyed) return;
+    if (sourceSwitch.isSwitching() || destroyed) return;
     clearWaitingTimer();
     ui.setState('buffering');
     setInlineLoading(true);
     waitingTimer = window.setTimeout(() => {
       waitingTimer = null;
       handlePlaybackFailure(new Error('Der Medienstrom antwortet nicht rechtzeitig.'));
-    }, LOAD_TIMEOUT_MS);
+    }, 25_000);
   };
 
   const handleWheel = event => {
@@ -570,7 +462,7 @@ export async function mountVantaPlayer({
     lastWheelSeekAt = now;
     event.preventDefault();
     const direction = event.deltaY > 0 ? 10 : -10;
-    seekBy(player, direction, { endEpsilon: END_EPSILON_SECONDS });
+    seekBy(player, direction, { endEpsilon: 0.25 });
   };
 
   listen(player, 'provider-change', event => {
@@ -586,12 +478,12 @@ export async function mountVantaPlayer({
         fragLoadingRetryDelay: 1_000,
         fragLoadingMaxRetryTimeout: 10_000
       };
-      if (switching) setLoadingStatus('HLS-Wiedergabe wird initialisiert …');
+      if (sourceSwitch.isSwitching()) setLoadingStatus('HLS-Wiedergabe wird initialisiert …');
     }
   });
 
   listen(player, 'error', event => {
-    if (switching || destroyed) return;
+    if (sourceSwitch.isSwitching() || destroyed) return;
     const detail = event.detail || {};
     const message = detail.message || 'Wiedergabefehler';
     const isFatalCode = detail.code >= 2 && detail.code <= 4;
@@ -606,51 +498,54 @@ export async function mountVantaPlayer({
   });
 
   listen(player, 'play', () => {
-    if (!switching) intendsToPlay = true;
+    if (!sourceSwitch.isSwitching()) sourceSwitch.setIntendsToPlay(true);
   });
 
   listen(player, 'pause', () => {
-    if (!switching) {
-      intendsToPlay = false;
+    if (!sourceSwitch.isSwitching()) {
+      sourceSwitch.setIntendsToPlay(false);
       clearWaitingTimer();
-      clearSeekTimer();
+      sourceSwitch.clearSeekTimer();
       setInlineLoading(false);
       ui.setState('ready-paused');
     }
   });
 
   listen(player, 'waiting', () => {
-    if (!switching) startWaitingTimeout();
+    if (!sourceSwitch.isSwitching()) startWaitingTimeout();
   });
 
   listen(player, 'seeking', () => {
-    if (!switching) {
+    if (!sourceSwitch.isSwitching()) {
       ui.setState('seeking');
       setInlineLoading(true);
-      startSeekTimer();
+      sourceSwitch.startSeekTimer();
     }
   });
 
   listen(player, 'playing', () => {
     clearWaitingTimer();
-    clearSeekTimer();
-    if (!switching) {
-      autoplayBlocked = false;
+    sourceSwitch.clearSeekTimer();
+    if (!sourceSwitch.isSwitching()) {
+      sourceSwitch.setAutoplayBlocked(false);
       setLoading(false);
       setInlineLoading(false);
-      syncPlayingState();
+      sourceSwitch.syncPlayingState();
     }
   });
 
   listen(player, 'seeked', () => {
-    clearSeekTimer();
-    if (!switching && !destroyed) {
+    sourceSwitch.clearSeekTimer();
+    if (!sourceSwitch.isSwitching() && !destroyed) {
       setInlineLoading(false);
-      syncPlayingState();
+      sourceSwitch.syncPlayingState();
     }
   });
 
-  listen(player, 'ended', () => reporter.stop({ ended: true }));
+  listen(player, 'ended', () => {
+    exitPictureInPicture().catch(() => {});
+    reporter.stop({ ended: true });
+  });
   listen(player, 'wheel', handleWheel, { passive: false });
   listen(dom.backButton, 'click', onBack);
   listen(dom.errorBackButton, 'click', onBack);
@@ -658,24 +553,36 @@ export async function mountVantaPlayer({
   listen(dom.retryButton, 'click', async () => {
     hideError();
     fallbackAttempted = false;
-    const position = Math.max(reporter.getPosition(), lastRequestedPosition);
+    const position = Math.max(reporter.getPosition(), sourceSwitch.getLastRequestedPosition());
     try {
-      const mode = currentPlayback?.delivery === 'hls' ? 'hls' : 'auto';
+      const mode = sourceSwitch.getCurrentPlayback()?.delivery === 'hls' ? 'hls' : 'auto';
       const playback = await resolvePlayback(mode);
-      await loadPlayback(playback, { position, shouldPlay: true });
+      await sourceSwitch.switchTo(playback, { position, shouldPlay: true, label: 'Stream wird neu geladen …' });
+      updateMenus(playback);
     } catch (error) {
       if (!destroyed) showError(error.message);
     }
   });
 
   setLoading(true, 'Wiedergabequelle wird beim Server angefragt …');
-  const initialPlayback = await resolvePlayback('auto');
-  if (!destroyed) {
-    await loadPlayback(initialPlayback, {
-      position: resumePosition,
-      shouldPlay: true,
-      isBoot: true
-    });
+  try {
+    const initialPlayback = await resolvePlayback('auto');
+    if (!destroyed) {
+      await sourceSwitch.loadPlayback(initialPlayback, {
+        position: resumePosition,
+        shouldPlay: true,
+        isBoot: true
+      });
+      updateMenus(initialPlayback);
+    }
+  } catch (error) {
+    if (!destroyed) {
+      if (sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
+        await switchToHls(error);
+      } else {
+        showError(error.message);
+      }
+    }
   }
 
   return {
@@ -683,9 +590,15 @@ export async function mountVantaPlayer({
     destroy: async () => {
       if (destroyed) return;
       destroyed = true;
-      loadVersion += 1;
+      phoneOrientationActive = false;
+      gateActive = false;
       clearWaitingTimer();
-      clearSeekTimer();
+      sourceSwitch.clearSeekTimer();
+      orientationGate.destroy();
+      if (isPhone) {
+        await exitSmartphoneFullscreen().catch(() => {});
+      }
+      await exitPictureInPicture().catch(() => {});
       await reporter.stop({ keepalive: true });
       reporter.destroy();
       ui.destroy();

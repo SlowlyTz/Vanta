@@ -2,6 +2,13 @@ import env from '../config/env.js';
 
 const SENSITIVE_QUERY_PARAMS = ['api_key', 'access_token', 'x-emby-token', 'X-Emby-Token', 'ApiKey'];
 
+const QUALITY_PROFILES = [
+  { id: '1080p', label: '1080p', maxHeight: 1080, maxStreamingBitrate: 8_000_000 },
+  { id: '720p', label: '720p', maxHeight: 720, maxStreamingBitrate: 4_000_000 },
+  { id: '480p', label: '480p', maxHeight: 480, maxStreamingBitrate: 2_000_000 },
+  { id: '360p', label: '360p', maxHeight: 360, maxStreamingBitrate: 1_000_000 }
+];
+
 const getFirstValue = (value) => {
   if (!value || typeof value !== 'string') return '';
   return value.split(',')[0].trim().toLowerCase();
@@ -24,8 +31,36 @@ const getSourceMetadata = (source) => {
   };
 };
 
+const resolveQualityProfileId = (playback, requestedProfile) => {
+  if (requestedProfile === 'direct') {
+    const isDirect = playback?.playMethod === 'DirectPlay' || playback?.playMethod === 'DirectStream';
+    return isDirect ? 'direct' : 'auto';
+  }
+  if (QUALITY_PROFILES.some(profile => profile.id === requestedProfile)) {
+    return requestedProfile;
+  }
+  return 'auto';
+};
+
+const buildQualityProfiles = (source, forceHlsTranscoding) => {
+  const directPlayCapable = !forceHlsTranscoding && Boolean(source?.SupportsDirectPlay);
+  const profiles = QUALITY_PROFILES.map(profile => ({
+    id: profile.id,
+    label: profile.label,
+    maxHeight: profile.maxHeight,
+    maxStreamingBitrate: profile.maxStreamingBitrate
+  }));
+
+  if (directPlayCapable) {
+    profiles.unshift({ id: 'direct', label: 'Direct Play', maxHeight: null, maxStreamingBitrate: null });
+  }
+
+  profiles.unshift({ id: 'auto', label: 'Auto', maxHeight: null, maxStreamingBitrate: null });
+  return profiles;
+};
+
 export class PlaybackService {
-  static resolvePlayback(playbackInfo, itemId, { forceHlsTranscoding = false } = {}) {
+  static resolvePlayback(playbackInfo, itemId, { forceHlsTranscoding = false, requestedQualityProfile = 'auto' } = {}) {
     const sources = Array.isArray(playbackInfo?.MediaSources) ? playbackInfo.MediaSources : [];
 
     if (sources.length === 0) {
@@ -53,7 +88,9 @@ export class PlaybackService {
         isTranscoded: true,
         forceHlsTranscoding: true,
         playSessionId: playbackInfo?.PlaySessionId,
-        playMethod: 'Transcode'
+        playMethod: 'Transcode',
+        requestedQualityProfile,
+        itemId
       });
     }
 
@@ -63,7 +100,9 @@ export class PlaybackService {
         targetPath: source.DirectStreamUrl,
         isTranscoded: false,
         playSessionId: playbackInfo?.PlaySessionId,
-        playMethod: 'DirectStream'
+        playMethod: 'DirectStream',
+        requestedQualityProfile,
+        itemId
       });
     }
 
@@ -73,7 +112,9 @@ export class PlaybackService {
         targetPath: source.TranscodingUrl,
         isTranscoded: true,
         playSessionId: playbackInfo?.PlaySessionId,
-        playMethod: 'Transcode'
+        playMethod: 'Transcode',
+        requestedQualityProfile,
+        itemId
       });
     }
 
@@ -85,7 +126,9 @@ export class PlaybackService {
         targetPath: `/Videos/${encodeURIComponent(itemId)}/stream?${params.toString()}`,
         isTranscoded: false,
         playSessionId: playbackInfo?.PlaySessionId,
-        playMethod: source.SupportsDirectPlay ? 'DirectPlay' : 'DirectStream'
+        playMethod: source.SupportsDirectPlay ? 'DirectPlay' : 'DirectStream',
+        requestedQualityProfile,
+        itemId
       });
     }
 
@@ -98,24 +141,46 @@ export class PlaybackService {
     isTranscoded,
     forceHlsTranscoding = false,
     playSessionId = null,
-    playMethod = null
+    playMethod = null,
+    requestedQualityProfile = 'auto',
+    itemId = null
   }) {
     const normalizedPath = this.normalizeJellyfinPath(targetPath);
     const metadata = getSourceMetadata(source);
+    const resolvedPlayMethod = playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay');
+    const audioStreamIndex = source?.DefaultAudioStreamIndex ?? null;
+    const subtitleStreamIndex = source?.DefaultSubtitleStreamIndex ?? null;
+    const qualityProfiles = buildQualityProfiles(source, forceHlsTranscoding);
+    const currentProfileId = resolveQualityProfileId(
+      { playMethod: resolvedPlayMethod },
+      requestedQualityProfile
+    );
+    const sourceId = source?.Id || null;
 
     return {
       delivery: this.isHlsPath(normalizedPath) ? 'hls' : 'http',
       isTranscoded,
       url: this.toProxyUrl(normalizedPath),
       forceHlsTranscoding,
-      mediaSourceId: source?.Id || null,
+      mediaSourceId: sourceId,
       playSessionId: playSessionId || null,
-      playMethod: playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay'),
-      audioStreamIndex: source?.DefaultAudioStreamIndex ?? null,
-      subtitleStreamIndex: source?.DefaultSubtitleStreamIndex ?? null,
+      playMethod: resolvedPlayMethod,
+      audioStreamIndex,
+      subtitleStreamIndex,
       container: metadata.container || null,
       videoCodec: metadata.videoCodec || null,
-      audioCodec: metadata.audioCodec || null
+      audioCodec: metadata.audioCodec || null,
+      capabilities: {
+        directPlay: !forceHlsTranscoding && Boolean(source?.SupportsDirectPlay),
+        directStream: !forceHlsTranscoding && Boolean(source?.SupportsDirectStream),
+        hls: true,
+        pictureInPicture: true,
+        qualityProfiles
+      },
+      quality: {
+        current: currentProfileId,
+        profiles: qualityProfiles
+      }
     };
   }
 

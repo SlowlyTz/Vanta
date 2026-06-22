@@ -95,8 +95,12 @@ export const MediaApi = {
     return `/api/media/stream/${id}`;
   },
 
-  getPlayback(id, mode = 'auto') {
-    return request(`/api/media/playback/${id}?mode=${encodeURIComponent(mode)}`);
+  getPlayback(id, mode = 'auto', options = {}) {
+    const params = new URLSearchParams({ mode });
+    if (options.qualityProfile) {
+      params.set('qualityProfile', options.qualityProfile);
+    }
+    return request(`/api/media/playback/${id}?${params.toString()}`);
   },
 
   reportPlayback(event, payload, options = {}) {

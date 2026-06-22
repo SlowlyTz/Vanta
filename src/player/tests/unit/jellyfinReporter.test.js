@@ -271,4 +271,31 @@ describe('createJellyfinReporter', () => {
 
     reporter.destroy();
   });
+
+  it('includes audio and subtitle stream indices from playback', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 10, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: (event, payload) => {
+        reports.push({ event, payload });
+        return Promise.resolve();
+      }
+    });
+
+    reporter.setPlayback({
+      playSessionId: 'session-1',
+      audioStreamIndex: 2,
+      subtitleStreamIndex: -1
+    });
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(reports[0].event).toBe('start');
+    expect(reports[0].payload.audioStreamIndex).toBe(2);
+    expect(reports[0].payload.subtitleStreamIndex).toBe(-1);
+
+    reporter.destroy();
+  });
 });
