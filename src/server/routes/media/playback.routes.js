@@ -5,6 +5,7 @@ import { SettingsService } from '../../services/settings.service.js';
 import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js';
+import { isValidQualityProfile, getQualityConstraints } from './playback.validation.js';
 
 const router = express.Router();
 const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended']);
@@ -109,23 +110,40 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
   const requestedMode = String(req.query.mode || 'auto').toLowerCase();
+  const requestedQualityProfile = String(req.query.qualityProfile || 'auto').toLowerCase();
 
   if (!['auto', 'hls'].includes(requestedMode)) {
     return res.status(400).json({ error: 'Unsupported playback mode' });
   }
 
+  if (!isValidQualityProfile(requestedQualityProfile)) {
+    return res.status(400).json({ error: 'Unsupported quality profile' });
+  }
+
   try {
     const { forceHlsTranscoding } = await SettingsService.getTranscodingSettings();
     const shouldForceHls = requestedMode === 'hls' || forceHlsTranscoding;
+
+    if (requestedQualityProfile === 'direct' && shouldForceHls) {
+      return res.status(400).json({ error: 'Direct Play is disabled by server configuration' });
+    }
+
+    const qualityConstraints = getQualityConstraints(requestedQualityProfile);
     const userAgent = req.headers['user-agent'] || '';
     const playbackInfo = await PlaybackApiService.getPlaybackInfo(
       userId,
       accessToken,
       id,
-      { userAgent, forceHlsTranscoding: shouldForceHls }
+      {
+        userAgent,
+        forceHlsTranscoding: shouldForceHls,
+        maxStreamingBitrate: qualityConstraints?.maxStreamingBitrate ?? null
+      }
     );
+
     const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
-      forceHlsTranscoding: shouldForceHls
+      forceHlsTranscoding: shouldForceHls,
+      requestedQualityProfile
     });
 
     res.setHeader('Cache-Control', 'no-store');

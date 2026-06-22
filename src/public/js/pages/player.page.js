@@ -116,7 +116,7 @@ export default function PlayerPage({ id }) {
         title: item.Name || item.SeriesName || '',
         poster: getPosterUrl(item),
         resumePosition,
-        resolvePlayback: mode => MediaApi.getPlayback(playableId, mode),
+        resolvePlayback: (mode, options) => MediaApi.getPlayback(playableId, mode, options),
         reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
         onBack: goBack
       });
