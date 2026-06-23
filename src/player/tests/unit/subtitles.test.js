@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { formatSubtitleLabel, sortSubtitleTracks } from '../../src/subtitles.js';
+import {
+  buildSubtitleMenuItems,
+  formatSubtitleLabel,
+  NO_SUBTITLES_LABEL,
+  sortSubtitleTracks
+} from '../../src/subtitles.js';
 
 describe('subtitles', () => {
   it('formats forced subtitle labels explicitly', () => {
@@ -18,5 +23,23 @@ describe('subtitles', () => {
     ];
 
     expect(sortSubtitleTracks(tracks).map(track => track.index)).toEqual([4, 3, 8]);
+  });
+
+  it('returns an empty-state menu item when no subtitles are available', () => {
+    expect(buildSubtitleMenuItems([])).toEqual([{
+      id: null,
+      label: NO_SUBTITLES_LABEL,
+      disabled: true,
+      selected: false
+    }]);
+  });
+
+  it('keeps Off as the first selectable option when subtitles are available', () => {
+    const items = buildSubtitleMenuItems([{ index: 3, label: 'German' }]);
+
+    expect(items).toEqual([
+      { id: 'off', label: 'Aus', disabled: false },
+      { id: 'vanta-subtitle-3', label: 'German', disabled: false }
+    ]);
   });
 });

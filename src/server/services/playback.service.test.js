@@ -149,6 +149,32 @@ describe('PlaybackService', () => {
       expect(playback.url).toContain('/api/media/playback/proxy');
     });
 
+    it('removes Jellyfin subtitle burn-in parameters from the video playback URL', () => {
+      const playbackInfo = {
+        PlaySessionId: 'session-1',
+        MediaSources: [{
+          ...baseSource,
+          TranscodingUrl: '/Videos/123/master.m3u8?SubtitleStreamIndex=3&SubtitleMethod=Encode&SubtitleCodec=ass&SubtitleOffset=0&VideoCodec=h264',
+          TranscodingSubProtocol: 'hls'
+        }]
+      };
+
+      const playback = PlaybackService.resolvePlayback(
+        playbackInfo,
+        '123',
+        { forceHlsTranscoding: true }
+      );
+      const proxyUrl = new URL(playback.url, 'http://vanta.test');
+      const playbackPath = proxyUrl.searchParams.get('path');
+
+      expect(playback.subtitleStreamIndex).toBeNull();
+      expect(playbackPath).not.toContain('SubtitleStreamIndex');
+      expect(playbackPath).not.toContain('SubtitleMethod');
+      expect(playbackPath).not.toContain('SubtitleCodec');
+      expect(playbackPath).not.toContain('SubtitleOffset');
+      expect(playbackPath).toContain('VideoCodec=h264');
+    });
+
     it('starts with subtitles disabled and exposes supported text tracks safely', () => {
       const playbackInfo = {
         PlaySessionId: 'session-1',
