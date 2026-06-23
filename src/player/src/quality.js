@@ -1,3 +1,11 @@
+import {
+  CLOSE_PLAYER_MENUS_EVENT,
+  requestClosePlayerMenus,
+  shouldCloseForMenuRequest,
+  stopPlayerMenuClick,
+  stopPlayerMenuPointerEvent
+} from './menuEvents.js';
+
 function svgIcon(path) {
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>`;
 }
@@ -67,6 +75,7 @@ export function createQualityMenu({ buttonContainer, menuContainer = buttonConta
 
   const open = () => {
     if (isOpen) return;
+    requestClosePlayerMenus(menu);
     isOpen = true;
     menu.hidden = false;
     button.setAttribute('aria-expanded', 'true');
@@ -127,11 +136,15 @@ export function createQualityMenu({ buttonContainer, menuContainer = buttonConta
     }
   };
 
-  button.addEventListener('click', toggle);
-  menu.addEventListener('click', event => {
+  const handleButtonClick = event => {
+    stopPlayerMenuClick(event);
+    toggle();
+  };
+
+  const handleMenuClick = event => {
     const item = event.target.closest('[data-quality-profile]');
     if (!item) return;
-    event.stopPropagation();
+    stopPlayerMenuClick(event);
     const profileId = item.dataset.qualityProfile;
     if (profileId === currentId) {
       close();
@@ -139,8 +152,18 @@ export function createQualityMenu({ buttonContainer, menuContainer = buttonConta
     }
     onSelect(profileId);
     close();
-  });
+  };
+
+  const handleCloseRequest = event => {
+    if (shouldCloseForMenuRequest(event, menu)) close();
+  };
+
+  button.addEventListener('click', handleButtonClick);
+  button.addEventListener('pointerdown', stopPlayerMenuPointerEvent);
+  menu.addEventListener('click', handleMenuClick);
+  menu.addEventListener('pointerdown', stopPlayerMenuPointerEvent);
   menu.addEventListener('keydown', handleKeyDown);
+  document.addEventListener(CLOSE_PLAYER_MENUS_EVENT, handleCloseRequest);
 
   const handleDocumentClick = event => {
     if (!isOpen) return;
@@ -157,15 +180,12 @@ export function createQualityMenu({ buttonContainer, menuContainer = buttonConta
     close,
     destroy: () => {
       close();
-      button.removeEventListener('click', toggle);
-      menu.removeEventListener('click', event => {
-        const item = event.target.closest('[data-quality-profile]');
-        if (!item) return;
-        event.stopPropagation();
-        onSelect(item.dataset.qualityProfile);
-        close();
-      });
+      button.removeEventListener('click', handleButtonClick);
+      button.removeEventListener('pointerdown', stopPlayerMenuPointerEvent);
+      menu.removeEventListener('click', handleMenuClick);
+      menu.removeEventListener('pointerdown', stopPlayerMenuPointerEvent);
       menu.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener(CLOSE_PLAYER_MENUS_EVENT, handleCloseRequest);
       document.removeEventListener('click', handleDocumentClick);
       button.remove();
       menu.remove();

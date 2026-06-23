@@ -1,7 +1,7 @@
 import { $ as e, B as t, F as n, c as r, z as i } from "./std-EJr84HPl.js";
-import { Q as a, X as o, Y as s, tt as c } from "./media-ui-Nu-6_9GI.js";
-import { n as l } from "./provider-sVMN4fkX.js";
-import { VideoProvider as u } from "./provider-DEhMb_t9.js";
+import { $ as a, X as o, Z as s, nt as c } from "./media-ui-D5tS2kPu.js";
+import { n as l } from "./provider-BAsv-5aR.js";
+import { VideoProvider as u } from "./provider-m7ZNCFXH.js";
 //#region node_modules/vidstack/dist/prod/providers/hls/lib-loader.js
 var d = class {
 	constructor(e, t, n) {
@@ -25,7 +25,7 @@ var d = class {
 		this.ph.player.dispatchEvent(new r("hls-lib-loaded", { detail: e })), this.jf(e);
 	}
 	Dh(e) {
-		let t = s(e);
+		let t = o(e);
 		this.ph.player.dispatchEvent(new r("hls-lib-load-error", { detail: t })), this.ph.delegate.p("error", { detail: {
 			message: t.message,
 			code: 4
@@ -69,7 +69,7 @@ var m = "https://cdn.jsdelivr.net", h = class extends u {
 	get instance() {
 		return this.od.instance;
 	}
-	static supported = o();
+	static supported = s();
 	get type() {
 		return "hls";
 	}

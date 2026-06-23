@@ -1,5 +1,5 @@
 import { $ as e, B as t, E as n, I as r, Q as i, R as a, c as o, d as s, j as c, o as l, w as u, z as d } from "./std-EJr84HPl.js";
-import { N as f, R as p, V as m, b as h, f as g, g as _, h as v, it as y, rt as b, v as x, x as S, y as C, z as w } from "./media-ui-Nu-6_9GI.js";
+import { B as f, H as p, P as m, S as h, _ as g, at as _, b as v, g as y, it as b, p as x, x as S, y as C, z as w } from "./media-ui-D5tS2kPu.js";
 //#region node_modules/vidstack/dist/prod/providers/hls/hls.js
 var T = class {
 	constructor(e) {
@@ -42,7 +42,7 @@ var T = class {
 		for (let e of Object.values(t.Events)) this.za.on(e, a);
 		this.za.on(t.Events.ERROR, this.Wb.bind(this));
 		for (let e of this.oh) e(this.za);
-		n.player.dispatchEvent(new o("hls-instance", { detail: this.za })), this.za.attachMedia(this.qa), this.za.on(t.Events.AUDIO_TRACK_SWITCHED, this.sh.bind(this)), this.za.on(t.Events.LEVEL_SWITCHED, this.th.bind(this)), this.za.on(t.Events.LEVEL_LOADED, this.uh.bind(this)), this.za.on(t.Events.NON_NATIVE_TEXT_TRACKS_FOUND, this.vh.bind(this)), this.za.on(t.Events.CUES_PARSED, this.wh.bind(this)), n.qualities[v] = this.xh.bind(this), u(n.qualities, "change", this.Pf.bind(this)), u(n.audioTracks, "change", this.yh.bind(this)), this.qh = c(this.zh.bind(this));
+		n.player.dispatchEvent(new o("hls-instance", { detail: this.za })), this.za.attachMedia(this.qa), this.za.on(t.Events.AUDIO_TRACK_SWITCHED, this.sh.bind(this)), this.za.on(t.Events.LEVEL_SWITCHED, this.th.bind(this)), this.za.on(t.Events.LEVEL_LOADED, this.uh.bind(this)), this.za.on(t.Events.NON_NATIVE_TEXT_TRACKS_FOUND, this.vh.bind(this)), this.za.on(t.Events.CUES_PARSED, this.wh.bind(this)), n.qualities[y] = this.xh.bind(this), u(n.qualities, "change", this.Pf.bind(this)), u(n.audioTracks, "change", this.yh.bind(this)), this.qh = c(this.zh.bind(this));
 	}
 	zh() {
 		if (!this.ph.$store.live()) return;
@@ -58,14 +58,14 @@ var T = class {
 	vh(e, t) {
 		let n = new o(e, { detail: t }), r = -1;
 		for (let e = 0; e < t.tracks.length; e++) {
-			let i = t.tracks[e], a = i.subtitleTrack ?? i.closedCaptions, o = new m({
+			let i = t.tracks[e], a = i.subtitleTrack ?? i.closedCaptions, o = new p({
 				id: `hls-${i.kind}${e}`,
 				src: a?.url,
 				label: i.label,
 				language: a?.lang,
 				kind: i.kind
 			});
-			o[w] = 2, o[p] = () => {
+			o[f] = 2, o[w] = () => {
 				o.mode === "showing" ? (this.za.subtitleTrack = e, r = e) : r === e && (this.za.subtitleTrack = -1, r = -1);
 			}, i.default && o.setMode("showing", n), this.ph.textTracks.add(o, n);
 		}
@@ -78,11 +78,11 @@ var T = class {
 	}
 	sh(e, t) {
 		let n = this.ph.audioTracks[t.id];
-		n && this.ph.audioTracks[S](n, !0, new o(e, { detail: t }));
+		n && this.ph.audioTracks[h](n, !0, new o(e, { detail: t }));
 	}
 	th(e, t) {
 		let n = this.ph.qualities[t.level];
-		n && this.ph.qualities[S](n, !0, new o(e, { detail: t }));
+		n && this.ph.qualities[h](n, !0, new o(e, { detail: t }));
 	}
 	uh(e, t) {
 		if (this.ph.$store.canPlay()) return;
@@ -95,14 +95,14 @@ var T = class {
 			trigger: a
 		});
 		let s = this.za.media;
-		this.za.currentLevel === -1 && this.ph.qualities[f](!0, a);
-		for (let e of this.za.audioTracks) this.ph.audioTracks[C]({
+		this.za.currentLevel === -1 && this.ph.qualities[m](!0, a);
+		for (let e of this.za.audioTracks) this.ph.audioTracks[v]({
 			id: e.id + "",
 			label: e.name,
 			language: e.lang || "",
 			kind: "main"
 		}, a);
-		for (let e of this.za.levels) this.ph.qualities[C]({
+		for (let e of this.za.levels) this.ph.qualities[v]({
 			width: e.width,
 			height: e.height,
 			codec: e.codecSet,
@@ -128,14 +128,14 @@ var T = class {
 	}
 	Pf() {
 		let { qualities: e } = this.ph;
-		!this.za || e.auto || (this.za[e.switch + "Level"] = e.selectedIndex, _ && (this.qa.currentTime = this.qa.currentTime));
+		!this.za || e.auto || (this.za[e.switch + "Level"] = e.selectedIndex, g && (this.qa.currentTime = this.qa.currentTime));
 	}
 	yh() {
 		let { audioTracks: e } = this.ph;
 		this.za && this.za.audioTrack !== e.selectedIndex && (this.za.audioTrack = e.selectedIndex);
 	}
 	Jg() {
-		this.ph && (this.ph.qualities[v] = void 0), this.za?.destroy(), this.za = null, this.qh?.(), this.qh = null;
+		this.ph && (this.ph.qualities[y] = void 0), this.za?.destroy(), this.za = null, this.qh?.(), this.qh = null;
 	}
 }, O = class {
 	constructor(e, t) {
@@ -203,7 +203,7 @@ var T = class {
 		this.Th(), this.fi(), this.jg.p("volume-change", { detail: {
 			volume: this.j.volume,
 			muted: this.j.muted
-		} }), this.jg.p("loaded-metadata", { trigger: e }), x && b(this.ph.$store.source()) && this.jg.lf(this.Ph(), e);
+		} }), this.jg.p("loaded-metadata", { trigger: e }), C && b(this.ph.$store.source()) && this.jg.lf(this.Ph(), e);
 	}
 	Ph() {
 		return {
@@ -268,7 +268,7 @@ var T = class {
 		this.Mh(this.j.currentTime, e), this.jg.p("seeked", {
 			detail: this.j.currentTime,
 			trigger: e
-		}), Math.trunc(this.j.currentTime) === Math.trunc(this.j.duration) && g(this.j.duration) > g(this.j.currentTime) && (this.Mh(this.j.duration, e), this.j.ended || this.ph.player.dispatchEvent(new o("media-play-request", { trigger: e })));
+		}), Math.trunc(this.j.currentTime) === Math.trunc(this.j.duration) && x(this.j.duration) > x(this.j.currentTime) && (this.Mh(this.j.duration, e), this.j.ended || this.ph.player.dispatchEvent(new o("media-play-request", { trigger: e })));
 	}
 	ki(e) {
 		this.jg.p("seeking", {
@@ -325,17 +325,17 @@ var T = class {
 			kind: t.kind,
 			selected: !1
 		};
-		this.ph.audioTracks[C](n, e), t.enabled && (n.selected = !0);
+		this.ph.audioTracks[v](n, e), t.enabled && (n.selected = !0);
 	}
 	ui(e) {
 		let t = this.ph.audioTracks.getById(e.track.id);
-		t && this.ph.audioTracks[h](t, e);
+		t && this.ph.audioTracks[S](t, e);
 	}
 	vi(e) {
 		let t = this.si();
 		if (!t) return;
 		let n = this.ph.audioTracks.getById(t.id);
-		n && this.ph.audioTracks[S](n, !0, e);
+		n && this.ph.audioTracks[h](n, !0, e);
 	}
 	si() {
 		return Array.from(this.ri).find((e) => e.enabled);
@@ -402,7 +402,7 @@ var T = class {
 		return this.j.pause();
 	}
 	async loadSource({ src: e }, t) {
-		this.j.preload = t, y(e) ? this.j.srcObject = e : (this.j.srcObject = null, this.j.src = d(e) ? e : window.URL.createObjectURL(e)), this.j.load();
+		this.j.preload = t, _(e) ? this.j.srcObject = e : (this.j.srcObject = null, this.j.src = d(e) ? e : window.URL.createObjectURL(e)), this.j.load();
 	}
 };
 //#endregion

@@ -8,6 +8,23 @@ const QUALITY_PROFILES = [
   { id: '480p', label: '480p', maxHeight: 480, maxStreamingBitrate: 2_000_000 },
   { id: '360p', label: '360p', maxHeight: 360, maxStreamingBitrate: 1_000_000 }
 ];
+const BITMAP_SUBTITLE_CODECS = new Set([
+  'dvbsub',
+  'dvb_subtitle',
+  'dvdsub',
+  'dvd_subtitle',
+  'hdmv_pgs_subtitle',
+  'pgs',
+  'pgssub',
+  'vobsub',
+  'xsub'
+]);
+const SUBTITLE_TYPES = new Map([
+  ['subrip', 'srt'],
+  ['srt', 'srt'],
+  ['vtt', 'vtt'],
+  ['webvtt', 'vtt']
+]);
 
 const getFirstValue = (value) => {
   if (!value || typeof value !== 'string') return '';
@@ -17,6 +34,11 @@ const getFirstValue = (value) => {
 const getMediaStream = (source, type) => {
   const streams = Array.isArray(source?.MediaStreams) ? source.MediaStreams : [];
   return streams.find(stream => String(stream.Type).toLowerCase() === type);
+};
+
+const getMediaStreams = (source, type) => {
+  const streams = Array.isArray(source?.MediaStreams) ? source.MediaStreams : [];
+  return streams.filter(stream => String(stream.Type).toLowerCase() === type);
 };
 
 const getSourceMetadata = (source) => {
@@ -57,6 +79,24 @@ const buildQualityProfiles = (source, forceHlsTranscoding) => {
 
   profiles.unshift({ id: 'auto', label: 'Auto', maxHeight: null, maxStreamingBitrate: null });
   return profiles;
+};
+
+const getSubtitleType = (stream) => {
+  const deliveryPath = String(stream?.DeliveryUrl || '').split('?')[0].toLowerCase();
+  if (deliveryPath.endsWith('.vtt')) return 'vtt';
+  if (deliveryPath.endsWith('.srt') || deliveryPath.endsWith('.subrip')) return 'srt';
+
+  const codec = getFirstValue(stream?.Codec);
+  return SUBTITLE_TYPES.get(codec) || null;
+};
+
+const isSupportedSubtitleStream = (stream) => {
+  const codec = getFirstValue(stream?.Codec);
+  return !BITMAP_SUBTITLE_CODECS.has(codec)
+    && stream?.DeliveryMethod === 'External'
+    && typeof stream?.DeliveryUrl === 'string'
+    && stream.DeliveryUrl.length > 0
+    && Boolean(getSubtitleType(stream));
 };
 
 export class PlaybackService {
@@ -149,7 +189,7 @@ export class PlaybackService {
     const metadata = getSourceMetadata(source);
     const resolvedPlayMethod = playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay');
     const audioStreamIndex = source?.DefaultAudioStreamIndex ?? null;
-    const subtitleStreamIndex = source?.DefaultSubtitleStreamIndex ?? null;
+    const subtitles = this.buildSubtitleTracks(source);
     const qualityProfiles = buildQualityProfiles(source, forceHlsTranscoding);
     const currentProfileId = resolveQualityProfileId(
       { playMethod: resolvedPlayMethod },
@@ -166,7 +206,8 @@ export class PlaybackService {
       playSessionId: playSessionId || null,
       playMethod: resolvedPlayMethod,
       audioStreamIndex,
-      subtitleStreamIndex,
+      subtitleStreamIndex: null,
+      subtitles,
       container: metadata.container || null,
       videoCodec: metadata.videoCodec || null,
       audioCodec: metadata.audioCodec || null,
@@ -182,6 +223,23 @@ export class PlaybackService {
         profiles: qualityProfiles
       }
     };
+  }
+
+  static buildSubtitleTracks(source) {
+    return getMediaStreams(source, 'subtitle')
+      .filter(isSupportedSubtitleStream)
+      .map(stream => ({
+        id: String(stream.Index),
+        index: Number(stream.Index),
+        label: stream.DisplayTitle || stream.Title || stream.Language || `Untertitel ${stream.Index}`,
+        language: stream.Language || '',
+        codec: getFirstValue(stream.Codec) || null,
+        type: getSubtitleType(stream),
+        isForced: Boolean(stream.IsForced),
+        isDefault: Boolean(stream.IsDefault),
+        url: this.toProxyUrl(stream.DeliveryUrl)
+      }))
+      .filter(track => Number.isInteger(track.index) && track.type && track.url);
   }
 
   static normalizeJellyfinPath(pathOrUrl) {

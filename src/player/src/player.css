@@ -65,6 +65,17 @@
   background: #000;
 }
 
+.vanta-player-captions {
+  --media-captions-padding: 2%;
+  --media-cue-font-size: 1.05rem;
+  --media-cue-line-height: 1.25;
+  --media-cue-bg: rgb(0 0 0 / 0.72);
+  --media-cue-color: #fff;
+  --media-cue-border-radius: 4px;
+  --cue-text-shadow: 0 1px 2px rgb(0 0 0 / 0.75);
+  z-index: 12;
+}
+
 .vanta-media-player [data-media-button] {
   flex: 0 0 auto;
   border: 0;
@@ -495,6 +506,7 @@
   color: #fff;
   background: transparent;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 160ms ease, transform 160ms ease;
 }
 
@@ -525,6 +537,7 @@
   color: #fff;
   background: transparent;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 160ms ease, transform 160ms ease;
 }
 
@@ -565,6 +578,8 @@
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   box-shadow: 0 20px 50px rgb(0 0 0 / 0.5);
+  pointer-events: auto;
+  touch-action: pan-y;
 }
 
 @media (max-width: 480px) {
