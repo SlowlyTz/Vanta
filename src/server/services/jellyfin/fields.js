@@ -51,6 +51,12 @@ export function buildBrowserDeviceProfile({ forceHlsTranscoding = false } = {}) 
     AudioCodec: 'aac',
     MaxAudioChannels: '2'
   };
+  const subtitleProfiles = [
+    {
+      Format: 'vtt',
+      Method: 'External'
+    }
+  ];
 
   return {
     Name: 'VANTA HTML5',
@@ -68,6 +74,6 @@ export function buildBrowserDeviceProfile({ forceHlsTranscoding = false } = {}) 
     TranscodingProfiles: forceHlsTranscoding ? [hlsProfile] : [httpProfile, hlsProfile],
     ContainerProfiles: [],
     CodecProfiles: [],
-    SubtitleProfiles: []
+    SubtitleProfiles: subtitleProfiles
   };
 }

@@ -11,6 +11,7 @@ import 'vidstack/define/media-volume-slider.js';
 import 'vidstack/define/media-fullscreen-button.js';
 import 'vidstack/define/media-pip-button.js';
 import 'vidstack/define/media-gesture.js';
+import 'vidstack/define/media-captions.js';
 import 'vidstack/styles/defaults.css';
 import './player.css';
 
@@ -28,6 +29,7 @@ import {
 import { seekBy } from './seek.js';
 import { createSourceSwitch } from './sourceSwitch.js';
 import { createQualityMenu } from './quality.js';
+import { createSubtitleMenu } from './subtitles.js';
 import { createPlayerUi } from './ui/playerUi.js';
 
 const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
@@ -72,6 +74,7 @@ function createPlayerMarkup(root, { title, poster }) {
     <div class="vanta-player-shell">
       <media-player class="vanta-media-player" aria-label="Videoplayer">
         <media-outlet></media-outlet>
+        <media-captions class="vanta-player-captions"></media-captions>
 
         <media-gesture class="vanta-player-gesture vanta-player-gesture-left" event="dblpointerup" action="seek:-10" aria-hidden="true"></media-gesture>
         <media-gesture class="vanta-player-gesture vanta-player-gesture-right" event="dblpointerup" action="seek:10" aria-hidden="true"></media-gesture>
@@ -403,8 +406,18 @@ export async function mountVantaPlayer({
     }
   });
 
-  const updateMenus = playback => {
+  const subtitleMenu = createSubtitleMenu({
+    buttonContainer: menuButtonContainer,
+    menuContainer: menuOverlayContainer,
+    player,
+    reporter
+  });
+
+  const updateMenus = (playback, options = {}) => {
     qualityMenu.update(playback.quality.profiles, playback.quality.current);
+    subtitleMenu.update(playback, {
+      preserveSelection: options.preserveSubtitleSelection !== false
+    });
   };
 
   const listen = (target, event, handler, options) => {
@@ -574,7 +587,7 @@ export async function mountVantaPlayer({
         shouldPlay: true,
         isBoot: true
       });
-      updateMenus(initialPlayback);
+      updateMenus(initialPlayback, { preserveSubtitleSelection: false });
     }
   } catch (error) {
     if (!destroyed) {
@@ -604,6 +617,7 @@ export async function mountVantaPlayer({
 
       orientationGate.destroy();
       reporter.destroy();
+      subtitleMenu.destroy();
       ui.destroy();
       disposers.splice(0).forEach(dispose => dispose());
       player.destroy?.();

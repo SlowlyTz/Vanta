@@ -321,7 +321,7 @@ describe('createJellyfinReporter', () => {
     reporter.destroy();
   });
 
-  it('includes audio and subtitle stream indices from playback', async () => {
+  it('starts reports with subtitles disabled by default', async () => {
     const reports = [];
     const player = createMockPlayer({ currentTime: 10, paused: false });
     const reporter = createJellyfinReporter({
@@ -343,7 +343,34 @@ describe('createJellyfinReporter', () => {
 
     expect(reports[0].event).toBe('start');
     expect(reports[0].payload.audioStreamIndex).toBe(2);
-    expect(reports[0].payload.subtitleStreamIndex).toBe(-1);
+    expect(reports[0].payload.subtitleStreamIndex).toBeNull();
+
+    reporter.destroy();
+  });
+
+  it('reports the manually selected subtitle stream index', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 10, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: (event, payload) => {
+        reports.push({ event, payload });
+        return Promise.resolve();
+      }
+    });
+
+    reporter.setPlayback({
+      playSessionId: 'session-1',
+      audioStreamIndex: 2
+    });
+    reporter.setSubtitleStreamIndex(4);
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(reports[0].event).toBe('start');
+    expect(reports[0].payload.audioStreamIndex).toBe(2);
+    expect(reports[0].payload.subtitleStreamIndex).toBe(4);
 
     reporter.destroy();
   });

@@ -32,6 +32,8 @@ describe('PlaybackService', () => {
           Language: 'ger',
           Title: 'Forced',
           Codec: 'srt',
+          DeliveryMethod: 'External',
+          DeliveryUrl: '/Videos/123/source/Subtitles/2/0/Stream.vtt?ApiKey=secret',
           IsForced: true,
           IsExternal: true,
           IsDefault: true
@@ -145,6 +147,60 @@ describe('PlaybackService', () => {
       expect(playback.url).not.toContain('api_key');
       expect(playback.url).not.toContain('secret');
       expect(playback.url).toContain('/api/media/playback/proxy');
+    });
+
+    it('starts with subtitles disabled and exposes supported text tracks safely', () => {
+      const playbackInfo = {
+        PlaySessionId: 'session-1',
+        MediaSources: [{
+          ...baseSource,
+          DirectStreamUrl: '/Videos/123/stream.mp4',
+          MediaStreams: [
+            ...baseSource.MediaStreams,
+            {
+              Index: 3,
+              Type: 'Subtitle',
+              Language: 'eng',
+              DisplayTitle: 'English - PGS',
+              Codec: 'pgssub',
+              DeliveryMethod: 'External',
+              DeliveryUrl: '/Videos/123/source/Subtitles/3/0/Stream.vtt'
+            },
+            {
+              Index: 4,
+              Type: 'Subtitle',
+              Language: 'eng',
+              DisplayTitle: 'English - ASS',
+              Codec: 'ass',
+              DeliveryMethod: 'External',
+              DeliveryUrl: '/Videos/123/source/Subtitles/4/0/Stream.vtt'
+            }
+          ]
+        }]
+      };
+
+      const playback = PlaybackService.resolvePlayback(playbackInfo, '123');
+
+      expect(playback.subtitleStreamIndex).toBeNull();
+      expect(playback.subtitles).toHaveLength(2);
+      expect(playback.subtitles[0]).toMatchObject({
+        id: '2',
+        index: 2,
+        language: 'ger',
+        codec: 'srt',
+        type: 'vtt',
+        isForced: true,
+        isDefault: true
+      });
+      expect(playback.subtitles[0].url).toContain('/api/media/playback/proxy');
+      expect(playback.subtitles[0].url).not.toContain('ApiKey');
+      expect(playback.subtitles[0].url).not.toContain('secret');
+      expect(playback.subtitles[1]).toMatchObject({
+        id: '4',
+        index: 4,
+        codec: 'ass',
+        type: 'vtt'
+      });
     });
 
     it('throws when no media source is found', () => {

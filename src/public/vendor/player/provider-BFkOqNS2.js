@@ -1,4 +1,4 @@
-import { t as e } from "./provider-sVMN4fkX.js";
+import { t as e } from "./provider-BAsv-5aR.js";
 //#region node_modules/vidstack/dist/prod/providers/audio/provider.js
 var t = class extends e {
 	$$PROVIDER_TYPE = "AUDIO";

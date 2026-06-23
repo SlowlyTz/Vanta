@@ -109,7 +109,7 @@ function Je(e) {
 var Ye = Symbol(0);
 function Xe(e, t) {
 	let n = e.el.tagName;
-	window.customElements.get(n) || (window[Ye] || (window[Ye] = /* @__PURE__ */ new Map()), window[Ye].set(n, e), window.customElements.define(n, _t(e, t)));
+	window.customElements.get(n) || (window[Ye] || (window[Ye] = /* @__PURE__ */ new Map()), window[Ye].set(n, e), window.customElements.define(n, vt(e, t)));
 }
 function E(e) {
 	let t = document.createElement("template");
@@ -137,7 +137,7 @@ var $e = T;
 function et(e, t) {
 	let n = window[Ye]?.get(e.localName);
 	if (!n) throw Error(e.localName);
-	let r = dt(n, { props: t });
+	let r = ft(n, { props: t });
 	return e.attachComponent(r), r.instance.c;
 }
 function tt(e) {
@@ -161,19 +161,19 @@ var A = a;
 function j(e, t, n, r = !1) {
 	o(n) && b(e, t, n, { capture: r });
 }
-var ot = e, st = v, M = g, ct = u, N = /* @__PURE__ */ Symbol(0), lt = /* @__PURE__ */ Symbol(0), ut = /* @__PURE__ */ Symbol(0);
-function dt(e, t) {
-	let n = new ft(e, t);
+var ot = e, st = v, M = g, ct = u, lt = /* @__PURE__ */ Symbol(0), ut = /* @__PURE__ */ Symbol(0), dt = /* @__PURE__ */ Symbol(0);
+function ft(e, t) {
+	let n = new pt(e, t);
 	return v(() => new e(n), n.c);
 }
-var ft = class {
+var pt = class {
 	constructor(e, t = {}) {
 		this.m = null, this.h = null, this.F = !1, this.j = !1, this.f = {}, this.q = {}, this.e = {}, this.z = null, this.k = null, this.d = [], this.p = [], this.i = [], this.x = [], pe((n) => {
 			this.c = ce(), this.G = n, t.scope && t.scope.append(this.c);
 			let r = e.el.store;
 			r && (this.k = r.create(), this.z = new Proxy(this.k, { get: (e, t) => this.k[t]() }), c(r, this.k));
 			let i = e.el.props;
-			if (i && (this.e = pt(i), t.props)) {
+			if (i && (this.e = mt(i), t.props)) {
 				for (let e of Object.keys(t.props)) if (e in i) {
 					let n = t.props[e];
 					le(n) ? Ce(() => void this.e[e].set(n())) : this.e[e].set(n);
@@ -190,7 +190,7 @@ var ft = class {
 		}
 	}
 };
-function pt(e) {
+function mt(e) {
 	let t = {};
 	for (let n of Object.keys(e)) {
 		let r = e[n];
@@ -198,11 +198,11 @@ function pt(e) {
 	}
 	return t;
 }
-async function mt(e) {
-	let t = gt(e), n = e.constructor.a;
-	t && (await customElements.whenDefined(t.localName), t[N] === !0 || await new Promise((e) => t[N].push(e))), e.isConnected && (t?.keepAlive && (e.keepAlive = !0), e.attachComponent(dt(n, { scope: t?.component?.instance.c })));
+async function ht(e) {
+	let t = _t(e), n = e.constructor.a;
+	t && (await customElements.whenDefined(t.localName), t[lt] === !0 || await new Promise((e) => t[lt].push(e))), e.isConnected && (t?.keepAlive && (e.keepAlive = !0), e.attachComponent(ft(n, { scope: t?.component?.instance.c })));
 }
-function ht(e) {
+function gt(e) {
 	let t = e.constructor, n = t.a, r = {};
 	if (!t.f) return r;
 	for (let i of e.attributes) {
@@ -211,7 +211,7 @@ function ht(e) {
 	}
 	return r;
 }
-function gt(e) {
+function _t(e) {
 	let t = e.constructor.a, n = e.parentNode, r = t.el.tagName.split("-", 1)[0] + "-";
 	for (; n;) {
 		if (n.nodeType === 1 && n.localName.startsWith(r)) return n;
@@ -219,7 +219,7 @@ function gt(e) {
 	}
 	return null;
 }
-function _t(e, t) {
+function vt(e, t) {
 	let n = e.register;
 	if (e.register) {
 		let e = d(n) ? n : n?.();
@@ -236,7 +236,7 @@ function _t(e, t) {
 			}
 		}
 	}
-	class i extends bt {
+	class i extends xt {
 		static get a() {
 			return e;
 		}
@@ -258,7 +258,7 @@ function _t(e, t) {
 			n();
 		}
 	});
-	if (o[lt]) for (let e of o[lt]) Object.defineProperty(a, e, {
+	if (o[ut]) for (let e of o[ut]) Object.defineProperty(a, e, {
 		enumerable: !0,
 		configurable: !0,
 		get() {
@@ -274,14 +274,14 @@ function _t(e, t) {
 			this.component[e] = t;
 		}
 	});
-	if (o[ut]) for (let e of o[ut]) a[e] = function(...t) {
+	if (o[dt]) for (let e of o[dt]) a[e] = function(...t) {
 		return this.component[e](...t);
 	};
 	return i;
 }
-var vt = HTMLElement, yt, bt = class extends vt {
+var yt = HTMLElement, bt, xt = class extends yt {
 	constructor() {
-		super(...arguments), this.r = !1, this.j = !1, this.a = null, this.s = null, this.d = /* @__PURE__ */ new Set(), this.i = [], this.l = /* @__PURE__ */ new Map(), this.keepAlive = !1, this[yt] = [], this.B = !1;
+		super(...arguments), this.r = !1, this.j = !1, this.a = null, this.s = null, this.d = /* @__PURE__ */ new Set(), this.i = [], this.l = /* @__PURE__ */ new Map(), this.keepAlive = !1, this[bt] = [], this.B = !1;
 	}
 	get A() {
 		return this.hasAttribute("mk-d");
@@ -316,7 +316,7 @@ var vt = HTMLElement, yt, bt = class extends vt {
 				}, this.s);
 				this.i.push(t);
 			});
-		}, e.c), d(this[N]) && (ae(this[N], this), this[N] = !0));
+		}, e.c), d(this[lt]) && (ae(this[lt], this), this[lt] = !0));
 	}
 	disconnectedCallback() {
 		let e = this.a?.instance;
@@ -332,8 +332,8 @@ var vt = HTMLElement, yt, bt = class extends vt {
 	attachComponent(e) {
 		let t = e.instance, n = this.constructor, r = n.a.el, o = n.H;
 		this.a || this.j || v(() => {
-			this.o = t.h ? r.shadowRoot ? this.shadowRoot ?? this.attachShadow(ne(r.shadowRoot) ? { mode: "open" } : r.shadowRoot) : xt(this) : null, !T && r.shadowRoot && r.css && o?.adoptCSS && o.adoptCSS(this.o, r.css), t.m = this, this.a = e;
-			let s = ht(this);
+			this.o = t.h ? r.shadowRoot ? this.shadowRoot ?? this.attachShadow(ne(r.shadowRoot) ? { mode: "open" } : r.shadowRoot) : St(this) : null, !T && r.shadowRoot && r.css && o?.adoptCSS && o.adoptCSS(this.o, r.css), t.m = this, this.a = e;
+			let s = gt(this);
 			for (let e of Object.keys(s)) t.e[e].set(s[e]);
 			if (this.l?.size) for (let e of this.l.values()) e();
 			this.l = null;
@@ -371,100 +371,100 @@ var vt = HTMLElement, yt, bt = class extends vt {
 		return Te(() => super.dispatchEvent(e));
 	}
 	async N() {
-		this.B ||= (this.B = !0, await mt(this), !1);
+		this.B ||= (this.B = !0, await ht(this), !1);
 	}
 	P(e) {}
 };
-yt = N;
-function xt(e) {
+bt = lt;
+function St(e) {
 	if (e.firstChild && ge(e.firstChild) && e.firstChild.localName === "shadow-root") return e.firstChild;
 	{
 		let t = nt("shadow-root");
 		return e.prepend(t), t;
 	}
 }
-var St = Symbol(0);
-function P(e) {
+var Ct = Symbol(0);
+function N(e) {
 	return {
-		[St]: !0,
+		[Ct]: !0,
 		...e
 	};
 }
-function F(e) {
+function P(e) {
 	if ("props" in e) {
 		let t = e.props;
 		for (let e of Object.keys(t)) {
-			let n = t[e]?.[St] ? t[e] : {
-				[St]: !0,
+			let n = t[e]?.[Ct] ? t[e] : {
+				[Ct]: !0,
 				value: t[e]
 			};
-			n.attribute !== !1 && !n.type && (n.type = kt(n.value)), t[e] = n;
+			n.attribute !== !1 && !n.type && (n.type = At(n.value)), t[e] = n;
 		}
 	}
 	return e;
 }
-var Ct = { from: (e) => e === null ? "" : e + "" }, wt = { from: (e) => e === null ? 0 : Number(e) }, Tt = {
+var wt = { from: (e) => e === null ? "" : e + "" }, Tt = { from: (e) => e === null ? 0 : Number(e) }, Et = {
 	from: (e) => e !== null,
 	to: (e) => e ? "" : null
-}, Et = {
+}, Dt = {
 	from: !1,
 	to: () => null
-}, Dt = {
+}, Ot = {
 	from: (e) => e === null ? [] : JSON.parse(e),
 	to: (e) => JSON.stringify(e)
-}, Ot = {
+}, kt = {
 	from: (e) => e === null ? {} : JSON.parse(e),
 	to: (e) => JSON.stringify(e)
 };
-function kt(e) {
-	if (e === null) return Ct;
+function At(e) {
+	if (e === null) return wt;
 	switch (typeof e) {
-		case "undefined": return Ct;
-		case "string": return Ct;
-		case "boolean": return Tt;
-		case "number": return wt;
-		case "function": return Et;
-		case "object": return d(e) ? Dt : Ot;
-		default: return Ct;
+		case "undefined": return wt;
+		case "string": return wt;
+		case "boolean": return Et;
+		case "number": return Tt;
+		case "function": return Dt;
+		case "object": return d(e) ? Ot : kt;
+		default: return wt;
 	}
-}
-function At(e, t, n) {
-	e[lt] || (e[lt] = /* @__PURE__ */ new Set()), e[lt].add(t);
 }
 function jt(e, t, n) {
 	e[ut] || (e[ut] = /* @__PURE__ */ new Set()), e[ut].add(t);
 }
+function Mt(e, t, n) {
+	e[dt] || (e[dt] = /* @__PURE__ */ new Set()), e[dt].add(t);
+}
 //#endregion
 //#region node_modules/vidstack/dist/prod/providers/type-check.js
-function Mt(e) {
+function Nt(e) {
 	return e?.$$PROVIDER_TYPE === "HLS";
 }
-function Nt(e) {
+function Pt(e) {
 	return e instanceof HTMLAudioElement;
 }
-function Pt(e) {
+function Ft(e) {
 	return e instanceof HTMLVideoElement;
 }
-function Ft(e) {
-	return Nt(e) || Pt(e);
+function It(e) {
+	return Pt(e) || Ft(e);
 }
 //#endregion
 //#region node_modules/vidstack/dist/prod/providers/audio/loader.js
-var It = /\.(m4a|m4b|mp4a|mpga|mp2|mp2a|mp3|m2a|m3a|wav|weba|aac|oga|spx)($|\?)/i, Lt = /* @__PURE__ */ new Set([
+var Lt = /\.(m4a|m4b|mp4a|mpga|mp2|mp2a|mp3|m2a|m3a|wav|weba|aac|oga|spx)($|\?)/i, Rt = /* @__PURE__ */ new Set([
 	"audio/mpeg",
 	"audio/ogg",
 	"audio/3gp",
 	"audio/mp4",
 	"audio/webm",
 	"audio/flac"
-]), Rt = /\.(mp4|og[gv]|webm|mov|m4v)(#t=[,\d+]+)?($|\?)/i, zt = /* @__PURE__ */ new Set([
+]), zt = /\.(mp4|og[gv]|webm|mov|m4v)(#t=[,\d+]+)?($|\?)/i, Bt = /* @__PURE__ */ new Set([
 	"video/mp4",
 	"video/webm",
 	"video/3gp",
 	"video/ogg",
 	"video/avi",
 	"video/mpeg"
-]), Bt = /\.(m3u8)($|\?)/i, Vt = /* @__PURE__ */ new Set([
+]), Vt = /\.(m3u8)($|\?)/i, Ht = /* @__PURE__ */ new Set([
 	"application/vnd.apple.mpegurl",
 	"audio/mpegurl",
 	"audio/x-mpegurl",
@@ -473,66 +473,66 @@ var It = /\.(m4a|m4b|mp4a|mpga|mp2|mp2a|mp3|m2a|m3a|wav|weba|aac|oga|spx)($|\?)/
 	"video/mpegurl",
 	"application/mpegurl"
 ]);
-function Ht({ src: e, type: t }) {
-	return typeof e == "string" && Bt.test(e) || Vt.has(t);
+function Ut({ src: e, type: t }) {
+	return typeof e == "string" && Vt.test(e) || Ht.has(t);
 }
-function Ut(e) {
+function Wt(e) {
 	return window.MediaStream !== void 0 && e instanceof window.MediaStream;
 }
-var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></audio>"), Gt = class {
+var Gt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></audio>"), Kt = class {
 	kh;
 	canPlay({ src: e, type: t }) {
-		return S(e) ? It.test(e) || Lt.has(t) || e.startsWith("blob:") && t === "audio/object" : t === "audio/object";
+		return S(e) ? Lt.test(e) || Rt.has(t) || e.startsWith("blob:") && t === "audio/object" : t === "audio/object";
 	}
 	mediaType() {
 		return "audio";
 	}
 	async load() {
-		return new (await (import("./provider-DiuqHlS4.js"))).AudioProvider(this.kh);
+		return new (await (import("./provider-BFkOqNS2.js"))).AudioProvider(this.kh);
 	}
 	render(e) {
 		return (() => {
-			let [t, n] = D(Wt);
+			let [t, n] = D(Gt);
 			return M(() => A(t, "controls", e.controls())), M(() => A(t, "crossorigin", e.crossorigin())), at(t, (e) => void (this.kh = e)), t;
 		})();
 	}
-}, Kt = /* @__PURE__ */ E("<!$><video preload=\"none\" aria-hidden=\"true\"></video>"), qt = class {
+}, qt = /* @__PURE__ */ E("<!$><video preload=\"none\" aria-hidden=\"true\"></video>"), Jt = class {
 	qa;
 	canPlay(e) {
-		return S(e.src) ? Rt.test(e.src) || zt.has(e.type) || e.src.startsWith("blob:") && e.type === "video/object" || Ht(e) && bn() : e.type === "video/object";
+		return S(e.src) ? zt.test(e.src) || Bt.has(e.type) || e.src.startsWith("blob:") && e.type === "video/object" || Ut(e) && xn() : e.type === "video/object";
 	}
 	mediaType() {
 		return "video";
 	}
 	async load(e) {
-		return new (await (import("./provider-DEhMb_t9.js"))).VideoProvider(this.qa, e);
+		return new (await (import("./provider-m7ZNCFXH.js"))).VideoProvider(this.qa, e);
 	}
 	render(e) {
 		let t = u(() => e.poster() && e.controls() ? e.poster() : null);
 		return (() => {
-			let [n, r] = D(Kt);
+			let [n, r] = D(qt);
 			return M(() => A(n, "controls", e.controls())), M(() => A(n, "crossorigin", e.crossorigin())), M(() => A(n, "poster", t())), at(n, (e) => void (this.qa = e)), n;
 		})();
 	}
-}, Jt = class e extends qt {
-	static supported = En();
+}, Yt = class e extends Jt {
+	static supported = Dn();
 	preconnect() {
-		xr("https://cdn.jsdelivr.net", "preconnect");
+		Sr("https://cdn.jsdelivr.net", "preconnect");
 	}
 	canPlay({ src: t, type: n }) {
-		return e.supported && S(t) && (Bt.test(t) || Vt.has(n));
+		return e.supported && S(t) && (Vt.test(t) || Ht.has(n));
 	}
 	async load(e) {
-		return new (await (import("./provider-54b0xlMu.js"))).HLSProvider(this.qa, e);
+		return new (await (import("./provider-B5sjnEci.js"))).HLSProvider(this.qa, e);
 	}
-}, Yt = Symbol(0), Xt = Symbol(0), Zt = Symbol(0), Qt = Symbol(0), $t = Symbol(0), en = Symbol(0), tn = Symbol(0), nn = Symbol(0), rn = Symbol(0), an = class extends ye {
+}, Xt = Symbol(0), Zt = Symbol(0), Qt = Symbol(0), $t = Symbol(0), en = Symbol(0), tn = Symbol(0), nn = Symbol(0), rn = Symbol(0), an = Symbol(0), on = class extends ye {
 	a = [];
-	[$t] = !1;
+	[en] = !1;
 	get length() {
 		return this.a.length;
 	}
 	get readonly() {
-		return this[$t];
+		return this[en];
 	}
 	toArray() {
 		return [...this.a];
@@ -540,7 +540,7 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 	[Symbol.iterator]() {
 		return this.a.values();
 	}
-	[Yt](e, t) {
+	[Xt](e, t) {
 		let n = this.a.length;
 		"" + n in this || Object.defineProperty(this, n, { get() {
 			return this.a[n];
@@ -549,24 +549,24 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 			trigger: t
 		})));
 	}
-	[Xt](e, t) {
+	[Zt](e, t) {
 		let n = this.a.indexOf(e);
-		n >= 0 && (this[nn]?.(e, t), this.a.splice(n, 1), this.dispatchEvent(new h("remove", {
+		n >= 0 && (this[rn]?.(e, t), this.a.splice(n, 1), this.dispatchEvent(new h("remove", {
 			detail: e,
 			trigger: t
 		})));
 	}
-	[Zt](e) {
-		for (let t of [...this.a]) this[Xt](t, e);
-		this.a = [], this[en](!1, e), this[tn]?.();
+	[Qt](e) {
+		for (let t of [...this.a]) this[Zt](t, e);
+		this.a = [], this[tn](!1, e), this[nn]?.();
 	}
-	[en](e, t) {
-		this[$t] !== e && (this[$t] = e, this.dispatchEvent(new h("readonly-change", {
+	[tn](e, t) {
+		this[en] !== e && (this[en] = e, this.dispatchEvent(new h("readonly-change", {
 			detail: e,
 			trigger: t
 		})));
 	}
-}, I = {
+}, F = {
 	fullscreenEnabled: 0,
 	fullscreenElement: 1,
 	requestFullscreen: 2,
@@ -574,7 +574,7 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 	fullscreenchange: 4,
 	fullscreenerror: 5,
 	fullscreen: 6
-}, on = [
+}, sn = [
 	"webkitFullscreenEnabled",
 	"webkitFullscreenElement",
 	"webkitRequestFullscreen",
@@ -582,7 +582,7 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 	"webkitfullscreenchange",
 	"webkitfullscreenerror",
 	"-webkit-full-screen"
-], sn = [
+], cn = [
 	"mozFullScreenEnabled",
 	"mozFullScreenElement",
 	"mozRequestFullScreen",
@@ -590,7 +590,7 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 	"mozfullscreenchange",
 	"mozfullscreenerror",
 	"-moz-full-screen"
-], cn = [
+], ln = [
 	"msFullscreenEnabled",
 	"msFullscreenElement",
 	"msRequestFullscreen",
@@ -598,62 +598,62 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 	"MSFullscreenChange",
 	"MSFullscreenError",
 	"-ms-fullscreen"
-], L = typeof window < "u" && window.document !== void 0 ? window.document : {}, R = "fullscreenEnabled" in L && Object.keys(I) || on[0] in L && on || sn[0] in L && sn || cn[0] in L && cn || [], z = {
+], I = typeof window < "u" && window.document !== void 0 ? window.document : {}, L = "fullscreenEnabled" in I && Object.keys(F) || sn[0] in I && sn || cn[0] in I && cn || ln[0] in I && ln || [], R = {
 	requestFullscreen: function(e) {
-		return e[R[I.requestFullscreen]]();
+		return e[L[F.requestFullscreen]]();
 	},
 	requestFullscreenFunction: function(e) {
-		return e[R[I.requestFullscreen]];
+		return e[L[F.requestFullscreen]];
 	},
 	get exitFullscreen() {
-		return L[R[I.exitFullscreen]].bind(L);
+		return I[L[F.exitFullscreen]].bind(I);
 	},
 	get fullscreenPseudoClass() {
-		return ":" + R[I.fullscreen];
+		return ":" + L[F.fullscreen];
 	},
 	addEventListener: function(e, t, n) {
-		return L.addEventListener(R[I[e]], t, n);
+		return I.addEventListener(L[F[e]], t, n);
 	},
 	removeEventListener: function(e, t, n) {
-		return L.removeEventListener(R[I[e]], t, n);
+		return I.removeEventListener(L[F[e]], t, n);
 	},
 	get fullscreenEnabled() {
-		return !!L[R[I.fullscreenEnabled]];
+		return !!I[L[F.fullscreenEnabled]];
 	},
 	set fullscreenEnabled(e) {},
 	get fullscreenElement() {
-		return L[R[I.fullscreenElement]];
+		return I[L[F.fullscreenElement]];
 	},
 	set fullscreenElement(e) {},
 	get onfullscreenchange() {
-		return L[("on" + R[I.fullscreenchange]).toLowerCase()];
+		return I[("on" + L[F.fullscreenchange]).toLowerCase()];
 	},
 	set onfullscreenchange(e) {
-		return L[("on" + R[I.fullscreenchange]).toLowerCase()] = e;
+		return I[("on" + L[F.fullscreenchange]).toLowerCase()] = e;
 	},
 	get onfullscreenerror() {
-		return L[("on" + R[I.fullscreenerror]).toLowerCase()];
+		return I[("on" + L[F.fullscreenerror]).toLowerCase()];
 	},
 	set onfullscreenerror(e) {
-		return L[("on" + R[I.fullscreenerror]).toLowerCase()] = e;
+		return I[("on" + L[F.fullscreenerror]).toLowerCase()] = e;
 	}
-}, ln = z.fullscreenEnabled, un = class extends C {
+}, un = R.fullscreenEnabled, dn = class extends C {
 	b = !1;
 	c = !1;
 	get active() {
 		return this.c;
 	}
 	get supported() {
-		return ln;
+		return un;
 	}
 	onConnect() {
-		b(z, "fullscreenchange", this.d.bind(this)), b(z, "fullscreenerror", this.e.bind(this));
+		b(R, "fullscreenchange", this.d.bind(this)), b(R, "fullscreenerror", this.e.bind(this));
 	}
 	async onDisconnect() {
-		ln && await this.exit();
+		un && await this.exit();
 	}
 	d(e) {
-		let t = fn(this.el);
+		let t = pn(this.el);
 		t !== this.c && (t || (this.b = !1), this.c = t, this.dispatch("fullscreen-change", {
 			detail: t,
 			trigger: e
@@ -667,60 +667,60 @@ var Wt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 	}
 	async enter() {
 		try {
-			return this.b = !0, !this.el || fn(this.el) ? void 0 : (pn(), z.requestFullscreen(this.el));
+			return this.b = !0, !this.el || pn(this.el) ? void 0 : (mn(), R.requestFullscreen(this.el));
 		} catch (e) {
 			throw this.b = !1, e;
 		}
 	}
 	async exit() {
-		if (!(!this.el || !fn(this.el))) return pn(), z.exitFullscreen();
+		if (!(!this.el || !pn(this.el))) return mn(), R.exitFullscreen();
 	}
 };
-function dn() {
-	return ln;
+function fn() {
+	return un;
 }
-function fn(e) {
-	if (z.fullscreenElement === e) return !0;
+function pn(e) {
+	if (R.fullscreenElement === e) return !0;
 	try {
-		return e.matches(z.fullscreenPseudoClass);
+		return e.matches(R.fullscreenPseudoClass);
 	} catch {
 		return !1;
 	}
 }
-function pn() {
-	if (!ln) throw Error("[vidstack] no fullscreen API");
+function mn() {
+	if (!un) throw Error("[vidstack] no fullscreen API");
 }
-var mn = navigator?.userAgent.toLowerCase(), hn = /iphone|ipad|ipod|ios|crios|fxios/i.test(mn), gn = /(iphone|ipod)/gi.test(navigator?.platform), _n = !!window.chrome, vn = !!window.safari || hn;
-function yn() {
+var hn = navigator?.userAgent.toLowerCase(), gn = /iphone|ipad|ipod|ios|crios|fxios/i.test(hn), _n = /(iphone|ipod)/gi.test(navigator?.platform), vn = !!window.chrome, yn = !!window.safari || gn;
+function bn() {
 	return !n(screen.orientation) && o(screen.orientation.lock) && o(screen.orientation.unlock);
 }
-function bn(e) {
+function xn(e) {
 	return e ||= document.createElement("video"), e.canPlayType("application/vnd.apple.mpegurl").length > 0;
 }
-function xn(e) {
+function Sn(e) {
 	return !!document.pictureInPictureEnabled && !e.disablePictureInPicture;
 }
-function Sn(e) {
+function Cn(e) {
 	return o(e.webkitSupportsPresentationMode) && o(e.webkitSetPresentationMode);
 }
-async function Cn() {
+async function wn() {
 	let e = document.createElement("video");
 	return e.volume = .5, await Ee(0), e.volume === .5;
 }
-function wn() {
+function Tn() {
 	return window?.MediaSource ?? window?.WebKitMediaSource;
 }
-function Tn() {
+function En() {
 	return window?.SourceBuffer ?? window?.WebKitSourceBuffer;
 }
-function En() {
-	let e = wn();
+function Dn() {
+	let e = Tn();
 	if (n(e)) return !1;
-	let t = e && o(e.isTypeSupported) && e.isTypeSupported("video/mp4; codecs=\"avc1.42E01E,mp4a.40.2\""), r = Tn(), i = n(r) || !n(r.prototype) && o(r.prototype.appendBuffer) && o(r.prototype.remove);
+	let t = e && o(e.isTypeSupported) && e.isTypeSupported("video/mp4; codecs=\"avc1.42E01E,mp4a.40.2\""), r = En(), i = n(r) || !n(r.prototype) && o(r.prototype.appendBuffer) && o(r.prototype.remove);
 	return !!t && !!i;
 }
-var Dn = yn(), On = class extends C {
-	g = m(An());
+var On = bn(), kn = class extends C {
+	g = m(jn());
 	f = m(!1);
 	h;
 	get type() {
@@ -736,20 +736,20 @@ var Dn = yn(), On = class extends C {
 		return this.g().startsWith("landscape");
 	}
 	get supported() {
-		return Dn;
+		return On;
 	}
 	onConnect() {
-		if (Dn) b(screen.orientation, "change", this.i.bind(this));
+		if (On) b(screen.orientation, "change", this.i.bind(this));
 		else {
 			let e = window.matchMedia("(orientation: landscape)");
 			return e.onchange = this.i.bind(this), () => e.onchange = null;
 		}
 	}
 	async onDisconnect() {
-		Dn && this.f() && await this.unlock();
+		On && this.f() && await this.unlock();
 	}
 	i(t) {
-		this.g.set(An()), this.dispatch("orientation-change", {
+		this.g.set(jn()), this.dispatch("orientation-change", {
 			detail: {
 				orientation: e(this.g),
 				lock: this.h
@@ -758,50 +758,50 @@ var Dn = yn(), On = class extends C {
 		});
 	}
 	async lock(t) {
-		e(this.f) || this.h === t || (kn(), await screen.orientation.lock(t), this.f.set(!0), this.h = t);
+		e(this.f) || this.h === t || (An(), await screen.orientation.lock(t), this.f.set(!0), this.h = t);
 	}
 	async unlock() {
-		e(this.f) && (kn(), this.h = void 0, await screen.orientation.unlock(), this.f.set(!1));
+		e(this.f) && (An(), this.h = void 0, await screen.orientation.unlock(), this.f.set(!1));
 	}
 };
-function kn() {
-	if (!Dn) throw Error("[vidstack] no orientation API");
-}
 function An() {
-	return Dn ? window.screen.orientation.type : window.innerWidth >= window.innerHeight ? "landscape-primary" : "portrait-primary";
+	if (!On) throw Error("[vidstack] no orientation API");
 }
-function B(e, t, n) {
+function jn() {
+	return On ? window.screen.orientation.type : window.innerWidth >= window.innerHeight ? "landscape-primary" : "portrait-primary";
+}
+function z(e, t, n) {
 	e.hasAttribute(t) || e.setAttribute(t, n);
 }
-function V(e, t) {
+function B(e, t) {
 	if (e.hasAttribute("aria-label") || e.hasAttribute("aria-describedby")) return;
 	function n() {
 		a(e, "aria-label", t());
 	}
 	g(n);
 }
-function jn(e, t, n) {
+function Mn(e, t, n) {
 	for (; t;) if (t === e) return !0;
 	else if (t.localName === e.localName || n?.(t)) break;
 	else t = t.parentElement;
 	return !1;
 }
-function H(e, t) {
+function V(e, t) {
 	b(e, "pointerup", (e) => {
 		e.button === 0 && t(e);
 	}), b(e, "keydown", (e) => {
 		Oe(e) && t(e);
 	});
 }
-function Mn(e) {
+function Nn(e) {
 	let t = ce();
 	requestAnimationFrame(() => v(e, t));
 }
-var Nn = t();
-function U() {
-	return p(Nn);
+var Pn = t();
+function H() {
+	return p(Pn);
 }
-var Pn = [
+var Fn = [
 	"autoplay",
 	"autoplayError",
 	"canFullscreen",
@@ -827,7 +827,7 @@ var Pn = [
 	"userIdle",
 	"viewType",
 	"waiting"
-], Fn = {
+], In = {
 	togglePaused: "k Space",
 	toggleMuted: "m",
 	toggleFullscreen: "f",
@@ -837,12 +837,12 @@ var Pn = [
 	seekForward: "ArrowRight",
 	volumeUp: "ArrowUp",
 	volumeDown: "ArrowDown"
-}, In = /* @__PURE__ */ new Set([
+}, Ln = /* @__PURE__ */ new Set([
 	"Shift",
 	"Alt",
 	"Meta",
 	"Control"
-]), Ln = "button, [role=\"button\"]", Rn = "input, textarea, select, [contenteditable], [role^=\"menuitem\"]", zn = class extends C {
+]), Rn = "button, [role=\"button\"]", zn = "input, textarea, select, [contenteditable], [role^=\"menuitem\"]", Bn = class extends C {
 	constructor(e, t) {
 		super(e), this.j = t;
 	}
@@ -864,14 +864,14 @@ var Pn = [
 	}
 	Ya(e) {
 		let t = document.activeElement, n = t?.hasAttribute("data-media-slider");
-		if (!e.key || !this.$store.canSeek() || n || t?.matches(Rn)) return;
+		if (!e.key || !this.$store.canSeek() || n || t?.matches(zn)) return;
 		let r = this.Va(e);
 		r?.startsWith("seek") && (e.preventDefault(), e.stopPropagation(), this.Ta ? (this.Wa(e), this.Ta = null) : (this.j.remote.seek(this.Ua, e), this.Ua = void 0)), r?.startsWith("volume") && this.el.querySelector("media-volume-slider")?.dispatchEvent(new h("keyup", { trigger: e }));
 	}
 	Za(e) {
-		if (!e.key || In.has(e.key)) return;
+		if (!e.key || Ln.has(e.key)) return;
 		let t = document.activeElement;
-		if (t?.matches(Rn) || Oe(e) && t?.matches(Ln)) return;
+		if (t?.matches(zn) || Oe(e) && t?.matches(Rn)) return;
 		let n = t?.hasAttribute("data-media-slider"), r = this.Va(e);
 		if (!r && !e.metaKey && /[0-9]/.test(e.key) && !n) {
 			e.preventDefault(), e.stopPropagation(), this.j.remote.seek(this.$store.duration() / 10 * Number(e.key), e);
@@ -898,14 +898,14 @@ var Pn = [
 		}
 	}
 	_a(e) {
-		Ft(e.target) && this.Va(e) && e.preventDefault();
+		It(e.target) && this.Va(e) && e.preventDefault();
 	}
 	Va(e) {
 		let t = {
 			...this.$props.keyShortcuts(),
 			...this.j.ariaKeys
 		};
-		return Object.keys(t).find((n) => t[n].split(" ").some((t) => Vn(t).replace(/Control/g, "Ctrl").split("+").every((t) => In.has(t) ? e[t.toLowerCase() + "Key"] : e.key === t.replace("Space", " "))));
+		return Object.keys(t).find((n) => t[n].split(" ").some((t) => Hn(t).replace(/Control/g, "Ctrl").split("+").every((t) => Ln.has(t) ? e[t.toLowerCase() + "Key"] : e.key === t.replace("Space", " "))));
 	}
 	Ua;
 	ab(e, t) {
@@ -919,7 +919,7 @@ var Pn = [
 	$a(e, t) {
 		this.$store.canSeek() && (this.Ta ||= this.el.querySelector("media-time-slider"), this.Ta ? this.Wa(e) : this.j.remote.seeking(this.ab(e, t), e));
 	}
-}, Bn = [
+}, Vn = [
 	"!",
 	"@",
 	"#",
@@ -931,12 +931,12 @@ var Pn = [
 	"(",
 	")"
 ];
-function Vn(e) {
-	return e.replace(/Shift\+(\d)/g, (e, t) => Bn[t - 1]);
+function Hn(e) {
+	return e.replace(/Shift\+(\d)/g, (e, t) => Vn[t - 1]);
 }
-var Hn = {
+var Un = {
 	autoplay: !1,
-	aspectRatio: P({
+	aspectRatio: N({
 		value: null,
 		type: { from(e) {
 			if (!e) return null;
@@ -958,7 +958,7 @@ var Hn = {
 	playbackRate: 1,
 	poster: "",
 	preload: "metadata",
-	preferNativeHLS: P({
+	preferNativeHLS: N({
 		value: !1,
 		attribute: "prefer-native-hls"
 	}),
@@ -971,10 +971,10 @@ var Hn = {
 	minLiveDVRWindow: 60,
 	keyDisabled: !1,
 	keyTarget: "player",
-	keyShortcuts: Fn,
+	keyShortcuts: In,
 	title: "",
 	thumbnails: null,
-	textTracks: P({
+	textTracks: N({
 		value: [],
 		attribute: !1
 	}),
@@ -982,7 +982,7 @@ var Hn = {
 	largeBreakpointX: 980,
 	smallBreakpointY: 380,
 	largeBreakpointY: 600
-}, Un = class {
+}, Wn = class {
 	W;
 	get length() {
 		return this.W.length;
@@ -997,7 +997,7 @@ var Hn = {
 		return this.W[e][1] ?? Infinity;
 	}
 };
-function Wn(e) {
+function Gn(e) {
 	if (!e.length) return null;
 	let t = e.start(0);
 	for (let n = 1; n < e.length; n++) {
@@ -1006,7 +1006,7 @@ function Wn(e) {
 	}
 	return t;
 }
-function Gn(e) {
+function Kn(e) {
 	if (!e.length) return null;
 	let t = e.end(0);
 	for (let n = 1; n < e.length; n++) {
@@ -1015,12 +1015,12 @@ function Gn(e) {
 	}
 	return t;
 }
-var Kn = new ve({
+var qn = new ve({
 	audioTracks: [],
 	audioTrack: null,
 	autoplay: !1,
 	autoplayError: void 0,
-	buffered: new Un(),
+	buffered: new Wn(),
 	duration: 0,
 	canLoad: !1,
 	canFullscreen: !1,
@@ -1038,7 +1038,7 @@ var Kn = new ve({
 	mediaType: "unknown",
 	muted: !1,
 	paused: !0,
-	played: new Un(),
+	played: new Wn(),
 	playing: !1,
 	playsinline: !1,
 	pictureInPicture: !1,
@@ -1048,7 +1048,7 @@ var Kn = new ve({
 	quality: null,
 	autoQuality: !1,
 	canSetQuality: !0,
-	seekable: new Un(),
+	seekable: new Wn(),
 	seeking: !1,
 	source: {
 		src: "",
@@ -1073,16 +1073,16 @@ var Kn = new ve({
 		return this.source;
 	},
 	get bufferedStart() {
-		return Wn(this.buffered) ?? 0;
-	},
-	get bufferedEnd() {
 		return Gn(this.buffered) ?? 0;
 	},
+	get bufferedEnd() {
+		return Kn(this.buffered) ?? 0;
+	},
 	get seekableStart() {
-		return Wn(this.seekable) ?? 0;
+		return Gn(this.seekable) ?? 0;
 	},
 	get seekableEnd() {
-		return this.canPlay ? Gn(this.seekable) ?? Infinity : 0;
+		return this.canPlay ? Kn(this.seekable) ?? Infinity : 0;
 	},
 	get seekableWindow() {
 		return Math.max(0, this.seekableEnd - this.seekableStart);
@@ -1117,34 +1117,34 @@ var Kn = new ve({
 	providedStreamType: "unknown",
 	inferredStreamType: "unknown",
 	liveSyncPosition: null
-}), qn = /* @__PURE__ */ new Set(/* @__PURE__ */ "autoplay.breakpointX.breakpointY.canFullscreen.canLoad.canPictureInPicture.controls.fullscreen.logLevel.loop.mediaHeight.mediaWidth.muted.orientation.pictureInPicture.playsinline.poster.preload.providedStreamType.providedViewType.source.sources.textTrack.textTracks.thumbnailCues.thumbnails.title.touchPointer.volume".split("."));
-function Jn(e) {
-	Kn.reset(e, (e) => !qn.has(e)), _();
+}), Jn = /* @__PURE__ */ new Set(/* @__PURE__ */ "autoplay.breakpointX.breakpointY.canFullscreen.canLoad.canPictureInPicture.controls.fullscreen.logLevel.loop.mediaHeight.mediaWidth.muted.orientation.pictureInPicture.playsinline.poster.preload.providedStreamType.providedViewType.source.sources.textTrack.textTracks.thumbnailCues.thumbnails.title.touchPointer.volume".split("."));
+function Yn(e) {
+	qn.reset(e, (e) => !Jn.has(e)), _();
 }
-var Yn = Symbol(0), Xn = class extends an {
+var Xn = Symbol(0), Zn = class extends on {
 	get selected() {
 		return this.a.find((e) => e.selected) ?? null;
 	}
 	get selectedIndex() {
 		return this.a.findIndex((e) => e.selected);
 	}
-	[nn](e, t) {
-		this[Qt](e, !1, t);
+	[rn](e, t) {
+		this[$t](e, !1, t);
 	}
-	[Yt](e, t) {
-		e[Yn] = !1, Object.defineProperty(e, "selected", {
+	[Xt](e, t) {
+		e[Xn] = !1, Object.defineProperty(e, "selected", {
 			get() {
-				return this[Yn];
+				return this[Xn];
 			},
 			set: (t) => {
-				this.readonly || (this[rn]?.(), this[Qt](e, t));
+				this.readonly || (this[an]?.(), this[$t](e, t));
 			}
-		}), super[Yt](e, t);
+		}), super[Xt](e, t);
 	}
-	[Qt](e, t, n) {
-		if (t === e[Yn]) return;
+	[$t](e, t, n) {
+		if (t === e[Xn]) return;
 		let r = this.selected;
-		e[Yn] = t, (t ? r !== e : r === e) && (r && (r[Yn] = !1), this.dispatchEvent(new h("change", {
+		e[Xn] = t, (t ? r !== e : r === e) && (r && (r[Xn] = !1), this.dispatchEvent(new h("change", {
 			detail: {
 				prev: r,
 				current: this.selected
@@ -1152,29 +1152,29 @@ var Yn = Symbol(0), Xn = class extends an {
 			trigger: n
 		})));
 	}
-}, Zn = Symbol(0), Qn = Symbol(0), $n = class extends Xn {
+}, Qn = Symbol(0), $n = Symbol(0), er = class extends Zn {
 	Sa = !1;
 	switch = "current";
 	get auto() {
 		return this.Sa || this.readonly;
 	}
-	[Qn];
-	[rn]() {
-		this[Zn](!1);
+	[$n];
+	[an]() {
+		this[Qn](!1);
 	}
-	[tn](e) {
-		this[Zn](!1, e);
+	[nn](e) {
+		this[Qn](!1, e);
 	}
 	autoSelect(e) {
-		this.readonly || this.Sa || !this[Qn] || (this[Qn](), this[Zn](!0, e));
+		this.readonly || this.Sa || !this[$n] || (this[$n](), this[Qn](!0, e));
 	}
-	[Zn](e, t) {
+	[Qn](e, t) {
 		this.Sa !== e && (this.Sa = e, this.dispatchEvent(new h("auto-change", {
 			detail: e,
 			trigger: t
 		})));
 	}
-}, er = class extends C {
+}, tr = class extends C {
 	constructor(e, t) {
 		super(e), this.jf = t;
 	}
@@ -1191,7 +1191,7 @@ var Yn = Symbol(0), Xn = class extends an {
 			return t.observe(e), t.disconnect.bind(t);
 		}
 	}
-}, tr = class {
+}, nr = class {
 	constructor(e, t) {
 		this.N = e, this.j = t;
 	}
@@ -1219,7 +1219,7 @@ var Yn = Symbol(0), Xn = class extends an {
 			t.autoplaying.set(!1);
 		}
 	}
-}, nr = class {
+}, rr = class {
 	Ze = /* @__PURE__ */ new Map();
 	t(e, t) {
 		this.Ze.has(e) || this.Ze.set(e, /* @__PURE__ */ new Set()), this.Ze.get(e).add(t);
@@ -1239,10 +1239,10 @@ var Yn = Symbol(0), Xn = class extends an {
 		this.Ze.clear();
 	}
 };
-function rr(e) {
+function ir(e) {
 	return e instanceof Error ? e : Error(JSON.stringify(e));
 }
-var ir = class extends C {
+var ar = class extends C {
 	da = -2;
 	ba = 2e3;
 	ea = !1;
@@ -1302,14 +1302,14 @@ var ir = class extends C {
 			trigger: t
 		}));
 	}
-}, ar = class {
+}, or = class {
 	$a = !1;
 	rf = !1;
 	pf = !1;
-	Ze = new nr();
-}, or = class extends C {
+	Ze = new rr();
+}, sr = class extends C {
 	constructor(e, t, n, r) {
-		super(e), this.u = t, this.mf = n, this.j = r, this.nf = r.$store, this.q = r.$provider, this.Q = new ir(e), this.of = new un(e), this.nb = new On(e);
+		super(e), this.u = t, this.mf = n, this.j = r, this.nf = r.$store, this.q = r.$provider, this.Q = new ar(e), this.of = new dn(e), this.nb = new kn(e);
 	}
 	Q;
 	of;
@@ -1329,9 +1329,9 @@ var ir = class extends C {
 		let { canPlay: t, paused: n, ended: r, autoplaying: i, seekableStart: a } = this.nf;
 		if (e(n)) try {
 			let n = e(this.q);
-			return sr(n, e(t)), e(r) && (n.currentTime = a() + .1), n.play();
+			return cr(n, e(t)), e(r) && (n.currentTime = a() + .1), n.play();
 		} catch (e) {
-			let t = this.createEvent("play-fail", { detail: rr(e) });
+			let t = this.createEvent("play-fail", { detail: ir(e) });
 			throw t.autoplay = i(), this.u.N(t), e;
 		}
 	}
@@ -1339,22 +1339,22 @@ var ir = class extends C {
 		let { canPlay: t, paused: n } = this.nf;
 		if (e(n)) return;
 		let r = e(this.q);
-		return sr(r, e(t)), r.pause();
+		return cr(r, e(t)), r.pause();
 	}
 	V() {
 		let { canPlay: t, live: n, liveEdge: r, canSeek: i, liveSyncPosition: a, seekableEnd: o, userBehindLiveEdge: s } = this.nf;
 		if (s.set(!1), e(() => !n() || r() || !i())) return;
 		let c = e(this.q);
-		sr(c, e(t)), c.currentTime = a() ?? o() - 2;
+		cr(c, e(t)), c.currentTime = a() ?? o() - 2;
 	}
 	qf = !1;
 	async R(t = "prefer-media") {
 		let n = e(this.q), r = t === "prefer-media" && this.of.supported || t === "media" ? this.of : n?.fullscreen;
-		if (cr(t, r), !r.active) return e(this.nf.pictureInPicture) && (this.qf = !0, await this.U()), r.enter();
+		if (lr(t, r), !r.active) return e(this.nf.pictureInPicture) && (this.qf = !0, await this.U()), r.enter();
 	}
 	async S(t = "prefer-media") {
 		let n = e(this.q), r = t === "prefer-media" && this.of.supported || t === "media" ? this.of : n?.fullscreen;
-		if (cr(t, r), r.active) {
+		if (lr(t, r), r.active) {
 			this.nb.locked && await this.nb.unlock();
 			try {
 				let t = await r.exit();
@@ -1410,7 +1410,7 @@ var ir = class extends C {
 		} catch {}
 	}
 	e(e) {
-		this.u.N(this.createEvent("fullscreen-error", { detail: rr(e) }));
+		this.u.N(this.createEvent("fullscreen-error", { detail: ir(e) }));
 	}
 	async "media-enter-pip-request"(e) {
 		try {
@@ -1427,7 +1427,7 @@ var ir = class extends C {
 		}
 	}
 	tf(e) {
-		this.u.N(this.createEvent("picture-in-picture-error", { detail: rr(e) }));
+		this.u.N(this.createEvent("picture-in-picture-error", { detail: ir(e) }));
 	}
 	"media-live-edge-request"(e) {
 		let { live: t, liveEdge: n, canSeek: r } = this.nf;
@@ -1458,7 +1458,7 @@ var ir = class extends C {
 		if (this.nf.paused()) try {
 			this.mf.Ze.t("play", e), await this.q().play();
 		} catch (e) {
-			let t = this.createEvent("play-fail", { detail: rr(e) });
+			let t = this.createEvent("play-fail", { detail: ir(e) });
 			this.u.N(t);
 		}
 	}
@@ -1509,14 +1509,14 @@ var ir = class extends C {
 		n() !== r && (this.mf.Ze.t("volume", e), this.q().volume = r, r > 0 && t() && (this.mf.Ze.t("volume", e), this.q().muted = !1));
 	}
 };
-function sr(e, t) {
+function cr(e, t) {
 	if (!(e && t)) throw Error("[vidstack] media not ready");
 }
-function cr(e, t) {
+function lr(e, t) {
 	if (!t?.supported) throw Error("[vidstack] no fullscreen support");
 }
-var lr = ur;
-function ur(e, t, n) {
+var ur = dr;
+function dr(e, t, n) {
 	var r = null, i = null, a = function() {
 		r &&= (clearTimeout(r), i = null, null);
 	}, o = function() {
@@ -1536,8 +1536,8 @@ function ur(e, t, n) {
 	};
 	return s.cancel = a, s.flush = o, s;
 }
-var dr = fr;
-function fr(e, t, n) {
+var fr = pr;
+function pr(e, t, n) {
 	var r = null, i = null, a = n && n.leading, o = n && n.trailing;
 	a ??= !0, o ??= !a, a == 1 && (o = !1);
 	var s = function() {
@@ -1555,7 +1555,7 @@ function fr(e, t, n) {
 	};
 	return l.cancel = s, l.flush = c, l;
 }
-var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0), gr = Symbol(0), K = Symbol(0), _r = Symbol(0), vr = /* @__PURE__ */ new Set([
+var mr = Symbol(0), U = Symbol(0), W = Symbol(0), hr = Symbol(0), gr = Symbol(0), _r = Symbol(0), G = Symbol(0), vr = Symbol(0), yr = /* @__PURE__ */ new Set([
 	"autoplay",
 	"autoplay-fail",
 	"can-load",
@@ -1574,7 +1574,7 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 	"seeking",
 	"seeked",
 	"waiting"
-]), yr = class extends C {
+]), br = class extends C {
 	constructor(e, t, n) {
 		super(e), this.mf = t, this.j = n, this.nf = n.$store;
 	}
@@ -1591,7 +1591,7 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 	}
 	N(e) {
 		let t = e.type;
-		this[e.type]?.(e), vr.has(t) && this.zf.set(t, e), this.el?.dispatchEvent(e);
+		this[e.type]?.(e), yr.has(t) && this.zf.set(t, e), this.el?.dispatchEvent(e);
 	}
 	Cf() {
 		this.Hf(), this.mf.pf = !1, this.mf.rf = !1, this.Df = !1, this.Bf = void 0, this.zf.clear();
@@ -1673,7 +1673,7 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 		y(e, this.zf.get("play-fail")), y(e, this.zf.get("can-play")), this.nf.autoplayError.set(e.detail), this.Cf();
 	}
 	"can-load"(e) {
-		this.nf.canLoad.set(!0), this.zf.set("can-load", e), this.Af("load", e), this.j.textTracks[hr]();
+		this.nf.canLoad.set(!0), this.zf.set("can-load", e), this.Af("load", e), this.j.textTracks[gr]();
 	}
 	"media-type-change"(e) {
 		y(e, this.zf.get("source-change"));
@@ -1698,7 +1698,7 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 			this.Gf = !1;
 			return;
 		}
-		this.j.audioTracks[Zt](e), this.j.qualities[Zt](e), this.Cf(), Jn(this.j.$store), this.zf.set(e.type, e);
+		this.j.audioTracks[Qt](e), this.j.qualities[Qt](e), this.Cf(), Yn(this.j.$store), this.zf.set(e.type, e);
 	}
 	abort(e) {
 		y(e, this.zf.get("source-change")), y(e, this.zf.get("can-load"));
@@ -1781,13 +1781,13 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 	"time-update"(e) {
 		let { currentTime: t, played: n, waiting: r } = this.nf, i = e.detail;
 		t.set(i.currentTime), n.set(i.played), r.set(!1);
-		for (let t of this.j.textTracks) t[mr](i.currentTime, e);
+		for (let t of this.j.textTracks) t[hr](i.currentTime, e);
 	}
 	"volume-change"(e) {
 		let { volume: t, muted: n } = this.nf, r = e.detail;
 		t.set(r.volume), n.set(r.muted || r.volume === 0), this.Af("volume", e);
 	}
-	seeking = dr((e) => {
+	seeking = fr((e) => {
 		let { seeking: t, currentTime: n, paused: r } = this.nf;
 		t.set(!0), n.set(e.detail), this.Af("seeking", e), r() && (this.Bf = e, this.Ff());
 	}, 150, { leading: !0 });
@@ -1804,7 +1804,7 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 	waiting(e) {
 		this.Df || this.mf.$a || (e.stopImmediatePropagation(), this.Bf = e, this.Ff());
 	}
-	Ff = lr(() => {
+	Ff = ur(() => {
 		if (!this.Bf) return;
 		this.Df = !0;
 		let { waiting: e, playing: t } = this.nf;
@@ -1835,7 +1835,7 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 	"picture-in-picture-error"(e) {
 		this.Af("pip", e);
 	}
-}, br = class extends C {
+}, xr = class extends C {
 	onAttach(e) {
 		g(this.Tf.bind(this)), g(this.Uf.bind(this)), g(this.Vf.bind(this)), g(this.Wf.bind(this)), g(this.Xf.bind(this)), g(this.Yf.bind(this)), g(this.Zf.bind(this)), g(this._f.bind(this)), g(this.$f.bind(this)), g(this.ag.bind(this));
 	}
@@ -1876,34 +1876,34 @@ var pr = Symbol(0), W = Symbol(0), G = Symbol(0), mr = Symbol(0), hr = Symbol(0)
 		this.$store.thumbnails.set(this.$props.thumbnails());
 	}
 };
-function xr(e, t = "preconnect") {
+function Sr(e, t = "preconnect") {
 	if (!ee(document.querySelector(`link[href="${e}"]`))) return !0;
 	let n = document.createElement("link");
 	return n.rel = t, n.href = e, n.crossOrigin = "true", document.head.append(n), !0;
 }
-var Sr = {};
-function Cr(e) {
-	if (Sr[e]) return Sr[e].promise;
+var Cr = {};
+function wr(e) {
+	if (Cr[e]) return Cr[e].promise;
 	let t = _e();
 	if (!ee(document.querySelector(`script[src="${e}"]`))) return t.resolve(), t.promise;
 	let n = document.createElement("script");
 	return n.src = e, n.onload = () => {
-		t.resolve(), delete Sr[e];
+		t.resolve(), delete Cr[e];
 	}, n.onerror = () => {
-		t.reject(), delete Sr[e];
+		t.reject(), delete Cr[e];
 	}, setTimeout(() => document.head.append(n), 0), t.promise;
 }
-function wr(e) {
+function Tr(e) {
 	return e === "use-credentials" ? "include" : S(e) ? "same-origin" : void 0;
 }
-function Tr(e, t) {
-	for (let n = 0, r = t.length; n < r; n++) if (Er(t[n], e)) return t[n];
+function Er(e, t) {
+	for (let n = 0, r = t.length; n < r; n++) if (Dr(t[n], e)) return t[n];
 	return null;
 }
-function Er(e, t) {
+function Dr(e, t) {
 	return t >= e.startTime && t < e.endTime;
 }
-function Dr(e, t, n) {
+function Or(e, t, n) {
 	let r = e.toArray().find((e) => e.kind === "chapters" && e.mode === "showing");
 	if (r !== t) {
 		if (!r) {
@@ -1913,7 +1913,7 @@ function Dr(e, t, n) {
 		r.readyState == 2 ? n(r) : (n(null), r.addEventListener("load", () => n(r), { once: !0 }));
 	}
 }
-var Or = class extends ye {
+var kr = class extends ye {
 	static createId(e) {
 		return `id::${e.type}-${e.kind}-${e.src ?? e.label}`;
 	}
@@ -1933,10 +1933,10 @@ var Or = class extends ye {
 	Ha = [];
 	Da = [];
 	Fa = [];
-	[G] = 0;
-	[W];
-	[gr] = null;
-	[K] = null;
+	[W] = 0;
+	[U];
+	[_r] = null;
+	[G] = null;
 	get metadata() {
 		return this.Ja;
 	}
@@ -1950,7 +1950,7 @@ var Or = class extends ye {
 		return this.Fa;
 	}
 	get readyState() {
-		return this[G];
+		return this[W];
 	}
 	get mode() {
 		return this.Ga;
@@ -1965,38 +1965,38 @@ var Or = class extends ye {
 			e.type === "json" ? this.Ka(e.content, n, r) : t(e.content, { type: e.type }).then(({ cues: e, regions: t }) => {
 				this.Da = e, this.Ha = t, this.La();
 			});
-		}) : e.src || (this[G] = 2);
+		}) : e.src || (this[W] = 2);
 	}
 	addCue(e, t) {
 		let n = 0, r = this.Da.length;
 		for (n = 0; n < r && !(e.endTime <= this.Da[n].startTime); n++);
-		n === r ? this.Da.push(e) : this.Da.splice(n, 0, e), t?.type !== "cuechange" && this[K]?.track.addCue(e), this.dispatchEvent(new h("add-cue", {
+		n === r ? this.Da.push(e) : this.Da.splice(n, 0, e), t?.type !== "cuechange" && this[G]?.track.addCue(e), this.dispatchEvent(new h("add-cue", {
 			detail: e,
 			trigger: t
-		})), Er(e, this.Ea) && this[mr](this.Ea, t);
+		})), Dr(e, this.Ea) && this[hr](this.Ea, t);
 	}
 	removeCue(e, t) {
 		let n = this.Da.indexOf(e);
 		if (n >= 0) {
 			let r = this.Fa.includes(e);
-			this.Da.splice(n, 1), this[K]?.track.removeCue(e), this.dispatchEvent(new h("remove-cue", {
+			this.Da.splice(n, 1), this[G]?.track.removeCue(e), this.dispatchEvent(new h("remove-cue", {
 				detail: e,
 				trigger: t
-			})), r && this[mr](this.Ea, t);
+			})), r && this[hr](this.Ea, t);
 		}
 	}
 	setMode(e, t) {
-		this.Ga !== e && (this.Ga = e, e === "disabled" ? (this.Fa = [], this.Ma()) : this.readyState === 2 ? this[mr](this.Ea, t) : this.Na(), this.dispatchEvent(new h("mode-change", {
+		this.Ga !== e && (this.Ga = e, e === "disabled" ? (this.Fa = [], this.Ma()) : this.readyState === 2 ? this[hr](this.Ea, t) : this.Na(), this.dispatchEvent(new h("mode-change", {
 			detail: this,
 			trigger: t
-		})), this[gr]?.());
+		})), this[_r]?.());
 	}
-	[mr](e, t) {
+	[hr](e, t) {
 		if (this.Ea = e, this.mode === "disabled" || !this.Da.length) return;
 		let n = [];
 		for (let t = 0, r = this.Da.length; t < r; t++) {
 			let r = this.Da[t];
-			Er(r, e) && n.push(r);
+			Dr(r, e) && n.push(r);
 		}
 		let r = n.length !== this.Fa.length;
 		if (!r) {
@@ -2007,16 +2007,16 @@ var Or = class extends ye {
 		}
 		this.Fa = n, r && this.Ma(t);
 	}
-	[hr]() {
+	[gr]() {
 		this.Ia = !0, this.Ga !== "disabled" && this.Na();
 	}
 	async Na() {
-		if (!(!this.Ia || !this.src || this[G] > 0)) {
-			this[G] = 1, this.dispatchEvent(new h("load-start"));
+		if (!(!this.Ia || !this.src || this[W] > 0)) {
+			this[W] = 1, this.dispatchEvent(new h("load-start"));
 			try {
-				let { parseResponse: e, VTTCue: t, VTTRegion: n } = await import("./prod-CKqKSCtX.js").then((e) => e.t), r = this[W]?.(), i = fetch(this.src, {
+				let { parseResponse: e, VTTCue: t, VTTRegion: n } = await import("./prod-CKqKSCtX.js").then((e) => e.t), r = this[U]?.(), i = fetch(this.src, {
 					headers: this.type === "json" ? { "Content-Type": "application/json" } : void 0,
-					credentials: wr(r)
+					credentials: Tr(r)
 				});
 				if (this.type === "json") this.Ka(await (await i).text(), t, n);
 				else {
@@ -2034,15 +2034,15 @@ var Or = class extends ye {
 		}
 	}
 	La() {
-		if (this[G] = 2, !this.src || this.type !== "vtt") {
-			let e = this[K]?.track;
+		if (this[W] = 2, !this.src || this.type !== "vtt") {
+			let e = this[G]?.track;
 			if (e) for (let t of this.Da) e.addCue(t);
 		}
 		let e = new h("load");
-		this[mr](this.Ea, e), this.dispatchEvent(e);
+		this[hr](this.Ea, e), this.dispatchEvent(e);
 	}
 	Oa(e) {
-		this[G] = 3, this.dispatchEvent(new h("error", { detail: e }));
+		this[W] = 3, this.dispatchEvent(new h("error", { detail: e }));
 	}
 	Ka(e, t, n) {
 		try {
@@ -2054,11 +2054,11 @@ var Or = class extends ye {
 	Ma(e) {
 		this.dispatchEvent(new h("cue-change", { trigger: e }));
 	}
-}, kr = /captions|subtitles/;
-function q(e) {
-	return kr.test(e.kind);
+}, Ar = /captions|subtitles/;
+function K(e) {
+	return Ar.test(e.kind);
 }
-var Ar = class {
+var jr = class {
 	constructor(e) {
 		this.$ = e;
 	}
@@ -2167,7 +2167,7 @@ var Ar = class {
 			this.changeTextTrackMode(t, "disabled", e), this._ = t;
 		} else {
 			let t = this._;
-			(!n[t] || !q(n[t])) && (t = -1), t === -1 && (t = n.findIndex((e) => q(e) && e.default)), t === -1 && (t = n.findIndex((e) => q(e))), t >= 0 && this.changeTextTrackMode(t, "showing", e), this._ = -1;
+			(!n[t] || !K(n[t])) && (t = -1), t === -1 && (t = n.findIndex((e) => K(e) && e.default)), t === -1 && (t = n.findIndex((e) => K(e))), t >= 0 && this.changeTextTrackMode(t, "showing", e), this._ = -1;
 		}
 	}
 	X(e, t, n) {
@@ -2180,10 +2180,10 @@ var Ar = class {
 		(t?.target && (t.target === document || t.target === window || t.target === document.body || this.Y && !this.Y.contains(t.target)) ? this.Z ?? this.getPlayer() : t?.target ?? this.Z)?.dispatchEvent(r);
 	}
 	aa(e) {}
-}, jr = class extends C {
+}, Mr = class extends C {
 	j;
 	onConnect() {
-		this.j = U(), g(this.cg.bind(this));
+		this.j = H(), g(this.cg.bind(this));
 	}
 	cg() {
 		let { canLoad: e, thumbnailCues: t } = this.j.$store;
@@ -2192,17 +2192,17 @@ var Ar = class {
 		if (a) return import("./prod-CKqKSCtX.js").then((e) => e.t).then(({ parseResponse: e }) => {
 			e(fetch(a, {
 				signal: n.signal,
-				credentials: wr(r())
+				credentials: Tr(r())
 			})).then(({ cues: e }) => t.set(e)).catch(se);
 		}), () => {
 			n.abort(), t.set([]);
 		};
 	}
-}, Mr = class extends Xn {
+}, Nr = class extends Zn {
 	getById(e) {
 		return e === "" ? null : this.a.find((t) => t.id === e) ?? null;
 	}
-}, Nr = class {
+}, Pr = class {
 	priority = 0;
 	eg = !0;
 	qa = null;
@@ -2218,10 +2218,10 @@ var Ar = class {
 		this.dg.add(e), this.gg(e);
 	}
 	removeTrack(e) {
-		e[K]?.remove?.(), e[K] = null, this.dg.delete(e);
+		e[G]?.remove?.(), e[G] = null, this.dg.delete(e);
 	}
 	changeTrack(e) {
-		let t = e?.[K];
+		let t = e?.[G];
 		t && t.track.mode !== "showing" && (t.track.mode = "showing"), this.ya = e;
 	}
 	setDisplay(e) {
@@ -2234,7 +2234,7 @@ var Ar = class {
 	}
 	gg(e) {
 		if (!this.qa) return;
-		let t = e[K] ??= this.hg(e);
+		let t = e[G] ??= this.hg(e);
 		t instanceof HTMLElement && (this.qa.append(t), t.track.mode = t.default ? "showing" : "hidden");
 	}
 	hg(e) {
@@ -2246,7 +2246,7 @@ var Ar = class {
 	}
 	Hc(e) {
 		for (let t of this.dg) {
-			let n = t[K]?.track;
+			let n = t[G]?.track;
 			if (!n) continue;
 			if (!this.eg) {
 				n.mode = "disabled";
@@ -2256,7 +2256,7 @@ var Ar = class {
 			r && this.fg(t, n), t.setMode(r ? "showing" : "disabled", e);
 		}
 	}
-}, Pr = class {
+}, Fr = class {
 	constructor(e) {
 		this.j = e;
 		let t = e.textTracks;
@@ -2278,20 +2278,20 @@ var Ar = class {
 	remove(e) {
 		e.detach(), this.oa.splice(this.oa.indexOf(e), 1), this.na();
 	}
-	[pr](e) {
+	[mr](e) {
 		requestAnimationFrame(() => {
 			if (this.qa = e, e) {
-				this.la = new Nr(), this.la.attach(e);
+				this.la = new Pr(), this.la.attach(e);
 				for (let e of this.pa) this.ta(e);
 			}
 			this.na();
 		});
 	}
 	ta(e) {
-		q(e) && this.la?.addTrack(e);
+		K(e) && this.la?.addTrack(e);
 	}
 	xa(e) {
-		q(e) && this.la?.removeTrack(e);
+		K(e) && this.la?.removeTrack(e);
 	}
 	va(e) {
 		this.ta(e.detail);
@@ -2305,7 +2305,7 @@ var Ar = class {
 			return;
 		}
 		let e = this.pa.selected;
-		if (this.sa || e?.[_r]) {
+		if (this.sa || e?.[vr]) {
 			this.ma?.changeTrack(null), this.la.setDisplay(!0), this.la.changeTrack(e);
 			return;
 		}
@@ -2319,19 +2319,19 @@ var Ar = class {
 	ra() {
 		this.la?.detach(), this.la = null, this.ma?.detach(), this.ma = null;
 	}
-}, Fr = class extends an {
+}, Ir = class extends on {
 	Ia = !1;
 	Pa = {};
-	[W];
+	[U];
 	get selected() {
-		return this.a.find((e) => e.mode === "showing" && q(e)) ?? null;
+		return this.a.find((e) => e.mode === "showing" && K(e)) ?? null;
 	}
 	add(e, t) {
-		let n = e instanceof Or ? e : new Or(e);
-		return this.Pa[e.kind] && e.default && delete e.default, n.addEventListener("mode-change", this.Qa), this[Yt](n, t), n[W] = this[W], this.Ia && n[hr](), e.default && (this.Pa[e.kind] = n, n.mode = "showing"), this;
+		let n = e instanceof kr ? e : new kr(e);
+		return this.Pa[e.kind] && e.default && delete e.default, n.addEventListener("mode-change", this.Qa), this[Xt](n, t), n[U] = this[U], this.Ia && n[gr](), e.default && (this.Pa[e.kind] = n, n.mode = "showing"), this;
 	}
 	remove(e, t) {
-		if (this.a.includes(e)) return e === this.Pa[e.kind] && delete this.Pa[e.kind], e.mode = "disabled", e[gr] = null, e.removeEventListener("mode-change", this.Qa), this[Xt](e, t), this;
+		if (this.a.includes(e)) return e === this.Pa[e.kind] && delete this.Pa[e.kind], e.mode = "disabled", e[_r] = null, e.removeEventListener("mode-change", this.Qa), this[Zt](e, t), this;
 	}
 	clear(e) {
 		for (let t of this.a) this.remove(t, e);
@@ -2344,9 +2344,9 @@ var Ar = class {
 		let t = Array.isArray(e) ? e : [e];
 		return this.a.filter((e) => t.includes(e.kind));
 	}
-	[hr]() {
+	[gr]() {
 		if (!this.Ia) {
-			for (let e of this.a) e[hr]();
+			for (let e of this.a) e[gr]();
 			this.Ia = !0;
 		}
 	}
@@ -2354,7 +2354,7 @@ var Ar = class {
 	Ra(e) {
 		let t = e.detail;
 		if (t.mode === "showing") {
-			let e = q(t) ? ["captions", "subtitles"] : [t.kind];
+			let e = K(t) ? ["captions", "subtitles"] : [t.kind];
 			for (let n of this.a) n.mode === "showing" && n != t && e.includes(n.kind) && (n.mode = "disabled");
 		}
 		this.dispatchEvent(new h("mode-change", {
@@ -2362,10 +2362,10 @@ var Ar = class {
 			trigger: e
 		}));
 	}
-}, Ir = class {
+}, Lr = class {
 	constructor(e, t, n) {
 		this.l = e, this.j = t, this.k = n;
-		let r = new Jt(), i = new qt(), a = new Gt();
+		let r = new Yt(), i = new Jt(), a = new Kt();
 		this.Ie = u(() => t.$props.preferNativeHLS() ? [
 			i,
 			a,
@@ -2378,12 +2378,12 @@ var Ar = class {
 	}
 	Ie;
 	Ke() {
-		this.j.delegate.p("sources-change", { detail: [...Lr(this.j.$props.src()), ...this.l()] });
+		this.j.delegate.p("sources-change", { detail: [...Rr(this.j.$props.src()), ...this.l()] });
 	}
 	Le() {
 		let { $store: t } = this.j, n = t.sources(), r = e(t.source), i = this.Je(r, n);
 		if (n[0]?.src && !i.src && !i.type) {
-			let { crossorigin: r } = t, i = wr(r()), a = new AbortController();
+			let { crossorigin: r } = t, i = Tr(r()), a = new AbortController();
 			return Promise.all(n.map((e) => S(e.src) && e.type === "?" ? fetch(e.src, {
 				method: "HEAD",
 				credentials: i,
@@ -2431,17 +2431,17 @@ var Ar = class {
 			return;
 		}
 		try {
-			S(n.src) && xr(new URL(n.src).origin, "preconnect");
+			S(n.src) && Sr(new URL(n.src).origin, "preconnect");
 		} catch {}
 	}
 };
-function Lr(e) {
+function Rr(e) {
 	return (d(e) ? e : [!S(e) && "src" in e ? e : { src: e }]).map(({ src: e, type: t }) => ({
 		src: e,
 		type: t ?? (!S(e) || e.startsWith("blob:") ? "video/object" : "?")
 	}));
 }
-var Rr = class {
+var zr = class {
 	constructor(e, t) {
 		this.m = e, this.j = t, g(this.He.bind(this));
 	}
@@ -2453,19 +2453,19 @@ var Rr = class {
 			e && this.j.textTracks.remove(e);
 		}
 		for (let t of e) {
-			let e = t.id || Or.createId(t);
+			let e = t.id || kr.createId(t);
 			this.j.textTracks.getById(e) || (t.id = e, this.j.textTracks.add(t));
 		}
 		this.Ge = e;
 	}
-}, zr = class extends w {
-	static el = F({ tagName: "media-outlet" });
+}, Br = class extends w {
+	static el = P({ tagName: "media-outlet" });
 	j;
 	l = m([]);
 	m = m([]);
 	k = m(null);
 	constructor(e) {
-		super(e), this.j = U(), new Ir(this.l, this.j, this.k), new Rr(this.m, this.j);
+		super(e), this.j = H(), new Lr(this.l, this.j, this.k), new zr(this.m, this.j);
 	}
 	onAttach(e) {
 		e.setAttribute("keep-alive", "");
@@ -2477,7 +2477,7 @@ var Rr = class {
 		return n.observe(e, {
 			attributes: !0,
 			childList: !0
-		}), vn && b(e, "touchstart", (e) => e.preventDefault(), { passive: !1 }), Mn(() => {
+		}), yn && b(e, "touchstart", (e) => e.preventDefault(), { passive: !1 }), Nn(() => {
 			this.n(), this.o();
 		}), () => {
 			t.disconnect(), n.disconnect();
@@ -2520,12 +2520,12 @@ var Rr = class {
 			}), r;
 		};
 	}
-}, Br = class extends C {
+}, Vr = class extends C {
 	constructor(e, t) {
 		super(e), this.ig = t;
 	}
 	onAttach(e) {
-		let { $props: t, ariaKeys: n } = U(), r = e.getAttribute("aria-keyshortcuts");
+		let { $props: t, ariaKeys: n } = H(), r = e.getAttribute("aria-keyshortcuts");
 		if (r) {
 			n[this.ig] = r, f(() => {
 				delete n[this.ig];
@@ -2535,106 +2535,106 @@ var Rr = class {
 		let i = t.keyShortcuts()[this.ig];
 		i && e.setAttribute("aria-keyshortcuts", i);
 	}
-}, Vr = /* @__PURE__ */ E("<!$><svg viewBox=\"0 0 32 32\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\" data-media-icon=\"true\"></svg>");
-function J({ slot: e, part: t, paths: n, rotate: r }) {
+}, Hr = /* @__PURE__ */ E("<!$><svg viewBox=\"0 0 32 32\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\" data-media-icon=\"true\"></svg>");
+function q({ slot: e, part: t, paths: n, rotate: r }) {
 	return (() => {
-		let [i, a] = D(Vr);
+		let [i, a] = D(Hr);
 		return A(i, "data-rotate", r), A(i, "slot", e), A(i, "part", t), $e || (i.innerHTML = n), i;
 	})();
 }
 //#endregion
 //#region node_modules/vidstack/dist/prod/media-ui.js
-function Y(e, t = 2) {
+function J(e, t = 2) {
 	return Number(e.toFixed(t));
 }
-function Hr(e) {
+function Ur(e) {
 	return String(e).split(".")[1]?.length ?? 0;
 }
-function Ur(e, t, n) {
+function Wr(e, t, n) {
 	return Math.max(e, Math.min(n, t));
 }
-var Wr = m(!1);
+var Gr = m(!1);
 b(document, "pointerdown", () => {
-	Wr.set(!1);
+	Gr.set(!1);
 }), b(document, "keydown", (e) => {
-	e.metaKey || e.altKey || e.ctrlKey || Wr.set(!0);
+	e.metaKey || e.altKey || e.ctrlKey || Gr.set(!0);
 });
-var X = class extends C {
+var Y = class extends C {
 	Qe = m(!1);
 	onConnect(e) {
 		g(() => {
-			if (!Wr()) {
-				this.Qe.set(!1), Gr(e, !1), this.listen("pointerenter", this.Re.bind(this)), this.listen("pointerleave", this.Se.bind(this));
+			if (!Gr()) {
+				this.Qe.set(!1), Kr(e, !1), this.listen("pointerenter", this.Re.bind(this)), this.listen("pointerleave", this.Se.bind(this));
 				return;
 			}
 			let t = document.activeElement === e;
-			this.Qe.set(t), Gr(e, t), this.listen("focus", this.Te.bind(this)), this.listen("blur", this.Ue.bind(this));
+			this.Qe.set(t), Kr(e, t), this.listen("focus", this.Te.bind(this)), this.listen("blur", this.Ue.bind(this));
 		});
 	}
 	focused() {
 		return this.Qe();
 	}
 	Te() {
-		this.Qe.set(!0), Gr(this.el, !0);
+		this.Qe.set(!0), Kr(this.el, !0);
 	}
 	Ue() {
-		this.Qe.set(!1), Gr(this.el, !1);
+		this.Qe.set(!1), Kr(this.el, !1);
 	}
 	Re() {
-		Kr(this.el, !0);
+		qr(this.el, !0);
 	}
 	Se() {
-		Kr(this.el, !1);
+		qr(this.el, !1);
 	}
 };
-function Gr(e, t) {
+function Kr(e, t) {
 	a(e, "data-focus", t), a(e, "data-hocus", t);
 }
-function Kr(e, t) {
+function qr(e, t) {
 	a(e, "data-hocus", t), a(e, "data-hover", t);
 }
-var qr = t();
+var Jr = t();
 (class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-tooltip",
 		props: { position: "top center" }
 	});
 	onAttach(e) {
-		te(qr) && Mn(() => {
-			e.isConnected && p(qr).bb(e);
+		te(Jr) && Nn(() => {
+			e.isConnected && p(Jr).bb(e);
 		}), this.setAttributes({ position: this.$props.position });
 	}
 });
-var Jr = 0, Yr = class extends C {
+var Yr = 0, Xr = class extends C {
 	constructor(e) {
-		super(e), c(qr, { bb: this.bb.bind(this) });
+		super(e), c(Jr, { bb: this.bb.bind(this) });
 	}
 	bb(e) {
-		let t = `media-tooltip-${++Jr}`;
+		let t = `media-tooltip-${++Yr}`;
 		a(this.el, "aria-describedby", t), a(e, "id", t), a(e, "role", "tooltip"), this.el.removeAttribute("aria-label");
 	}
-}, Xr = Object.defineProperty, Zr = Object.getOwnPropertyDescriptor, Qr = (e, t, n, r) => {
-	for (var i = r > 1 ? void 0 : r ? Zr(t, n) : t, a = e.length - 1, o; a >= 0; a--) (o = e[a]) && (i = (r ? o(t, n, i) : o(i)) || i);
-	return r && i && Xr(t, n, i), i;
-}, $r = {
+}, Zr = Object.defineProperty, Qr = Object.getOwnPropertyDescriptor, $r = (e, t, n, r) => {
+	for (var i = r > 1 ? void 0 : r ? Qr(t, n) : t, a = e.length - 1, o; a >= 0; a--) (o = e[a]) && (i = (r ? o(t, n, i) : o(i)) || i);
+	return r && i && Zr(t, n, i), i;
+}, ei = {
 	disabled: !1,
 	defaultPressed: !1,
 	defaultAppearance: !1
-}, ei = class extends w {
-	static el = F({
+}, X = class extends w {
+	static el = P({
 		tagName: "media-toggle-button",
-		props: $r
+		props: ei
 	});
 	cb = m(!1);
 	db;
 	constructor(e) {
-		super(e), new X(e), new Yr(e), this.db && new Br(e, this.db);
+		super(e), new Y(e), new Xr(e), this.db && new Vr(e, this.db);
 	}
 	get pressed() {
 		return e(this.cb);
 	}
 	onAttach(e) {
-		l(this.cb) && this.cb.set(this.$props.defaultPressed()), B(e, "tabindex", "0"), B(e, "role", "button");
+		l(this.cb) && this.cb.set(this.$props.defaultPressed()), z(e, "tabindex", "0"), z(e, "role", "button");
 		let { disabled: t, defaultAppearance: n } = this.$props;
 		this.setAttributes({
 			disabled: t,
@@ -2645,7 +2645,7 @@ var Jr = 0, Yr = class extends C {
 		});
 	}
 	onConnect(e) {
-		H(e, this.fb.bind(this));
+		V(e, this.fb.bind(this));
 	}
 	eb() {
 		return xe(this.cb());
@@ -2662,16 +2662,16 @@ var Jr = 0, Yr = class extends C {
 		e.preventDefault(), this.gb(e);
 	}
 };
-Qr([At], ei.prototype, "pressed", 1);
-var ti = "<path d=\"M8.66667 6.66667C8.29848 6.66667 8 6.96514 8 7.33333V24.6667C8 25.0349 8.29848 25.3333 8.66667 25.3333H12.6667C13.0349 25.3333 13.3333 25.0349 13.3333 24.6667V7.33333C13.3333 6.96514 13.0349 6.66667 12.6667 6.66667H8.66667Z\" fill=\"currentColor\"/> <path d=\"M19.3333 6.66667C18.9651 6.66667 18.6667 6.96514 18.6667 7.33333V24.6667C18.6667 25.0349 18.9651 25.3333 19.3333 25.3333H23.3333C23.7015 25.3333 24 25.0349 24 24.6667V7.33333C24 6.96514 23.7015 6.66667 23.3333 6.66667H19.3333Z\" fill=\"currentColor\"/>", ni = "<path d=\"M10.6667 6.6548C10.6667 6.10764 11.2894 5.79346 11.7295 6.11862L24.377 15.4634C24.7377 15.7298 24.7377 16.2692 24.3771 16.5357L11.7295 25.8813C11.2895 26.2065 10.6667 25.8923 10.6667 25.3451L10.6667 6.6548Z\" fill=\"currentColor\"/>", ri = "<path d=\"M15.6038 12.2147C16.0439 12.5399 16.6667 12.2257 16.6667 11.6786V10.1789C16.6667 10.1001 16.7351 10.0384 16.8134 10.0479C20.1116 10.4494 22.6667 13.2593 22.6667 16.6659C22.6667 20.3481 19.6817 23.3332 15.9995 23.3332C12.542 23.3332 9.69927 20.7014 9.36509 17.332C9.32875 16.9655 9.03371 16.6662 8.66548 16.6662L6.66655 16.6666C6.29841 16.6666 5.99769 16.966 6.02187 17.3334C6.36494 22.5454 10.7012 26.6667 16 26.6667C21.5228 26.6667 26 22.1895 26 16.6667C26 11.4103 21.9444 7.10112 16.7916 6.69757C16.7216 6.69209 16.6667 6.63396 16.6667 6.56372V4.98824C16.6667 4.44106 16.0439 4.12689 15.6038 4.45206L11.0765 7.79738C10.7159 8.06387 10.7159 8.60326 11.0766 8.86973L15.6038 12.2147Z\" fill=\"currentColor\"/>", ii = class extends ei {
-	static el = F({
+$r([jt], X.prototype, "pressed", 1);
+var ti = "<path d=\"M8.66667 6.66667C8.29848 6.66667 8 6.96514 8 7.33333V24.6667C8 25.0349 8.29848 25.3333 8.66667 25.3333H12.6667C13.0349 25.3333 13.3333 25.0349 13.3333 24.6667V7.33333C13.3333 6.96514 13.0349 6.66667 12.6667 6.66667H8.66667Z\" fill=\"currentColor\"/> <path d=\"M19.3333 6.66667C18.9651 6.66667 18.6667 6.96514 18.6667 7.33333V24.6667C18.6667 25.0349 18.9651 25.3333 19.3333 25.3333H23.3333C23.7015 25.3333 24 25.0349 24 24.6667V7.33333C24 6.96514 23.7015 6.66667 23.3333 6.66667H19.3333Z\" fill=\"currentColor\"/>", ni = "<path d=\"M10.6667 6.6548C10.6667 6.10764 11.2894 5.79346 11.7295 6.11862L24.377 15.4634C24.7377 15.7298 24.7377 16.2692 24.3771 16.5357L11.7295 25.8813C11.2895 26.2065 10.6667 25.8923 10.6667 25.3451L10.6667 6.6548Z\" fill=\"currentColor\"/>", ri = "<path d=\"M15.6038 12.2147C16.0439 12.5399 16.6667 12.2257 16.6667 11.6786V10.1789C16.6667 10.1001 16.7351 10.0384 16.8134 10.0479C20.1116 10.4494 22.6667 13.2593 22.6667 16.6659C22.6667 20.3481 19.6817 23.3332 15.9995 23.3332C12.542 23.3332 9.69927 20.7014 9.36509 17.332C9.32875 16.9655 9.03371 16.6662 8.66548 16.6662L6.66655 16.6666C6.29841 16.6666 5.99769 16.966 6.02187 17.3334C6.36494 22.5454 10.7012 26.6667 16 26.6667C21.5228 26.6667 26 22.1895 26 16.6667C26 11.4103 21.9444 7.10112 16.7916 6.69757C16.7216 6.69209 16.6667 6.63396 16.6667 6.56372V4.98824C16.6667 4.44106 16.0439 4.12689 15.6038 4.45206L11.0765 7.79738C10.7159 8.06387 10.7159 8.60326 11.0766 8.86973L15.6038 12.2147Z\" fill=\"currentColor\"/>", ii = class extends X {
+	static el = P({
 		tagName: "media-play-button",
-		props: $r
+		props: ei
 	});
 	j;
 	db = "togglePaused";
 	onAttach(e) {
-		this.j = U(), this.cb = this.hb.bind(this), super.onAttach(e), V(e, this.ib.bind(this));
+		this.j = H(), this.cb = this.hb.bind(this), super.onAttach(e), B(e, this.ib.bind(this));
 		let { paused: t, ended: n } = this.j.$store;
 		this.setAttributes({
 			"data-paused": t,
@@ -2692,15 +2692,15 @@ var ti = "<path d=\"M8.66667 6.66667C8.29848 6.66667 8 6.96514 8 7.33333V24.6667
 	}
 	render() {
 		return [
-			k(J, {
+			k(q, {
 				paths: ni,
 				slot: "play"
 			}),
-			k(J, {
+			k(q, {
 				paths: ri,
 				slot: "replay"
 			}),
-			k(J, {
+			k(q, {
 				paths: ti,
 				slot: "pause"
 			})
@@ -2713,53 +2713,53 @@ function si(e) {
 function Z(e) {
 	return () => si(e());
 }
-(class extends ei {
-	static el = F({
+(class extends X {
+	static el = P({
 		tagName: "media-caption-button",
-		props: $r
+		props: ei
 	});
 	j;
 	db = "toggleCaptions";
 	onAttach(e) {
-		this.j = U(), this.cb = this.hb.bind(this), super.onAttach(e), V(e, this.ib.bind(this)), this.setAttributes({ "aria-hidden": Z(this.jb.bind(this)) });
+		this.j = H(), this.cb = this.hb.bind(this), super.onAttach(e), B(e, this.ib.bind(this)), this.setAttributes({ "aria-hidden": Z(this.jb.bind(this)) });
 	}
 	gb(e) {
 		this.j.remote.toggleCaptions(e);
 	}
 	hb() {
 		let { textTrack: e } = this.j.$store, t = e();
-		return !!t && q(t);
+		return !!t && K(t);
 	}
 	jb() {
 		let { textTracks: e } = this.j.$store;
-		return e().filter(q).length == 0;
+		return e().filter(K).length == 0;
 	}
 	ib() {
 		let { textTrack: e } = this.j.$store;
 		return e() ? "Closed-Captions Off" : "Closed-Captions On";
 	}
 	render() {
-		return [k(J, {
+		return [k(q, {
 			paths: ai,
 			slot: "on"
-		}), k(J, {
+		}), k(q, {
 			paths: oi,
 			slot: "off"
 		})];
 	}
 });
-var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.6667L18.6667 7.33333C18.6667 6.96514 18.9652 6.66666 19.3334 6.66666H21.3334C21.7015 6.66666 22 6.96514 22 7.33333V9.86666C22 9.9403 22.0597 10 22.1334 10L24.6667 10C25.0349 10 25.3334 10.2985 25.3334 10.6667V12.6667C25.3334 13.0349 25.0349 13.3333 24.6667 13.3333L19.3334 13.3333Z\" fill=\"currentColor\"/> <path d=\"M13.3334 19.3333C13.3334 18.9651 13.0349 18.6667 12.6667 18.6667H7.33335C6.96516 18.6667 6.66669 18.9651 6.66669 19.3333V21.3333C6.66669 21.7015 6.96516 22 7.33335 22H9.86669C9.94032 22 10 22.0597 10 22.1333L10 24.6667C10 25.0349 10.2985 25.3333 10.6667 25.3333H12.6667C13.0349 25.3333 13.3334 25.0349 13.3334 24.6667L13.3334 19.3333Z\" fill=\"currentColor\"/> <path d=\"M18.6667 24.6667C18.6667 25.0349 18.9652 25.3333 19.3334 25.3333H21.3334C21.7015 25.3333 22 25.0349 22 24.6667V22.1333C22 22.0597 22.0597 22 22.1334 22H24.6667C25.0349 22 25.3334 21.7015 25.3334 21.3333V19.3333C25.3334 18.9651 25.0349 18.6667 24.6667 18.6667L19.3334 18.6667C18.9652 18.6667 18.6667 18.9651 18.6667 19.3333L18.6667 24.6667Z\" fill=\"currentColor\"/> <path d=\"M10.6667 13.3333H12.6667C13.0349 13.3333 13.3334 13.0349 13.3334 12.6667L13.3334 10.6667V7.33333C13.3334 6.96514 13.0349 6.66666 12.6667 6.66666H10.6667C10.2985 6.66666 10 6.96514 10 7.33333L10 9.86666C10 9.9403 9.94033 10 9.86669 10L7.33335 10C6.96516 10 6.66669 10.2985 6.66669 10.6667V12.6667C6.66669 13.0349 6.96516 13.3333 7.33335 13.3333L10.6667 13.3333Z\" fill=\"currentColor\"/>", li = "<path d=\"M25.3299 7.26517C25.2958 6.929 25.0119 6.66666 24.6667 6.66666H19.3334C18.9652 6.66666 18.6667 6.96514 18.6667 7.33333V9.33333C18.6667 9.70152 18.9652 10 19.3334 10L21.8667 10C21.9403 10 22 10.0597 22 10.1333V12.6667C22 13.0349 22.2985 13.3333 22.6667 13.3333H24.6667C25.0349 13.3333 25.3334 13.0349 25.3334 12.6667V7.33333C25.3334 7.31032 25.3322 7.28758 25.3299 7.26517Z\" fill=\"currentColor\"/> <path d=\"M22 21.8667C22 21.9403 21.9403 22 21.8667 22L19.3334 22C18.9652 22 18.6667 22.2985 18.6667 22.6667V24.6667C18.6667 25.0349 18.9652 25.3333 19.3334 25.3333L24.6667 25.3333C25.0349 25.3333 25.3334 25.0349 25.3334 24.6667V19.3333C25.3334 18.9651 25.0349 18.6667 24.6667 18.6667H22.6667C22.2985 18.6667 22 18.9651 22 19.3333V21.8667Z\" fill=\"currentColor\"/> <path d=\"M12.6667 22H10.1334C10.0597 22 10 21.9403 10 21.8667V19.3333C10 18.9651 9.70154 18.6667 9.33335 18.6667H7.33335C6.96516 18.6667 6.66669 18.9651 6.66669 19.3333V24.6667C6.66669 25.0349 6.96516 25.3333 7.33335 25.3333H12.6667C13.0349 25.3333 13.3334 25.0349 13.3334 24.6667V22.6667C13.3334 22.2985 13.0349 22 12.6667 22Z\" fill=\"currentColor\"/> <path d=\"M10 12.6667V10.1333C10 10.0597 10.0597 10 10.1334 10L12.6667 10C13.0349 10 13.3334 9.70152 13.3334 9.33333V7.33333C13.3334 6.96514 13.0349 6.66666 12.6667 6.66666H7.33335C6.96516 6.66666 6.66669 6.96514 6.66669 7.33333V12.6667C6.66669 13.0349 6.96516 13.3333 7.33335 13.3333H9.33335C9.70154 13.3333 10 13.0349 10 12.6667Z\" fill=\"currentColor\"/>", ui = class extends ei {
-	static el = F({
+var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.6667L18.6667 7.33333C18.6667 6.96514 18.9652 6.66666 19.3334 6.66666H21.3334C21.7015 6.66666 22 6.96514 22 7.33333V9.86666C22 9.9403 22.0597 10 22.1334 10L24.6667 10C25.0349 10 25.3334 10.2985 25.3334 10.6667V12.6667C25.3334 13.0349 25.0349 13.3333 24.6667 13.3333L19.3334 13.3333Z\" fill=\"currentColor\"/> <path d=\"M13.3334 19.3333C13.3334 18.9651 13.0349 18.6667 12.6667 18.6667H7.33335C6.96516 18.6667 6.66669 18.9651 6.66669 19.3333V21.3333C6.66669 21.7015 6.96516 22 7.33335 22H9.86669C9.94032 22 10 22.0597 10 22.1333L10 24.6667C10 25.0349 10.2985 25.3333 10.6667 25.3333H12.6667C13.0349 25.3333 13.3334 25.0349 13.3334 24.6667L13.3334 19.3333Z\" fill=\"currentColor\"/> <path d=\"M18.6667 24.6667C18.6667 25.0349 18.9652 25.3333 19.3334 25.3333H21.3334C21.7015 25.3333 22 25.0349 22 24.6667V22.1333C22 22.0597 22.0597 22 22.1334 22H24.6667C25.0349 22 25.3334 21.7015 25.3334 21.3333V19.3333C25.3334 18.9651 25.0349 18.6667 24.6667 18.6667L19.3334 18.6667C18.9652 18.6667 18.6667 18.9651 18.6667 19.3333L18.6667 24.6667Z\" fill=\"currentColor\"/> <path d=\"M10.6667 13.3333H12.6667C13.0349 13.3333 13.3334 13.0349 13.3334 12.6667L13.3334 10.6667V7.33333C13.3334 6.96514 13.0349 6.66666 12.6667 6.66666H10.6667C10.2985 6.66666 10 6.96514 10 7.33333L10 9.86666C10 9.9403 9.94033 10 9.86669 10L7.33335 10C6.96516 10 6.66669 10.2985 6.66669 10.6667V12.6667C6.66669 13.0349 6.96516 13.3333 7.33335 13.3333L10.6667 13.3333Z\" fill=\"currentColor\"/>", li = "<path d=\"M25.3299 7.26517C25.2958 6.929 25.0119 6.66666 24.6667 6.66666H19.3334C18.9652 6.66666 18.6667 6.96514 18.6667 7.33333V9.33333C18.6667 9.70152 18.9652 10 19.3334 10L21.8667 10C21.9403 10 22 10.0597 22 10.1333V12.6667C22 13.0349 22.2985 13.3333 22.6667 13.3333H24.6667C25.0349 13.3333 25.3334 13.0349 25.3334 12.6667V7.33333C25.3334 7.31032 25.3322 7.28758 25.3299 7.26517Z\" fill=\"currentColor\"/> <path d=\"M22 21.8667C22 21.9403 21.9403 22 21.8667 22L19.3334 22C18.9652 22 18.6667 22.2985 18.6667 22.6667V24.6667C18.6667 25.0349 18.9652 25.3333 19.3334 25.3333L24.6667 25.3333C25.0349 25.3333 25.3334 25.0349 25.3334 24.6667V19.3333C25.3334 18.9651 25.0349 18.6667 24.6667 18.6667H22.6667C22.2985 18.6667 22 18.9651 22 19.3333V21.8667Z\" fill=\"currentColor\"/> <path d=\"M12.6667 22H10.1334C10.0597 22 10 21.9403 10 21.8667V19.3333C10 18.9651 9.70154 18.6667 9.33335 18.6667H7.33335C6.96516 18.6667 6.66669 18.9651 6.66669 19.3333V24.6667C6.66669 25.0349 6.96516 25.3333 7.33335 25.3333H12.6667C13.0349 25.3333 13.3334 25.0349 13.3334 24.6667V22.6667C13.3334 22.2985 13.0349 22 12.6667 22Z\" fill=\"currentColor\"/> <path d=\"M10 12.6667V10.1333C10 10.0597 10.0597 10 10.1334 10L12.6667 10C13.0349 10 13.3334 9.70152 13.3334 9.33333V7.33333C13.3334 6.96514 13.0349 6.66666 12.6667 6.66666H7.33335C6.96516 6.66666 6.66669 6.96514 6.66669 7.33333V12.6667C6.66669 13.0349 6.96516 13.3333 7.33335 13.3333H9.33335C9.70154 13.3333 10 13.0349 10 12.6667Z\" fill=\"currentColor\"/>", ui = class extends X {
+	static el = P({
 		tagName: "media-fullscreen-button",
 		props: {
-			...$r,
+			...ei,
 			target: "prefer-media"
 		}
 	});
 	j;
 	db = "toggleFullscreen";
 	onAttach(e) {
-		this.j = U(), this.cb = this.hb.bind(this), super.onAttach(e), V(e, this.ib.bind(this));
+		this.j = H(), this.cb = this.hb.bind(this), super.onAttach(e), B(e, this.ib.bind(this));
 		let { fullscreen: t } = this.j.$store;
 		this.setAttributes({
 			"aria-hidden": Z(this.jb.bind(this)),
@@ -2783,23 +2783,23 @@ var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.
 		return e() ? "Exit Fullscreen" : "Enter Fullscreen";
 	}
 	render() {
-		return [k(J, {
+		return [k(q, {
 			paths: li,
 			slot: "enter"
-		}), k(J, {
+		}), k(q, {
 			paths: ci,
 			slot: "exit"
 		})];
 	}
-}, di = "<path d=\"M17.5091 24.6594C17.5091 25.2066 16.8864 25.5208 16.4463 25.1956L9.44847 20.0252C9.42553 20.0083 9.39776 19.9991 9.36923 19.9991H4.66667C4.29848 19.9991 4 19.7006 4 19.3325V12.6658C4 12.2976 4.29848 11.9991 4.66667 11.9991H9.37115C9.39967 11.9991 9.42745 11.99 9.45039 11.973L16.4463 6.8036C16.8863 6.47842 17.5091 6.79259 17.5091 7.33977L17.5091 24.6594Z\" fill=\"currentColor\"/> <path d=\"M28.8621 13.6422C29.1225 13.3818 29.1225 12.9597 28.8621 12.6994L27.9193 11.7566C27.659 11.4962 27.2368 11.4962 26.9765 11.7566L24.7134 14.0197C24.6613 14.0717 24.5769 14.0717 24.5248 14.0197L22.262 11.7568C22.0016 11.4964 21.5795 11.4964 21.3191 11.7568L20.3763 12.6996C20.116 12.9599 20.116 13.382 20.3763 13.6424L22.6392 15.9053C22.6913 15.9573 22.6913 16.0418 22.6392 16.0938L20.3768 18.3562C20.1165 18.6166 20.1165 19.0387 20.3768 19.299L21.3196 20.2419C21.58 20.5022 22.0021 20.5022 22.2624 20.2418L24.5248 17.9795C24.5769 17.9274 24.6613 17.9274 24.7134 17.9795L26.976 20.2421C27.2363 20.5024 27.6585 20.5024 27.9188 20.2421L28.8616 19.2992C29.122 19.0389 29.122 18.6168 28.8616 18.3564L26.599 16.0938C26.547 16.0418 26.547 15.9573 26.599 15.9053L28.8621 13.6422Z\" fill=\"currentColor\"/>", fi = "<path d=\"M17.5091 24.6595C17.5091 25.2066 16.8864 25.5208 16.4463 25.1956L9.44847 20.0252C9.42553 20.0083 9.39776 19.9992 9.36923 19.9992H4.66667C4.29848 19.9992 4 19.7007 4 19.3325V12.6658C4 12.2976 4.29848 11.9992 4.66667 11.9992H9.37115C9.39967 11.9992 9.42745 11.99 9.45039 11.9731L16.4463 6.80363C16.8863 6.47845 17.5091 6.79262 17.5091 7.3398L17.5091 24.6595Z\" fill=\"currentColor\"/> <path d=\"M27.5091 9.33336C27.8773 9.33336 28.1758 9.63184 28.1758 10V22C28.1758 22.3682 27.8773 22.6667 27.5091 22.6667H26.1758C25.8076 22.6667 25.5091 22.3682 25.5091 22V10C25.5091 9.63184 25.8076 9.33336 26.1758 9.33336L27.5091 9.33336Z\" fill=\"currentColor\"/> <path d=\"M22.1758 12C22.544 12 22.8424 12.2985 22.8424 12.6667V19.3334C22.8424 19.7016 22.544 20 22.1758 20H20.8424C20.4743 20 20.1758 19.7016 20.1758 19.3334V12.6667C20.1758 12.2985 20.4743 12 20.8424 12H22.1758Z\" fill=\"currentColor\"/>", pi = "<path d=\"M17.5091 24.6594C17.5091 25.2066 16.8864 25.5207 16.4463 25.1956L9.44847 20.0252C9.42553 20.0083 9.39776 19.9991 9.36923 19.9991H4.66667C4.29848 19.9991 4 19.7006 4 19.3324V12.6658C4 12.2976 4.29848 11.9991 4.66667 11.9991H9.37115C9.39967 11.9991 9.42745 11.99 9.45039 11.973L16.4463 6.80358C16.8863 6.4784 17.5091 6.79258 17.5091 7.33975L17.5091 24.6594Z\" fill=\"currentColor\"/> <path d=\"M22.8424 12.6667C22.8424 12.2985 22.544 12 22.1758 12H20.8424C20.4743 12 20.1758 12.2985 20.1758 12.6667V19.3333C20.1758 19.7015 20.4743 20 20.8424 20H22.1758C22.544 20 22.8424 19.7015 22.8424 19.3333V12.6667Z\" fill=\"currentColor\"/>", mi = class extends ei {
-	static el = F({
+}, di = "<path d=\"M17.5091 24.6594C17.5091 25.2066 16.8864 25.5208 16.4463 25.1956L9.44847 20.0252C9.42553 20.0083 9.39776 19.9991 9.36923 19.9991H4.66667C4.29848 19.9991 4 19.7006 4 19.3325V12.6658C4 12.2976 4.29848 11.9991 4.66667 11.9991H9.37115C9.39967 11.9991 9.42745 11.99 9.45039 11.973L16.4463 6.8036C16.8863 6.47842 17.5091 6.79259 17.5091 7.33977L17.5091 24.6594Z\" fill=\"currentColor\"/> <path d=\"M28.8621 13.6422C29.1225 13.3818 29.1225 12.9597 28.8621 12.6994L27.9193 11.7566C27.659 11.4962 27.2368 11.4962 26.9765 11.7566L24.7134 14.0197C24.6613 14.0717 24.5769 14.0717 24.5248 14.0197L22.262 11.7568C22.0016 11.4964 21.5795 11.4964 21.3191 11.7568L20.3763 12.6996C20.116 12.9599 20.116 13.382 20.3763 13.6424L22.6392 15.9053C22.6913 15.9573 22.6913 16.0418 22.6392 16.0938L20.3768 18.3562C20.1165 18.6166 20.1165 19.0387 20.3768 19.299L21.3196 20.2419C21.58 20.5022 22.0021 20.5022 22.2624 20.2418L24.5248 17.9795C24.5769 17.9274 24.6613 17.9274 24.7134 17.9795L26.976 20.2421C27.2363 20.5024 27.6585 20.5024 27.9188 20.2421L28.8616 19.2992C29.122 19.0389 29.122 18.6168 28.8616 18.3564L26.599 16.0938C26.547 16.0418 26.547 15.9573 26.599 15.9053L28.8621 13.6422Z\" fill=\"currentColor\"/>", fi = "<path d=\"M17.5091 24.6595C17.5091 25.2066 16.8864 25.5208 16.4463 25.1956L9.44847 20.0252C9.42553 20.0083 9.39776 19.9992 9.36923 19.9992H4.66667C4.29848 19.9992 4 19.7007 4 19.3325V12.6658C4 12.2976 4.29848 11.9992 4.66667 11.9992H9.37115C9.39967 11.9992 9.42745 11.99 9.45039 11.9731L16.4463 6.80363C16.8863 6.47845 17.5091 6.79262 17.5091 7.3398L17.5091 24.6595Z\" fill=\"currentColor\"/> <path d=\"M27.5091 9.33336C27.8773 9.33336 28.1758 9.63184 28.1758 10V22C28.1758 22.3682 27.8773 22.6667 27.5091 22.6667H26.1758C25.8076 22.6667 25.5091 22.3682 25.5091 22V10C25.5091 9.63184 25.8076 9.33336 26.1758 9.33336L27.5091 9.33336Z\" fill=\"currentColor\"/> <path d=\"M22.1758 12C22.544 12 22.8424 12.2985 22.8424 12.6667V19.3334C22.8424 19.7016 22.544 20 22.1758 20H20.8424C20.4743 20 20.1758 19.7016 20.1758 19.3334V12.6667C20.1758 12.2985 20.4743 12 20.8424 12H22.1758Z\" fill=\"currentColor\"/>", pi = "<path d=\"M17.5091 24.6594C17.5091 25.2066 16.8864 25.5207 16.4463 25.1956L9.44847 20.0252C9.42553 20.0083 9.39776 19.9991 9.36923 19.9991H4.66667C4.29848 19.9991 4 19.7006 4 19.3324V12.6658C4 12.2976 4.29848 11.9991 4.66667 11.9991H9.37115C9.39967 11.9991 9.42745 11.99 9.45039 11.973L16.4463 6.80358C16.8863 6.4784 17.5091 6.79258 17.5091 7.33975L17.5091 24.6594Z\" fill=\"currentColor\"/> <path d=\"M22.8424 12.6667C22.8424 12.2985 22.544 12 22.1758 12H20.8424C20.4743 12 20.1758 12.2985 20.1758 12.6667V19.3333C20.1758 19.7015 20.4743 20 20.8424 20H22.1758C22.544 20 22.8424 19.7015 22.8424 19.3333V12.6667Z\" fill=\"currentColor\"/>", mi = class extends X {
+	static el = P({
 		tagName: "media-mute-button",
-		props: $r
+		props: ei
 	});
 	j;
 	db = "toggleMuted";
 	onAttach(e) {
-		this.j = U(), this.cb = this.hb.bind(this), V(e, this.ib.bind(this)), this.setAttributes({
+		this.j = H(), this.cb = this.hb.bind(this), B(e, this.ib.bind(this)), this.setAttributes({
 			"data-muted": this.cb,
 			"data-volume": this.kb.bind(this)
 		}), super.onAttach(e);
@@ -2823,29 +2823,29 @@ var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.
 	}
 	render() {
 		return [
-			k(J, {
+			k(q, {
 				paths: fi,
 				slot: "volume-high"
 			}),
-			k(J, {
+			k(q, {
 				paths: pi,
 				slot: "volume-low"
 			}),
-			k(J, {
+			k(q, {
 				paths: di,
 				slot: "volume-muted"
 			})
 		];
 	}
-}, hi = "<path d=\"M5.33334 26V19.4667C5.33334 19.393 5.39304 19.3333 5.46668 19.3333H7.86668C7.94031 19.3333 8.00001 19.393 8.00001 19.4667V23.3333C8.00001 23.7015 8.29849 24 8.66668 24H23.3333C23.7015 24 24 23.7015 24 23.3333V8.66666C24 8.29847 23.7015 7.99999 23.3333 7.99999H19.4667C19.393 7.99999 19.3333 7.9403 19.3333 7.86666V5.46666C19.3333 5.39302 19.393 5.33333 19.4667 5.33333H26C26.3682 5.33333 26.6667 5.63181 26.6667 5.99999V26C26.6667 26.3682 26.3682 26.6667 26 26.6667H6.00001C5.63182 26.6667 5.33334 26.3682 5.33334 26Z\" fill=\"currentColor\"/> <path d=\"M14.0098 8.42359H10.806C10.6872 8.42359 10.6277 8.56721 10.7117 8.6512L16.5491 14.4886C16.8094 14.7489 16.8094 15.171 16.5491 15.4314L15.3234 16.657C15.0631 16.9174 14.641 16.9174 14.3806 16.657L8.63739 10.9138C8.55339 10.8298 8.40978 10.8893 8.40978 11.0081V14.0236C8.40978 14.3918 8.1113 14.6903 7.74311 14.6903H6.00978C5.64159 14.6903 5.34311 14.3918 5.34311 14.0236L5.34311 6.02359C5.34311 5.6554 5.64159 5.35692 6.00978 5.35692L14.0098 5.35692C14.378 5.35692 14.6764 5.6554 14.6764 6.02359V7.75692C14.6764 8.12511 14.378 8.42359 14.0098 8.42359Z\" fill=\"currentColor\"/>", gi = "<path d=\"M16 15.3333C15.6318 15.3333 15.3333 15.6318 15.3333 16V20C15.3333 20.3682 15.6318 20.6667 16 20.6667H21.3333C21.7015 20.6667 22 20.3682 22 20V16C22 15.6318 21.7015 15.3333 21.3333 15.3333H16Z\" fill=\"currentColor\"/> <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M5.33333 7.33334C5.33333 6.96515 5.63181 6.66667 5.99999 6.66667H26C26.3682 6.66667 26.6667 6.96515 26.6667 7.33334V24.6667C26.6667 25.0349 26.3682 25.3333 26 25.3333H5.99999C5.63181 25.3333 5.33333 25.0349 5.33333 24.6667V7.33334ZM7.99999 10C7.99999 9.63182 8.29847 9.33334 8.66666 9.33334H23.3333C23.7015 9.33334 24 9.63182 24 10V22C24 22.3682 23.7015 22.6667 23.3333 22.6667H8.66666C8.29847 22.6667 7.99999 22.3682 7.99999 22V10Z\" fill=\"currentColor\"/>", _i = class extends ei {
-	static el = F({
+}, hi = "<path d=\"M5.33334 26V19.4667C5.33334 19.393 5.39304 19.3333 5.46668 19.3333H7.86668C7.94031 19.3333 8.00001 19.393 8.00001 19.4667V23.3333C8.00001 23.7015 8.29849 24 8.66668 24H23.3333C23.7015 24 24 23.7015 24 23.3333V8.66666C24 8.29847 23.7015 7.99999 23.3333 7.99999H19.4667C19.393 7.99999 19.3333 7.9403 19.3333 7.86666V5.46666C19.3333 5.39302 19.393 5.33333 19.4667 5.33333H26C26.3682 5.33333 26.6667 5.63181 26.6667 5.99999V26C26.6667 26.3682 26.3682 26.6667 26 26.6667H6.00001C5.63182 26.6667 5.33334 26.3682 5.33334 26Z\" fill=\"currentColor\"/> <path d=\"M14.0098 8.42359H10.806C10.6872 8.42359 10.6277 8.56721 10.7117 8.6512L16.5491 14.4886C16.8094 14.7489 16.8094 15.171 16.5491 15.4314L15.3234 16.657C15.0631 16.9174 14.641 16.9174 14.3806 16.657L8.63739 10.9138C8.55339 10.8298 8.40978 10.8893 8.40978 11.0081V14.0236C8.40978 14.3918 8.1113 14.6903 7.74311 14.6903H6.00978C5.64159 14.6903 5.34311 14.3918 5.34311 14.0236L5.34311 6.02359C5.34311 5.6554 5.64159 5.35692 6.00978 5.35692L14.0098 5.35692C14.378 5.35692 14.6764 5.6554 14.6764 6.02359V7.75692C14.6764 8.12511 14.378 8.42359 14.0098 8.42359Z\" fill=\"currentColor\"/>", gi = "<path d=\"M16 15.3333C15.6318 15.3333 15.3333 15.6318 15.3333 16V20C15.3333 20.3682 15.6318 20.6667 16 20.6667H21.3333C21.7015 20.6667 22 20.3682 22 20V16C22 15.6318 21.7015 15.3333 21.3333 15.3333H16Z\" fill=\"currentColor\"/> <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M5.33333 7.33334C5.33333 6.96515 5.63181 6.66667 5.99999 6.66667H26C26.3682 6.66667 26.6667 6.96515 26.6667 7.33334V24.6667C26.6667 25.0349 26.3682 25.3333 26 25.3333H5.99999C5.63181 25.3333 5.33333 25.0349 5.33333 24.6667V7.33334ZM7.99999 10C7.99999 9.63182 8.29847 9.33334 8.66666 9.33334H23.3333C23.7015 9.33334 24 9.63182 24 10V22C24 22.3682 23.7015 22.6667 23.3333 22.6667H8.66666C8.29847 22.6667 7.99999 22.3682 7.99999 22V10Z\" fill=\"currentColor\"/>", _i = class extends X {
+	static el = P({
 		tagName: "media-pip-button",
-		props: $r
+		props: ei
 	});
 	j;
 	db = "togglePictureInPicture";
 	onAttach(e) {
-		this.j = U(), this.cb = this.hb.bind(this), super.onAttach(e), V(e, this.ib.bind(this));
+		this.j = H(), this.cb = this.hb.bind(this), super.onAttach(e), B(e, this.ib.bind(this));
 		let { pictureInPicture: t } = this.j.$store;
 		this.setAttributes({
 			"aria-hidden": Z(this.jb.bind(this)),
@@ -2869,16 +2869,16 @@ var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.
 		return e() ? "Exit Picture In Picture" : "Enter Picture In Picture";
 	}
 	render() {
-		return [k(J, {
+		return [k(q, {
 			paths: gi,
 			slot: "enter"
-		}), k(J, {
+		}), k(q, {
 			paths: hi,
 			slot: "exit"
 		})];
 	}
 }, vi = "<path d=\"M15.6038 12.2148C16.0439 12.5399 16.6667 12.2257 16.6667 11.6786V10.1789C16.6667 10.1001 16.7351 10.0384 16.8134 10.0479C20.1116 10.4494 22.6667 13.2593 22.6667 16.6659C22.6667 20.3481 19.6817 23.3332 15.9995 23.3332C12.542 23.3332 9.69927 20.7015 9.36509 17.332C9.32875 16.9655 9.03371 16.6662 8.66548 16.6662L6.66655 16.6666C6.29841 16.6666 5.99769 16.966 6.02187 17.3334C6.36494 22.5454 10.7012 26.6667 16 26.6667C21.5228 26.6667 26 22.1895 26 16.6667C26 11.4103 21.9444 7.10112 16.7916 6.69758C16.7216 6.69209 16.6667 6.63396 16.6667 6.56372V4.98824C16.6667 4.44106 16.0439 4.12689 15.6038 4.45207L11.0765 7.79738C10.7159 8.06387 10.7159 8.60327 11.0766 8.86974L15.6038 12.2148Z\" fill=\"currentColor\"/>", yi = "<path d=\"M16.4167 12.2148C15.9766 12.5399 15.3538 12.2257 15.3538 11.6786V10.1789C15.3538 10.1001 15.2854 10.0384 15.2072 10.0479C11.9089 10.4494 9.35384 13.2593 9.35384 16.6659C9.35384 20.3481 12.3389 23.3332 16.0211 23.3332C19.4785 23.3332 22.3212 20.7015 22.6554 17.332C22.6918 16.9655 22.9868 16.6662 23.355 16.6662L25.354 16.6666C25.7221 16.6666 26.0228 16.966 25.9986 17.3334C25.6556 22.5454 21.3193 26.6667 16.0205 26.6667C10.4977 26.6667 6.02051 22.1895 6.02051 16.6667C6.02051 11.4103 10.0761 7.10112 15.2289 6.69758C15.2989 6.69209 15.3538 6.63396 15.3538 6.56372V4.98824C15.3538 4.44106 15.9766 4.12689 16.4167 4.45207L20.944 7.79738C21.3046 8.06387 21.3046 8.60327 20.9439 8.86974L16.4167 12.2148Z\" fill=\"currentColor\"/>", bi = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-seek-button",
 		props: {
 			disabled: !1,
@@ -2888,10 +2888,10 @@ var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.
 	});
 	j;
 	constructor(e) {
-		super(e), this.j = U(), new X(e), new Yr(e);
+		super(e), this.j = H(), new Y(e), new Xr(e);
 	}
 	onAttach(e) {
-		B(e, "tabindex", "0"), B(e, "role", "button"), V(e, this.ib.bind(this));
+		z(e, "tabindex", "0"), z(e, "role", "button"), B(e, this.ib.bind(this));
 		let { seconds: t, defaultAppearance: n } = this.$props;
 		this.setAttributes({
 			seconds: t,
@@ -2901,7 +2901,7 @@ var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.
 		});
 	}
 	onConnect(e) {
-		H(e, this.gb.bind(this));
+		V(e, this.gb.bind(this));
 	}
 	jb() {
 		let { canSeek: e } = this.j.$store;
@@ -2918,10 +2918,10 @@ var ci = "<path d=\"M19.3334 13.3333C18.9652 13.3333 18.6667 13.0349 18.6667 12.
 		this.j.remote.seek(i, e);
 	}
 	render() {
-		return [k(J, {
+		return [k(q, {
 			paths: vi,
 			slot: "backward"
-		}), k(J, {
+		}), k(q, {
 			paths: yi,
 			slot: "forward"
 		})];
@@ -2969,10 +2969,10 @@ var Ci = {
 	thumbClass: null
 };
 function wi(e, t, n, r) {
-	return Ur(e, Y(n, Hr(r)), t);
+	return Wr(e, J(n, Ur(r)), t);
 }
 function Ti(e, t, n, r) {
-	let i = Ur(0, n, 1);
+	let i = Wr(0, n, 1);
 	return e + r * ((t - e) * i / r);
 }
 var Ei = {
@@ -2989,7 +2989,7 @@ var Ei = {
 		super(e), this.jg = t, this.j = n;
 	}
 	onConnect() {
-		g(this.vg.bind(this)), g(this.wg.bind(this)), this.jg.tc && Mn(() => {
+		g(this.vg.bind(this)), g(this.wg.bind(this)), this.jg.tc && Nn(() => {
 			let e = this.j.player?.querySelector("media-outlet");
 			e && (this.Id = e, b(e, "touchstart", this.xg.bind(this)), b(e, "touchmove", this.yg.bind(this)));
 		});
@@ -3009,7 +3009,7 @@ var Ei = {
 		this.jg.mb() || (this.listen("focus", this.Te.bind(this)), this.listen("pointerenter", this.Re.bind(this)), this.listen("pointermove", this.zg.bind(this)), this.listen("pointerleave", this.Se.bind(this)), this.listen("pointerdown", this.Ag.bind(this)), this.listen("keydown", this.Za.bind(this)), this.listen("keyup", this.Ya.bind(this)));
 	}
 	wg() {
-		this.jg.mb() || !this.$store.dragging() || (b(document, "pointerup", this.Bg.bind(this)), b(document, "pointermove", this.Cg.bind(this)), vn && b(document, "touchmove", this.Dg.bind(this), { passive: !1 }));
+		this.jg.mb() || !this.$store.dragging() || (b(document, "pointerup", this.Bg.bind(this)), b(document, "pointermove", this.Cg.bind(this)), yn && b(document, "touchmove", this.Dg.bind(this), { passive: !1 }));
 	}
 	Te() {
 		this.kg(this.$store.value());
@@ -3133,11 +3133,11 @@ var Ei = {
 	Dg(e) {
 		e.preventDefault();
 	}
-	Cg = dr((e) => {
+	Cg = fr((e) => {
 		this.kg(this.pg(e), e);
 	}, 20, { leading: !0 });
 }, Oi = t(() => ({})), ki = /* @__PURE__ */ E("<!$><div part=\"track\"></div>"), Ai = /* @__PURE__ */ E("<!$><div part=\"track track-fill\"></div>"), ji = /* @__PURE__ */ E("<!$><div part=\"track track-progress\"></div>"), Mi = /* @__PURE__ */ E("<!$><div part=\"thumb-container\"><!$><div part=\"thumb\"></div></div>"), Ni = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-slider",
 		props: Ci,
 		store: xi
@@ -3146,12 +3146,12 @@ var Ei = {
 	pb = !1;
 	nb = "";
 	constructor(e) {
-		super(e), c(Oi), this.j = U(), new Di(e, this, this.j);
-		let t = new X(e);
+		super(e), c(Oi), this.j = H(), new Di(e, this, this.j);
+		let t = new Y(e);
 		this.$store.focused = t.focused.bind(t);
 	}
 	onAttach(e) {
-		B(e, "role", "slider"), B(e, "tabindex", "0"), B(e, "aria-orientation", "horizontal"), B(e, "autocomplete", "off"), this.nb = e.getAttribute("aria-orientation") || "", this.pb || (g(this.qb.bind(this)), g(this.rb.bind(this))), g(this.sb.bind(this)), this.tb();
+		z(e, "role", "slider"), z(e, "tabindex", "0"), z(e, "aria-orientation", "horizontal"), z(e, "autocomplete", "off"), this.nb = e.getAttribute("aria-orientation") || "", this.pb || (g(this.qb.bind(this)), g(this.rb.bind(this))), g(this.sb.bind(this)), this.tb();
 	}
 	onConnect(e) {
 		this.ub();
@@ -3217,7 +3217,7 @@ var Ei = {
 	}
 	Ab() {
 		let { value: e, max: t } = this.$store;
-		return Y(e() / t() * 100, 2) + "%";
+		return J(e() / t() * 100, 2) + "%";
 	}
 	tb() {
 		let { disabled: e } = this.$props, { dragging: t, interactive: n, pointing: r } = this.$store;
@@ -3240,7 +3240,7 @@ var Ei = {
 	}
 	Cb() {
 		let { fillPercent: e, pointerPercent: t } = this.$store;
-		this.Db(Y(e(), 3), Y(t(), 3));
+		this.Db(J(e(), 3), J(t(), 3));
 	}
 	Db = De((e, t) => {
 		this.el?.style.setProperty("--slider-fill-percent", e + "%"), this.el?.style.setProperty("--slider-pointer-percent", t + "%");
@@ -3248,7 +3248,7 @@ var Ei = {
 	lb = null;
 	ub() {
 		this.lb = this.el.querySelector("[slot=\"preview\"]"), this.lb && (g(this.Eb.bind(this)), Promise.resolve().then(function() {
-			return Ua;
+			return Wa;
 		}).then(({ setupPreviewStyles: e }) => {
 			e(this.lb, this.nb);
 		}));
@@ -3269,7 +3269,7 @@ var Ei = {
 	Jb(e) {}
 	Kb(e) {}
 }, Pi = /* @__PURE__ */ E("<!$><img part=\"img\" loading=\"eager\" decoding=\"async\" aria-hidden=\"true\" />"), Fi = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-thumbnail",
 		props: { time: 0 }
 	});
@@ -3281,7 +3281,7 @@ var Ei = {
 	oe = m(!1);
 	pe = m(null);
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 	}
 	onAttach() {
 		this.setAttributes({
@@ -3311,7 +3311,7 @@ var Ei = {
 			this.pe.set(null);
 			return;
 		}
-		this.pe.set(Tr(i, r));
+		this.pe.set(Er(i, r));
 	}
 	ve(e) {
 		this.ke = e;
@@ -3360,12 +3360,12 @@ var Ei = {
 	}
 }, Ii = /* @__PURE__ */ E("<!$><media-thumbnail part=\"thumbnail\" mk-d></media-thumbnail>");
 (class extends w {
-	static el = F({ tagName: "media-slider-thumbnail" });
+	static el = P({ tagName: "media-slider-thumbnail" });
 	static register = [Fi];
 	j;
 	Lb;
 	constructor(e) {
-		super(e), this.j = U(), this.Lb = s(xi);
+		super(e), this.j = H(), this.Lb = s(xi);
 	}
 	Mb() {
 		let { duration: e } = this.j.$store;
@@ -3381,7 +3381,7 @@ var Ei = {
 });
 var Li = /* @__PURE__ */ E("<!$><video muted=\"\" playsinline=\"\" preload=\"auto\" part=\"video\" style=\"max-width: unset\"></video>");
 (class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-slider-video",
 		props: { src: void 0 }
 	});
@@ -3393,7 +3393,7 @@ var Li = /* @__PURE__ */ E("<!$><video muted=\"\" playsinline=\"\" preload=\"aut
 	Pb;
 	Qb;
 	onAttach() {
-		this.j = U(), this.Lb = s(xi), this.Pb = u(this.Sb.bind(this)), this.Qb = u(this.jb.bind(this)), this.setAttributes({
+		this.j = H(), this.Lb = s(xi), this.Pb = u(this.Sb.bind(this)), this.Qb = u(this.jb.bind(this)), this.setAttributes({
 			"data-loading": this.Tb.bind(this),
 			"aria-hidden": Z(this.Qb)
 		}), g(this.Ub.bind(this)), g(this.Vb.bind(this));
@@ -3462,7 +3462,7 @@ function Vi(e) {
 }
 var Hi = /* @__PURE__ */ E("<!$><span><!$></span>");
 (class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-slider-value",
 		props: {
 			type: "current",
@@ -3483,7 +3483,7 @@ var Hi = /* @__PURE__ */ E("<!$><span><!$></span>");
 		let { type: e, format: t, decimalPlaces: n, padHours: r, padMinutes: i, showHours: a } = this.$props, { value: o, pointerValue: s, min: c, max: l } = this.Lb, u = e() === "current" ? o() : s();
 		if (t() === "percent") {
 			let e = u / (l() - c()) * 100;
-			return (this.Yb.percent ?? Y)(e, n()) + "﹪";
+			return (this.Yb.percent ?? J)(e, n()) + "﹪";
 		} else if (t() === "time") return (this.Yb.time ?? Bi)(u, r(), i(), a());
 		else return this.Yb.value?.(u) ?? u.toFixed(2);
 	}
@@ -3495,19 +3495,19 @@ var Hi = /* @__PURE__ */ E("<!$><span><!$></span>");
 	}
 });
 var Ui = class extends Ni {
-	static el = F({
+	static el = P({
 		tagName: "media-volume-slider",
 		props: {
 			...Ci,
-			min: P({
+			min: N({
 				value: 0,
 				attribute: !1
 			}),
-			max: P({
+			max: N({
 				value: 100,
 				attribute: !1
 			}),
-			value: P({
+			value: N({
 				value: 100,
 				attribute: !1
 			})
@@ -3516,7 +3516,7 @@ var Ui = class extends Ni {
 	});
 	pb = !0;
 	onAttach(e) {
-		B(e, "aria-label", "Media volume"), super.onAttach(e), Cn().then((t) => {
+		z(e, "aria-label", "Media volume"), super.onAttach(e), wn().then((t) => {
 			t || a(e, "aria-hidden", "true");
 		}), g(this.D.bind(this));
 	}
@@ -3524,10 +3524,10 @@ var Ui = class extends Ni {
 		let { muted: e, volume: t } = this.j.$store, n = e() ? 0 : t() * 100;
 		this.$store.value.set(n), this.dispatch("value-change", { detail: n });
 	}
-	$b = dr(this.ac.bind(this), 25);
+	$b = fr(this.ac.bind(this), 25);
 	ac(e) {
 		if (!e.trigger) return;
-		let t = Y(e.detail / 100, 3);
+		let t = J(e.detail / 100, 3);
 		this.j.remote.changeVolume(t, e);
 	}
 	Hb(e) {
@@ -3611,7 +3611,7 @@ var Ui = class extends Ni {
 	}
 	Vg() {
 		let e, t = this._g();
-		for (let n = 0; n < this.Kg.length; n++) e = this.Kg[n], this.Mg[n].style.width = Y((e.endTime - e.startTime) / t * 100, 3) + "%";
+		for (let n = 0; n < this.Kg.length; n++) e = this.Kg[n], this.Mg[n].style.width = J((e.endTime - e.startTime) / t * 100, 3) + "%";
 	}
 	Wg() {
 		let { fillPercent: t, value: n, pointing: r } = this.Lb, i = this.Kg[this.Lg], a = this.Qg(i.startTime <= e(n) ? this.Lg : 0, t());
@@ -3646,11 +3646,11 @@ var Ui = class extends Ni {
 	ah = u(this.bh.bind(this));
 	bh() {
 		let { bufferedEnd: e, duration: t } = this.j;
-		return Y(Math.min(e() / Math.max(t(), 1), 1), 3) * 100;
+		return J(Math.min(e() / Math.max(t(), 1), 1), 3) * 100;
 	}
 	Og(e, t) {
 		let n = this.Kg[this.Kg.length - 1], r = e.startTime / n.endTime * 100, i = e.endTime / n.endTime * 100;
-		return Math.max(0, Y(t >= i ? 100 : (t - r) / (i - r) * 100, 3));
+		return Math.max(0, J(t >= i ? 100 : (t - r) / (i - r) * 100, 3));
 	}
 	Tg(e) {
 		let t = [];
@@ -3664,19 +3664,19 @@ var Ui = class extends Ni {
 		return t.push(e[e.length - 1]), t;
 	}
 }, Ji = class extends Ni {
-	static el = F({
+	static el = P({
 		tagName: "media-time-slider",
 		props: {
 			...Ci,
-			min: P({
+			min: N({
 				value: 0,
 				attribute: !1
 			}),
-			max: P({
+			max: N({
 				value: 100,
 				attribute: !1
 			}),
-			value: P({
+			value: N({
 				value: 0,
 				attribute: !1
 			}),
@@ -3701,13 +3701,13 @@ var Ui = class extends Ni {
 		});
 	}
 	onAttach(e) {
-		B(e, "aria-label", "Media time"), super.onAttach(e), this.gc = new qi(this.j.$store, this.$store, this.ic.set), this.setAttributes({ "data-chapters": this.lc.bind(this) }), this.setStyles({ "--media-buffered-percent": this.mc.bind(this) }), g(this.E.bind(this)), g(this.nc.bind(this)), g(this.oc.bind(this)), Mn(() => {
+		z(e, "aria-label", "Media time"), super.onAttach(e), this.gc = new qi(this.j.$store, this.$store, this.ic.set), this.setAttributes({ "data-chapters": this.lc.bind(this) }), this.setStyles({ "--media-buffered-percent": this.mc.bind(this) }), g(this.E.bind(this)), g(this.nc.bind(this)), g(this.oc.bind(this)), Nn(() => {
 			g(this.pc.bind(this));
 		});
 	}
 	mc() {
 		let { bufferedEnd: e, duration: t } = this.j.$store;
-		return Y(Math.min(e() / Math.max(t(), 1), 1) * 100, 3) + "%";
+		return J(Math.min(e() / Math.max(t(), 1), 1) * 100, 3) + "%";
 	}
 	lc() {
 		let { duration: e } = this.j.$store;
@@ -3723,7 +3723,7 @@ var Ui = class extends Ni {
 		return [ct(() => this.gc.render(this.ya()?.cues, t)), e];
 	}
 	nc() {
-		this.ec = dr(this.$a.bind(this), this.$props.seekingRequestThrottle());
+		this.ec = fr(this.$a.bind(this), this.$props.seekingRequestThrottle());
 	}
 	E() {
 		let { currentTime: t } = this.j.$store, { value: n, dragging: r } = this.$store, i = this.qc(t());
@@ -3775,7 +3775,7 @@ var Ui = class extends Ni {
 		return Number.isFinite(e) ? e : 1;
 	}
 	Gb(e) {
-		return Y(e, 3);
+		return J(e, 3);
 	}
 	mb() {
 		let { canSeek: e } = this.j.$store;
@@ -3810,7 +3810,7 @@ var Ui = class extends Ni {
 	cc = null;
 	ic = m("");
 	Ra() {
-		Dr(this.j.textTracks, e(this.ya), this.ya.set);
+		Or(this.j.textTracks, e(this.ya), this.ya.set);
 	}
 	oc() {
 		if (this.ya(), this.cc = this.el?.querySelector("[part=\"chapter-title\"]") ?? null, this.cc) return g(this.sc.bind(this)), () => {
@@ -3913,14 +3913,14 @@ var Ui = class extends Ni {
 	hh() {
 		if (!this.dh) return [];
 		let e = this.dh.querySelectorAll(Yi), t = [], n = (e) => e.hasAttribute("data-media-menu-items");
-		for (let r of e) r instanceof HTMLElement && r.offsetParent !== null && jn(this.dh, r, n) && t.push(r);
+		for (let r of e) r instanceof HTMLElement && r.offsetParent !== null && Mn(this.dh, r, n) && t.push(r);
 		return t;
 	}
 }, Qi = Object.defineProperty, $i = Object.getOwnPropertyDescriptor, ea = (e, t, n, r) => {
 	for (var i = r > 1 ? void 0 : r ? $i(t, n) : t, a = e.length - 1, o; a >= 0; a--) (o = e[a]) && (i = (r ? o(t, n, i) : o(i)) || i);
 	return r && i && Qi(t, n, i), i;
 }, ta = 0, na = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-menu",
 		props: { position: null }
 	});
@@ -3937,7 +3937,7 @@ var Ui = class extends Ni {
 	Ac = null;
 	zc;
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 		let t = ++ta;
 		this.Bc = `media-menu-${t}`, this.Cc = `media-menu-button-${t}`, te(Q) && (this.xc = p(Q)), this.zc = new Zi({
 			dd: this.Sc.bind(this),
@@ -3996,16 +3996,16 @@ var Ui = class extends Ni {
 		if (this.n(), this.Rc(e), !e) return;
 		this.zc.gd();
 		let t = this.Uc();
-		t && H(t, this.Vc.bind(this)), this.listen("pointerup", this.Wc.bind(this)), b(window, "pointerup", this.Xc.bind(this));
+		t && V(t, this.Vc.bind(this)), this.listen("pointerup", this.Wc.bind(this)), b(window, "pointerup", this.Xc.bind(this));
 	}
 	Kc(e) {
 		let t = !!this.xc, n = this.Qc.bind(this), r = Z(n), i = Z(this.mb.bind(this));
-		B(e, "tabindex", t ? "-1" : "0"), B(e, "role", t ? "menuitem" : "button"), a(e, "id", this.Cc), a(e, "aria-controls", this.Bc), a(e, "aria-haspopup", "true"), g(() => {
+		z(e, "tabindex", t ? "-1" : "0"), z(e, "role", t ? "menuitem" : "button"), a(e, "id", this.Cc), a(e, "aria-controls", this.Bc), a(e, "aria-haspopup", "true"), g(() => {
 			a(e, "aria-disabled", i()), a(e, "aria-expanded", r()), t || a(e, "aria-pressed", r()), a(e, "data-pressed", n());
-		}), a(e, "data-media-button", !t), a(e, "data-media-menu-button", ""), H(e, this.Yc.bind(this)), this.Dc = e;
+		}), a(e, "data-media-button", !t), a(e, "data-media-menu-button", ""), V(e, this.Yc.bind(this)), this.Dc = e;
 	}
 	Lc(t) {
-		B(t, "role", "menu"), B(t, "tabindex", "-1"), a(t, "id", this.Bc), a(t, "aria-describedby", this.Cc), a(t, "data-media-menu-items", ""), this.vc = t, this.zc.hd(t), this.Oc(), this.Rc(e(this.wc));
+		z(t, "role", "menu"), z(t, "tabindex", "-1"), a(t, "id", this.Bc), a(t, "aria-describedby", this.Cc), a(t, "data-media-menu-items", ""), this.vc = t, this.zc.hd(t), this.Oc(), this.Rc(e(this.wc));
 	}
 	Mc(e) {
 		this.Ac = e;
@@ -4051,7 +4051,7 @@ var Ui = class extends Ni {
 	}
 	Uc() {
 		let e = this.el.querySelector("[slot=\"close-target\"]");
-		return jn(this.el, e) ? e : null;
+		return Mn(this.el, e) ? e : null;
 	}
 	Sc() {
 		if (this.xc) {
@@ -4100,15 +4100,15 @@ var Ui = class extends Ni {
 		}), this.Hc(t), this.Gc(t));
 	}
 };
-ea([jt], na.prototype, "open", 1), ea([jt], na.prototype, "close", 1);
+ea([Mt], na.prototype, "open", 1), ea([Mt], na.prototype, "close", 1);
 var ra = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-menu-button",
 		props: { disabled: !1 }
 	});
 	md;
 	constructor(e) {
-		super(e), this.md = p(Q), new X(e), new Yr(e);
+		super(e), this.md = p(Q), new Y(e), new Xr(e);
 	}
 	onAttach(e) {
 		this.md.Kc(e), g(this.rb.bind(this));
@@ -4124,10 +4124,10 @@ var ra = class extends w {
 		this.md.Nc(this.$props.disabled());
 	}
 }, ia = class extends w {
-	static el = F({ tagName: "media-menu-items" });
+	static el = P({ tagName: "media-menu-items" });
 	md;
 	constructor(e) {
-		super(e), this.md = p(Q), new X(e);
+		super(e), this.md = p(Q), new Y(e);
 	}
 	onAttach(e) {
 		this.md.Lc(e);
@@ -4136,7 +4136,7 @@ var ra = class extends w {
 	for (var i = r > 1 ? void 0 : r ? sa(t, n) : t, a = e.length - 1, o; a >= 0; a--) (o = e[a]) && (i = (r ? o(t, n, i) : o(i)) || i);
 	return r && i && oa(t, n, i), i;
 }, $ = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-radio-group",
 		props: { value: "" }
 	});
@@ -4158,7 +4158,7 @@ var ra = class extends w {
 		});
 	}
 	onAttach(e) {
-		te(Q) || B(e, "role", "radiogroup"), this.ud(), this.setAttributes({ value: this.sd });
+		te(Q) || z(e, "role", "radiogroup"), this.ud(), this.setAttributes({ value: this.sd });
 	}
 	onConnect() {
 		g(this.ud.bind(this));
@@ -4187,12 +4187,12 @@ var ra = class extends w {
 		return null;
 	}
 };
-ca([At], $.prototype, "values", 1), ca([At], $.prototype, "value", 1);
+ca([jt], $.prototype, "values", 1), ca([jt], $.prototype, "value", 1);
 var la = Object.defineProperty, ua = Object.getOwnPropertyDescriptor, da = (e, t, n, r) => {
 	for (var i = r > 1 ? void 0 : r ? ua(t, n) : t, a = e.length - 1, o; a >= 0; a--) (o = e[a]) && (i = (r ? o(t, n, i) : o(i)) || i);
 	return r && i && la(t, n, i), i;
 }, fa = /* @__PURE__ */ E("<!$><div part=\"check\"></div>"), pa = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-radio",
 		props: { value: "" }
 	});
@@ -4206,7 +4206,7 @@ var la = Object.defineProperty, ua = Object.getOwnPropertyDescriptor, da = (e, t
 		return this.nd();
 	}
 	constructor(e) {
-		super(e), new X(e);
+		super(e), new Y(e);
 	}
 	onAttach() {
 		g(this.sb.bind(this)), this.rd();
@@ -4219,7 +4219,7 @@ var la = Object.defineProperty, ua = Object.getOwnPropertyDescriptor, da = (e, t
 		});
 	}
 	onConnect(e) {
-		this.rd(), H(e, this.gb.bind(this));
+		this.rd(), V(e, this.gb.bind(this));
 	}
 	onDisconnect() {
 		p(aa).remove(this.od);
@@ -4241,7 +4241,7 @@ var la = Object.defineProperty, ua = Object.getOwnPropertyDescriptor, da = (e, t
 		return Ze(fa);
 	}
 };
-da([At], pa.prototype, "checked", 1);
+da([jt], pa.prototype, "checked", 1);
 var ma = /* @__PURE__ */ E("<!$><media-radio-group mk-d><!$></media-radio-group>"), ha = /* @__PURE__ */ E("<!$><media-radio mk-d><!$></media-radio>");
 function ga(e) {
 	let { value: t, onChange: n, radioGroupClass: r } = e;
@@ -4263,7 +4263,7 @@ function _a(e) {
 }
 var va = /* @__PURE__ */ E("<!$><media-thumbnail part=\"thumbnail\" mk-d></media-thumbnail>"), ya = /* @__PURE__ */ E("<!$><div part=\"content\"><div part=\"title\"><!$></div><div part=\"start-time\"><!$></div><div part=\"duration\"><!$></div></div>");
 (class extends ia {
-	static el = F({
+	static el = P({
 		tagName: "media-chapters-menu-items",
 		props: {
 			containerClass: null,
@@ -4284,7 +4284,7 @@ var va = /* @__PURE__ */ E("<!$><media-thumbnail part=\"thumbnail\" mk-d></media
 	zd = m(0);
 	ya = m(null);
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 	}
 	onAttach(e) {
 		super.onAttach(e), this.md.Mc({ id: this.id.bind(this) }), this.setAttributes({ "data-thumbnails": this.Ad.bind(this) });
@@ -4308,10 +4308,10 @@ var va = /* @__PURE__ */ E("<!$><media-thumbnail part=\"thumbnail\" mk-d></media
 			this.zd.set(-1);
 			return;
 		}
-		let { currentTime: t } = this.j.$store, n = t(), r = e.cues.findIndex((e) => Er(e, n));
+		let { currentTime: t } = this.j.$store, n = t(), r = e.cues.findIndex((e) => Dr(e, n));
 		if (this.zd.set(r), r >= 0) {
 			let t = e.cues[r], a = this.el.querySelector("shadow-root media-radio[aria-checked='true']"), o = (n - t.startTime) / (t.endTime - t.startTime) * 100;
-			a && i(a, "--played-percent", Y(o, 3) + "%");
+			a && i(a, "--played-percent", J(o, 3) + "%");
 		}
 	}
 	Bd() {
@@ -4327,7 +4327,7 @@ var va = /* @__PURE__ */ E("<!$><media-thumbnail part=\"thumbnail\" mk-d></media
 		re(t) && n?.[t] && (this.zd.set(t), this.j.remote.seek(n[t].startTime, e));
 	}
 	Ra() {
-		Dr(this.j.textTracks, e(this.ya), this.ya.set);
+		Or(this.j.textTracks, e(this.ya), this.ya.set);
 	}
 	Cd() {
 		return this.zd() + "";
@@ -4361,7 +4361,7 @@ var va = /* @__PURE__ */ E("<!$><media-thumbnail part=\"thumbnail\" mk-d></media
 });
 var ba = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>");
 (class extends ia {
-	static el = F({
+	static el = P({
 		tagName: "media-audio-menu-items",
 		props: {
 			emptyLabel: "Default",
@@ -4373,7 +4373,7 @@ var ba = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>");
 	static register = [$, pa];
 	j;
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 	}
 	onConnect(e) {
 		g(this.Bd.bind(this)), g(this.Ed.bind(this));
@@ -4423,11 +4423,11 @@ var ba = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>");
 var xa = "<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M26.6667 5.99998C26.6667 5.63179 26.3682 5.33331 26 5.33331H11.3333C10.9651 5.33331 10.6667 5.63179 10.6667 5.99998V17.5714C10.6667 17.6694 10.5644 17.7342 10.4741 17.6962C9.91823 17.4625 9.30754 17.3333 8.66667 17.3333C6.08934 17.3333 4 19.4226 4 22C4 24.5773 6.08934 26.6666 8.66667 26.6666C11.244 26.6666 13.3333 24.5773 13.3333 22V8.66665C13.3333 8.29846 13.6318 7.99998 14 7.99998L23.3333 7.99998C23.7015 7.99998 24 8.29846 24 8.66665V14.9048C24 15.0027 23.8978 15.0675 23.8075 15.0296C23.2516 14.7958 22.6409 14.6666 22 14.6666C19.4227 14.6666 17.3333 16.756 17.3333 19.3333C17.3333 21.9106 19.4227 24 22 24C24.5773 24 26.6667 21.9106 26.6667 19.3333V5.99998ZM22 21.3333C23.1046 21.3333 24 20.4379 24 19.3333C24 18.2287 23.1046 17.3333 22 17.3333C20.8954 17.3333 20 18.2287 20 19.3333C20 20.4379 20.8954 21.3333 22 21.3333ZM8.66667 24C9.77124 24 10.6667 23.1045 10.6667 22C10.6667 20.8954 9.77124 20 8.66667 20C7.5621 20 6.66667 20.8954 6.66667 22C6.66667 23.1045 7.5621 24 8.66667 24Z\" fill=\"currentColor\"/>", Sa = "<path d=\"M13.0908 14.3334C12.972 14.3334 12.9125 14.1898 12.9965 14.1058L17.7021 9.40022C17.9625 9.13987 17.9625 8.71776 17.7021 8.45741L16.2879 7.04319C16.0275 6.78284 15.6054 6.78284 15.3451 7.04319L6.8598 15.5285C6.59945 15.7888 6.59945 16.2109 6.8598 16.4713L8.27401 17.8855L8.27536 17.8868L15.3453 24.9568C15.6057 25.2172 16.0278 25.2172 16.2881 24.9568L17.7024 23.5426C17.9627 23.2822 17.9627 22.8601 17.7024 22.5998L12.9969 17.8944C12.9129 17.8104 12.9724 17.6668 13.0912 17.6668L26 17.6668C26.3682 17.6668 26.6667 17.3683 26.6667 17.0001V15.0001C26.6667 14.6319 26.3682 14.3334 26 14.3334L13.0908 14.3334Z\" fill=\"currentColor\"/>", Ca = "<path d=\"M15.905 17.4809C15.9571 17.533 16.0415 17.533 16.0936 17.4809L22.4111 11.1635C22.6714 10.9031 23.0935 10.9031 23.3539 11.1635L24.9567 12.7662C25.217 13.0266 25.217 13.4487 24.9567 13.709L18.1028 20.5629C18.0937 20.5732 18.0842 20.5833 18.0744 20.5931L16.4716 22.1959C16.2113 22.4562 15.7892 22.4562 15.5288 22.1959L7.04353 13.7106C6.78318 13.4503 6.78318 13.0281 7.04353 12.7678L8.6463 11.165C8.90665 10.9047 9.32876 10.9047 9.58911 11.165L15.905 17.4809Z\" fill=\"currentColor\"/>", wa = /* @__PURE__ */ E("<!$><span slot=\"label\"><!$></span>"), Ta = /* @__PURE__ */ E("<!$><div slot=\"hint\"></div>");
 function Ea({ label: e, iconPaths: t }) {
 	return [
-		k(J, {
+		k(q, {
 			slot: "close-icon",
 			paths: Sa
 		}),
-		k(J, {
+		k(q, {
 			slot: "icon",
 			paths: t
 		}),
@@ -4436,14 +4436,14 @@ function Ea({ label: e, iconPaths: t }) {
 			return O(n.nextNode(), e), t;
 		})(),
 		Ze(Ta),
-		k(J, {
+		k(q, {
 			slot: "open-icon",
 			paths: Ca
 		})
 	];
 }
 (class extends ra {
-	static el = F({
+	static el = P({
 		tagName: "media-audio-menu-button",
 		props: {
 			disabled: !1,
@@ -4460,7 +4460,7 @@ function Ea({ label: e, iconPaths: t }) {
 });
 var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 (class extends ia {
-	static el = F({
+	static el = P({
 		tagName: "media-captions-menu-items",
 		props: {
 			offLabel: "Off",
@@ -4472,7 +4472,7 @@ var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 	static register = [$, pa];
 	j;
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 	}
 	onConnect(e) {
 		g(this.Bd.bind(this)), g(this.Ed.bind(this));
@@ -4481,14 +4481,14 @@ var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 	}
 	Ed() {
 		let { offLabel: e } = this.$props, { textTrack: t } = this.j.$store, n = t();
-		this.md.fd.set(n && q(n) && n.mode === "showing" ? n.label : e());
+		this.md.fd.set(n && K(n) && n.mode === "showing" ? n.label : e());
 	}
 	Bd() {
 		this.md.Ec(this.mb());
 	}
 	mb() {
 		let { textTracks: e } = this.j.$store;
-		return e().filter(q).length === 0;
+		return e().filter(K).length === 0;
 	}
 	Hc(e) {
 		if (this.mb()) return;
@@ -4506,7 +4506,7 @@ var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 	}
 	Cd() {
 		let { textTrack: e, textTracks: t } = this.j.$store, n = e();
-		return n && q(n) && n.mode === "showing" ? n.label.toLowerCase() : "off";
+		return n && K(n) && n.mode === "showing" ? n.label.toLowerCase() : "off";
 	}
 	Dd() {
 		let { offLabel: e } = this.$props, { textTracks: t } = this.j.$store;
@@ -4516,7 +4516,7 @@ var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 				let [t, n] = D(Da);
 				return O(n.nextNode(), e), t;
 			})()
-		}, ...t().filter(q).map((e) => ({
+		}, ...t().filter(K).map((e) => ({
 			value: e.label.toLowerCase(),
 			content: () => (() => {
 				let [t, n] = D(Oa);
@@ -4534,7 +4534,7 @@ var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 		});
 	}
 }), class extends ra {
-	static el = F({
+	static el = P({
 		tagName: "media-captions-menu-button",
 		props: {
 			disabled: !1,
@@ -4551,7 +4551,7 @@ var Da = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Oa = Da;
 };
 var ka = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>");
 (class extends ia {
-	static el = F({
+	static el = P({
 		tagName: "media-playback-rate-menu-items",
 		props: {
 			normalLabel: "Normal",
@@ -4573,7 +4573,7 @@ var ka = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>");
 	static register = [$, pa];
 	j;
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 	}
 	onConnect(e) {
 		g(this.Ed.bind(this));
@@ -4614,7 +4614,7 @@ var ka = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>");
 });
 var Aa = "<path d=\"M25.14 25.1089C25.0171 25.2532 24.8356 25.3333 24.646 25.3333H22.8124C22.1084 25.3333 21.7734 24.1872 22.2745 23.6927C23.9161 22.0729 24.9336 19.822 24.9336 17.3333C24.9336 12.3997 20.9336 8.39973 16 8.39973C11.0664 8.39973 7.06641 12.3997 7.06641 17.3333C7.06641 19.822 8.08389 22.0729 9.72555 23.6927C10.2266 24.1872 9.89155 25.3333 9.18762 25.3333H7.35398C7.16436 25.3333 6.98294 25.2532 6.86001 25.1089C5.07703 23.015 4 20.2991 4 17.3333C4 10.7057 9.3724 5.33333 16 5.33333C22.6276 5.33333 28 10.7057 28 17.3333C28 20.2991 26.923 23.015 25.14 25.1089Z\" fill=\"currentColor\"/> <path d=\"M21.1992 14.3399C21.4595 14.0796 21.4595 13.6575 21.1992 13.3971L20.2564 12.4543C19.996 12.194 19.5739 12.194 19.3136 12.4543L16.4492 15.3187C16.4185 15.3493 16.3749 15.3629 16.332 15.3568C16.2236 15.3414 16.1127 15.3334 16 15.3334C14.7113 15.3334 13.6667 16.378 13.6667 17.6667C13.6667 18.9554 14.7113 20 16 20C17.2887 20 18.3333 18.9554 18.3333 17.6667C18.3333 17.5464 18.3242 17.4283 18.3067 17.313C18.3001 17.2696 18.3136 17.2255 18.3446 17.1945L21.1992 14.3399Z\" fill=\"currentColor\"/>";
 (class extends ra {
-	static el = F({
+	static el = P({
 		tagName: "media-playback-rate-menu-button",
 		props: {
 			disabled: !1,
@@ -4631,7 +4631,7 @@ var Aa = "<path d=\"M25.14 25.1089C25.0171 25.2532 24.8356 25.3333 24.646 25.333
 });
 var ja = /* @__PURE__ */ E("<!$><span><!$></span>"), Ma = /* @__PURE__ */ E("<!$><span part=\"label\"><!$></span>"), Na = /* @__PURE__ */ E("<!$><span part=\"info\"><!$></span>");
 (class extends ia {
-	static el = F({
+	static el = P({
 		tagName: "media-quality-menu-items",
 		props: {
 			autoLabel: "Auto",
@@ -4648,7 +4648,7 @@ var ja = /* @__PURE__ */ E("<!$><span><!$></span>"), Ma = /* @__PURE__ */ E("<!$
 		return [...e()].sort((e, t) => t.height === e.height ? t.bitrate - e.bitrate : t.height - e.height);
 	});
 	constructor(e) {
-		super(e), this.j = U();
+		super(e), this.j = H();
 	}
 	onConnect(e) {
 		g(this.Bd.bind(this)), g(this.Ed.bind(this));
@@ -4695,7 +4695,7 @@ var ja = /* @__PURE__ */ E("<!$><span><!$></span>"), Ma = /* @__PURE__ */ E("<!$
 				return O(n.nextNode(), e), t;
 			})()
 		}, ...this.Gd().map((e) => {
-			let n = `${Y(e.bitrate / 1e6, 2)} Mbps`;
+			let n = `${J(e.bitrate / 1e6, 2)} Mbps`;
 			return {
 				value: this.Fd(e),
 				content: () => [(() => {
@@ -4723,7 +4723,7 @@ var ja = /* @__PURE__ */ E("<!$><span><!$></span>"), Ma = /* @__PURE__ */ E("<!$
 });
 var Pa = "<path d=\"M18.6669 10.4001C18.6669 10.7683 18.3684 11.0667 18.0002 11.0667H16.2668C15.8987 11.0667 15.6002 10.7683 15.6002 10.4001V9.86674C15.6002 9.7931 15.5405 9.73341 15.4669 9.73341H5.99998C5.63179 9.73341 5.33331 9.43493 5.33331 9.06674V7.33341C5.33331 6.96522 5.63179 6.66674 5.99998 6.66674H15.4669C15.5405 6.66674 15.6002 6.60704 15.6002 6.53341V6.00007C15.6002 5.63188 15.8987 5.3334 16.2668 5.3334H18.0002C18.3684 5.3334 18.6669 5.63188 18.6669 6.00007V10.4001Z\" fill=\"currentColor\"/> <path d=\"M11.3334 18.8668C11.7016 18.8668 12.0001 18.5683 12.0001 18.2001V13.8001C12.0001 13.4319 11.7016 13.1335 11.3334 13.1335H9.60006C9.23187 13.1335 8.93339 13.4319 8.93339 13.8001V14.3335C8.93339 14.4071 8.8737 14.4668 8.80006 14.4668H6.00006C5.63187 14.4668 5.33339 14.7653 5.33339 15.1335V16.8668C5.33339 17.235 5.63187 17.5335 6.00006 17.5335H8.80006C8.8737 17.5335 8.93339 17.5932 8.93339 17.6668V18.2001C8.93339 18.5683 9.23187 18.8668 9.60006 18.8668H11.3334Z\" fill=\"currentColor\"/> <path d=\"M18.6667 26.0001C18.6667 26.3683 18.3682 26.6668 18 26.6668H16.2667C15.8985 26.6668 15.6 26.3683 15.6 26.0001V25.4668C15.6 25.3931 15.5403 25.3334 15.4667 25.3334H6.00014C5.63195 25.3334 5.33348 25.0349 5.33348 24.6668V22.9334C5.33348 22.5652 5.63195 22.2668 6.00014 22.2668H15.4667C15.5403 22.2668 15.6 22.2071 15.6 22.1334V21.6001C15.6 21.2319 15.8985 20.9334 16.2667 20.9334H18C18.3682 20.9334 18.6667 21.2319 18.6667 21.6001V26.0001Z\" fill=\"currentColor\"/> <path d=\"M22 24.6668C22 25.0349 22.2985 25.3334 22.6667 25.3334H26.0001C26.3683 25.3334 26.6668 25.0349 26.6668 24.6668V22.9334C26.6668 22.5652 26.3683 22.2668 26.0001 22.2668H22.6667C22.2985 22.2668 22 22.5652 22 22.9334V24.6668Z\" fill=\"currentColor\"/> <path d=\"M16.0001 17.5335C15.6319 17.5335 15.3334 17.235 15.3334 16.8668V15.1335C15.3334 14.7653 15.6319 14.4668 16.0001 14.4668H26.0001C26.3683 14.4668 26.6667 14.7653 26.6667 15.1335V16.8668C26.6667 17.235 26.3683 17.5335 26.0001 17.5335H16.0001Z\" fill=\"currentColor\"/> <path d=\"M22.0002 9.06674C22.0002 9.43493 22.2987 9.73341 22.6669 9.73341H26C26.3682 9.73341 26.6666 9.43493 26.6666 9.06674V7.3334C26.6666 6.96521 26.3682 6.66674 26 6.66674H22.6669C22.2987 6.66674 22.0002 6.96522 22.0002 7.33341V9.06674Z\" fill=\"currentColor\"/>";
 (class extends ra {
-	static el = F({
+	static el = P({
 		tagName: "media-quality-menu-button",
 		props: {
 			disabled: !1,
@@ -4739,7 +4739,7 @@ var Pa = "<path d=\"M18.6669 10.4001C18.6669 10.7683 18.3684 11.0667 18.0002 11.
 	}
 });
 var Fa = class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-gesture",
 		props: {
 			event: void 0,
@@ -4756,7 +4756,7 @@ var Fa = class extends w {
 		});
 	}
 	onConnect() {
-		this.j = U(), Mn(() => {
+		this.j = H(), Nn(() => {
 			this.Id = this.j.player.querySelector("media-outlet"), g(this.Ld.bind(this));
 		});
 	}
@@ -4806,10 +4806,10 @@ var Fa = class extends w {
 	}
 }, Ia = /* @__PURE__ */ E("<!$><svg part=\"icon\" fill=\"none\" viewBox=\"0 0 120 120\" aria-hidden=\"true\"><circle part=\"track\" cx=\"60\" cy=\"60\" r=\"54\" stroke=\"currentColor\"></circle><circle part=\"track-fill\" cx=\"60\" cy=\"60\" r=\"54\" stroke=\"currentColor\" pathLength=\"100\"></circle></svg>");
 (class extends w {
-	static el = F({ tagName: "media-buffering-indicator" });
+	static el = P({ tagName: "media-buffering-indicator" });
 	j;
 	onAttach() {
-		this.j = U(), this.setAttributes({ "data-buffering": u(this.Qd.bind(this)) });
+		this.j = H(), this.setAttributes({ "data-buffering": u(this.Qd.bind(this)) });
 	}
 	Qd() {
 		let { canPlay: e, waiting: t } = this.j.$store;
@@ -4846,9 +4846,8 @@ var La = class {
 			regions: [...e.regions]
 		});
 	}
-};
-(class extends w {
-	static el = F({
+}, Ra = class extends w {
+	static el = P({
 		tagName: "media-captions",
 		props: { textDir: "ltr" }
 	});
@@ -4856,7 +4855,7 @@ var La = class {
 	Sd;
 	Rd;
 	onAttach() {
-		this.j = U(), this.setAttributes({ "aria-hidden": Z(this.jb.bind(this)) });
+		this.j = H(), this.setAttributes({ "aria-hidden": Z(this.jb.bind(this)) });
 	}
 	onConnect(e) {
 		this.Sd = new Me(e), this.Rd = new La(this.Sd), g(this.Ud.bind(this));
@@ -4866,7 +4865,7 @@ var La = class {
 	}
 	jb() {
 		let { textTrack: e } = this.j.$store, t = e();
-		return !t || !q(t);
+		return !t || !K(t);
 	}
 	Ud() {
 		let { viewType: e } = this.j.$store;
@@ -4907,17 +4906,16 @@ var La = class {
 		let { currentTime: e } = this.j.$store;
 		this.Sd.currentTime = e();
 	}
-});
-var Ra = /* @__PURE__ */ E("<!$><div part=\"container\"><div part=\"text\">LIVE</div></div>");
+}, za = /* @__PURE__ */ E("<!$><div part=\"container\"><div part=\"text\">LIVE</div></div>");
 (class extends w {
-	static el = F({ tagName: "media-live-indicator" });
+	static el = P({ tagName: "media-live-indicator" });
 	j;
 	constructor(e) {
-		super(e), this.j = U(), new X(e);
+		super(e), this.j = H(), new Y(e);
 	}
 	onAttach(e) {
 		let { live: t, liveEdge: n } = this.j.$store;
-		V(e, this.ib.bind(this)), this.setAttributes({
+		B(e, this.ib.bind(this)), this.setAttributes({
 			tabindex: this._d.bind(this),
 			role: this.$d.bind(this),
 			"data-live": t,
@@ -4926,7 +4924,7 @@ var Ra = /* @__PURE__ */ E("<!$><div part=\"container\"><div part=\"text\">LIVE<
 		});
 	}
 	onConnect(e) {
-		H(e, this.gb.bind(this));
+		V(e, this.gb.bind(this));
 	}
 	ib() {
 		let { live: e } = this.j.$store;
@@ -4945,12 +4943,12 @@ var Ra = /* @__PURE__ */ E("<!$><div part=\"container\"><div part=\"text\">LIVE<
 		t() || this.j.remote.seekToLiveEdge(e);
 	}
 	render() {
-		return Ze(Ra);
+		return Ze(za);
 	}
 });
-var za = /* @__PURE__ */ E("<!$><img part=\"img\" />");
+var Ba = /* @__PURE__ */ E("<!$><img part=\"img\" />");
 (class extends w {
-	static el = F({
+	static el = P({
 		tagName: "media-poster",
 		props: { alt: void 0 }
 	});
@@ -4960,7 +4958,7 @@ var za = /* @__PURE__ */ E("<!$><img part=\"img\" />");
 	ce;
 	de;
 	onAttach(e) {
-		this.j = U(), this.ce = u(this.ee.bind(this)), this.de = this.fe.bind(this), this.setAttributes({
+		this.j = H(), this.ce = u(this.ee.bind(this)), this.de = this.fe.bind(this), this.setAttributes({
 			"data-loading": this.ae,
 			"aria-hidden": Z(this.jb.bind(this))
 		});
@@ -4968,7 +4966,7 @@ var za = /* @__PURE__ */ E("<!$><img part=\"img\" />");
 	onConnect(e) {
 		let { canLoad: t, poster: n } = this.j.$store;
 		window.requestAnimationFrame(() => {
-			t() || xr(n());
+			t() || Sr(n());
 		}), g(this.ge.bind(this));
 	}
 	jb() {
@@ -4995,13 +4993,13 @@ var za = /* @__PURE__ */ E("<!$><img part=\"img\" />");
 	render() {
 		let { crossorigin: e } = this.j.$store;
 		return (() => {
-			let [t, n] = D(za);
+			let [t, n] = D(Ba);
 			return M(() => A(t, "src", this.ce())), M(() => A(t, "alt", this.de())), M(() => A(t, "crossorigin", e())), j(t, "load", this.he.bind(this)), j(t, "error", this.Wb.bind(this)), t;
 		})();
 	}
 });
-var Ba = /* @__PURE__ */ E("<!$><span><!$></span>"), Va = class extends w {
-	static el = F({
+var Va = /* @__PURE__ */ E("<!$><span><!$></span>"), Ha = class extends w {
+	static el = P({
 		tagName: "media-time",
 		props: {
 			type: "current",
@@ -5014,7 +5012,7 @@ var Ba = /* @__PURE__ */ E("<!$><span><!$></span>"), Va = class extends w {
 	j;
 	ie;
 	onAttach() {
-		this.j = U(), this.ie = u(this.Mb.bind(this));
+		this.j = H(), this.ie = u(this.Mb.bind(this));
 	}
 	Mb() {
 		let { type: e, remainder: t, padHours: n, padMinutes: r, showHours: i } = this.$props, a = this.je(e()), o = this.j.$store.duration();
@@ -5032,12 +5030,12 @@ var Ba = /* @__PURE__ */ E("<!$><span><!$></span>"), Va = class extends w {
 	}
 	render() {
 		return (() => {
-			let [e, t] = D(Ba);
+			let [e, t] = D(Va);
 			return O(t.nextNode(), this.ie), e;
 		})();
 	}
 };
-function Ha(e, t) {
+function Ua(e, t) {
 	let n = e.getBoundingClientRect(), r = {
 		"--computed-width": n.width + "px",
 		"--computed-height": n.height + "px",
@@ -5059,9 +5057,9 @@ function Ha(e, t) {
 	};
 	for (let t of Object.keys(r)) e.style.setProperty(t, r[t]);
 }
-var Ua = /*#__PURE__*/ Object.freeze({
+var Wa = /*#__PURE__*/ Object.freeze({
 	__proto__: null,
-	setupPreviewStyles: Ha
+	setupPreviewStyles: Ua
 });
 //#endregion
-export { Nn as $, Kn as A, Pr as B, zn as C, ar as D, Ar as E, W as F, dn as G, Fr as H, K as I, Sn as J, bn as K, _r as L, zr as M, Zn as N, or as O, On as P, Cr as Q, gr as R, Pn as S, tr as T, jr as U, Or as V, $n as W, En as X, rr as Y, q as Z, gn as _, _i as a, Mt as at, Xt as b, Va as c, jt as ct, Ur as d, Hn as et, Hr as f, _n as g, Qn as h, mi as i, Ut as it, br as j, yr as k, Ji as l, At as lt, Mr as m, ui as n, B as nt, ii as o, w as ot, pr as p, xn as q, Fa as r, Ht as rt, bi as s, F as st, X as t, xr as tt, Ui as u, Je as ut, vn as v, er as w, Qt as x, Yt as y, G as z };
+export { wr as $, br as A, W as B, Fn as C, jr as D, nr as E, kn as F, er as G, kr as H, U as I, Sn as J, fn as K, G as L, xr as M, Br as N, or as O, Qn as P, K as Q, vr as R, $t as S, tr as T, Ir as U, Fr as V, Mr as W, ir as X, Cn as Y, Dn as Z, vn as _, mi as a, Wt as at, Xt as b, bi as c, P as ct, Ui as d, Je as dt, Pn as et, Wr as f, $n as g, Nr as h, Fa as i, Ut as it, qn as j, sr as k, Ha as l, Mt as lt, mr as m, Y as n, Sr as nt, _i as o, Nt as ot, Ur as p, xn as q, ui as r, z as rt, ii as s, w as st, Ra as t, Un as tt, Ji as u, jt as ut, _n as v, Bn as w, Zt as x, yn as y, _r as z };

@@ -4,6 +4,9 @@ const PROGRESS_INTERVAL_MS = 10_000;
 const REPORT_RETRY_LIMIT = 3;
 const REPORT_RETRY_DELAY_MS = 50;
 
+const normalizeSubtitleStreamIndex = streamIndex =>
+  Number.isInteger(streamIndex) && streamIndex >= 0 ? streamIndex : null;
+
 export function createJellyfinReporter({ player, itemId, report }) {
   let playback = null;
   let started = false;
@@ -15,6 +18,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
   let retryCount = 0;
   let stopInProgress = false;
   let pageHideHandled = false;
+  let activeSubtitleStreamIndex = null;
 
   const globalListeners = [];
 
@@ -41,7 +45,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
     playMethod: playback?.playMethod || (playback?.isTranscoded ? 'Transcode' : 'DirectPlay'),
     canSeek: true,
     audioStreamIndex: playback?.audioStreamIndex ?? null,
-    subtitleStreamIndex: playback?.subtitleStreamIndex ?? null
+    subtitleStreamIndex: activeSubtitleStreamIndex
   });
 
   const shouldSendPosition = (positionTicks) => {
@@ -123,9 +127,14 @@ export function createJellyfinReporter({ player, itemId, report }) {
 
   const setPlayback = nextPlayback => {
     playback = nextPlayback;
+    activeSubtitleStreamIndex = normalizeSubtitleStreamIndex(nextPlayback?.subtitleStreamIndex);
     stopped = false;
     switching = false;
     started = false;
+  };
+
+  const setSubtitleStreamIndex = streamIndex => {
+    activeSubtitleStreamIndex = normalizeSubtitleStreamIndex(streamIndex);
   };
 
   const stop = async ({ ended = false, keepalive = false } = {}) => {
@@ -169,6 +178,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
 
   return {
     setPlayback,
+    setSubtitleStreamIndex,
     beforeSourceSwitch,
     afterSourceSwitch,
     stop,
