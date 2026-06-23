@@ -19254,95 +19254,113 @@ function Cf({ buttonContainer: e, menuContainer: t = e, onSelect: n }) {
 function wf(e) {
 	return `<svg viewBox="0 0 24 24" aria-hidden="true">${e}</svg>`;
 }
-var Tf = "<path d=\"M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM10 11H8.5v-.5h-2v3h2V13H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm9 0h-1.5v-.5h-2v3h2V13H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z\"/>", Ef = "off";
-function Df(e) {
+var Tf = "<path d=\"M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM10 11H8.5v-.5h-2v3h2V13H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm9 0h-1.5v-.5h-2v3h2V13H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z\"/>", Ef = "off", Df = "Keine Untertitel verfügbar";
+function Of(e) {
 	return String(e).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#39;");
 }
-function Of(e) {
+function kf(e) {
 	return String(e || "").trim();
 }
-function kf(e) {
+function Af(e) {
 	if (!e) return "Aus";
 	let t = e.label || e.language || `Untertitel ${e.index}`;
 	return e.isForced ? `${t} · Forced` : t;
 }
-function Af(e) {
+function jf(e) {
 	return [...e || []].sort((e, t) => e.isForced === t.isForced ? e.isDefault === t.isDefault ? Number(e.index) - Number(t.index) : e.isDefault ? -1 : 1 : e.isForced ? -1 : 1);
 }
-function jf({ buttonContainer: e, menuContainer: t = e, player: n, reporter: r }) {
+function Mf(e) {
+	return `vanta-subtitle-${e.index}`;
+}
+function Nf(e) {
+	return e?.length ? [{
+		id: Ef,
+		label: "Aus",
+		disabled: !1
+	}, ...e.map((e) => ({
+		id: Mf(e),
+		label: Af(e),
+		disabled: !1
+	}))] : [{
+		id: null,
+		label: Df,
+		disabled: !0,
+		selected: !1
+	}];
+}
+function Pf({ buttonContainer: e, menuContainer: t = e, player: n, reporter: r }) {
 	let i = Ef, a = [], o = /* @__PURE__ */ new Set(), s = !1, c = document.createElement("button");
-	c.type = "button", c.className = "vanta-player-menu-button vanta-player-subtitle-button", c.setAttribute("aria-label", "Untertitel"), c.setAttribute("aria-haspopup", "true"), c.setAttribute("aria-expanded", "false"), c.innerHTML = wf(Tf), c.hidden = !0;
+	c.type = "button", c.className = "vanta-player-menu-button vanta-player-subtitle-button", c.setAttribute("aria-label", "Untertitel"), c.setAttribute("aria-haspopup", "true"), c.setAttribute("aria-expanded", "false"), c.innerHTML = wf(Tf);
 	let l = document.createElement("div");
 	l.className = "vanta-player-menu vanta-player-subtitle-menu", l.setAttribute("role", "menu"), l.setAttribute("aria-label", "Untertitel wählen"), l.hidden = !0, e.insertBefore(c, e.firstChild), t.appendChild(l);
-	let u = (e) => `vanta-subtitle-${e.index}`, d = (e) => n.textTracks?.getById?.(e) || null, f = (e, t) => {
+	let u = (e) => n.textTracks?.getById?.(e) || null, d = (e, t) => {
 		e && (typeof e.setMode == "function" ? e.setMode(t) : e.mode = t);
-	}, p = () => {
+	}, f = () => {
 		if (!n.textTracks) {
 			o = /* @__PURE__ */ new Set();
 			return;
 		}
 		o.forEach((e) => {
-			let t = d(e);
-			t && typeof n.textTracks.remove == "function" ? n.textTracks.remove(t) : f(t, "disabled");
-		}), o = /* @__PURE__ */ new Set();
-	}, m = (e) => {
-		p(), e.forEach((e) => {
 			let t = u(e);
+			t && typeof n.textTracks.remove == "function" ? n.textTracks.remove(t) : d(t, "disabled");
+		}), o = /* @__PURE__ */ new Set();
+	}, p = (e) => {
+		f(), e.forEach((e) => {
+			let t = Mf(e);
 			o.add(t), n.textTracks?.add?.({
 				id: t,
 				src: e.url,
 				type: e.type,
 				kind: "subtitles",
-				label: kf(e),
-				language: Of(e.language),
+				label: Af(e),
+				language: kf(e.language),
 				default: !1
-			}), f(d(t), "disabled");
+			}), d(u(t), "disabled");
 		});
-	}, h = () => {
+	}, m = () => {
 		s && (s = !1, l.hidden = !0, c.setAttribute("aria-expanded", "false"), l.querySelectorAll("[role=\"menuitem\"]").forEach((e) => e.setAttribute("tabindex", "-1")));
-	}, g = () => {
-		if (s || c.hidden) return;
+	}, h = () => {
+		if (s) return;
 		mf(l), s = !0, l.hidden = !1, c.setAttribute("aria-expanded", "true");
 		let e = l.querySelectorAll("[role=\"menuitem\"]");
 		e.forEach((e, t) => e.setAttribute("tabindex", t === 0 ? "0" : "-1")), e[0]?.focus();
-	}, _ = () => {
-		s ? h() : g();
-	}, v = (e) => {
-		let t = a.find((t) => u(t) === e);
+	}, g = () => {
+		s ? m() : h();
+	}, _ = (e) => {
+		let t = a.find((t) => Mf(t) === e);
 		i = t ? e : Ef, o.forEach((e) => {
-			f(d(e), e === i ? "showing" : "disabled");
-		}), r.setSubtitleStreamIndex(t ? t.index : null), y();
-	}, y = () => {
-		let e = [{
-			id: Ef,
-			label: "Aus"
-		}, ...a.map((e) => ({
-			id: u(e),
-			label: kf(e)
-		}))];
-		c.hidden = a.length === 0, c.hidden && h(), l.innerHTML = e.map((e) => {
+			d(u(e), e === i ? "showing" : "disabled");
+		}), r.setSubtitleStreamIndex(t ? t.index : null), v();
+	}, v = () => {
+		l.innerHTML = Nf(a).map((e) => {
 			let t = e.id === i;
-			return `
+			return e.disabled ? `
+          <div
+            class="vanta-player-menu-empty"
+            role="menuitem"
+            aria-disabled="true"
+            tabindex="-1"
+          >${Of(e.label)}</div>` : `
         <button
           type="button"
           class="vanta-player-menu-item${t ? " is-selected" : ""}"
           role="menuitem"
-          data-subtitle-track="${Df(e.id)}"
+          data-subtitle-track="${Of(e.id)}"
           tabindex="-1"
           aria-checked="${t ? "true" : "false"}"
         >
-          <span class="vanta-player-menu-item-label">${Df(e.label)}</span>
+          <span class="vanta-player-menu-item-label">${Of(e.label)}</span>
           ${t ? "<span class=\"vanta-player-menu-item-check\" aria-hidden=\"true\">✓</span>" : ""}
         </button>`;
 		}).join("");
-	}, b = (e, { preserveSelection: t = !0 } = {}) => {
-		let n = Af(e?.subtitles || []), r = i;
-		a = n, m(a), v(t && r !== Ef && a.some((e) => u(e) === r) ? r : Ef);
-	}, x = (e) => {
+	}, y = (e, { preserveSelection: t = !0 } = {}) => {
+		let n = jf(e?.subtitles || []), r = i;
+		a = n, p(a), _(t && r !== Ef && a.some((e) => Mf(e) === r) ? r : Ef);
+	}, b = (e) => {
 		if (!s) return;
 		let t = [...l.querySelectorAll("[role=\"menuitem\"]")], n = t.findIndex((e) => document.activeElement === e);
 		if (e.key === "Escape") {
-			e.preventDefault(), h(), c.focus();
+			e.preventDefault(), m(), c.focus();
 			return;
 		}
 		if (e.key === "ArrowDown") {
@@ -19350,29 +19368,29 @@ function jf({ buttonContainer: e, menuContainer: t = e, player: n, reporter: r }
 			return;
 		}
 		e.key === "ArrowUp" && (e.preventDefault(), t[n > 0 ? n - 1 : t.length - 1]?.focus());
-	}, S = (e) => {
+	}, x = (e) => {
 		let t = e.target.closest("[data-subtitle-track]");
-		t && (gf(e), v(t.dataset.subtitleTrack), h());
+		t && (gf(e), _(t.dataset.subtitleTrack), m());
+	}, S = (e) => {
+		gf(e), g();
 	}, C = (e) => {
-		gf(e), _();
+		hf(e, l) && m();
 	}, w = (e) => {
-		hf(e, l) && h();
-	}, T = (e) => {
-		s && !l.contains(e.target) && !c.contains(e.target) && h();
+		s && !l.contains(e.target) && !c.contains(e.target) && m();
 	};
-	return c.addEventListener("click", C), c.addEventListener("pointerdown", _f), l.addEventListener("click", S), l.addEventListener("pointerdown", _f), l.addEventListener("keydown", x), document.addEventListener(pf, w), document.addEventListener("click", T), {
+	return c.addEventListener("click", S), c.addEventListener("pointerdown", _f), l.addEventListener("click", x), l.addEventListener("pointerdown", _f), l.addEventListener("keydown", b), document.addEventListener(pf, C), document.addEventListener("click", w), v(), {
 		button: c,
-		update: b,
-		open: g,
-		close: h,
+		update: y,
+		open: h,
+		close: m,
 		destroy: () => {
-			h(), p(), c.removeEventListener("click", C), c.removeEventListener("pointerdown", _f), l.removeEventListener("click", S), l.removeEventListener("pointerdown", _f), l.removeEventListener("keydown", x), document.removeEventListener(pf, w), document.removeEventListener("click", T), c.remove(), l.remove();
+			m(), f(), c.removeEventListener("click", S), c.removeEventListener("pointerdown", _f), l.removeEventListener("click", x), l.removeEventListener("pointerdown", _f), l.removeEventListener("keydown", b), document.removeEventListener(pf, C), document.removeEventListener("click", w), c.remove(), l.remove();
 		}
 	};
 }
 //#endregion
 //#region src/player/src/ui/playerUi.js
-var Mf = 3500, Nf = new Set([
+var Ff = 3500, If = new Set([
 	"booting",
 	"ready-paused",
 	"ready-playing-active",
@@ -19383,8 +19401,8 @@ var Mf = 3500, Nf = new Set([
 	"error",
 	"destroyed"
 ]);
-function Pf(e, t = {}) {
-	let { idleTimeoutMs: n = Mf } = t, r = "booting", i = null, a = !1, o = () => {
+function Lf(e, t = {}) {
+	let { idleTimeoutMs: n = Ff } = t, r = "booting", i = null, a = !1, o = () => {
 		a || e.setAttribute("data-ui-state", r);
 	}, s = () => {
 		i &&= (window.clearTimeout(i), null);
@@ -19393,7 +19411,7 @@ function Pf(e, t = {}) {
 			i = null, l("ready-playing-idle");
 		}, n));
 	}, l = (e) => {
-		a || Nf.has(e) && (r = e, o(), r === "ready-playing-active" ? c() : s());
+		a || If.has(e) && (r = e, o(), r === "ready-playing-active" ? c() : s());
 	}, u = () => {
 		a || (r === "ready-playing-idle" ? l("ready-playing-active") : r === "ready-playing-active" && c());
 	}, d = [
@@ -19414,7 +19432,7 @@ function Pf(e, t = {}) {
 }
 //#endregion
 //#region src/player/src/index.js
-var Ff = 9e4, If = 320, Lf = "radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)", Rf = {
+var Rf = 9e4, zf = 320, Bf = "radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)", Vf = {
 	arrowBack: "<path d=\"M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z\"/>",
 	play: "<path d=\"M8 5v14l11-7z\"/>",
 	pause: "<path d=\"M6 19h4V5H6v14zm8-14v14h4V5h-4z\"/>",
@@ -19428,15 +19446,15 @@ var Ff = 9e4, If = 320, Lf = "radial-gradient(circle at 50% 50%, #1a1a20 0%, #05
 	pipEnter: "<path d=\"M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z\"/>",
 	pipExit: "<path d=\"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7.02-3H19V8h-1.98v6.18L11 8v6h.98l-2-2v2.82l2 2z\"/>"
 };
-function zf(e, t) {
-	let n = Rf[e];
+function Hf(e, t) {
+	let n = Vf[e];
 	return n ? `<svg viewBox="0 0 24 24" aria-hidden="true"${t ? ` slot="${t}"` : ""}>${n}</svg>` : "";
 }
-function Bf(e) {
+function Uf(e) {
 	return String(e).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#39;");
 }
-function Vf(e, { title: t, poster: n }) {
-	let r = t ? Bf(t) : "";
+function Wf(e, { title: t, poster: n }) {
+	let r = t ? Uf(t) : "";
 	e.innerHTML = `
     <div class="vanta-player-shell">
       <media-player class="vanta-media-player" aria-label="Videoplayer">
@@ -19449,7 +19467,7 @@ function Vf(e, { title: t, poster: n }) {
         <div class="vanta-player-controls-layer">
           <div class="vanta-player-topbar">
             <button class="vanta-player-back" type="button" aria-label="Zurück">
-              ${zf("arrowBack")}
+              ${Hf("arrowBack")}
               <span>Zurück</span>
             </button>
             <div class="vanta-player-title">${r}</div>
@@ -19457,14 +19475,14 @@ function Vf(e, { title: t, poster: n }) {
 
           <div class="vanta-player-center-controls">
             <media-seek-button class="vanta-player-center-skip vanta-player-center-skip-left" seconds="-10" aria-label="10 Sekunden zurück">
-              ${zf("skipBackward", "backward")}
+              ${Hf("skipBackward", "backward")}
             </media-seek-button>
             <media-play-button class="vanta-player-center-play" aria-label="Wiedergabe">
-              ${zf("play", "play")}
-              ${zf("pause", "pause")}
+              ${Hf("play", "play")}
+              ${Hf("pause", "pause")}
             </media-play-button>
             <media-seek-button class="vanta-player-center-skip vanta-player-center-skip-right" seconds="10" aria-label="10 Sekunden vorwärts">
-              ${zf("skipForward", "forward")}
+              ${Hf("skipForward", "forward")}
             </media-seek-button>
           </div>
 
@@ -19480,29 +19498,29 @@ function Vf(e, { title: t, poster: n }) {
             <div class="vanta-player-controls-row">
               <div class="vanta-player-controls-left">
                 <media-play-button class="vanta-player-play-button" aria-label="Wiedergabe">
-                  ${zf("play", "play")}
-                  ${zf("pause", "pause")}
+                  ${Hf("play", "play")}
+                  ${Hf("pause", "pause")}
                 </media-play-button>
                 <media-seek-button class="vanta-player-skip-button" seconds="-10" aria-label="10 Sekunden zurück">
-                  ${zf("skipBackward", "backward")}
+                  ${Hf("skipBackward", "backward")}
                 </media-seek-button>
                 <media-seek-button class="vanta-player-skip-button" seconds="10" aria-label="10 Sekunden vorwärts">
-                  ${zf("skipForward", "forward")}
+                  ${Hf("skipForward", "forward")}
                 </media-seek-button>
               </div>
               <div class="vanta-player-controls-right">
                 <media-mute-button class="vanta-player-mute-button" aria-label="Stummschalten">
-                  ${zf("volumeMute", "volume-muted")}
-                  ${zf("volumeLow", "volume-low")}
-                  ${zf("volumeHigh", "volume-high")}
+                  ${Hf("volumeMute", "volume-muted")}
+                  ${Hf("volumeLow", "volume-low")}
+                  ${Hf("volumeHigh", "volume-high")}
                 </media-mute-button>
                 <media-volume-slider class="vanta-player-volume-slider" aria-label="Lautstärke"></media-volume-slider>
                 <media-pip-button class="vanta-player-pip-button" aria-label="Bild-in-Bild">
-                  ${zf("pipEnter", "enter")}
-                  ${zf("pipExit", "exit")}
+                  ${Hf("pipEnter", "enter")}
+                  ${Hf("pipExit", "exit")}
                 </media-pip-button>
                 <button class="vanta-player-fullscreen-button" type="button" aria-label="Vollbild">
-                  ${zf("fullscreenEnter")}
+                  ${Hf("fullscreenEnter")}
                 </button>
               </div>
             </div>
@@ -19544,7 +19562,7 @@ function Vf(e, { title: t, poster: n }) {
 		seekForward: "ArrowRight"
 	};
 	let a = e.querySelector(".vanta-player-loading-backdrop");
-	return n ? a.style.backgroundImage = `url("${n.replaceAll("\"", "%22")}")` : a.style.backgroundImage = Lf, {
+	return n ? a.style.backgroundImage = `url("${n.replaceAll("\"", "%22")}")` : a.style.backgroundImage = Bf, {
 		player: i,
 		backButton: e.querySelector(".vanta-player-back"),
 		loading: e.querySelector(".vanta-player-loading"),
@@ -19556,17 +19574,17 @@ function Vf(e, { title: t, poster: n }) {
 		errorBackButton: e.querySelector(".vanta-player-error-back")
 	};
 }
-async function Hf({ root: e, itemId: t, title: n, poster: r, resumePosition: i = 0, resolvePlayback: a, reportPlayback: o, onBack: s }) {
+async function Gf({ root: e, itemId: t, title: n, poster: r, resumePosition: i = 0, resolvePlayback: a, reportPlayback: o, onBack: s }) {
 	await customElements.whenDefined("media-player");
-	let c = Vf(e, {
+	let c = Wf(e, {
 		title: n,
 		poster: r
-	}), { player: l } = c, u = [], d = Pf(e), f = !1, p = !1, m = null, h = 0;
+	}), { player: l } = c, u = [], d = Lf(e), f = !1, p = !1, m = null, h = 0;
 	Id() && e.classList.add("is-ios"), Rd() || e.classList.add("no-pip");
 	let g = e.querySelector(".vanta-player-shell"), _ = e.querySelector(".vanta-player-fullscreen-button"), v = () => {
 		if (!_) return;
 		let e = Bd();
-		_.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), _.innerHTML = zf(e ? "fullscreenExit" : "fullscreenEnter");
+		_.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), _.innerHTML = Hf(e ? "fullscreenExit" : "fullscreenEnter");
 	};
 	if (_) {
 		let e = async () => {
@@ -19658,7 +19676,7 @@ async function Hf({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 				f || M(e.message);
 			}
 		}
-	}), re = jf({
+	}), re = Pf({
 		buttonContainer: ee,
 		menuContainer: te,
 		player: l,
@@ -19706,7 +19724,7 @@ async function Hf({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 			backBufferLength: 30,
 			manifestLoadingTimeOut: 3e4,
 			levelLoadingTimeOut: 3e4,
-			fragLoadingTimeOut: Ff,
+			fragLoadingTimeOut: Rf,
 			fragLoadingMaxRetry: 2,
 			fragLoadingRetryDelay: 1e3,
 			fragLoadingMaxRetryTimeout: 1e4
@@ -19734,7 +19752,7 @@ async function Hf({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 	}), P(l, "wheel", (e) => {
 		if (!Ld() || Math.abs(e.deltaY) < 4) return;
 		let t = performance.now();
-		t - h < If || (h = t, e.preventDefault(), nf(l, e.deltaY > 0 ? 10 : -10, { endEpsilon: .25 }));
+		t - h < zf || (h = t, e.preventDefault(), nf(l, e.deltaY > 0 ? 10 : -10, { endEpsilon: .25 }));
 	}, { passive: !1 }), P(c.backButton, "click", s), P(c.errorBackButton, "click", s), P(c.retryButton, "click", async () => {
 		j(), p = !1;
 		let e = Math.max(y.getPosition(), N.getLastRequestedPosition());
@@ -19774,4 +19792,4 @@ async function Hf({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 	};
 }
 //#endregion
-export { Hf as mountVantaPlayer };
+export { Gf as mountVantaPlayer };

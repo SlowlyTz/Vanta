@@ -1,6 +1,12 @@
 import env from '../config/env.js';
 
 const SENSITIVE_QUERY_PARAMS = ['api_key', 'access_token', 'x-emby-token', 'X-Emby-Token', 'ApiKey'];
+const PLAYBACK_SUBTITLE_QUERY_PARAMS = [
+  'SubtitleStreamIndex',
+  'SubtitleMethod',
+  'SubtitleCodec',
+  'SubtitleOffset'
+];
 
 const QUALITY_PROFILES = [
   { id: '1080p', label: '1080p', maxHeight: 1080, maxStreamingBitrate: 8_000_000 },
@@ -29,6 +35,13 @@ const SUBTITLE_TYPES = new Map([
 const getFirstValue = (value) => {
   if (!value || typeof value !== 'string') return '';
   return value.split(',')[0].trim().toLowerCase();
+};
+
+const deleteQueryParams = (url, params) => {
+  const names = new Set(params.map(param => param.toLowerCase()));
+  [...url.searchParams.keys()].forEach(key => {
+    if (names.has(key.toLowerCase())) url.searchParams.delete(key);
+  });
 };
 
 const getMediaStream = (source, type) => {
@@ -185,7 +198,9 @@ export class PlaybackService {
     requestedQualityProfile = 'auto',
     itemId = null
   }) {
-    const normalizedPath = this.normalizeJellyfinPath(targetPath);
+    const normalizedPath = this.normalizeJellyfinPath(targetPath, {
+      stripPlaybackSubtitles: true
+    });
     const metadata = getSourceMetadata(source);
     const resolvedPlayMethod = playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay');
     const audioStreamIndex = source?.DefaultAudioStreamIndex ?? null;
@@ -242,7 +257,7 @@ export class PlaybackService {
       .filter(track => Number.isInteger(track.index) && track.type && track.url);
   }
 
-  static normalizeJellyfinPath(pathOrUrl) {
+  static normalizeJellyfinPath(pathOrUrl, { stripPlaybackSubtitles = false } = {}) {
     if (!pathOrUrl || typeof pathOrUrl !== 'string') {
       throw new Error('Playback target is missing.');
     }
@@ -254,7 +269,10 @@ export class PlaybackService {
       throw new Error('Playback target does not belong to the configured Jellyfin server.');
     }
 
-    SENSITIVE_QUERY_PARAMS.forEach(param => url.searchParams.delete(param));
+    deleteQueryParams(url, SENSITIVE_QUERY_PARAMS);
+    if (stripPlaybackSubtitles) {
+      deleteQueryParams(url, PLAYBACK_SUBTITLE_QUERY_PARAMS);
+    }
     return `${url.pathname}${url.search}`;
   }
 

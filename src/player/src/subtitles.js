@@ -12,6 +12,7 @@ function svgIcon(path) {
 
 const SUBTITLE_ICON = '<path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM10 11H8.5v-.5h-2v3h2V13H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm9 0h-1.5v-.5h-2v3h2V13H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z"/>';
 const OFF_ID = 'off';
+export const NO_SUBTITLES_LABEL = 'Keine Untertitel verfügbar';
 
 function escapeHtml(text) {
   return String(text)
@@ -40,6 +41,30 @@ export function sortSubtitleTracks(tracks) {
   });
 }
 
+export function getSubtitleTrackId(track) {
+  return `vanta-subtitle-${track.index}`;
+}
+
+export function buildSubtitleMenuItems(tracks) {
+  if (!tracks?.length) {
+    return [{
+      id: null,
+      label: NO_SUBTITLES_LABEL,
+      disabled: true,
+      selected: false
+    }];
+  }
+
+  return [
+    { id: OFF_ID, label: 'Aus', disabled: false },
+    ...tracks.map(track => ({
+      id: getSubtitleTrackId(track),
+      label: formatSubtitleLabel(track),
+      disabled: false
+    }))
+  ];
+}
+
 export function createSubtitleMenu({
   buttonContainer,
   menuContainer = buttonContainer,
@@ -58,7 +83,6 @@ export function createSubtitleMenu({
   button.setAttribute('aria-haspopup', 'true');
   button.setAttribute('aria-expanded', 'false');
   button.innerHTML = svgIcon(SUBTITLE_ICON);
-  button.hidden = true;
 
   const menu = document.createElement('div');
   menu.className = 'vanta-player-menu vanta-player-subtitle-menu';
@@ -68,8 +92,6 @@ export function createSubtitleMenu({
 
   buttonContainer.insertBefore(button, buttonContainer.firstChild);
   menuContainer.appendChild(menu);
-
-  const getTrackId = track => `vanta-subtitle-${track.index}`;
 
   const findRegisteredTrack = id => player.textTracks?.getById?.(id) || null;
 
@@ -99,7 +121,7 @@ export function createSubtitleMenu({
   const registerTracks = nextTracks => {
     removeRegisteredTracks();
     nextTracks.forEach(track => {
-      const id = getTrackId(track);
+      const id = getSubtitleTrackId(track);
       registeredIds.add(id);
       player.textTracks?.add?.({
         id,
@@ -123,7 +145,7 @@ export function createSubtitleMenu({
   };
 
   const open = () => {
-    if (isOpen || button.hidden) return;
+    if (isOpen) return;
     requestClosePlayerMenus(menu);
     isOpen = true;
     menu.hidden = false;
@@ -139,7 +161,7 @@ export function createSubtitleMenu({
   };
 
   const applySelection = nextId => {
-    const selected = tracks.find(track => getTrackId(track) === nextId);
+    const selected = tracks.find(track => getSubtitleTrackId(track) === nextId);
     currentId = selected ? nextId : OFF_ID;
 
     registeredIds.forEach(id => {
@@ -151,16 +173,20 @@ export function createSubtitleMenu({
   };
 
   const render = () => {
-    const options = [
-      { id: OFF_ID, label: 'Aus' },
-      ...tracks.map(track => ({ id: getTrackId(track), label: formatSubtitleLabel(track) }))
-    ];
-
-    button.hidden = tracks.length === 0;
-    if (button.hidden) close();
+    const options = buildSubtitleMenuItems(tracks);
 
     menu.innerHTML = options.map(option => {
       const selected = option.id === currentId;
+      if (option.disabled) {
+        return `
+          <div
+            class="vanta-player-menu-empty"
+            role="menuitem"
+            aria-disabled="true"
+            tabindex="-1"
+          >${escapeHtml(option.label)}</div>`;
+      }
+
       return `
         <button
           type="button"
@@ -185,7 +211,7 @@ export function createSubtitleMenu({
 
     const shouldPreserve = preserveSelection
       && previousId !== OFF_ID
-      && tracks.some(track => getTrackId(track) === previousId);
+      && tracks.some(track => getSubtitleTrackId(track) === previousId);
 
     applySelection(shouldPreserve ? previousId : OFF_ID);
   };
@@ -247,6 +273,8 @@ export function createSubtitleMenu({
   menu.addEventListener('keydown', handleKeyDown);
   document.addEventListener(CLOSE_PLAYER_MENUS_EVENT, handleCloseRequest);
   document.addEventListener('click', handleDocumentClick);
+
+  render();
 
   return {
     button,

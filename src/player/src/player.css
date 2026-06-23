@@ -623,6 +623,15 @@
   font-weight: 600;
 }
 
+.vanta-player-menu-empty {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  color: rgb(255 255 255 / 0.62);
+  font: 500 0.9rem Outfit, system-ui, sans-serif;
+}
+
 .vanta-player-menu-item-label {
   overflow: hidden;
   text-overflow: ellipsis;
