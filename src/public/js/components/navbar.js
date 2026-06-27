@@ -230,6 +230,7 @@ export function Navbar({ onLogout, onChangePassword }) {
         (link.key === 'home' && currentHash === '#/home') ||
         (link.key === 'movies' && (currentHash === '#/movies' || currentHash.startsWith('#/genre/Movie'))) ||
         (link.key === 'series' && (currentHash === '#/series' || currentHash.startsWith('#/genre/Series'))) ||
+        (link.key === 'scroller' && currentHash === '#/scroller') ||
         (link.key === 'publishers' && (currentHash === '#/publishers' || currentHash.startsWith('#/publisher/'))) ||
         (link.key === 'requests' && currentHash === '#/requests') ||
         (link.key === 'search' && currentHash.startsWith('#/search'));

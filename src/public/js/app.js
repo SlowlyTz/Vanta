@@ -5,6 +5,7 @@ router.add('#/login', () => import('./pages/login.page.js'), { guestOnly: true }
 router.add('#/home', () => import('./pages/home.page.js'), { requiresAuth: true });
 router.add('#/movies', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie' } });
 router.add('#/series', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Series' } });
+router.add('#/scroller', () => import('./pages/trailer-scroller.page.js'), { requiresAuth: true });
 router.add('#/genre/:type/:genreName', () => import('./pages/library.page.js'), { requiresAuth: true });
 router.add('#/publishers', () => import('./pages/publishers.page.js'), { requiresAuth: true });
 router.add('#/publisher/:studioName', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie,Series' } });
