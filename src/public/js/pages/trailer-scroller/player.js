@@ -1,4 +1,6 @@
 const YOUTUBE_IFRAME_API_URL = 'https://www.youtube.com/iframe_api';
+const YOUTUBE_IFRAME_ALLOW = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+const YOUTUBE_REFERRER_POLICY = 'strict-origin-when-cross-origin';
 
 let apiLoadPromise = null;
 
@@ -28,6 +30,7 @@ export function loadYouTubeIframeApi() {
       if (typeof previousReady === 'function') {
         previousReady();
       }
+      clearTimeout(fallbackTimer);
       resolve(window.YT);
     };
 
@@ -59,9 +62,40 @@ export function getYouTubeEmbedUrl(videoId, { autoplay = 1, mute = 0 } = {}) {
     playsinline: '1',
     loop: '0',
     enablejsapi: '1',
-    origin: window.location.origin
+    origin: window.location.origin,
+    widget_referrer: window.location.href
   });
   return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+}
+
+function setYouTubeIframeAttributes(iframe) {
+  if (!iframe) return;
+  iframe.setAttribute('allow', YOUTUBE_IFRAME_ALLOW);
+  iframe.setAttribute('referrerpolicy', YOUTUBE_REFERRER_POLICY);
+  iframe.setAttribute('playsinline', '1');
+  iframe.setAttribute('allowfullscreen', 'true');
+}
+
+function createYouTubeIframe(iframeId, videoId, { autoplay, muted }) {
+  const iframe = document.createElement('iframe');
+  iframe.id = iframeId;
+  iframe.title = 'YouTube Trailer';
+  iframe.src = getYouTubeEmbedUrl(videoId, {
+    autoplay,
+    mute: muted ? 1 : 0
+  });
+  iframe.frameBorder = '0';
+  setYouTubeIframeAttributes(iframe);
+  return iframe;
+}
+
+function configureYouTubeIframe(player) {
+  if (!player || typeof player.getIframe !== 'function') return;
+  try {
+    setYouTubeIframeAttributes(player.getIframe());
+  } catch {
+    // YouTube owns the iframe lifecycle; failing to set optional attrs should not break playback.
+  }
 }
 
 export class YouTubePlayerManager {
@@ -82,29 +116,24 @@ export class YouTubePlayerManager {
       return this.pending.get(containerId);
     }
 
-    const YT = await loadYouTubeIframeApi();
     const target = document.getElementById(containerId);
     if (!target || !target.isConnected) {
       return null;
     }
 
+    const iframeId = `${containerId}-iframe`;
+    const iframe = createYouTubeIframe(iframeId, videoId, { autoplay, muted });
+    target.replaceChildren(iframe);
+
+    const YT = await loadYouTubeIframeApi();
+    if (this.destroyed.has(containerId) || !target.isConnected) {
+      iframe.remove();
+      return null;
+    }
+
     const promise = new Promise((resolve) => {
-      const player = new YT.Player(containerId, {
-        videoId,
-        playerVars: {
-          autoplay,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          iv_load_policy: 3,
-          mute: muted ? 1 : 0,
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
-          loop: 0,
-          enablejsapi: 1,
-          origin: window.location.origin
-        },
+      const player = new YT.Player(iframeId, {
+        host: 'https://www.youtube.com',
         events: {
           onReady: (event) => {
             if (this.destroyed.has(containerId)) {
@@ -117,6 +146,7 @@ export class YouTubePlayerManager {
               resolve(null);
               return;
             }
+            configureYouTubeIframe(player);
             this.players.set(containerId, player);
             this.pending.delete(containerId);
             if (onReady) onReady(event);
