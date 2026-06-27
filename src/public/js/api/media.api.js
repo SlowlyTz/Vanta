@@ -109,5 +109,29 @@ export const MediaApi = {
       body: payload,
       keepalive: Boolean(options.keepalive)
     });
+  },
+
+  getTrailers(cursor = null, limit = 8, refresh = false) {
+    const params = new URLSearchParams();
+    if (cursor !== null && cursor !== undefined) {
+      params.set('cursor', String(cursor));
+    }
+    params.set('limit', String(limit));
+    if (refresh) {
+      params.set('refresh', '1');
+    }
+    return request(`/api/media/trailers?${params.toString()}`);
+  },
+
+  favoriteItem(id) {
+    return request(`/api/media/item/${encodeURIComponent(id)}/favorite`, {
+      method: 'POST'
+    });
+  },
+
+  unfavoriteItem(id) {
+    return request(`/api/media/item/${encodeURIComponent(id)}/favorite`, {
+      method: 'DELETE'
+    });
   }
 };

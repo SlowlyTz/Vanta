@@ -1,5 +1,5 @@
 import { jellyfinJson } from './client.js';
-import { COMMON_ITEM_FIELDS } from './fields.js';
+import { COMMON_ITEM_FIELDS, TRAILER_ITEM_FIELDS } from './fields.js';
 
 function getItems(userId, token, params = {}) {
   return jellyfinJson(`/Users/${userId}/Items`, {
@@ -102,7 +102,7 @@ export class LibraryService {
     const data = await getItems(userId, token, {
       IncludeItemTypes: 'Movie,Series',
       Recursive: 'true',
-      Fields: COMMON_ITEM_FIELDS,
+      Fields: TRAILER_ITEM_FIELDS,
       SortBy: 'SortName',
       SortOrder: 'Ascending',
       Limit: limit

@@ -30,6 +30,16 @@ export const DETAIL_ITEM_FIELDS = [
   'OriginalTitle'
 ].join(',');
 
+export const TRAILER_ITEM_FIELDS = [
+  COMMON_ITEM_FIELDS,
+  'RemoteTrailers',
+  'ExternalUrls',
+  'OfficialRating',
+  'CommunityRating',
+  'CriticRating',
+  'OriginalTitle'
+].join(',');
+
 export function buildBrowserDeviceProfile({ forceHlsTranscoding = false } = {}) {
   const hlsProfile = {
     Type: 'Video',

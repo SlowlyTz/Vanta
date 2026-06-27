@@ -34,6 +34,12 @@ export function createNavIcon(key) {
         <path d="M12 17v4"></path>
       </svg>
     `,
+    scroller: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="3" width="12" height="18" rx="3"></rect>
+        <path d="M10 8l4 4-4 4"></path>
+      </svg>
+    `,
     publishers: `
       <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 21h18"></path>
