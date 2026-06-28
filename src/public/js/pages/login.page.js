@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
+import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 
 export default function LoginPage() {
   const handleLogin = async (e) => {
@@ -17,7 +18,14 @@ export default function LoginPage() {
     try {
       await authStore.login(username, password);
       appStore.showToast('Erfolgreich angemeldet!', 'success');
-      window.location.hash = '#/home';
+      let redirectHash = '#/home';
+      try {
+        redirectHash = sessionStorage.getItem(REDIRECT_AFTER_LOGIN_KEY) || redirectHash;
+        sessionStorage.removeItem(REDIRECT_AFTER_LOGIN_KEY);
+      } catch {
+        // ignore
+      }
+      window.location.hash = redirectHash;
     } catch (error) {
       console.error(error);
       appStore.showToast(error.message || 'Login fehlgeschlagen. Bitte überprüfe deine Daten.', 'error');

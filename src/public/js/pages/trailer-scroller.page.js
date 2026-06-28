@@ -14,6 +14,9 @@ import {
 
 const LOAD_LIMIT = 8;
 const PLAYER_BUFFER = 2;
+const TRAILER_QUERY_PARAM = 'trailer';
+const RETURN_TRAILER_KEY = 'vantaTrailerScrollerReturnTrailerId';
+const RETURN_TRAILER_DATA_KEY = 'vantaTrailerScrollerReturnTrailerData';
 let scrollerInstanceCounter = 0;
 
 export default function TrailerScrollerPage() {
@@ -29,6 +32,8 @@ export default function TrailerScrollerPage() {
   let syncPlayersRunId = 0;
   let isDestroyed = false;
   let scrollLockY = 0;
+  let shareModal = null;
+  let suppressIntersectionUpdates = true;
   const expandedOverviewIds = new Set();
 
   function lockViewport() {
@@ -52,6 +57,7 @@ export default function TrailerScrollerPage() {
   function cleanup() {
     isDestroyed = true;
     playerManager.destroyAll();
+    closeShareModal();
     cleanupFns.forEach((fn) => fn());
     cleanupFns = [];
     if (syncPlayersTimeout) {
@@ -66,6 +72,183 @@ export default function TrailerScrollerPage() {
     return `trailer-player-${instanceId}-${index}`;
   }
 
+  function getHashParams() {
+    const [, query = ''] = (window.location.hash || '').split('?');
+    return new URLSearchParams(query);
+  }
+
+  function getTrailerIdFromHash() {
+    return getHashParams().get(TRAILER_QUERY_PARAM);
+  }
+
+  function getInitialTrailerId() {
+    const hashTrailerId = getTrailerIdFromHash();
+    let returnTrailerId = null;
+
+    try {
+      returnTrailerId = sessionStorage.getItem(RETURN_TRAILER_KEY);
+      sessionStorage.removeItem(RETURN_TRAILER_KEY);
+    } catch {
+      // ignore
+    }
+
+    return hashTrailerId || returnTrailerId;
+  }
+
+  function consumeReturnTrailerData(expectedTrailerId) {
+    try {
+      const raw = sessionStorage.getItem(RETURN_TRAILER_DATA_KEY);
+      sessionStorage.removeItem(RETURN_TRAILER_DATA_KEY);
+      if (!raw) return null;
+
+      const trailer = JSON.parse(raw);
+      if (!trailer || !trailer.id || trailer.id !== expectedTrailerId) return null;
+      return trailer;
+    } catch {
+      return null;
+    }
+  }
+
+  function getTrailerShareUrl(trailer) {
+    const url = new URL(window.location.href);
+    url.hash = getTrailerHash(trailer);
+    return url.toString();
+  }
+
+  function getTrailerHash(trailer) {
+    return `#/scroller?${TRAILER_QUERY_PARAM}=${encodeURIComponent(trailer.id)}`;
+  }
+
+  function getDetailHash(trailer) {
+    return `#/item/${trailer.itemId}?returnTo=${encodeURIComponent(getTrailerHash(trailer))}`;
+  }
+
+  function setCurrentHashWithoutNavigation(hash) {
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${window.location.search}${hash}`
+    );
+  }
+
+  function navigateToDetail(trailer) {
+    if (!trailer) return;
+
+    rememberReturnTrailer(trailer);
+    setCurrentHashWithoutNavigation(getTrailerHash(trailer));
+    window.location.hash = getDetailHash(trailer);
+  }
+
+  function updateTrailerHash(trailer) {
+    if (!trailer || !window.location.hash.startsWith('#/scroller')) return;
+
+    const nextHash = getTrailerHash(trailer);
+    if (window.location.hash === nextHash) return;
+
+    setCurrentHashWithoutNavigation(nextHash);
+  }
+
+  function rememberReturnTrailer(trailer) {
+    if (!trailer) return;
+
+    try {
+      sessionStorage.setItem(RETURN_TRAILER_KEY, trailer.id);
+      sessionStorage.setItem(RETURN_TRAILER_DATA_KEY, JSON.stringify(trailer));
+    } catch {
+      // ignore
+    }
+  }
+
+  function findTrailerIndex(trailerId) {
+    if (!trailerId) return -1;
+    return state.trailers.findIndex((trailer) => trailer.id === trailerId);
+  }
+
+  function closeShareModal() {
+    if (!shareModal) return;
+    shareModal.remove();
+    shareModal = null;
+  }
+
+  async function copyShareUrl(url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      appStore.showToast('Link kopiert', 'success');
+    } catch {
+      appStore.showToast('Link konnte nicht kopiert werden', 'error');
+    }
+  }
+
+  function openShareModal(trailer) {
+    closeShareModal();
+
+    const shareUrl = getTrailerShareUrl(trailer);
+
+    const urlInput = createElement('input', {
+      className: 'trailer-share-url',
+      type: 'text',
+      value: shareUrl,
+      readonly: true,
+      onFocus: (event) => event.target.select()
+    });
+
+    const nativeShareButton = navigator.share
+      ? createElement('button', {
+        className: 'trailer-share-button trailer-share-native',
+        type: 'button',
+        onClick: async () => {
+          try {
+            await navigator.share({ title: trailer.title, text: `Trailer ansehen: ${trailer.title}`, url: shareUrl });
+            closeShareModal();
+          } catch {
+            // User canceled or platform rejected the share request.
+          }
+        }
+      }, 'Teilen')
+      : null;
+
+    const copyButton = createElement('button', {
+      className: 'trailer-share-button trailer-share-copy',
+      type: 'button',
+      onClick: () => copyShareUrl(shareUrl)
+    }, 'Kopieren');
+
+    const modalContent = createElement('div', {
+      className: 'trailer-share-content',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': 'trailer-share-title'
+    },
+      createElement('button', {
+        className: 'trailer-share-close',
+        type: 'button',
+        'aria-label': 'Teilen schließen',
+        onClick: closeShareModal
+      }, '×'),
+      createElement('h3', { className: 'trailer-share-title', id: 'trailer-share-title' }, 'Trailer teilen'),
+      createElement('p', { className: 'trailer-share-text' }, trailer.title),
+      urlInput,
+      createElement('div', { className: 'trailer-share-options' },
+        copyButton,
+        nativeShareButton || createElement('button', {
+          className: 'trailer-share-button trailer-share-native',
+          type: 'button',
+          onClick: () => copyShareUrl(shareUrl)
+        }, 'Teilen')
+      )
+    );
+
+    shareModal = createElement('div', {
+      className: 'trailer-share-backdrop',
+      onClick: (event) => {
+        if (event.target === shareModal) closeShareModal();
+      }
+    }, modalContent);
+
+    container.appendChild(shareModal);
+    urlInput.select();
+  }
+
   function createSlide(trailer, index) {
     const containerId = getContainerId(index);
 
@@ -73,13 +256,8 @@ export default function TrailerScrollerPage() {
       className: 'trailer-youtube-player',
       id: containerId
     });
-    const moreVideosMask = createElement('div', {
-      className: 'trailer-youtube-more-mask',
-      'aria-hidden': 'true'
-    });
     const videoContainer = createElement('div', { className: 'trailer-video-container' },
-      playerTarget,
-      moreVideosMask
+      playerTarget
     );
 
     const thumbnail = createElement('img', {
@@ -103,12 +281,23 @@ export default function TrailerScrollerPage() {
       className: 'trailer-action trailer-action-detail',
       type: 'button',
       'aria-label': 'Detailseite öffnen',
-      onClick: () => { window.location.hash = `#/item/${trailer.itemId}`; }
+      onClick: () => {
+        navigateToDetail(trailer);
+      }
     },
       createElement('span', { className: 'trailer-action-icon' }, 'ⓘ')
     );
 
-    const actions = createElement('div', { className: 'trailer-actions' }, likeButton, detailButton);
+    const shareButton = createElement('button', {
+      className: 'trailer-action trailer-action-share',
+      type: 'button',
+      'aria-label': 'Trailer teilen',
+      onClick: () => openShareModal(trailer)
+    },
+      createElement('span', { className: 'trailer-action-icon' }, '↗')
+    );
+
+    const actions = createElement('div', { className: 'trailer-actions' }, likeButton, detailButton, shareButton);
 
     const meta = createElement('div', { className: 'trailer-info-meta' });
     if (trailer.year) {
@@ -275,15 +464,17 @@ export default function TrailerScrollerPage() {
     });
   }
 
-  function setActive(index) {
+  function setActive(index, { behavior = 'smooth' } = {}) {
     state = setActiveIndex(state, index);
     updateActiveClasses();
+    const activeTrailer = state.trailers[state.activeIndex];
+    updateTrailerHash(activeTrailer);
 
     const slide = track.children[state.activeIndex];
     if (slide) {
       track.scrollTo({
         top: slide.offsetTop,
-        behavior: 'smooth'
+        behavior
       });
     }
 
@@ -294,14 +485,19 @@ export default function TrailerScrollerPage() {
     }
   }
 
-  async function loadTrailers(refresh = false) {
+  async function loadTrailers(refresh = false, { activateFirst = true, targetTrailerId = null } = {}) {
     if (state.loading || (!state.hasMore && !refresh)) return;
 
     state = { ...state, loading: true };
     appStore.setLoading(true);
 
     try {
-      const page = await MediaApi.getTrailers(refresh ? null : state.cursor, LOAD_LIMIT, refresh);
+      const page = await MediaApi.getTrailers(
+        refresh ? null : state.cursor,
+        LOAD_LIMIT,
+        refresh,
+        targetTrailerId
+      );
       state = mergeTrailerPage(state, page);
       renderSlides();
 
@@ -313,7 +509,7 @@ export default function TrailerScrollerPage() {
         state = mergeTrailerPage(state, page);
         renderSlides();
         setActive(0);
-      } else if (state.trailers.length > 0 && state.activeIndex === 0 && !state.introOpen) {
+      } else if (activateFirst && state.trailers.length > 0 && state.activeIndex === 0 && !state.introOpen) {
         setActive(0);
       }
     } catch (error) {
@@ -324,6 +520,18 @@ export default function TrailerScrollerPage() {
     } finally {
       appStore.setLoading(false);
     }
+  }
+
+  async function loadUntilTrailerFound(trailerId) {
+    if (!trailerId) return -1;
+
+    let index = findTrailerIndex(trailerId);
+    while (index === -1 && state.hasMore && !isDestroyed) {
+      await loadTrailers(false, { activateFirst: false });
+      index = findTrailerIndex(trailerId);
+    }
+
+    return index;
   }
 
   async function toggleFavorite(itemId) {
@@ -369,6 +577,12 @@ export default function TrailerScrollerPage() {
   }
 
   function handleKeydown(event) {
+    if (shareModal && event.key === 'Escape') {
+      event.preventDefault();
+      closeShareModal();
+      return;
+    }
+
     if (state.introOpen) return;
     if (document.activeElement && ['INPUT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement.tagName)) return;
 
@@ -392,7 +606,9 @@ export default function TrailerScrollerPage() {
       case 'Enter':
         {
           const trailer = state.trailers[state.activeIndex];
-          if (trailer) window.location.hash = `#/item/${trailer.itemId}`;
+          if (trailer) {
+            navigateToDetail(trailer);
+          }
         }
         break;
     }
@@ -405,6 +621,8 @@ export default function TrailerScrollerPage() {
   }
 
   const intersectionObserver = new IntersectionObserver((entries) => {
+    if (suppressIntersectionUpdates) return;
+
     let bestEntry = null;
     entries.forEach((entry) => {
       if (!bestEntry || entry.intersectionRatio > bestEntry.intersectionRatio) {
@@ -463,8 +681,32 @@ export default function TrailerScrollerPage() {
     await waitForConnected();
     if (isDestroyed) return;
 
-    await loadTrailers();
+    const initialTrailerId = getInitialTrailerId();
+    const initialTrailerData = initialTrailerId ? consumeReturnTrailerData(initialTrailerId) : null;
+    if (initialTrailerId) {
+      state = { ...state, introOpen: false };
+    }
+
+    if (initialTrailerData) {
+      state = {
+        ...state,
+        trailers: [initialTrailerData],
+        seenIds: new Set([initialTrailerData.id])
+      };
+      renderSlides();
+    }
+
+    await loadTrailers(false, { activateFirst: !initialTrailerId, targetTrailerId: initialTrailerId });
     if (isDestroyed) return;
+
+    let initialIndex = 0;
+    if (initialTrailerId) {
+      initialIndex = await loadUntilTrailerFound(initialTrailerId);
+      if (initialIndex === -1) {
+        initialIndex = 0;
+        appStore.showToast('Geteilter Trailer ist nicht mehr verfügbar', 'error');
+      }
+    }
 
     if (state.trailers.length === 0) {
       showEmptyState();
@@ -478,14 +720,20 @@ export default function TrailerScrollerPage() {
       const intro = createIntroModal({
         onStart: () => {
           state = { ...state, introOpen: false };
-          setActive(0);
+          setActive(initialIndex, { behavior: 'auto' });
           scheduleActivePlayerResync();
+          requestAnimationFrame(() => {
+            suppressIntersectionUpdates = false;
+          });
         }
       });
       container.appendChild(intro.element);
     } else {
-      setActive(0);
+      setActive(initialIndex, { behavior: 'auto' });
       scheduleActivePlayerResync();
+      requestAnimationFrame(() => {
+        suppressIntersectionUpdates = false;
+      });
     }
   }
 

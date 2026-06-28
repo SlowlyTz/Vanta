@@ -292,6 +292,35 @@ describe('TrailersService', () => {
       expect(low.items).toHaveLength(1);
       expect(high.items).toHaveLength(1);
     });
+
+    it('moves a target trailer to the start of the queue', async () => {
+      const req = {
+        session: {
+          trailerQueue: [
+            { id: 'first:youtube-001', itemId: 'first' },
+            { id: 'target:youtube-002', itemId: 'target' },
+            { id: 'last:youtube-003', itemId: 'last' }
+          ]
+        }
+      };
+
+      const result = await TrailersService.getTrailerPage(
+        req,
+        'user',
+        'token',
+        0,
+        2,
+        false,
+        'target:youtube-002'
+      );
+
+      expect(result.items.map((item) => item.id)).toEqual(['target:youtube-002', 'first:youtube-001']);
+      expect(req.session.trailerQueue.map((item) => item.id)).toEqual([
+        'target:youtube-002',
+        'first:youtube-001',
+        'last:youtube-003'
+      ]);
+    });
   });
 
   describe('setFavorite', () => {
