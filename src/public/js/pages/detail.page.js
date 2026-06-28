@@ -7,9 +7,17 @@ import { createActorModal } from './detail/actorModal.js';
 import { buildSeasonsSection } from './detail/seasonsSection.js';
 import { loadDetailData } from './detail/detailData.js';
 
+function getReturnToHash() {
+  const [, query = ''] = (window.location.hash || '').split('?');
+  const returnTo = new URLSearchParams(query).get('returnTo');
+  if (!returnTo || !returnTo.startsWith('#/')) return null;
+  return returnTo;
+}
+
 export default function DetailPage({ id }) {
   const container = createElement('div', { className: 'page-container' });
   const actorModal = createActorModal({ currentItemId: id });
+  const returnToHash = getReturnToHash();
 
   const render = async () => {
     appStore.setLoading(true);
@@ -39,7 +47,13 @@ export default function DetailPage({ id }) {
         {
           label: 'Zurück',
           className: 'btn-secondary',
-          onClick: () => { window.history.back(); }
+          onClick: () => {
+            if (returnToHash) {
+              window.location.hash = returnToHash;
+              return;
+            }
+            window.history.back();
+          }
         }
       ];
 

@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/trailers', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
-  const { cursor, limit, refresh } = req.query;
+  const { cursor, limit, refresh, target } = req.query;
 
   try {
     const result = await TrailersService.getTrailerPage(
@@ -16,7 +16,8 @@ router.get('/trailers', requireAuth, asyncHandler(async (req, res) => {
       accessToken,
       cursor,
       limit,
-      refresh === '1' || refresh === 'true'
+      refresh === '1' || refresh === 'true',
+      typeof target === 'string' ? target : null
     );
     return res.json(result);
   } catch (error) {

@@ -37,6 +37,15 @@ describe('MediaApi', () => {
       expect(url).toBe('/api/media/trailers?cursor=10&limit=12&refresh=1');
     });
 
+    it('includes target trailer id', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [], hasMore: false }));
+
+      await MediaApi.getTrailers(null, 8, false, 'item-1:youtube-id');
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/trailers?limit=8&target=item-1%3Ayoutube-id');
+    });
+
     it('returns parsed response', async () => {
       const body = { items: [{ id: 't1' }], nextCursor: '1', hasMore: true };
       fetch.mockReturnValue(createJsonResponse(body));

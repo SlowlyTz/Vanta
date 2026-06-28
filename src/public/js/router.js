@@ -1,5 +1,6 @@
 import { authStore } from './store/auth.store.js';
 import { createElement } from './utils/dom.js';
+import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
 import { Navbar } from './components/navbar.js';
 import { Footer } from './components/footer.js';
 
@@ -19,6 +20,7 @@ class Router {
 
   init() {
     window.addEventListener('hashchange', () => this.handleRoute());
+    window.addEventListener('popstate', () => this.handleRoute());
     window.addEventListener('scroll', () => this.updateShellState());
 
     this.unsubscribeAuth = authStore.subscribe(({ user }) => {
@@ -152,6 +154,11 @@ class Router {
     }
 
     if (route.requiresAuth && !isAuthenticated) {
+      try {
+        sessionStorage.setItem(REDIRECT_AFTER_LOGIN_KEY, hash);
+      } catch {
+        // ignore
+      }
       window.location.hash = '#/login';
       return;
     }

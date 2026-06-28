@@ -111,7 +111,7 @@ export const MediaApi = {
     });
   },
 
-  getTrailers(cursor = null, limit = 8, refresh = false) {
+  getTrailers(cursor = null, limit = 8, refresh = false, target = null) {
     const params = new URLSearchParams();
     if (cursor !== null && cursor !== undefined) {
       params.set('cursor', String(cursor));
@@ -119,6 +119,9 @@ export const MediaApi = {
     params.set('limit', String(limit));
     if (refresh) {
       params.set('refresh', '1');
+    }
+    if (target) {
+      params.set('target', target);
     }
     return request(`/api/media/trailers?${params.toString()}`);
   },

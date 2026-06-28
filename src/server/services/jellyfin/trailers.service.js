@@ -123,6 +123,18 @@ function shuffleArray(array) {
 
 const SESSION_QUEUE_KEY = 'trailerQueue';
 
+function prioritizeTrailer(queue, targetTrailerId) {
+  if (!targetTrailerId) return queue;
+
+  const index = queue.findIndex((trailer) => trailer.id === targetTrailerId);
+  if (index <= 0) return queue;
+
+  const result = [...queue];
+  const [target] = result.splice(index, 1);
+  result.unshift(target);
+  return result;
+}
+
 export class TrailersService {
   static async loadAllTrailerItems(userId, token, limit = 10000) {
     const items = await LibraryService.getAllMoviesAndSeries(userId, token, limit);
@@ -148,8 +160,16 @@ export class TrailersService {
     return shuffled;
   }
 
-  static async getTrailerPage(req, userId, token, cursor, limit, refresh = false) {
-    const queue = await this.getTrailerQueue(req, userId, token, refresh);
+  static async getTrailerPage(req, userId, token, cursor, limit, refresh = false, targetTrailerId = null) {
+    let queue = await this.getTrailerQueue(req, userId, token, refresh);
+
+    if (targetTrailerId) {
+      queue = prioritizeTrailer(queue, targetTrailerId);
+      if (req.session) {
+        req.session[SESSION_QUEUE_KEY] = queue;
+      }
+    }
+
     const startIndex = Math.max(0, parseInt(cursor, 10) || 0);
     const clampedLimit = Math.max(1, Math.min(20, parseInt(limit, 10) || 8));
 

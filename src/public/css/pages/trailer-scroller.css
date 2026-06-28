@@ -124,20 +124,6 @@ html.trailer-scroller-active #app {
   display: block;
 }
 
-.trailer-youtube-more-mask {
-  position: absolute;
-  left: 50%;
-  bottom: 10px;
-  z-index: 2;
-  width: min(190px, 42%);
-  height: 38px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.92));
-  box-shadow: 0 0 18px rgba(0, 0, 0, 0.55);
-  opacity: 0.96;
-  transform: translateX(-50%);
-}
-
 .trailer-video-thumb {
   position: absolute;
   top: var(--trailer-video-top);
@@ -300,6 +286,112 @@ html.trailer-scroller-active #app {
 
 .trailer-action-like.is-favorite .trailer-action-icon {
   filter: drop-shadow(0 0 8px rgba(255, 77, 109, 0.5));
+}
+
+.trailer-action-share .trailer-action-icon {
+  transform: translateY(-1px);
+}
+
+.trailer-share-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.64);
+  backdrop-filter: blur(18px) saturate(118%);
+  -webkit-backdrop-filter: blur(18px) saturate(118%);
+}
+
+.trailer-share-content {
+  position: relative;
+  width: min(420px, calc(100vw - 36px));
+  padding: 30px;
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.026) 58%),
+    rgba(13, 13, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 34px 92px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.trailer-share-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.trailer-share-title {
+  padding-right: 36px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+  font-size: 1.35rem;
+  font-weight: 740;
+}
+
+.trailer-share-text {
+  margin-bottom: 18px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
+.trailer-share-url {
+  min-width: 0;
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(180, 108, 255, 0.28);
+  background: rgba(0, 0, 0, 0.42);
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.trailer-share-button {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  font-weight: 720;
+  background:
+    linear-gradient(135deg, rgba(180, 108, 255, 0.44), rgba(88, 216, 255, 0.24)),
+    rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(180, 108, 255, 0.32);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.26);
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.trailer-share-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(88, 216, 255, 0.48);
+  background:
+    linear-gradient(135deg, rgba(180, 108, 255, 0.54), rgba(88, 216, 255, 0.3)),
+    rgba(255, 255, 255, 0.075);
+}
+
+.trailer-share-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 /* Intro modal */
@@ -499,6 +591,14 @@ html.trailer-scroller-active #app {
 
   .trailer-info-overview {
     display: none;
+  }
+
+  .trailer-share-content {
+    padding: 24px 18px;
+  }
+
+  .trailer-share-options {
+    grid-template-columns: 1fr;
   }
 }
 
