@@ -1,7 +1,7 @@
 import { authStore } from './store/auth.store.js';
 import { createElement } from './utils/dom.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
-import { Navbar } from './components/navbar.js';
+import { Navbar } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
 
 class Router {

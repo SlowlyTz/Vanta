@@ -1,0 +1,115 @@
+/* Admin tools grid */
+.admin-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.admin-tool-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.105);
+  border-radius: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: inherit;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.admin-tool-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.admin-tool-card:active {
+  transform: scale(0.99);
+}
+
+.admin-tool-card-icon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.admin-tool-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.admin-tool-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.admin-tool-card-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.25;
+}
+
+.admin-tool-card .settings-chevron {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-tools-title,
+.admin-requests-title {
+  font-size: 1.2rem;
+  font-weight: 740;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.admin-tool-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-tool-view[hidden] {
+  display: none !important;
+}
+
+.admin-view-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.admin-view-back-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  font-weight: 640;
+  transition: background var(--transition-fast);
+}
+
+.admin-view-back-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Admin option hidden state */
+.admin-option-container[hidden] {
+  display: none;
+}

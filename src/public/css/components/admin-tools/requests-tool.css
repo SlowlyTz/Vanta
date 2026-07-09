@@ -1,0 +1,33 @@
+.admin-requests-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-requests-view[hidden] {
+  display: none !important;
+}
+
+.admin-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-requests-empty,
+.admin-requests-status {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.admin-requests-empty[hidden],
+.admin-requests-status[hidden],
+.admin-requests-empty.hidden,
+.admin-requests-status.hidden {
+  display: none;
+}
