@@ -3,7 +3,8 @@ import { createBackIcon, createCloseIcon, createChevronIcon, createPasswordIcon,
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
-import { createAdminPanel } from './adminPanel.js';
+import { createAdminToolsPanel } from '../admin-tools/AdminToolsPanel.js';
+import { createSettingsStatsLoader } from '../settings/settingsStats.js';
 
 export function createSettingsDialog({ onLogout, onChangePassword }) {
   const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
@@ -23,7 +24,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     createChevronIcon()
   );
 
-  const { adminPanel, adminOption, loadAdminVisibility, checkAdminAndOpenAdmin } = createAdminPanel({
+  const { adminPanel, adminOption, loadAdminVisibility, checkAdminAndOpenAdmin } = createAdminToolsPanel({
     onOpen: () => setSettingsView('admin')
   });
 
@@ -103,8 +104,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   let settingsOpen = false;
   let settingsView = 'root';
   let lastFocusedElement = null;
-  let settingsStatsLoaded = false;
-  let settingsStatsLoading = false;
+  const settingsStats = createSettingsStatsLoader(settingsOverview);
 
   const setSettingsView = (view) => {
     settingsView = view;
@@ -146,61 +146,9 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     }
 
     setSettingsView('root');
-    loadSettingsStats();
+    settingsStats.load();
     loadAdminVisibility();
     window.requestAnimationFrame(() => settingsDialog.focus());
-  };
-
-  const setStatValue = (key, value) => {
-    settingsOverview[key].textContent = value;
-  };
-
-  const setStatsLoading = () => {
-    setStatValue('movies', '...');
-    setStatValue('series', '...');
-    setStatValue('episodes', '...');
-  };
-
-  const setStatsFallback = () => {
-    setStatValue('movies', '-');
-    setStatValue('series', '-');
-    setStatValue('episodes', '-');
-  };
-
-  const getTotalItems = (result) => {
-    if (!result || result.status !== 'fulfilled') return null;
-    const value = result.value?.totalItems ?? result.value?.totalRecordCount;
-    return Number.isFinite(value) ? value : null;
-  };
-
-  const formatCount = (value) => {
-    return Number.isFinite(value) ? new Intl.NumberFormat('de-DE').format(value) : '-';
-  };
-
-  const loadSettingsStats = async () => {
-    if (settingsStatsLoaded || settingsStatsLoading) return;
-
-    settingsStatsLoading = true;
-    setStatsLoading();
-
-    try {
-      const { MediaApi } = await import('../../api/media.api.js');
-      const [movies, series, episodes] = await Promise.allSettled([
-        MediaApi.getLibrary('Movie', null, null, 1, 1),
-        MediaApi.getLibrary('Series', null, null, 1, 1),
-        MediaApi.getLibrary('Episode', null, null, 1, 1)
-      ]);
-
-      setStatValue('movies', formatCount(getTotalItems(movies)));
-      setStatValue('series', formatCount(getTotalItems(series)));
-      setStatValue('episodes', formatCount(getTotalItems(episodes)));
-      settingsStatsLoaded = [movies, series, episodes].some(result => result.status === 'fulfilled');
-    } catch (error) {
-      console.error('Failed to load settings overview:', error);
-      setStatsFallback();
-    } finally {
-      settingsStatsLoading = false;
-    }
   };
 
   setSettingsView('root');

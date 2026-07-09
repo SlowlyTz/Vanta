@@ -3,7 +3,8 @@ import { createBackIcon, createChevronIcon, createPasswordIcon, createLogoutIcon
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
-import { createAdminPanel } from './adminPanel.js';
+import { createAdminToolsPanel } from '../admin-tools/AdminToolsPanel.js';
+import { createSettingsStatsLoader } from '../settings/settingsStats.js';
 
 export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   const mobileSettingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
@@ -23,7 +24,7 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
     createChevronIcon()
   );
 
-  const { adminPanel: mobileAdminPanel, adminOption: mobileAdminOption, loadAdminVisibility, checkAdminAndOpenAdmin } = createAdminPanel({
+  const { adminPanel: mobileAdminPanel, adminOption: mobileAdminOption, loadAdminVisibility, checkAdminAndOpenAdmin } = createAdminToolsPanel({
     onOpen: () => setMobileSettingsView('admin')
   });
 
@@ -75,8 +76,7 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
   );
 
   let mobileSettingsView = 'nav';
-  let mobileSettingsStatsLoaded = false;
-  let mobileSettingsStatsLoading = false;
+  const settingsStats = createSettingsStatsLoader(mobileSettingsOverview);
 
   const setMobileSettingsView = (view) => {
     mobileSettingsView = view;
@@ -94,7 +94,7 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
     mobileAdminPanel.hidden = mobileSettingsView !== 'admin';
 
     if (mobileSettingsView === 'root') {
-      loadMobileSettingsStats();
+      settingsStats.load();
     }
 
     if (mobileSettingsView !== 'password') {
@@ -103,58 +103,6 @@ export function createMobileSettings({ onLogout, onChangePassword, onNav }) {
 
     if (mobileSettingsView === 'nav') {
       onNav?.();
-    }
-  };
-
-  const setStatValue = (key, value) => {
-    mobileSettingsOverview[key].textContent = value;
-  };
-
-  const setStatsLoading = () => {
-    setStatValue('movies', '...');
-    setStatValue('series', '...');
-    setStatValue('episodes', '...');
-  };
-
-  const setStatsFallback = () => {
-    setStatValue('movies', '-');
-    setStatValue('series', '-');
-    setStatValue('episodes', '-');
-  };
-
-  const getTotalItems = (result) => {
-    if (!result || result.status !== 'fulfilled') return null;
-    const value = result.value?.totalItems ?? result.value?.totalRecordCount;
-    return Number.isFinite(value) ? value : null;
-  };
-
-  const formatCount = (value) => {
-    return Number.isFinite(value) ? new Intl.NumberFormat('de-DE').format(value) : '-';
-  };
-
-  const loadMobileSettingsStats = async () => {
-    if (mobileSettingsStatsLoaded || mobileSettingsStatsLoading) return;
-
-    mobileSettingsStatsLoading = true;
-    setStatsLoading();
-
-    try {
-      const { MediaApi } = await import('../../api/media.api.js');
-      const [movies, series, episodes] = await Promise.allSettled([
-        MediaApi.getLibrary('Movie', null, null, 1, 1),
-        MediaApi.getLibrary('Series', null, null, 1, 1),
-        MediaApi.getLibrary('Episode', null, null, 1, 1)
-      ]);
-
-      setStatValue('movies', formatCount(getTotalItems(movies)));
-      setStatValue('series', formatCount(getTotalItems(series)));
-      setStatValue('episodes', formatCount(getTotalItems(episodes)));
-      mobileSettingsStatsLoaded = [movies, series, episodes].some(result => result.status === 'fulfilled');
-    } catch (error) {
-      console.error('Failed to load settings overview:', error);
-      setStatsFallback();
-    } finally {
-      mobileSettingsStatsLoading = false;
     }
   };
 
