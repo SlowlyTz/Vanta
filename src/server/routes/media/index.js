@@ -5,6 +5,7 @@ import imageRoutes from './image.routes.js';
 import streamRoutes from './stream.routes.js';
 import playbackRoutes from './playback.routes.js';
 import peopleRoutes from './people.routes.js';
+import profileRoutes from './profile.routes.js';
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use('/image', imageRoutes);
 router.use('/stream', streamRoutes);
 router.use('/playback', playbackRoutes);
 router.use('/person', peopleRoutes);
+router.use('/profile', profileRoutes);
 
 export default router;

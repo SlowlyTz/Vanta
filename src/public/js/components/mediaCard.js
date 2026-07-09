@@ -1,8 +1,9 @@
 import { createElement } from '../utils/dom.js';
 import { getItemImageUrl } from '../utils/image.js';
 import { formatYear } from '../utils/format.js';
+import { markReturnFromDetail } from '../utils/routeState.js';
 
-export function MediaCard({ item, landscape = false }) {
+export function MediaCard({ item, landscape = false, sourceType = null }) {
   if (!item) return null;
 
   const isEpisode = item.Type === 'Episode';
@@ -64,7 +65,9 @@ export function MediaCard({ item, landscape = false }) {
 
   const card = createElement('div', {
     className: `media-card ${landscape ? 'landscape' : ''}`,
+    dataset: { itemId: item.Id },
     onClick: () => {
+      markReturnFromDetail({ itemId: item.Id, sourceType });
       window.location.hash = `#/item/${item.Id}`;
     }
   },

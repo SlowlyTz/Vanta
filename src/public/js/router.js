@@ -20,7 +20,6 @@ class Router {
 
   init() {
     window.addEventListener('hashchange', () => this.handleRoute());
-    window.addEventListener('popstate', () => this.handleRoute());
     window.addEventListener('scroll', () => this.updateShellState());
 
     this.unsubscribeAuth = authStore.subscribe(({ user }) => {
@@ -177,7 +176,9 @@ class Router {
 
       this.updateShellState(hash, user);
       await this.renderPage(pageElement, pageUsesShell);
-      window.scrollTo(0, 0);
+      if (pageElement?.dataset?.restoreScroll !== 'true') {
+        window.scrollTo(0, 0);
+      }
       this.updateShellState(hash, user);
     } catch (error) {
       console.error('[Router Navigation Error]', error);

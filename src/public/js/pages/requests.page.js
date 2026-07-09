@@ -88,7 +88,7 @@ export default function RequestsPage(params = {}) {
   const newRequestResultsGrid = createElement('div', { className: 'requests-grid' });
   const newRequestLoading = createElement('div', { className: 'requests-search-loading hidden' },
     createElement('div', { className: 'loader-spinner' }),
-    createElement('span', {}, 'Suche laeuft...')
+    createElement('span', {}, 'Suche läuft...')
   );
   const newRequestStatus = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
@@ -97,12 +97,12 @@ export default function RequestsPage(params = {}) {
   const newRequestBackBtn = createElement('button', {
     className: 'btn-secondary requests-back-btn',
     onClick: () => { window.location.hash = '#/requests'; }
-  }, 'Zurueck');
+  }, 'Zurück');
   const newRequestHeader = createElement('div', { className: 'requests-view-header' },
     newRequestBackBtn,
     createElement('div', { className: 'requests-view-copy' },
       createElement('h2', { className: 'requests-view-title' }, 'Neue Anfrage'),
-      createElement('p', { className: 'requests-view-subtitle' }, 'Titel suchen, Verfuegbarkeit pruefen und Anfrage starten.')
+      createElement('p', { className: 'requests-view-subtitle' }, 'Titel suchen, Verfügbarkeit prüfen und Anfrage starten.')
     )
   );
   const newRequestView = createElement('div', { className: 'requests-new-view hidden' },
@@ -133,12 +133,12 @@ export default function RequestsPage(params = {}) {
   const myRequestsBackBtn = createElement('button', {
     className: 'btn-secondary requests-back-btn',
     onClick: () => { window.location.hash = '#/requests'; }
-  }, 'Zurueck');
+  }, 'Zurück');
   const myRequestsHeader = createElement('div', { className: 'requests-view-header' },
     myRequestsBackBtn,
     createElement('div', { className: 'requests-view-copy' },
       createElement('h2', { className: 'requests-view-title' }, 'Meine Anfragen'),
-      createElement('p', { className: 'requests-view-subtitle' }, 'Pruefe, was noch offen ist und was bereits entschieden wurde.')
+      createElement('p', { className: 'requests-view-subtitle' }, 'Prüfe, was noch offen ist und was bereits entschieden wurde.')
     )
   );
   const myRequestsView = createElement('div', { className: 'requests-list-view hidden' },
@@ -174,7 +174,7 @@ export default function RequestsPage(params = {}) {
       } else if (shouldRestoreSearch) {
         newRequestStatus.innerHTML = '';
         newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
-        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden fuer "${restoredSearchState.query}".`));
+        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${restoredSearchState.query}".`));
         newRequestStatus.classList.remove('hidden');
       } else {
         newRequestStatus.innerHTML = '';
@@ -221,7 +221,7 @@ export default function RequestsPage(params = {}) {
       if (searchResults.length === 0) {
         newRequestStatus.innerHTML = '';
         newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
-        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden fuer "${query}".`));
+        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${query}".`));
         newRequestStatus.classList.remove('hidden');
       } else {
         searchResults.forEach(item => {
@@ -292,7 +292,7 @@ export default function RequestsPage(params = {}) {
     if (item.banned) {
       statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-error' }, 'Gebannt'));
     } else if (item.exists) {
-      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-available' }, 'In Mediathek verfuegbar'));
+      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-available' }, 'In Mediathek verfügbar'));
     } else if (item.requested) {
       statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-requested' }, 'Bereits angefragt'));
     }

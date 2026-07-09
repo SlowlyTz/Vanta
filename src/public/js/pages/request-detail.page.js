@@ -99,7 +99,7 @@ export default function RequestDetailPage({ type, id }) {
       const badges = createElement('div', { className: 'request-detail-badges' });
 
       if (crossCheck.exists) {
-        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-available' }, 'In Mediathek verfuegbar'));
+        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-available' }, 'In Mediathek verfügbar'));
 
         if (type === 'tv' && crossCheck.seasons && crossCheck.seasons.length > 0) {
           const seasonList = createElement('div', { className: 'request-detail-seasons' });
@@ -125,7 +125,7 @@ export default function RequestDetailPage({ type, id }) {
       const backBtn = createElement('button', {
         className: 'btn-secondary request-detail-back-btn',
         onClick: () => { window.history.back(); }
-      }, 'Zurueck');
+      }, 'Zurück');
       actions.appendChild(backBtn);
 
       if (actions.children.length > 0) {

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthApi } from '../../api/auth.api.js';
 import { RequestsApi } from '../../api/requests.api.js';
-import { AdminApi } from '../../api/admin.api.js';
 import { createAdminToolsPanel } from './AdminToolsPanel.js';
 
 vi.mock('../../api/auth.api.js', () => ({
@@ -9,9 +8,6 @@ vi.mock('../../api/auth.api.js', () => ({
 }));
 vi.mock('../../api/requests.api.js', () => ({
   RequestsApi: { getOpenRequests: vi.fn(), approveRequest: vi.fn(), rejectRequest: vi.fn() }
-}));
-vi.mock('../../api/admin.api.js', () => ({
-  AdminApi: { getTranscoding: vi.fn(), updateTranscoding: vi.fn() }
 }));
 
 describe('createAdminToolsPanel', () => {
@@ -24,8 +20,8 @@ describe('createAdminToolsPanel', () => {
     const cards = adminPanel.querySelectorAll('.admin-tool-card');
     const titles = Array.from(cards).map(card => card.querySelector('.admin-tool-card-title').textContent);
 
-    expect(titles).toEqual(['Anfragen', 'Transcoding']);
-    expect(adminPanel.querySelectorAll('.admin-tool-view')).toHaveLength(2);
+    expect(titles).toEqual(['Anfragen']);
+    expect(adminPanel.querySelectorAll('.admin-tool-view')).toHaveLength(1);
   });
 
   it('shows the admin option only for admin users', async () => {
@@ -62,21 +58,5 @@ describe('createAdminToolsPanel', () => {
     requestsView.querySelector('.admin-view-back-button').click();
     expect(adminToolsPanel.hidden).toBe(false);
     expect(requestsView.hidden).toBe(true);
-  });
-
-  it('opens the transcoding tool view and reflects the loaded state', async () => {
-    AdminApi.getTranscoding.mockResolvedValue({ forceHlsTranscoding: true });
-
-    const { adminPanel } = createAdminToolsPanel({ onOpen: vi.fn() });
-    const [, transcodingCard] = adminPanel.querySelectorAll('.admin-tool-card');
-    const [, transcodingView] = adminPanel.querySelectorAll('.admin-tool-view');
-
-    transcodingCard.click();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(transcodingView.hidden).toBe(false);
-    expect(AdminApi.getTranscoding).toHaveBeenCalledTimes(1);
-    expect(transcodingView.querySelector('.admin-transcoding-switch-input').checked).toBe(true);
   });
 });
