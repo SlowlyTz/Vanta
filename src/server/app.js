@@ -10,7 +10,6 @@ import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import mediaRoutes from './routes/media/index.js';
 import requestsRoutes from './routes/requests.routes.js';
-import adminRoutes from './routes/admin.routes.js';
 import pageRoutes from './routes/page.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -51,7 +50,6 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/requests', requestsRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/', pageRoutes);
 
 // Error Middleware

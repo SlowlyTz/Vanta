@@ -1,5 +1,5 @@
 import { createElement } from '../../utils/dom.js';
-import { createBackIcon, createCloseIcon, createChevronIcon, createPasswordIcon, createLogoutIcon } from './icons.js';
+import { createBackIcon, createCloseIcon, createChevronIcon, createPasswordIcon, createProfileIcon, createLogoutIcon } from './icons.js';
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
@@ -29,6 +29,10 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   });
 
   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
+  const profileOption = createSettingsOption('Profil', () => {
+    setSettingsOpen(false);
+    window.location.hash = '#/profile';
+  }, createProfileIcon());
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
@@ -37,7 +41,8 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     createSettingsProfile(settingsUsername),
     createElement('section', { className: 'settings-section' },
       createElement('h3', { className: 'settings-section-title' }, 'Overview'),
-      settingsOverview.element
+      settingsOverview.element,
+      createElement('div', { className: 'settings-options' }, profileOption)
     ),
     createElement('section', { className: 'settings-section' },
       createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),

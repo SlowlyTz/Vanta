@@ -1,7 +1,6 @@
 import express from 'express';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
 import { PlaybackService } from '../../services/playback.service.js';
-import { SettingsService } from '../../services/settings.service.js';
 import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js';
@@ -10,6 +9,7 @@ import { isValidQualityProfile, getQualityConstraints } from './playback.validat
 const router = express.Router();
 const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended']);
 const PLAY_METHODS = new Set(['DirectPlay', 'DirectStream', 'Transcode']);
+const FORCE_HLS_TRANSCODING = true;
 
 const nullableInteger = value => Number.isInteger(value) ? value : null;
 
@@ -121,8 +121,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   }
 
   try {
-    const { forceHlsTranscoding } = await SettingsService.getTranscodingSettings();
-    const shouldForceHls = requestedMode === 'hls' || forceHlsTranscoding;
+    const shouldForceHls = requestedMode === 'hls' || FORCE_HLS_TRANSCODING;
 
     if (requestedQualityProfile === 'direct' && shouldForceHls) {
       return res.status(400).json({ error: 'Direct Play is disabled by server configuration' });

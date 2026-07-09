@@ -56,6 +56,48 @@ describe('MediaApi', () => {
     });
   });
 
+  describe('getProfileContinueWatching', () => {
+    it('requests continue watching with default pagination', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [], page: 1, limit: 24, totalItems: 0, totalPages: 0 }));
+
+      await MediaApi.getProfileContinueWatching();
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/profile/continue-watching?page=1&limit=24');
+    });
+
+    it('forwards explicit page and limit', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getProfileContinueWatching(2, 10);
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/profile/continue-watching?page=2&limit=10');
+    });
+  });
+
+  describe('getProfileHistory', () => {
+    it('requests the history endpoint', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getProfileHistory();
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/profile/history?page=1&limit=24');
+    });
+  });
+
+  describe('getProfileFavorites', () => {
+    it('requests the favorites endpoint', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getProfileFavorites();
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/profile/favorites?page=1&limit=24');
+    });
+  });
+
   describe('favoriteItem', () => {
     it('posts to favorite endpoint', async () => {
       fetch.mockReturnValue(createJsonResponse({ isFavorite: true }));

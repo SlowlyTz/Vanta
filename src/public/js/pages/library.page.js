@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
+import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 
 const LIMIT_OPTIONS = [20, 50, 100];
 const DEFAULT_LIMIT = 50;
@@ -12,12 +13,20 @@ export default function LibraryPage(params) {
   const studio = params.studioName || params.studio || null;
   const isMixedType = type.includes(',');
 
-  let currentPage = 1;
-  let currentLimit = DEFAULT_LIMIT;
+  const routeHash = window.location.hash;
+  const returnMarker = consumeReturnMarker(routeHash);
+  const savedState = returnMarker ? getRouteState(routeHash) : null;
+  let pendingRestore = returnMarker ? { scrollY: returnMarker.scrollY, itemId: returnMarker.itemId } : null;
+
+  let currentPage = savedState?.page || 1;
+  let currentLimit = savedState?.limit || DEFAULT_LIMIT;
   let totalItems = 0;
   let totalPages = 0;
 
   const container = createElement('div', { className: 'page-container content-section library-page' });
+  if (pendingRestore) {
+    container.dataset.restoreScroll = 'true';
+  }
 
   const labelType = type === 'Series' ? 'Serien' : 'Filme';
   const pageTitle = studio
@@ -26,7 +35,30 @@ export default function LibraryPage(params) {
       ? (isMixedType ? `${genre}` : `${labelType}: ${genre}`)
       : (isMixedType ? 'Alle Titel' : `Alle ${labelType}`);
 
+  const restoreScrollPosition = ({ scrollY, itemId }) => {
+    const applyScroll = () => {
+      const cardEl = itemId
+        ? Array.from(container.querySelectorAll('[data-item-id]')).find(el => el.dataset.itemId === itemId)
+        : null;
+
+      if (cardEl) {
+        cardEl.scrollIntoView({ block: 'center' });
+        return;
+      }
+
+      if (Number.isFinite(scrollY)) {
+        window.scrollTo(0, scrollY);
+      }
+    };
+
+    applyScroll();
+    requestAnimationFrame(applyScroll);
+  };
+
   const loadLibrary = async (page = currentPage, limit = currentLimit) => {
+    const restoreTarget = pendingRestore;
+    pendingRestore = null;
+
     appStore.setLoading(true);
     try {
       const result = await MediaApi.getLibrary(type, genre, studio, page, limit);
@@ -35,7 +67,13 @@ export default function LibraryPage(params) {
       totalItems = result.totalItems;
       totalPages = result.totalPages;
       renderLibrary(result.items);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      saveRouteState(routeHash, { page: currentPage, limit: currentLimit });
+
+      if (restoreTarget) {
+        restoreScrollPosition(restoreTarget);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } catch (error) {
       if (error.isAuthError) return;
 
@@ -83,7 +121,7 @@ export default function LibraryPage(params) {
 
     const grid = createElement('div', { className: 'library-grid' });
     items.forEach(item => {
-      const cardEl = MediaCard({ item, landscape: false });
+      const cardEl = MediaCard({ item, landscape: false, sourceType: 'library' });
       if (cardEl) grid.appendChild(cardEl);
     });
 

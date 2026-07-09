@@ -4,6 +4,9 @@ import { appStore } from '../store/app.store.js';
 import { MediaCarousel } from '../components/mediaCarousel.js';
 import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
+import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
+
+const HOME_ROUTE = '#/home';
 
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -16,11 +19,51 @@ function shuffleArray(arr) {
 export default function HomePage() {
   const container = createElement('div', { className: 'page-container' });
 
+  const returnMarker = consumeReturnMarker(HOME_ROUTE);
+  let pendingRestore = returnMarker ? { scrollY: returnMarker.scrollY, itemId: returnMarker.itemId } : null;
+  if (pendingRestore) {
+    container.dataset.restoreScroll = 'true';
+  }
+
+  const restoreScrollPosition = ({ scrollY, itemId }) => {
+    const applyScroll = () => {
+      const cardEl = itemId
+        ? Array.from(container.querySelectorAll('[data-item-id]')).find(el => el.dataset.itemId === itemId)
+        : null;
+
+      if (cardEl) {
+        cardEl.scrollIntoView({ block: 'center' });
+        return;
+      }
+
+      if (Number.isFinite(scrollY)) {
+        window.scrollTo(0, scrollY);
+      }
+    };
+
+    applyScroll();
+    requestAnimationFrame(applyScroll);
+  };
+
   const loadData = async () => {
+    const restoreTarget = pendingRestore;
+    pendingRestore = null;
+
+    if (restoreTarget) {
+      const cached = getRouteState(HOME_ROUTE);
+      if (cached?.data) {
+        renderHome(cached.data);
+        restoreScrollPosition(restoreTarget);
+        return;
+      }
+    }
+
     appStore.setLoading(true);
     try {
-      const data = await MediaApi.getHomeSections();
+      const raw = await MediaApi.getHomeSections();
+      const data = { ...raw, hero: shuffleArray([...(raw.hero || [])]).slice(0, 8) };
       renderHome(data);
+      saveRouteState(HOME_ROUTE, { data });
     } catch (error) {
       if (error.isAuthError) return;
 
@@ -70,7 +113,7 @@ export default function HomePage() {
       return;
     }
 
-    const heroItems = shuffleArray([...(data.hero || [])]).slice(0, 8);
+    const heroItems = data.hero || [];
 
     if (heroItems.length > 0) {
       const heroEl = HeroCarousel({ items: heroItems });

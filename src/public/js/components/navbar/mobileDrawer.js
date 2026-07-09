@@ -62,6 +62,18 @@ export function createMobileDrawer({ onLogout, onChangePassword, onNavigate }) {
   const mobileSettingsItem = createElement('li', { className: 'navbar-item navbar-mobile-settings-item mobile-nav-link-item' }, mobileSettingsButton);
   mobileNavLinksList.appendChild(mobileSettingsItem);
 
+  const mobileProfileLink = createElement('a', {
+    className: 'navbar-link',
+    href: '#/profile',
+    onClick: () => onNavigate?.()
+  },
+    createNavIcon('profile'),
+    createElement('span', { className: 'mobile-nav-label' }, 'Profil')
+  );
+
+  const mobileProfileItem = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, mobileProfileLink);
+  mobileNavLinksList.appendChild(mobileProfileItem);
+
   const mobileSettings = createMobileSettings({
     onLogout,
     onChangePassword,

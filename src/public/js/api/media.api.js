@@ -126,6 +126,18 @@ export const MediaApi = {
     return request(`/api/media/trailers?${params.toString()}`);
   },
 
+  getProfileContinueWatching(page = 1, limit = 24) {
+    return request(`/api/media/profile/continue-watching?page=${page}&limit=${limit}`);
+  },
+
+  getProfileHistory(page = 1, limit = 24) {
+    return request(`/api/media/profile/history?page=${page}&limit=${limit}`);
+  },
+
+  getProfileFavorites(page = 1, limit = 24) {
+    return request(`/api/media/profile/favorites?page=${page}&limit=${limit}`);
+  },
+
   favoriteItem(id) {
     return request(`/api/media/item/${encodeURIComponent(id)}/favorite`, {
       method: 'POST'
