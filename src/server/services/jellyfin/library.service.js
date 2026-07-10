@@ -1,5 +1,6 @@
 import { jellyfinJson } from './client.js';
 import { COMMON_ITEM_FIELDS, TRAILER_ITEM_FIELDS } from './fields.js';
+import { getFeaturedPublisherById, matchFeaturedPublisher } from '../../../public/js/constants/featuredPublishers.js';
 
 function getItems(userId, token, params = {}) {
   return jellyfinJson(`/Users/${userId}/Items`, {
@@ -96,6 +97,52 @@ export class LibraryService {
     const paginatedItems = allItems.slice(startIndex, startIndex + limit);
 
     return { items: paginatedItems, totalRecordCount };
+  }
+
+  static async getPublisherStudioNames(userId, token, publisherId) {
+    const publisher = getFeaturedPublisherById(publisherId);
+    if (!publisher) {
+      const error = new Error(`Unknown publisher: ${publisherId}`);
+      error.status = 400;
+      throw error;
+    }
+
+    const studios = await this.getStudios(userId, token);
+    return studios
+      .filter(studio => matchFeaturedPublisher(studio.Name)?.id === publisherId)
+      .map(studio => studio.Name);
+  }
+
+  static async getLibraryByPublisher(userId, token, type, publisherId, genre = null, page = 1, limit = 50) {
+    const studioNames = await this.getPublisherStudioNames(userId, token, publisherId);
+    if (studioNames.length === 0) {
+      return { items: [], totalRecordCount: 0 };
+    }
+
+    const types = type.split(',').map(t => t.trim()).filter(Boolean);
+    const requests = [];
+
+    for (const itemType of types.length ? types : [type]) {
+      for (const studioName of studioNames) {
+        requests.push(this._fetchLibraryPage(userId, token, itemType, genre, studioName, 1, 100000));
+      }
+    }
+
+    const results = await Promise.all(requests);
+    const byId = new Map();
+
+    for (const item of results.flatMap(result => result.items)) {
+      if (item?.Id) byId.set(item.Id, item);
+    }
+
+    const allItems = Array.from(byId.values())
+      .sort((a, b) => (a.SortName || a.Name || '').localeCompare(b.SortName || b.Name || ''));
+
+    const startIndex = (page - 1) * limit;
+    return {
+      items: allItems.slice(startIndex, startIndex + limit),
+      totalRecordCount: allItems.length
+    };
   }
 
   static async getAllMoviesAndSeries(userId, token, limit = 2000) {

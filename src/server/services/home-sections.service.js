@@ -1,6 +1,6 @@
 import { LibraryService } from './jellyfin/library.service.js';
 import { TmdbService } from './tmdb.service.js';
-import { FEATURED_STUDIOS, matchFeaturedStudio } from './jellyfin/featured-studios.js';
+import { getFeaturedPublishersFromStudios } from '../../public/js/constants/featuredPublishers.js';
 
 const SECTION_LIMIT = 20;
 const HERO_LIMIT = 8;
@@ -170,28 +170,17 @@ export class HomeSectionsService {
   static async _buildPublisherSections(userId, accessToken) {
     try {
       const studios = await LibraryService.getStudios(userId, accessToken);
-      const featured = [];
-      const seen = new Set();
-
-      for (const studio of studios) {
-        const match = matchFeaturedStudio(studio.Name);
-        if (match && !seen.has(match.label)) {
-          seen.add(match.label);
-          featured.push({ ...studio, displayLabel: match.label, order: FEATURED_STUDIOS.indexOf(match) });
-        }
-      }
-
-      featured.sort((a, b) => a.order - b.order);
+      const featured = getFeaturedPublishersFromStudios(studios);
 
       const sections = [];
 
-      for (const studio of featured) {
-        const result = await LibraryService.getLibrary(
+      for (const publisher of featured) {
+        const result = await LibraryService.getLibraryByPublisher(
           userId,
           accessToken,
           'Movie,Series',
+          publisher.id,
           null,
-          studio.Name,
           1,
           SECTION_LIMIT
         );
@@ -200,8 +189,8 @@ export class HomeSectionsService {
 
         sections.push({
           type: 'standard',
-          title: studio.displayLabel,
-          href: `#/publisher/${encodeURIComponent(studio.Name)}`,
+          title: publisher.label,
+          href: `#/publisher-group/${encodeURIComponent(publisher.id)}`,
           items: sortByNewest(result.items)
         });
       }

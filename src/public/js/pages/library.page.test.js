@@ -110,6 +110,30 @@ describe('LibraryPage restore', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 900);
   });
 
+  it('renders the publisher label as title and forwards publisherId to MediaApi for a known publisher group', async () => {
+    window.location.hash = '#/publisher-group/warner-bros';
+    MediaApi.getLibrary.mockResolvedValue({ items: [makeItem('1')], totalItems: 1, totalPages: 1 });
+
+    const container = LibraryPage({ type: 'Movie,Series', publisherId: 'warner-bros' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(container.querySelector('.library-title').textContent).toBe('Warner Bros');
+    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 50, { publisherId: 'warner-bros' });
+  });
+
+  it('does not crash for an unknown publisherId and still calls the API', async () => {
+    window.location.hash = '#/publisher-group/unknown-publisher';
+    MediaApi.getLibrary.mockResolvedValue({ items: [], totalItems: 0, totalPages: 0 });
+
+    const container = LibraryPage({ type: 'Movie,Series', publisherId: 'unknown-publisher' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(container.querySelector('.library-title')).toBeTruthy();
+    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 50, { publisherId: 'unknown-publisher' });
+  });
+
   it('scrolls to top again on normal pagination after a restore', async () => {
     saveRouteState('#/movies', { page: 2, limit: 50 });
     markReturnFromDetail({ scrollY: 500, itemId: '1' });

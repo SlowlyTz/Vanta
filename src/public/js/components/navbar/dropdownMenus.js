@@ -1,7 +1,7 @@
 import { MediaApi } from '../../api/media.api.js';
 import { createElement, $ } from '../../utils/dom.js';
 import { NAV_LINKS } from './navLinks.js';
-import { FEATURED_STUDIOS, matchFeaturedStudio } from '../../constants/featuredStudios.js';
+import { getFeaturedPublishersFromStudios } from '../../constants/featuredPublishers.js';
 
 export function renderGenreMenu(menu, genres, type) {
   menu.innerHTML = '';
@@ -26,31 +26,20 @@ export function renderGenreMenu(menu, genres, type) {
 export function renderStudiosMenu(menu, studios) {
   menu.innerHTML = '';
 
-  const featured = [];
-  const seen = new Set();
-
-  for (const studio of studios) {
-    const match = matchFeaturedStudio(studio.Name);
-    if (match && !seen.has(match.label)) {
-      seen.add(match.label);
-      featured.push({ ...studio, displayLabel: match.label, order: FEATURED_STUDIOS.indexOf(match) });
-    }
-  }
-
-  featured.sort((a, b) => a.order - b.order);
+  const featured = getFeaturedPublishersFromStudios(studios);
 
   if (featured.length === 0) {
     menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Keine Publisher gefunden'));
     return;
   }
 
-  featured.forEach(studio => {
+  featured.forEach(publisher => {
     menu.appendChild(
       createElement('li', { className: 'dropdown-list-item' },
         createElement('a', {
           className: 'dropdown-item dropdown-item-publisher',
-          href: `#/publisher/${encodeURIComponent(studio.Name)}`
-        }, studio.displayLabel)
+          href: `#/publisher-group/${encodeURIComponent(publisher.id)}`
+        }, publisher.label)
       )
     );
   });

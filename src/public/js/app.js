@@ -8,6 +8,7 @@ router.add('#/series', () => import('./pages/library.page.js'), { requiresAuth: 
 router.add('#/scroller', () => import('./pages/trailer-scroller.page.js'), { requiresAuth: true });
 router.add('#/genre/:type/:genreName', () => import('./pages/library.page.js'), { requiresAuth: true });
 router.add('#/publishers', () => import('./pages/publishers.page.js'), { requiresAuth: true });
+router.add('#/publisher-group/:publisherId', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie,Series' } });
 router.add('#/publisher/:studioName', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie,Series' } });
 router.add('#/search', () => import('./pages/search.page.js'), { requiresAuth: true });
 router.add('#/requests', () => import('./pages/requests.page.js'), { requiresAuth: true });

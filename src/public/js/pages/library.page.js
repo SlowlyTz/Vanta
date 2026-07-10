@@ -4,6 +4,7 @@ import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
+import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
 
 const LIMIT_OPTIONS = [20, 50, 100];
 const DEFAULT_LIMIT = 50;
@@ -11,7 +12,9 @@ const DEFAULT_LIMIT = 50;
 export default function LibraryPage(params) {
   const type = params.type || 'Movie';
   const genre = params.genreName || params.genre || null;
-  const studio = params.studioName || params.studio || null;
+  const publisherId = params.publisherId || null;
+  const publisher = publisherId ? getFeaturedPublisherById(publisherId) : null;
+  const studio = publisherId ? null : (params.studioName || params.studio || null);
   const isMixedType = type.includes(',');
 
   const routeHash = window.location.hash;
@@ -30,11 +33,13 @@ export default function LibraryPage(params) {
   }
 
   const labelType = type === 'Series' ? 'Serien' : 'Filme';
-  const pageTitle = studio
-    ? studio
-    : genre
-      ? (isMixedType ? `${genre}` : `${labelType}: ${genre}`)
-      : (isMixedType ? 'Alle Titel' : `Alle ${labelType}`);
+  const pageTitle = publisher
+    ? publisher.label
+    : studio
+      ? studio
+      : genre
+        ? (isMixedType ? `${genre}` : `${labelType}: ${genre}`)
+        : (isMixedType ? 'Alle Titel' : `Alle ${labelType}`);
 
   const titleEl = createElement('h1', { className: 'library-title' }, pageTitle);
   const bodySlot = createElement('div', { className: 'library-body' });
@@ -72,7 +77,9 @@ export default function LibraryPage(params) {
     bodySlot.appendChild(createSectionLoader({ label: 'Inhalte werden geladen' }));
 
     try {
-      const result = await MediaApi.getLibrary(type, genre, studio, page, limit);
+      const args = [type, genre, studio, page, limit];
+      if (publisherId) args.push({ publisherId });
+      const result = await MediaApi.getLibrary(...args);
       currentPage = page;
       currentLimit = limit;
       totalItems = result.totalItems;

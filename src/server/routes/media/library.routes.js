@@ -176,15 +176,20 @@ router.get('/studios', requireAuth, asyncHandler(async (req, res) => {
 
 router.get('/library', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
-  const { type, genre, studio, page, limit } = req.query;
+  const { type, genre, studio, publisher, page, limit } = req.query;
 
   if (!type) return res.status(400).json({ error: 'Type is required' });
+  if (studio && publisher) {
+    return res.status(400).json({ error: 'Use either studio or publisher, not both' });
+  }
 
   const pageNum = Math.max(1, parseInt(page) || 1);
   const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 50));
 
   try {
-    const result = await LibraryService.getLibrary(userId, accessToken, type, genre, studio, pageNum, limitNum);
+    const result = publisher
+      ? await LibraryService.getLibraryByPublisher(userId, accessToken, type, publisher, genre, pageNum, limitNum)
+      : await LibraryService.getLibrary(userId, accessToken, type, genre, studio, pageNum, limitNum);
     return res.json({
       items: result.items,
       totalItems: result.totalRecordCount,
@@ -193,6 +198,9 @@ router.get('/library', requireAuth, asyncHandler(async (req, res) => {
       totalPages: Math.ceil(result.totalRecordCount / limitNum)
     });
   } catch (error) {
+    if (error.status === 400) {
+      return res.status(400).json({ error: error.message });
+    }
     console.error('[Media Library Error]', error.message);
     if (isUpstreamUnauthorized(error)) {
       return destroyInvalidSession(req, res);

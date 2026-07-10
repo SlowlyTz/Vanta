@@ -1,5 +1,5 @@
 import { LibraryService } from './jellyfin/library.service.js';
-import { FEATURED_STUDIOS, matchFeaturedStudio } from './jellyfin/featured-studios.js';
+import { getFeaturedPublishersFromStudios } from '../../public/js/constants/featuredPublishers.js';
 
 const CATEGORY_LIMIT = 15;
 const MAX_GENRES = 12;
@@ -73,33 +73,17 @@ export class HomeCategoriesService {
   }
 
   static async _buildPublisherCategories(userId, accessToken, studios) {
-    const featuredStudios = [];
-    const seen = new Set();
-
-    for (const studio of studios) {
-      const match = matchFeaturedStudio(studio.Name);
-      if (match && !seen.has(match.label)) {
-        seen.add(match.label);
-        featuredStudios.push({
-          ...studio,
-          displayLabel: match.label,
-          order: FEATURED_STUDIOS.indexOf(match)
-        });
-      }
-    }
-
-    featuredStudios.sort((a, b) => a.order - b.order);
-
+    const featuredPublishers = getFeaturedPublishersFromStudios(studios);
     const categories = [];
 
-    for (const studio of featuredStudios) {
+    for (const publisher of featuredPublishers) {
       try {
-        const result = await LibraryService.getLibrary(
+        const result = await LibraryService.getLibraryByPublisher(
           userId,
           accessToken,
           'Movie,Series',
+          publisher.id,
           null,
-          studio.Name,
           1,
           CATEGORY_LIMIT
         );
@@ -109,13 +93,13 @@ export class HomeCategoriesService {
         }
 
         categories.push({
-          name: studio.displayLabel,
-          studioName: studio.Name,
-          href: `#/publisher/${encodeURIComponent(studio.Name)}`,
+          name: publisher.label,
+          publisherId: publisher.id,
+          href: `#/publisher-group/${encodeURIComponent(publisher.id)}`,
           items: result.items
         });
       } catch (error) {
-        console.error(`[Home Categories] Failed to load publisher "${studio.Name}":`, error.message);
+        console.error(`[Home Categories] Failed to load publisher "${publisher.label}":`, error.message);
       }
     }
 

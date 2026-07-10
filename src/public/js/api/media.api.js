@@ -45,13 +45,16 @@ export const MediaApi = {
     return request('/api/media/studios');
   },
 
-  getLibrary(type, genre = null, studio = null, page = 1, limit = 50) {
+  getLibrary(type, genre = null, studio = null, page = 1, limit = 50, options = {}) {
     let url = `/api/media/library?type=${encodeURIComponent(type)}&page=${page}&limit=${limit}`;
     if (genre) {
       url += `&genre=${encodeURIComponent(genre)}`;
     }
     if (studio) {
       url += `&studio=${encodeURIComponent(studio)}`;
+    }
+    if (options.publisherId) {
+      url += `&publisher=${encodeURIComponent(options.publisherId)}`;
     }
     return request(url);
   },
