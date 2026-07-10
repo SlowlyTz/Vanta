@@ -6,12 +6,6 @@ body.player-active {
   overscroll-behavior: none;
 }
 
-body.player-active {
-  position: fixed;
-  left: 0;
-  right: 0;
-}
-
 html.player-active #app {
   height: 100%;
   overflow: hidden !important;
@@ -19,11 +13,15 @@ html.player-active #app {
 
 .player-page {
   position: fixed;
-  inset: 0;
-  width: 100%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
   height: 100vh;
   height: 100svh;
   height: 100dvh;
+  min-height: 100svh;
   background: #000000;
   color: #ffffff;
   z-index: 99999;
@@ -32,6 +30,11 @@ html.player-active #app {
   touch-action: manipulation;
   isolation: isolate;
   contain: layout paint size;
+  transform: none !important;
+}
+
+body.player-active .player-page {
+  top: 0 !important;
 }
 
 .vanta-player-bootstrap-error {

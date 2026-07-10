@@ -22,7 +22,6 @@ export default function PlayerPage({ id }) {
     scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
     document.documentElement.classList.add('player-active');
     document.body.classList.add('player-active');
-    document.body.style.top = `-${scrollLockY}px`;
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
   };
 
@@ -30,7 +29,6 @@ export default function PlayerPage({ id }) {
     window.removeEventListener('touchmove', handleTouchMove);
     document.documentElement.classList.remove('player-active');
     document.body.classList.remove('player-active');
-    document.body.style.top = '';
     document.body.style.cursor = 'default';
     window.scrollTo(0, scrollLockY);
   };
@@ -90,9 +88,17 @@ export default function PlayerPage({ id }) {
 
   const showBootstrapError = error => {
     container.innerHTML = '';
-    const overlay = createElement('div', { className: 'vanta-player-bootstrap-error' },
-      createElement('div', { className: 'vanta-player-bootstrap-error-title' }, 'Ladefehler'),
-      createElement('div', { className: 'vanta-player-bootstrap-error-msg' }, error.message || 'Der Player konnte nicht geladen werden.')
+    const isStreamLimitError = error.code === 'STREAM_LIMIT_REACHED';
+    const title = isStreamLimitError ? 'Stream-Limit erreicht' : 'Ladefehler';
+    const message = isStreamLimitError
+      ? 'Stream-Limit erreicht. Beende einen anderen Stream und versuche es erneut.'
+      : (error.message || 'Der Player konnte nicht geladen werden.');
+
+    const overlay = createElement('div', {
+      className: `vanta-player-bootstrap-error${isStreamLimitError ? ' vanta-player-stream-limit-error' : ''}`
+    },
+      createElement('div', { className: 'vanta-player-bootstrap-error-title' }, title),
+      createElement('div', { className: 'vanta-player-bootstrap-error-msg' }, message)
     );
     const backButton = createElement('button', { className: 'btn-primary' }, 'Zurück');
     backButton.addEventListener('click', goBack);

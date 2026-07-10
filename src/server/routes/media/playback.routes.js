@@ -1,6 +1,7 @@
 import express from 'express';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
 import { PlaybackService } from '../../services/playback.service.js';
+import { streamSessionService } from '../../services/stream-session.service.js';
 import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js';
@@ -89,6 +90,14 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
     const report = buildPlaybackReport(req.body || {});
     await PlaybackApiService.reportPlayback(accessToken, event, report);
 
+    if (event === 'start') {
+      streamSessionService.markStarted(userId, report.PlaySessionId);
+    } else if (event === 'progress') {
+      streamSessionService.touch(userId, report.PlaySessionId);
+    } else if (event === 'stopped' || event === 'ended') {
+      streamSessionService.release(userId, report.PlaySessionId);
+    }
+
     if (event === 'ended') {
       await PlaybackApiService.markPlayed(userId, accessToken, report.ItemId);
     }
@@ -107,7 +116,7 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
+  const { userId, accessToken, username } = req.session;
   const { id } = req.params;
   const requestedMode = String(req.query.mode || 'auto').toLowerCase();
   const requestedQualityProfile = String(req.query.qualityProfile || 'auto').toLowerCase();
@@ -144,6 +153,20 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       forceHlsTranscoding: shouldForceHls,
       requestedQualityProfile
     });
+
+    try {
+      streamSessionService.reserve({ userId, username, itemId: id, playSessionId: playback.playSessionId });
+    } catch (limitError) {
+      if (limitError.code === 'STREAM_LIMIT_REACHED') {
+        return res.status(429).json({
+          error: limitError.message,
+          code: limitError.code,
+          limit: limitError.limit,
+          activeStreams: limitError.activeStreams
+        });
+      }
+      throw limitError;
+    }
 
     res.setHeader('Cache-Control', 'no-store');
     return res.json(playback);

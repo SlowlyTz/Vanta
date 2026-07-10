@@ -24,7 +24,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     createChevronIcon()
   );
 
-  const { adminPanel, adminOption, loadAdminVisibility, checkAdminAndOpenAdmin } = createAdminToolsPanel({
+  const { adminPanel, adminOption, loadAdminVisibility, checkAdminAndOpenAdmin, goBack: goBackInAdminTools } = createAdminToolsPanel({
     onOpen: () => setSettingsView('admin')
   });
 
@@ -68,7 +68,13 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     className: 'settings-header-button invisible',
     type: 'button',
     'aria-label': 'Zurück',
-    onClick: () => setSettingsView('root')
+    onClick: () => {
+      // Inside the admin area, step back one level at a time (e.g. user
+      // detail -> user list -> tool grid) before falling back to the root
+      // settings view. This is the single back control for the whole dialog.
+      if (settingsView === 'admin' && goBackInAdminTools()) return;
+      setSettingsView('root');
+    }
   }, createBackIcon());
 
   const closeButton = createElement('button', {
@@ -109,7 +115,30 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   let settingsOpen = false;
   let settingsView = 'root';
   let lastFocusedElement = null;
+  let settingsScrollY = 0;
   const settingsStats = createSettingsStatsLoader(settingsOverview);
+
+  const lockSettingsViewport = () => {
+    settingsScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.documentElement.classList.add('settings-modal-open');
+    document.body.classList.add('settings-modal-open');
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${settingsScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  };
+
+  const unlockSettingsViewport = () => {
+    document.documentElement.classList.remove('settings-modal-open');
+    document.body.classList.remove('settings-modal-open');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, settingsScrollY);
+  };
 
   const setSettingsView = (view) => {
     settingsView = view;
@@ -140,15 +169,17 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     settingsOpen = open;
     settingsBackdrop.classList.toggle('open', settingsOpen);
     settingsBackdrop.setAttribute('aria-hidden', settingsOpen ? 'false' : 'true');
-    document.body.classList.toggle('settings-modal-open', settingsOpen);
 
     if (!settingsOpen) {
+      unlockSettingsViewport();
       setPasswordStatus('');
       setSettingsView('root');
       lastFocusedElement?.focus?.();
       lastFocusedElement = null;
       return;
     }
+
+    lockSettingsViewport();
 
     setSettingsView('root');
     settingsStats.load();

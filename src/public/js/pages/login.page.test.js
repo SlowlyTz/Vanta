@@ -56,4 +56,43 @@ describe('LoginPage', () => {
     expect(button.hasAttribute('aria-busy')).toBe(false);
     expect(button.textContent).toBe('Anmelden');
   });
+
+  it('shows a visible ban notice with the reason when the account is locked', async () => {
+    const error = new Error('Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.');
+    error.status = 403;
+    error.reason = 'Account geteilt';
+    authStore.login.mockRejectedValue(error);
+
+    const container = LoginPage();
+    container.querySelector('#login-username').value = 'alice';
+    container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+
+    await flush();
+
+    const banner = container.querySelector('.login-error');
+    expect(banner.classList.contains('hidden')).toBe(false);
+    expect(banner.querySelector('.login-error-message').textContent).toBe('Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.');
+    expect(banner.querySelector('.login-error-reason').textContent).toBe('Account geteilt');
+  });
+
+  it('hides the ban notice again once a new login attempt starts', async () => {
+    const error = new Error('Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.');
+    error.reason = 'Account geteilt';
+    authStore.login.mockRejectedValueOnce(error);
+
+    const container = LoginPage();
+    container.querySelector('#login-username').value = 'alice';
+    container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+
+    expect(container.querySelector('.login-error').classList.contains('hidden')).toBe(false);
+
+    let resolveLogin;
+    authStore.login.mockReturnValue(new Promise(resolve => { resolveLogin = resolve; }));
+    container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+
+    expect(container.querySelector('.login-error').classList.contains('hidden')).toBe(true);
+    resolveLogin();
+    await flush();
+  });
 });

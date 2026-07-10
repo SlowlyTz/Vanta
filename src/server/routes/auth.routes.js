@@ -1,9 +1,12 @@
 import express from 'express';
 import { AuthService } from '../services/jellyfin/auth.service.js';
+import { UserBanService } from '../services/user-ban.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
+
+const BAN_MESSAGE = 'Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.';
 
 router.post('/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body;
@@ -14,6 +17,12 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   try {
     const data = await AuthService.login(username, password || '');
+
+    const ban = UserBanService.getBan(data.User.Id);
+    if (ban) {
+      return res.status(403).json({ error: BAN_MESSAGE, reason: ban.reason });
+    }
+
     const isAdmin = AuthService.isAdministrator(data.User);
 
     req.session.accessToken = data.AccessToken;
@@ -36,6 +45,11 @@ router.post('/login', asyncHandler(async (req, res) => {
 
 router.get('/me', asyncHandler(async (req, res) => {
   if (req.session && req.session.accessToken && req.session.userId) {
+    const ban = UserBanService.getBan(req.session.userId);
+    if (ban) {
+      return destroyInvalidSession(req, res, BAN_MESSAGE);
+    }
+
     try {
       const user = await AuthService.getCurrentUser(req.session.userId, req.session.accessToken);
       const isAdmin = AuthService.isAdministrator(user);

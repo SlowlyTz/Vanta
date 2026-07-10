@@ -5,8 +5,23 @@ import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 
 const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
 const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
+const GENERIC_LOGIN_ERROR = 'Login fehlgeschlagen. Bitte überprüfe deine Daten.';
 
 export default function LoginPage() {
+  const showLoginError = (message, reason) => {
+    errorBanner.innerHTML = '';
+    errorBanner.appendChild(createElement('p', { className: 'login-error-message' }, message));
+    if (reason) {
+      errorBanner.appendChild(createElement('p', { className: 'login-error-reason' }, reason));
+    }
+    errorBanner.classList.remove('hidden');
+  };
+
+  const hideLoginError = () => {
+    errorBanner.classList.add('hidden');
+    errorBanner.innerHTML = '';
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     const username = usernameInput.value.trim();
@@ -17,6 +32,7 @@ export default function LoginPage() {
       return;
     }
 
+    hideLoginError();
     loginButton.disabled = true;
     loginButton.setAttribute('aria-busy', 'true');
     loginButton.textContent = LOGIN_BUTTON_BUSY_TEXT;
@@ -34,7 +50,9 @@ export default function LoginPage() {
       window.location.hash = redirectHash;
     } catch (error) {
       console.error(error);
-      appStore.showToast(error.message || 'Login fehlgeschlagen. Bitte überprüfe deine Daten.', 'error');
+      const message = error.message || GENERIC_LOGIN_ERROR;
+      showLoginError(message, error.reason);
+      appStore.showToast(message, 'error');
       loginButton.disabled = false;
       loginButton.removeAttribute('aria-busy');
       loginButton.textContent = LOGIN_BUTTON_IDLE_TEXT;
@@ -63,10 +81,13 @@ export default function LoginPage() {
     className: 'btn-login'
   }, LOGIN_BUTTON_IDLE_TEXT);
 
+  const errorBanner = createElement('div', { className: 'login-error hidden', role: 'alert' });
+
   const loginForm = createElement('form', {
     className: 'login-form',
     onSubmit: handleLogin
   },
+    errorBanner,
     createElement('div', { className: 'form-group' },
       createElement('label', { for: 'login-username' }, 'Benutzername'),
       usernameInput

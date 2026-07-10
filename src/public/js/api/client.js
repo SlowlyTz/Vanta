@@ -5,6 +5,10 @@ const createApiError = (message, response, options = {}) => {
   error.status = response?.status;
   error.isAuthError = response?.status === 401;
   error.silent = Boolean(options.silent);
+  if (options.code !== undefined) error.code = options.code;
+  if (options.reason !== undefined) error.reason = options.reason;
+  if (options.limit !== undefined) error.limit = options.limit;
+  if (options.activeStreams !== undefined) error.activeStreams = options.activeStreams;
   return error;
 };
 
@@ -40,7 +44,12 @@ export async function request(url, options = {}) {
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
-      throw createApiError(errJson.error || `Request failed with status ${response.status}`, response);
+      throw createApiError(errJson.error || `Request failed with status ${response.status}`, response, {
+        code: errJson.code,
+        reason: errJson.reason,
+        limit: errJson.limit,
+        activeStreams: errJson.activeStreams
+      });
     }
 
     const contentType = response.headers.get('content-type');

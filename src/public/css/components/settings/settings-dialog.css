@@ -26,8 +26,18 @@
   outline-offset: 3px;
 }
 
-.settings-modal-open {
-  overflow: hidden;
+html.settings-modal-open,
+body.settings-modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.settings-modal-backdrop,
+.settings-dialog,
+.settings-panel,
+.admin-tool-view,
+.admin-users-view {
+  overscroll-behavior: contain;
 }
 
 .settings-modal-backdrop {
