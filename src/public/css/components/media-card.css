@@ -36,8 +36,8 @@
 
 @media (hover: hover) and (pointer: fine) {
   .media-card:hover .media-card-image-container {
-    transform: translateY(-8px) scale(1.04);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.2);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(var(--abyss-accent), 0.18);
   }
 
   .media-card:hover .media-card-image {
@@ -64,7 +64,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .media-card:hover .media-card-title {
-    color: #ffffff;
+    color: rgb(var(--abyss-accent));
   }
 }
 
@@ -83,7 +83,7 @@
   left: 0;
   right: 0;
   height: 5px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(var(--abyss-accent), 0.22);
   border-bottom-left-radius: var(--radius-md);
   border-bottom-right-radius: var(--radius-md);
   overflow: hidden;
@@ -92,7 +92,7 @@
 
 .media-progress-fill {
   height: 100%;
-  background-color: #ffffff;
+  background-color: rgb(var(--abyss-accent));
   width: 0%;
 }
 

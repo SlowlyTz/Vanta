@@ -21,9 +21,9 @@
 .section-loader-spinner {
   width: 34px;
   height: 34px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(var(--abyss-accent), 0.14);
   border-radius: 50%;
-  border-top-color: var(--text-primary);
+  border-top-color: rgb(var(--abyss-accent));
   animation: section-loader-spin 1s linear infinite;
 }
 

@@ -1,20 +1,16 @@
 .mobile-drawer-nav {
   position: fixed;
-  top: 74px;
-  right: 22px;
+  top: 60px;
+  left: 20px;
   width: min(320px, calc(100vw - 44px));
-  max-height: calc(100dvh - 96px);
+  max-height: calc(100dvh - 84px);
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background:
-    radial-gradient(circle at 28% 12%, rgba(123, 81, 255, 0.1), transparent 32%),
-    radial-gradient(circle at 92% 28%, rgba(65, 170, 255, 0.12), transparent 34%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.018) 48%, rgba(255, 255, 255, 0.04)),
-    rgba(8, 9, 13, 0.82);
+  background: rgba(var(--abyss-glass-tint), 0.82);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  box-shadow: -26px 0 78px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: var(--abyss-radius-dialog);
+  box-shadow: 26px 0 78px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(26px) saturate(128%);
   -webkit-backdrop-filter: blur(26px) saturate(128%);
   padding: 16px 14px 20px;
@@ -24,7 +20,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translate3d(18px, -4px, 0) scale(0.985);
+  transform: translate3d(-18px, -4px, 0) scale(0.985);
   transition: opacity 220ms ease, visibility 220ms ease, transform 260ms cubic-bezier(0.25, 1, 0.5, 1);
   z-index: 1501;
 }
@@ -139,12 +135,10 @@ body.mobile-nav-open .mobile-drawer-nav {
 }
 
 .mobile-drawer-nav .navbar-link.active {
-  color: #f4bd5e;
-  background:
-    linear-gradient(95deg, rgba(183, 128, 32, 0.28), rgba(241, 178, 76, 0.12) 54%, rgba(255, 218, 130, 0.04)),
-    rgba(255, 255, 255, 0.035);
-  border-color: rgba(246, 190, 87, 0.22);
-  box-shadow: 0 0 24px rgba(232, 165, 58, 0.12), inset 0 1px 0 rgba(255, 229, 171, 0.08);
+  color: rgb(var(--abyss-accent));
+  background: rgba(var(--abyss-accent), 0.1);
+  border-color: rgba(var(--abyss-accent), 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .mobile-nav-open {
@@ -196,7 +190,7 @@ body.mobile-nav-open .mobile-nav-backdrop {
   .mobile-drawer-nav {
     position: fixed;
     top: max(6px, env(safe-area-inset-top));
-    right: clamp(7px, 3.5vw, 14px);
+    left: clamp(7px, 3.5vw, 14px);
     bottom: max(14px, env(safe-area-inset-bottom));
     width: min(94vw, 248px);
     max-height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(14px, env(safe-area-inset-bottom)));
@@ -205,14 +199,10 @@ body.mobile-nav-open .mobile-nav-backdrop {
     align-items: stretch;
     justify-content: flex-start;
     gap: 12px;
-    background:
-      radial-gradient(circle at 16% 20%, rgba(123, 81, 255, 0.1), transparent 34%),
-      radial-gradient(circle at 92% 30%, rgba(65, 170, 255, 0.12), transparent 32%),
-      linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.018) 48%, rgba(255, 255, 255, 0.04)),
-      rgba(8, 9, 13, 0.78);
+    background: rgba(var(--abyss-glass-tint), 0.82);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
-    box-shadow: -26px 0 78px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-radius: var(--abyss-radius-dialog);
+    box-shadow: 26px 0 78px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(26px) saturate(128%);
     -webkit-backdrop-filter: blur(26px) saturate(128%);
     padding: 16px 14px 18px;
@@ -222,7 +212,7 @@ body.mobile-nav-open .mobile-nav-backdrop {
     visibility: hidden;
     pointer-events: none;
     contain: layout paint;
-    transform: translate3d(calc(100% + 18px), 0, 0) scale(0.985);
+    transform: translate3d(calc(-100% - 18px), 0, 0) scale(0.985);
     transition: opacity 240ms ease, visibility 240ms ease, transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 1850;
   }

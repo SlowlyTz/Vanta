@@ -22,7 +22,7 @@
 .settings-option:focus-visible,
 .settings-choice:focus-visible,
 .settings-logout-button:focus-visible {
-  outline: 2px solid rgba(99, 168, 255, 0.72);
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
   outline-offset: 3px;
 }
 
@@ -70,11 +70,9 @@ body.settings-modal-open {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025) 42%, rgba(255, 255, 255, 0.015)),
-    rgba(10, 10, 13, 0.68);
+  background: rgba(var(--abyss-glass-tint), 0.92);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
+  border-radius: var(--abyss-radius-dialog);
   box-shadow: 0 36px 96px rgba(0, 0, 0, 0.68);
   backdrop-filter: blur(30px) saturate(128%);
   -webkit-backdrop-filter: blur(30px) saturate(128%);
@@ -90,9 +88,7 @@ body.settings-modal-open {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.08), transparent 26%),
-    radial-gradient(circle at 86% 18%, rgba(99, 168, 255, 0.13), transparent 30%);
+  background: radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.08), transparent 26%);
   pointer-events: none;
 }
 
@@ -216,7 +212,7 @@ body.settings-modal-open {
   flex-direction: column;
   gap: 0;
   overflow: hidden;
-  border-radius: 13px;
+  border-radius: var(--abyss-radius);
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.105);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
@@ -284,7 +280,7 @@ body.settings-modal-open {
 }
 
 .settings-row-icon.settings-accent-icon {
-  color: hsl(210, 100%, 70%);
+  color: rgb(var(--abyss-accent));
 }
 
 .settings-choice.active .settings-check {
@@ -297,7 +293,7 @@ body.settings-modal-open {
 }
 
 .settings-panel-theme .settings-choice {
-  border-radius: 13px;
+  border-radius: var(--abyss-radius);
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.105);
 }
@@ -317,7 +313,7 @@ body.settings-modal-open {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  border-radius: 13px;
+  border-radius: var(--abyss-radius);
   color: var(--error-color);
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.105);
@@ -373,7 +369,7 @@ body.settings-modal-open {
   .settings-dialog {
     width: min(100%, 440px);
     max-height: calc(100vh - 92px);
-    border-radius: 16px;
+    border-radius: var(--abyss-radius-dialog);
   }
   .settings-dialog-header {
     padding: 14px 14px 10px;

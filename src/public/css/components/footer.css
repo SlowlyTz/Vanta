@@ -1,7 +1,7 @@
 .app-footer {
   --footer-line: rgba(255, 255, 255, 0.09);
   --footer-surface: rgba(255, 255, 255, 0.045);
-  --footer-highlight: hsl(253, 96%, 72%);
+  --footer-highlight: rgb(var(--abyss-accent));
   position: relative;
   isolation: isolate;
   margin-top: clamp(72px, 9vw, 144px);
@@ -32,7 +32,7 @@
   left: -120px;
   width: min(720px, 60vw);
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(119, 69, 255, 0.2) 0%, rgba(67, 37, 144, 0.08) 42%, transparent 72%);
+  background: radial-gradient(circle, rgba(var(--abyss-accent), 0.12) 0%, rgba(var(--abyss-accent), 0.04) 42%, transparent 72%);
 }
 
 .footer-atmosphere::after {
@@ -40,7 +40,7 @@
   bottom: -360px;
   width: min(660px, 55vw);
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(31, 141, 255, 0.14) 0%, rgba(20, 71, 133, 0.05) 46%, transparent 72%);
+  background: radial-gradient(circle, rgba(var(--abyss-accent), 0.08) 0%, rgba(var(--abyss-accent), 0.03) 46%, transparent 72%);
 }
 
 .footer-inner {
@@ -73,7 +73,7 @@
   display: block;
   width: 76px;
   height: auto;
-  filter: drop-shadow(0 10px 22px rgba(83, 65, 255, 0.2));
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.4));
 }
 
 .footer-brand-label {
@@ -208,7 +208,7 @@
   bottom: 0;
   left: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent 6%, rgba(144, 76, 255, 0.62) 32%, rgba(39, 153, 255, 0.5) 68%, transparent 94%);
+  background: linear-gradient(90deg, transparent 6%, rgba(var(--abyss-accent), 0.6) 50%, transparent 94%);
   opacity: 0.55;
 }
 

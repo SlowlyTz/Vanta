@@ -67,7 +67,7 @@
   justify-self: start;
   align-self: center;
   margin-top: clamp(12px, 2vh, 28px);
-  border-radius: 16px;
+  border-radius: var(--abyss-radius);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   background-color: #0c0c10;
@@ -130,19 +130,25 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 8px;
   color: var(--text-secondary);
   font-size: 1rem;
 }
 
 .metadata-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-}
-
-.metadata-item:not(:last-child)::after {
-  content: '•';
-  margin-left: var(--spacing-md);
+  gap: 5px;
+  background: rgba(var(--abyss-glass-tint), 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--abyss-radius);
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
 }
 
 .detail-genres {
@@ -153,9 +159,9 @@
 
 .genre-tag {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 4px 12px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--abyss-radius);
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
@@ -185,7 +191,7 @@
 
 /* From Uiverse.io by catraco */
 .heart-container {
-  --heart-color: rgb(189, 91, 255);
+  --heart-color: rgb(255, 92, 92);
   position: relative;
   width: 44px;
   height: 44px;
@@ -303,10 +309,8 @@
   position: relative;
   width: min(980px, 100%);
   padding: clamp(18px, 3vw, 28px);
-  border-radius: 22px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.025) 58%),
-    rgba(10, 10, 16, 0.96);
+  border-radius: var(--abyss-radius-dialog);
+  background: rgba(var(--abyss-glass-tint), 0.92);
   border: 1px solid rgba(255, 255, 255, 0.13);
   box-shadow:
     0 34px 92px rgba(0, 0, 0, 0.68),

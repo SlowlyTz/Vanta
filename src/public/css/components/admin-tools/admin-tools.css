@@ -12,7 +12,7 @@
   padding: 16px 20px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.105);
-  border-radius: 13px;
+  border-radius: var(--abyss-radius);
   color: var(--text-primary);
   cursor: pointer;
   font-size: inherit;

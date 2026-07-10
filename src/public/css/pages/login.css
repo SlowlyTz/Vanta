@@ -97,13 +97,13 @@
 .form-input:focus {
   outline: none;
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  border-color: rgba(var(--abyss-accent), 0.4);
+  box-shadow: 0 0 0 4px rgba(var(--abyss-accent), 0.08);
   transform: scale(1.01);
 }
 
 .btn-login {
-  background: var(--text-primary);
+  background: rgb(var(--abyss-accent));
   color: var(--bg-primary);
   padding: 14px;
   border-radius: var(--radius-md);
@@ -116,7 +116,7 @@
 .btn-login:hover {
   background: #ffffff;
   transform: scale(1.02);
-  box-shadow: 0 0 24px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 24px rgba(var(--abyss-accent), 0.2);
 }
 
 @media (max-width: 768px) {

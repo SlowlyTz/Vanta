@@ -16,7 +16,7 @@
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  padding-top: 92px;
+  padding-top: 64px;
   overflow-x: hidden;
   overflow-x: clip;
 }
@@ -97,7 +97,7 @@
 
 @media (max-width: 768px) {
   .app-main {
-    padding-top: 112px;
+    padding-top: 60px;
   }
   .page-container {
     padding-top: 0;

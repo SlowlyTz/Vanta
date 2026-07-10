@@ -1,20 +1,30 @@
 :root {
+  /* Abyss tokens — source of truth for the theme */
+  --abyss-accent: 245, 245, 247;
+  --abyss-glass-tint: 42, 42, 42;
+  --abyss-indicator: 55, 55, 55;
+  --abyss-radius: 12px;
+  --abyss-radius-dialog: 24px;
+  --abyss-radius-drawer: 32px;
+  --abyss-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --abyss-ease-snappy: cubic-bezier(0.4, 0.0, 0.2, 1);
+
   /* HSL Color System - Apple TV Style Dark Cinematic */
   --bg-primary: hsl(240, 10%, 4%);
   --bg-secondary: hsl(240, 10%, 8%);
   --bg-tertiary: hsl(240, 10%, 12%);
-  --bg-glass: hsla(240, 10%, 6%, 0.75);
-  
+  --bg-glass: rgba(var(--abyss-glass-tint), 0.69);
+
   --text-primary: hsl(0, 0%, 96%);
   --text-secondary: hsl(240, 5%, 65%);
   --text-muted: hsl(240, 5%, 45%);
-  
-  --accent-color: hsl(0, 0%, 96%); 
-  --accent-glow: hsla(0, 0%, 100%, 0.15);
+
+  --accent-color: rgb(var(--abyss-accent));
+  --accent-glow: rgba(var(--abyss-accent), 0.15);
   --error-color: hsl(0, 85%, 60%);
   --error-bg: hsla(0, 85%, 60%, 0.1);
   --success-color: hsl(140, 70%, 50%);
-  
+
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -23,25 +33,26 @@
   --spacing-xl: 2.5rem;
   --spacing-xxl: 4rem;
 
-  /* Typography */
+  /* Typography — Outfit stays (no license/deployment risk vs. Abyss's Google Sans import);
+     used consistently across app and player, tuned toward Abyss's calm, low-tracking feel. */
   --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  
+
   /* Borders and Blurs */
   --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 30px;
+  --radius-md: var(--abyss-radius);
+  --radius-lg: var(--abyss-radius-dialog);
+  --radius-xl: var(--abyss-radius-drawer);
   --blur-glass: 30px;
-  
+
   /* Shadows */
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
-  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
-  
+  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.1);
+
   /* Transitions */
-  --transition-fast: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --transition-smooth: 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  --transition-fast: 0.2s var(--abyss-ease-snappy);
+  --transition-smooth: 0.35s var(--abyss-ease);
   --transition-spring: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -77,19 +88,23 @@ body {
 }
 
 /* Custom premium scrollbar */
+* {
+  scrollbar-color: rgba(var(--abyss-accent), 0.5) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
-  border-radius: 4px;
+  background: rgba(var(--abyss-accent), 0.5);
+  border-radius: var(--abyss-radius);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(var(--abyss-accent), 0.8);
 }
 
 a {

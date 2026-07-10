@@ -1,37 +1,81 @@
 import { createElement } from '../../utils/dom.js';
-import { loadDropdowns } from './dropdownMenus.js';
-import { createSettingsDialog } from './settingsDialog.js';
-import { createDesktopNav } from './desktopNav.js';
 import { createMobileDrawer } from './mobileDrawer.js';
+import { TOP_TABS, TOP_ACTIONS } from './navLinks.js';
+import { createTopbarIcon } from './icons.js';
+import { isNavLinkActive } from './activeNav.js';
 
-const isDesktopNav = () => window.matchMedia('(min-width: 769px)').matches;
+function createTopTabs({ onNavigate }) {
+  const links = new Map();
+  const element = createElement('div', {
+    className: 'navbar-top-tabs',
+    role: 'navigation',
+    'aria-label': 'Schnellnavigation'
+  });
+
+  TOP_TABS.forEach(tab => {
+    const anchor = createElement('a', {
+      className: 'navbar-top-tab',
+      href: tab.href,
+      onClick: () => onNavigate?.()
+    }, tab.label);
+    links.set(tab.key, anchor);
+    element.appendChild(anchor);
+  });
+
+  const updateActive = (currentHash) => {
+    TOP_TABS.forEach(tab => {
+      const anchor = links.get(tab.key);
+      const active = isNavLinkActive(tab, currentHash);
+      anchor.classList.toggle('active', active);
+      if (active) anchor.setAttribute('aria-current', 'page');
+      else anchor.removeAttribute('aria-current');
+    });
+  };
+
+  return { element, updateActive };
+}
+
+function createTopActions() {
+  const buttons = TOP_ACTIONS.map(action => {
+    const attrs = {
+      className: `navbar-action-button navbar-action-${action.key}`,
+      'aria-label': action.label
+    };
+
+    if (action.href) {
+      return createElement('a', { ...attrs, href: action.href }, createTopbarIcon(action.key));
+    }
+
+    return createElement('button', {
+      ...attrs,
+      type: 'button'
+    }, createTopbarIcon(action.key));
+  });
+
+  const element = createElement('div', { className: 'navbar-top-actions' }, buttons);
+  return { element };
+}
 
 export function Navbar({ onLogout, onChangePassword }) {
   let mobileNavOpen = false;
 
-  const desktopNav = createDesktopNav({ onNavigate: () => setMobileNavOpen(false) });
   const mobileDrawer = createMobileDrawer({
     onLogout,
     onChangePassword,
     onNavigate: () => setMobileNavOpen(false)
   });
-  const settingsDialog = createSettingsDialog({ onLogout, onChangePassword });
+
+  const topTabs = createTopTabs({ onNavigate: () => setMobileNavOpen(false) });
+  const topActions = createTopActions();
 
   const mobileMenuButton = createElement('button', {
     className: 'mobile-menu-button',
     type: 'button',
     'aria-label': 'Navigation öffnen',
     'aria-expanded': 'false',
-    'aria-controls': 'mobile-navigation settings-dialog',
+    'aria-controls': 'mobile-navigation',
     onClick: (event) => {
       event.stopPropagation();
-      if (isDesktopNav()) {
-        setMobileNavOpen(false);
-        settingsDialog.setSettingsOpen(!settingsDialog.isOpen());
-        return;
-      }
-
-      settingsDialog.setSettingsOpen(false);
       setMobileNavOpen(!mobileNavOpen);
     }
   },
@@ -40,31 +84,22 @@ export function Navbar({ onLogout, onChangePassword }) {
     createElement('span', { className: 'mobile-menu-line', 'aria-hidden': 'true' })
   );
 
-  const navbarActions = createElement('div', { className: 'navbar-actions' },
-    desktopNav.navbarSearchForm,
-    mobileMenuButton
-  );
-
-  const element = createElement('nav', { className: 'navbar' },
-    desktopNav.brandLink,
-    desktopNav.navList,
-    navbarActions
+  const element = createElement('nav', { className: 'navbar navbar-spotlight' },
+    createElement('div', { className: 'navbar-left' }, mobileMenuButton),
+    createElement('div', { className: 'navbar-center' }, topTabs.element),
+    createElement('div', { className: 'navbar-right' }, topActions.element)
   );
 
   document.body.appendChild(mobileDrawer.mobileNavBackdrop);
   document.body.appendChild(mobileDrawer.mobileNavList);
-  document.body.appendChild(settingsDialog.element);
 
   const update = ({ currentHash, user, scrolled }) => {
     element.classList.toggle('scrolled', !!scrolled);
-    if (!settingsDialog.isOpen() && !mobileNavOpen) {
-      mobileMenuButton.setAttribute('aria-label', isDesktopNav() ? 'Einstellungen öffnen' : 'Navigation öffnen');
-    }
+
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
-    settingsDialog.settingsUsername.textContent = displayName;
     mobileDrawer.mobileSettings.mobileSettingsUsername.textContent = displayName;
 
-    desktopNav.updateActive(currentHash);
+    topTabs.updateActive(currentHash);
     mobileDrawer.updateActive(currentHash);
   };
 
@@ -90,16 +125,9 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   window.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (settingsDialog.isOpen()) settingsDialog.setSettingsOpen(false);
     if (mobileNavOpen) setMobileNavOpen(false);
   });
 
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) setMobileNavOpen(false);
-  });
-
-  loadDropdowns(element);
-  settingsDialog.loadAdminVisibility?.();
   mobileDrawer.mobileSettings.loadAdminVisibility?.();
 
   return { element, update };

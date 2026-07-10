@@ -42,6 +42,33 @@ describe('ProfilePage', () => {
     expect(MediaApi.getProfileFavorites).not.toHaveBeenCalled();
   });
 
+  it('loads favorites initially when initialTab is favorites', async () => {
+    MediaApi.getProfileFavorites.mockResolvedValue({
+      items: [makeItem('1')], page: 1, limit: 24, totalItems: 1, totalPages: 1
+    });
+
+    const container = ProfilePage({ initialTab: 'favorites' });
+    await flush();
+
+    expect(MediaApi.getProfileFavorites).toHaveBeenCalledWith(1, 24);
+    expect(MediaApi.getProfileContinueWatching).not.toHaveBeenCalled();
+    expect(MediaApi.getProfileHistory).not.toHaveBeenCalled();
+
+    const activeButton = container.querySelector('.profile-tab-button.active');
+    expect(activeButton.textContent).toBe('Favoriten');
+  });
+
+  it('falls back to Weiter ansehen when initialTab is unknown', async () => {
+    MediaApi.getProfileContinueWatching.mockResolvedValue({
+      items: [], page: 1, limit: 24, totalItems: 0, totalPages: 1
+    });
+
+    ProfilePage({ initialTab: 'not-a-real-tab' });
+    await flush();
+
+    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 24);
+  });
+
   it('shows only the tab-content loader while header and tabs stay visible', async () => {
     let resolveContinue;
     MediaApi.getProfileContinueWatching.mockReturnValue(new Promise(resolve => { resolveContinue = resolve; }));

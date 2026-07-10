@@ -81,6 +81,41 @@ export function createNavIcon(key) {
   return createIcon('mobile-nav-icon', icons[key] || icons.home);
 }
 
+export function createTopbarIcon(key) {
+  const icons = {
+    group: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+    `,
+    cast: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 7V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4"></path>
+        <path d="M2 17a5 5 0 0 1 5 5"></path>
+        <path d="M2 13a9 9 0 0 1 9 9"></path>
+        <path d="M2 21h.01"></path>
+      </svg>
+    `,
+    search: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m20 20-4-4"></path>
+      </svg>
+    `,
+    profile: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21a8 8 0 0 0-16 0"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+    `
+  };
+
+  return createIcon('navbar-action-icon', icons[key] || icons.search);
+}
+
 export function createUserIcon() {
   return createIcon('settings-profile-icon', `
     <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
