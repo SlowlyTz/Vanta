@@ -8,6 +8,12 @@ import { HeroCarousel } from '../components/heroCarousel.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 
 const HOME_ROUTE = '#/home';
+const HOME_SECTION_GROUPS = [
+  { key: 'now-playing', title: 'Jetzt im Kino', loadingLabel: 'Aktuelle Kinofilme werden geladen' },
+  { key: 'featured', title: 'Empfohlen', loadingLabel: 'Empfehlungen werden geladen' },
+  { key: 'publishers', title: 'Publisher', loadingLabel: 'Publisher werden geladen' },
+  { key: 'genres', title: 'Kategorien', loadingLabel: 'Kategorien werden geladen' }
+];
 
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -19,6 +25,9 @@ function shuffleArray(arr) {
 
 export default function HomePage() {
   const container = createElement('div', { className: 'page-container' });
+  let sectionsContainer = null;
+  let currentData = null;
+  const sectionGroupResults = new Map();
 
   const returnMarker = consumeReturnMarker(HOME_ROUTE);
   let pendingRestore = returnMarker ? { scrollY: returnMarker.scrollY, itemId: returnMarker.itemId } : null;
@@ -64,10 +73,17 @@ export default function HomePage() {
     container.appendChild(createSectionLoader({ label: 'Startseite wird geladen' }));
 
     try {
-      const raw = await MediaApi.getHomeSections();
-      const data = { ...raw, hero: shuffleArray([...(raw.hero || [])]).slice(0, 8) };
-      renderHome(data);
+      const raw = await MediaApi.getHome();
+      const data = {
+        hero: shuffleArray([...(raw.movies || []), ...(raw.series || [])]).slice(0, 8),
+        resume: raw.resume || [],
+        sections: []
+      };
+
+      currentData = data;
+      renderHome(data, { showSectionLoaders: true });
       saveRouteState(HOME_ROUTE, { data });
+      loadSectionGroups();
     } catch (error) {
       if (error.isAuthError) return;
 
@@ -102,10 +118,102 @@ export default function HomePage() {
     return hasHero || hasResume || hasSections;
   };
 
-  const renderHome = (data) => {
+  const renderGroupLoader = (group) => (
+    createElement('div', {
+      className: 'media-carousel-container media-section-loading',
+      dataset: { homeSectionGroup: group.key }
+    },
+      createElement('div', { className: 'carousel-header' },
+        createElement('h3', { className: 'carousel-title-text' }, group.title)
+      ),
+      createSectionLoader({ label: group.loadingLabel, compact: true })
+    )
+  );
+
+  const renderEmptySection = (section) => (
+    createElement('div', { className: 'media-carousel-container media-section-empty' },
+      createElement('div', { className: 'carousel-header' },
+        createElement('h3', { className: 'carousel-title-text' }, section.title)
+      ),
+      createElement('p', { className: 'section-empty-message' }, section.emptyMessage)
+    )
+  );
+
+  const renderSection = (section) => {
+    if (!section.items || section.items.length === 0) {
+      return section.emptyMessage ? renderEmptySection(section) : null;
+    }
+
+    if (section.type === 'featured') {
+      return FeaturedMediaCarousel({
+        title: section.title,
+        items: section.items,
+        cardSize: section.cardSize || 'large'
+      });
+    }
+
+    return MediaCarousel({
+      title: section.title,
+      items: section.items,
+      landscape: false,
+      href: section.href || null
+    });
+  };
+
+  const saveCurrentData = () => {
+    if (!currentData) return;
+    const sections = HOME_SECTION_GROUPS.flatMap(group => sectionGroupResults.get(group.key) || []);
+    currentData = { ...currentData, sections };
+    saveRouteState(HOME_ROUTE, { data: currentData });
+  };
+
+  const replaceSectionGroup = (group, sections) => {
+    const slot = sectionsContainer?.querySelector(`[data-home-section-group="${group.key}"]`);
+    if (!slot) return;
+
+    const renderedSections = sections
+      .map(section => renderSection(section))
+      .filter(Boolean);
+
+    if (renderedSections.length === 0) {
+      slot.remove();
+      return;
+    }
+
+    slot.replaceWith(...renderedSections);
+  };
+
+  const loadSectionGroups = () => {
+    HOME_SECTION_GROUPS.forEach(group => {
+      MediaApi.getHomeSectionGroup(group.key)
+        .then(result => {
+          const sections = result.sections || [];
+          sectionGroupResults.set(group.key, sections);
+          replaceSectionGroup(group, sections);
+          saveCurrentData();
+        })
+        .catch(error => {
+          if (error.isAuthError) return;
+
+          console.error(`[Home Section Group Error:${group.key}]`, error);
+          const fallbackSections = [{
+            type: 'standard',
+            title: group.title,
+            items: [],
+            emptyMessage: 'Dieser Bereich konnte gerade nicht geladen werden.'
+          }];
+
+          sectionGroupResults.set(group.key, fallbackSections);
+          replaceSectionGroup(group, fallbackSections);
+          saveCurrentData();
+        });
+    });
+  };
+
+  const renderHome = (data, { showSectionLoaders = false } = {}) => {
     container.innerHTML = '';
 
-    if (!hasContent(data)) {
+    if (!showSectionLoaders && !hasContent(data)) {
       container.appendChild(
         createElement('div', { className: 'content-section' },
           createElement('div', { className: 'search-empty-state' },
@@ -124,7 +232,7 @@ export default function HomePage() {
       if (heroEl) container.appendChild(heroEl);
     }
 
-    const sectionsContainer = createElement('div', { className: 'content-section' });
+    sectionsContainer = createElement('div', { className: 'content-section' });
 
     if (data.resume && data.resume.length > 0) {
       const resumeCarousel = MediaCarousel({
@@ -137,24 +245,14 @@ export default function HomePage() {
 
     if (data.sections) {
       data.sections.forEach(section => {
-        if (!section.items || section.items.length === 0) return;
+        const sectionEl = renderSection(section);
+        if (sectionEl) sectionsContainer.appendChild(sectionEl);
+      });
+    }
 
-        if (section.type === 'featured') {
-          const carousel = FeaturedMediaCarousel({
-            title: section.title,
-            items: section.items,
-            cardSize: section.cardSize || 'large'
-          });
-          if (carousel) sectionsContainer.appendChild(carousel);
-        } else {
-          const carousel = MediaCarousel({
-            title: section.title,
-            items: section.items,
-            landscape: false,
-            href: section.href || null
-          });
-          if (carousel) sectionsContainer.appendChild(carousel);
-        }
+    if (showSectionLoaders) {
+      HOME_SECTION_GROUPS.forEach(group => {
+        sectionsContainer.appendChild(renderGroupLoader(group));
       });
     }
 
