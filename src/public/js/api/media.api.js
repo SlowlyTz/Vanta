@@ -13,6 +13,10 @@ export const MediaApi = {
     return request('/api/media/home-sections');
   },
 
+  getHomeSectionGroup(group) {
+    return request(`/api/media/home-sections/${encodeURIComponent(group)}`);
+  },
+
   search(query) {
     return request(`/api/media/search?q=${encodeURIComponent(query)}`);
   },

@@ -3,6 +3,7 @@ import db from '../db/database.js';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+const TMDB_REQUEST_TIMEOUT_MS = Number(process.env.TMDB_REQUEST_TIMEOUT_MS || 2500);
 
 const cacheMovie = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, release_date, media_type, score, vote_count, cached_at) VALUES (?, 'movie', ?, ?, ?, ?, ?, 'movie', ?, ?, ?)`);
 const cacheTv = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, first_air_date, media_type, score, vote_count, cached_at) VALUES (?, 'tv', ?, ?, ?, ?, ?, 'tv', ?, ?, ?)`);
@@ -44,9 +45,23 @@ const buildTmdbUrl = (path, params = {}) => {
 };
 
 const fetchTmdbJson = async (path, params = {}) => {
-  const response = await fetch(buildTmdbUrl(path, params), {
-    headers: isV4Token ? { Authorization: `Bearer ${env.TMDB_API_KEY}` } : {}
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TMDB_REQUEST_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(buildTmdbUrl(path, params), {
+      headers: isV4Token ? { Authorization: `Bearer ${env.TMDB_API_KEY}` } : {},
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`TMDB request timed out after ${TMDB_REQUEST_TIMEOUT_MS}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const data = await response.json().catch(() => ({}));
 
@@ -186,6 +201,30 @@ class TmdbService {
     ];
 
     results.sort((a, b) => b.popularity - a.popularity);
+
+    setMemoryCache(cacheKey, results);
+    return results.slice(0, limit);
+  }
+
+  static async getNowPlaying(limit = 60, region = 'DE') {
+    const cacheKey = `tmdb_now_playing_${region}`;
+    const cached = getMemoryCache(cacheKey, 60 * 60 * 1000);
+    if (cached) return cached.slice(0, limit);
+
+    const data = await fetchTmdbJson('/movie/now_playing', {
+      language: 'de-DE',
+      region,
+      page: 1
+    });
+
+    const results = (data.results || []).map(item => ({
+      id: item.id,
+      title: item.title,
+      originalTitle: item.original_title,
+      mediaType: 'movie',
+      releaseDate: item.release_date,
+      popularity: item.popularity || 0
+    }));
 
     setMemoryCache(cacheKey, results);
     return results.slice(0, limit);

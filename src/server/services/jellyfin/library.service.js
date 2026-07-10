@@ -115,6 +115,10 @@ export class LibraryService {
 
   static async getLibraryByPublisher(userId, token, type, publisherId, genre = null, page = 1, limit = 50) {
     const studioNames = await this.getPublisherStudioNames(userId, token, publisherId);
+    return this.getLibraryByStudioNames(userId, token, type, studioNames, genre, page, limit);
+  }
+
+  static async getLibraryByStudioNames(userId, token, type, studioNames, genre = null, page = 1, limit = 50) {
     if (studioNames.length === 0) {
       return { items: [], totalRecordCount: 0 };
     }

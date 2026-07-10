@@ -58,6 +58,22 @@ router.get('/home-sections', requireAuth, asyncHandler(async (req, res) => {
   }
 }));
 
+router.get('/home-sections/:group', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+  const { group } = req.params;
+
+  try {
+    const sections = await HomeSectionsService.getHomeSectionGroup(userId, accessToken, group);
+    return res.json({ sections });
+  } catch (error) {
+    console.error(`[Media Home Section Group Error:${group}]`, error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
+    return res.status(error.status || 500).json({ error: 'Failed to fetch home section group' });
+  }
+}));
+
 router.get('/search', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
   const { q } = req.query;

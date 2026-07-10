@@ -5,11 +5,14 @@ import { getFeaturedPublishersFromStudios } from '../../public/js/constants/feat
 const SECTION_LIMIT = 20;
 const HERO_LIMIT = 8;
 const INDEX_LIMIT = 2000;
+const INDEX_CACHE_TTL = 30 * 1000;
 
 const FEATURED_SECTIONS = [
   { type: 'featured', title: 'Top 5 Filme & Serien der letzten 20 Tage', source: 'trending', cardSize: 'large' },
   { type: 'featured', title: 'Aktuell beliebt', source: 'popular', cardSize: 'large' }
 ];
+
+const indexCache = new Map();
 
 function normalizeGenre(name) {
   return name
@@ -51,28 +54,41 @@ function sortByNewest(items) {
 }
 
 export class HomeSectionsService {
+  static async getHomeCore(userId, accessToken) {
+    const [resume, movies, series] = await Promise.all([
+      LibraryService.getResumeItems(userId, accessToken),
+      LibraryService.getMovies(userId, accessToken),
+      LibraryService.getSeries(userId, accessToken)
+    ]);
+
+    return {
+      hero: shuffleArray([...movies, ...series]).slice(0, HERO_LIMIT),
+      resume
+    };
+  }
+
   static async getHomeSections(userId, accessToken) {
     try {
-      const [resume, movies, series] = await Promise.all([
-        LibraryService.getResumeItems(userId, accessToken),
-        LibraryService.getMovies(userId, accessToken),
-        LibraryService.getSeries(userId, accessToken)
+      const [core, allIndexItems] = await Promise.all([
+        this.getHomeCore(userId, accessToken),
+        this._buildIndex(userId, accessToken)
       ]);
 
-      const allIndexItems = await this._buildIndex(userId, accessToken);
-
-      const [standardSections, publisherSections, featuredSections] = await Promise.all([
+      const [standardSections, publisherSections, featuredSections, nowPlayingSection] = await Promise.all([
         this._buildGenreSections(userId, accessToken, allIndexItems),
         this._buildPublisherSections(userId, accessToken),
-        this._buildFeaturedSections(allIndexItems)
+        this._buildFeaturedSections(allIndexItems),
+        this._buildNowPlayingSection(allIndexItems)
       ]);
 
-      const hero = shuffleArray([...movies, ...series]).slice(0, HERO_LIMIT);
-      const sections = this._arrangeSections(standardSections, publisherSections, featuredSections);
+      const sections = [
+        nowPlayingSection,
+        ...this._arrangeSections(standardSections, publisherSections, featuredSections)
+      ];
 
       return {
-        hero,
-        resume,
+        hero: core.hero,
+        resume: core.resume,
         sections
       };
     } catch (error) {
@@ -81,8 +97,47 @@ export class HomeSectionsService {
     }
   }
 
+  static async getHomeSectionGroup(userId, accessToken, group) {
+    if (group === 'now-playing') {
+      const items = await this._buildIndex(userId, accessToken);
+      return [await this._buildNowPlayingSection(items)];
+    }
+
+    if (group === 'genres') {
+      const items = await this._buildIndex(userId, accessToken);
+      return this._buildGenreSections(userId, accessToken, items);
+    }
+
+    if (group === 'featured') {
+      const items = await this._buildIndex(userId, accessToken);
+      return this._buildFeaturedSections(items);
+    }
+
+    if (group === 'publishers') {
+      return this._buildPublisherSections(userId, accessToken);
+    }
+
+    const error = new Error(`Unknown home section group: ${group}`);
+    error.status = 400;
+    throw error;
+  }
+
   static async _buildIndex(userId, accessToken) {
-    return LibraryService.getAllMoviesAndSeries(userId, accessToken, INDEX_LIMIT);
+    const cacheKey = String(userId);
+    const cached = indexCache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < INDEX_CACHE_TTL) {
+      return cached.promise;
+    }
+
+    const promise = LibraryService.getAllMoviesAndSeries(userId, accessToken, INDEX_LIMIT)
+      .catch(error => {
+        indexCache.delete(cacheKey);
+        throw error;
+      });
+
+    indexCache.set(cacheKey, { timestamp: Date.now(), promise });
+    return promise;
   }
 
   static _buildItemIndexes(items) {
@@ -172,33 +227,57 @@ export class HomeSectionsService {
       const studios = await LibraryService.getStudios(userId, accessToken);
       const featured = getFeaturedPublishersFromStudios(studios);
 
-      const sections = [];
-
-      for (const publisher of featured) {
-        const result = await LibraryService.getLibraryByPublisher(
+      const sections = await Promise.all(featured.map(async publisher => {
+        const result = await LibraryService.getLibraryByStudioNames(
           userId,
           accessToken,
           'Movie,Series',
-          publisher.id,
+          publisher.studioNames,
           null,
           1,
           SECTION_LIMIT
         );
 
-        if (!result.items || result.items.length === 0) continue;
+        if (!result.items || result.items.length === 0) return null;
 
-        sections.push({
+        return {
           type: 'standard',
           title: publisher.label,
           href: `#/publisher-group/${encodeURIComponent(publisher.id)}`,
           items: sortByNewest(result.items)
-        });
-      }
+        };
+      }));
 
-      return shuffleArray(sections);
+      return shuffleArray(sections.filter(Boolean));
     } catch (error) {
       console.error('[HomeSectionsService] Failed to build publisher sections:', error.message);
       return [];
+    }
+  }
+
+  static async _buildNowPlayingSection(items) {
+    const indexes = this._buildItemIndexes(items);
+
+    try {
+      const tmdbItems = await TmdbService.getNowPlaying(60, process.env.TMDB_REGION || 'DE');
+      const matchedItems = this._matchTmdbItems(tmdbItems, indexes, SECTION_LIMIT);
+
+      return {
+        type: 'standard',
+        title: 'Jetzt im Kino',
+        href: '#/movies',
+        items: matchedItems,
+        emptyMessage: 'Keine aktuellen Kinofilme in deiner Mediathek.'
+      };
+    } catch (error) {
+      console.error('[HomeSectionsService] Failed to build now playing section:', error.message);
+      return {
+        type: 'standard',
+        title: 'Jetzt im Kino',
+        href: '#/movies',
+        items: [],
+        emptyMessage: 'Aktuelle Kinofilme konnten gerade nicht geprüft werden.'
+      };
     }
   }
 
