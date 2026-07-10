@@ -1,13 +1,33 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { FEATURED_STUDIOS, matchFeaturedStudio } from '../constants/featuredStudios.js';
 
 export default function PublishersPage() {
   const container = createElement('div', { className: 'page-container content-section' });
 
+  const titleEl = createElement('h1', {
+    style: {
+      fontSize: '2rem',
+      fontWeight: '700',
+      marginBottom: 'var(--spacing-xl)',
+      background: 'linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%)',
+      '-webkit-background-clip': 'text',
+      '-webkit-text-fill-color': 'transparent'
+    }
+  }, 'Publisher');
+
+  const bodySlot = createElement('div', { className: 'publishers-body' });
+
+  container.appendChild(titleEl);
+  container.appendChild(bodySlot);
+
   const loadStudios = async () => {
-    appStore.setLoading(true);
+    bodySlot.innerHTML = '';
+    setSectionBusy(bodySlot, true);
+    bodySlot.appendChild(createSectionLoader({ label: 'Publisher werden geladen' }));
+
     try {
       const studios = await MediaApi.getStudios();
       renderStudios(studios);
@@ -18,13 +38,13 @@ export default function PublishersPage() {
       appStore.showToast('Fehler beim Laden der Publisher', 'error');
       renderError(error.message);
     } finally {
-      appStore.setLoading(false);
+      setSectionBusy(bodySlot, false);
     }
   };
 
   const renderError = (msg) => {
-    container.innerHTML = '';
-    container.appendChild(
+    bodySlot.innerHTML = '';
+    bodySlot.appendChild(
       createElement('div', { className: 'search-empty-state' },
         createElement('h3', {}, 'Fehler beim Laden'),
         createElement('p', {}, msg || 'Die Publisher konnten nicht geladen werden.'),
@@ -37,27 +57,13 @@ export default function PublishersPage() {
   };
 
   const renderStudios = (studios) => {
-    container.innerHTML = '';
-
-    const titleEl = createElement('h1', {
-      style: {
-        fontSize: '2rem',
-        fontWeight: '700',
-        marginBottom: 'var(--spacing-xl)',
-        background: 'linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%)',
-        '-webkit-background-clip': 'text',
-        '-webkit-text-fill-color': 'transparent'
-      }
-    }, 'Publisher');
+    bodySlot.innerHTML = '';
 
     if (!studios || studios.length === 0) {
-      container.appendChild(
-        createElement('div', {},
-          titleEl,
-          createElement('div', { className: 'search-empty-state' },
-            createElement('h3', {}, 'Keine Publisher gefunden'),
-            createElement('p', {}, 'Es sind aktuell keine Publisher verfügbar.')
-          )
+      bodySlot.appendChild(
+        createElement('div', { className: 'search-empty-state' },
+          createElement('h3', {}, 'Keine Publisher gefunden'),
+          createElement('p', {}, 'Es sind aktuell keine Publisher verfügbar.')
         )
       );
       return;
@@ -167,12 +173,7 @@ export default function PublishersPage() {
       renderFilteredOthers('');
     }
 
-    container.appendChild(
-      createElement('div', {},
-        titleEl,
-        wrapper
-      )
-    );
+    bodySlot.appendChild(wrapper);
   };
 
   loadStudios();

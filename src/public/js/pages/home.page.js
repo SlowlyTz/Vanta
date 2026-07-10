@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { MediaCarousel } from '../components/mediaCarousel.js';
 import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
@@ -58,7 +59,10 @@ export default function HomePage() {
       }
     }
 
-    appStore.setLoading(true);
+    container.innerHTML = '';
+    setSectionBusy(container, true);
+    container.appendChild(createSectionLoader({ label: 'Startseite wird geladen' }));
+
     try {
       const raw = await MediaApi.getHomeSections();
       const data = { ...raw, hero: shuffleArray([...(raw.hero || [])]).slice(0, 8) };
@@ -71,7 +75,7 @@ export default function HomePage() {
       appStore.showToast('Fehler beim Laden der Startseite', 'error');
       renderError(error.message);
     } finally {
-      appStore.setLoading(false);
+      setSectionBusy(container, false);
     }
   };
 

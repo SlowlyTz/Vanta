@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 
 const LIMIT_OPTIONS = [20, 50, 100];
@@ -35,6 +36,13 @@ export default function LibraryPage(params) {
       ? (isMixedType ? `${genre}` : `${labelType}: ${genre}`)
       : (isMixedType ? 'Alle Titel' : `Alle ${labelType}`);
 
+  const titleEl = createElement('h1', { className: 'library-title' }, pageTitle);
+  const bodySlot = createElement('div', { className: 'library-body' });
+
+  container.appendChild(
+    createElement('div', { className: 'library-content' }, titleEl, bodySlot)
+  );
+
   const restoreScrollPosition = ({ scrollY, itemId }) => {
     const applyScroll = () => {
       const cardEl = itemId
@@ -59,7 +67,10 @@ export default function LibraryPage(params) {
     const restoreTarget = pendingRestore;
     pendingRestore = null;
 
-    appStore.setLoading(true);
+    bodySlot.innerHTML = '';
+    setSectionBusy(bodySlot, true);
+    bodySlot.appendChild(createSectionLoader({ label: 'Inhalte werden geladen' }));
+
     try {
       const result = await MediaApi.getLibrary(type, genre, studio, page, limit);
       currentPage = page;
@@ -81,13 +92,13 @@ export default function LibraryPage(params) {
       appStore.showToast('Fehler beim Laden der Inhalte', 'error');
       renderError(error.message);
     } finally {
-      appStore.setLoading(false);
+      setSectionBusy(bodySlot, false);
     }
   };
 
   const renderError = (msg) => {
-    container.innerHTML = '';
-    container.appendChild(
+    bodySlot.innerHTML = '';
+    bodySlot.appendChild(
       createElement('div', { className: 'search-empty-state' },
         createElement('h3', {}, 'Fehler beim Laden'),
         createElement('p', {}, msg || 'Die Inhalte konnten nicht geladen werden.'),
@@ -100,20 +111,13 @@ export default function LibraryPage(params) {
   };
 
   const renderLibrary = (items) => {
-    container.innerHTML = '';
-
-    const titleEl = createElement('h1', {
-      className: 'library-title'
-    }, pageTitle);
+    bodySlot.innerHTML = '';
 
     if (items.length === 0) {
-      container.appendChild(
-        createElement('div', { className: 'library-content' },
-          titleEl,
-          createElement('div', { className: 'search-empty-state' },
-            createElement('h3', {}, 'Keine Inhalte gefunden'),
-            createElement('p', {}, `In dieser Kategorie sind aktuell keine Einträge vorhanden.`)
-          )
+      bodySlot.appendChild(
+        createElement('div', { className: 'search-empty-state' },
+          createElement('h3', {}, 'Keine Inhalte gefunden'),
+          createElement('p', {}, `In dieser Kategorie sind aktuell keine Einträge vorhanden.`)
         )
       );
       return;
@@ -127,13 +131,8 @@ export default function LibraryPage(params) {
 
     const pagination = createPagination();
 
-    container.appendChild(
-      createElement('div', { className: 'library-content' },
-        titleEl,
-        grid,
-        pagination
-      )
-    );
+    bodySlot.appendChild(grid);
+    bodySlot.appendChild(pagination);
   };
 
   const createPagination = () => {

@@ -43,6 +43,21 @@ describe('DetailPage favorite button', () => {
     document.body.innerHTML = '';
   });
 
+  it('shows a local section loader while fetching and removes it once rendered', async () => {
+    let resolveItem;
+    MediaApi.getItem.mockReturnValue(new Promise(resolve => { resolveItem = resolve; }));
+
+    const container = DetailPage({ id: 'item-1' });
+    expect(container.querySelector('.section-loader')).toBeTruthy();
+    expect(container.getAttribute('aria-busy')).toBe('true');
+
+    resolveItem(createBaseItem());
+    await flush();
+
+    expect(container.querySelector('.section-loader')).toBeNull();
+    expect(container.hasAttribute('aria-busy')).toBe(false);
+  });
+
   it('renders the heart-container favorite control for a Movie with the initial state from UserData.IsFavorite', async () => {
     MediaApi.getItem.mockResolvedValue(createBaseItem({ UserData: { IsFavorite: true } }));
 

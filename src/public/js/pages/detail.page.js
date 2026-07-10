@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCarousel } from '../components/mediaCarousel.js';
 import { CastCarousel } from '../components/castCarousel.js';
@@ -185,7 +186,10 @@ export default function DetailPage({ id }) {
   const returnToHash = getReturnToHash();
 
   const render = async () => {
-    appStore.setLoading(true);
+    container.innerHTML = '';
+    setSectionBusy(container, true);
+    container.appendChild(createSectionLoader({ label: 'Details werden geladen' }));
+
     try {
       const { item, similar, seasons, normalized } = await loadDetailData(id);
       const youtubeTrailerId = getYouTubeTrailerId(item);
@@ -263,7 +267,7 @@ export default function DetailPage({ id }) {
         )
       );
     } finally {
-      appStore.setLoading(false);
+      setSectionBusy(container, false);
     }
   };
 

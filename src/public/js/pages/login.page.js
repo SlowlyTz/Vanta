@@ -3,6 +3,9 @@ import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 
+const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
+const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
+
 export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -14,7 +17,10 @@ export default function LoginPage() {
       return;
     }
 
-    appStore.setLoading(true);
+    loginButton.disabled = true;
+    loginButton.setAttribute('aria-busy', 'true');
+    loginButton.textContent = LOGIN_BUTTON_BUSY_TEXT;
+
     try {
       await authStore.login(username, password);
       appStore.showToast('Erfolgreich angemeldet!', 'success');
@@ -29,8 +35,9 @@ export default function LoginPage() {
     } catch (error) {
       console.error(error);
       appStore.showToast(error.message || 'Login fehlgeschlagen. Bitte überprüfe deine Daten.', 'error');
-    } finally {
-      appStore.setLoading(false);
+      loginButton.disabled = false;
+      loginButton.removeAttribute('aria-busy');
+      loginButton.textContent = LOGIN_BUTTON_IDLE_TEXT;
     }
   };
 
@@ -51,6 +58,11 @@ export default function LoginPage() {
     autocomplete: 'current-password'
   });
 
+  const loginButton = createElement('button', {
+    type: 'submit',
+    className: 'btn-login'
+  }, LOGIN_BUTTON_IDLE_TEXT);
+
   const loginForm = createElement('form', {
     className: 'login-form',
     onSubmit: handleLogin
@@ -63,10 +75,7 @@ export default function LoginPage() {
       createElement('label', { for: 'login-password' }, 'Passwort'),
       passwordInput
     ),
-    createElement('button', {
-      type: 'submit',
-      className: 'btn-login'
-    }, 'Anmelden')
+    loginButton
   );
 
   const container = createElement('div', { className: 'login-page' },

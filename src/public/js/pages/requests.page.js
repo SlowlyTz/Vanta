@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
 const STATUS_MAP = {
@@ -87,8 +88,7 @@ export default function RequestsPage(params = {}) {
   const newRequestSearchWrapper = createElement('div', { className: 'search-input-wrapper' }, newRequestSearchInput);
   const newRequestResultsGrid = createElement('div', { className: 'requests-grid' });
   const newRequestLoading = createElement('div', { className: 'requests-search-loading hidden' },
-    createElement('div', { className: 'loader-spinner' }),
-    createElement('span', {}, 'Suche läuft...')
+    createSectionLoader({ label: 'Suche läuft...', compact: true })
   );
   const newRequestStatus = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
@@ -199,6 +199,7 @@ export default function RequestsPage(params = {}) {
     if (!query) {
       clearRequestSearchState();
       newRequestLoading.classList.add('hidden');
+      setSectionBusy(newRequestResultsGrid, false);
       newRequestStatus.innerHTML = '';
       newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
       newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
@@ -208,6 +209,7 @@ export default function RequestsPage(params = {}) {
 
     newRequestStatus.classList.add('hidden');
     newRequestLoading.classList.remove('hidden');
+    setSectionBusy(newRequestResultsGrid, true);
 
     try {
       const data = await RequestsApi.search(query);
@@ -240,6 +242,7 @@ export default function RequestsPage(params = {}) {
     } finally {
       if (runId === searchRunId) {
         newRequestLoading.classList.add('hidden');
+        setSectionBusy(newRequestResultsGrid, false);
       }
     }
   };
@@ -308,13 +311,19 @@ export default function RequestsPage(params = {}) {
   };
 
   const loadMyRequests = async () => {
+    myRequestsStatus.classList.add('hidden');
+    myRequestsList.innerHTML = '';
+    setSectionBusy(myRequestsList, true);
+    myRequestsList.appendChild(createSectionLoader({ label: 'Anfragen werden geladen', compact: true }));
+
     try {
       myRequests = await RequestsApi.getMyRequests();
       if (!Array.isArray(myRequests)) myRequests = [];
-      renderMyRequests();
     } catch (error) {
       console.warn('[My Requests Load Error]', error);
       myRequests = [];
+    } finally {
+      setSectionBusy(myRequestsList, false);
       renderMyRequests();
     }
   };

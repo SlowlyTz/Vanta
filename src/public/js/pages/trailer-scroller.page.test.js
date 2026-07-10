@@ -21,7 +21,6 @@ vi.mock('../api/media.api.js', () => ({
 
 vi.mock('../store/app.store.js', () => ({
   appStore: {
-    setLoading: vi.fn(),
     showToast: vi.fn()
   }
 }));

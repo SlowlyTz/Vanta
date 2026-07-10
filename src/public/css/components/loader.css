@@ -1,36 +1,48 @@
-/* Global Loader Overlay */
-.loader-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(4, 4, 6, 0.85);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+/* Local section loader: mounts inline inside the section it belongs to, never fixed/global */
+.section-loader {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  z-index: 9999;
-  opacity: 1;
-  transition: opacity var(--transition-smooth);
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  min-height: 240px;
+  padding: var(--spacing-lg);
+  box-sizing: border-box;
+  color: var(--text-secondary);
+  grid-column: 1 / -1;
 }
 
-.loader-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
+.section-loader-compact {
+  min-height: 96px;
+  padding: var(--spacing-md);
 }
 
-.loader-spinner {
-  width: 50px;
-  height: 50px;
+.section-loader-spinner {
+  width: 34px;
+  height: 34px;
   border: 3px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
   border-top-color: var(--text-primary);
-  animation: spin 1s linear infinite;
+  animation: section-loader-spin 1s linear infinite;
 }
 
-@keyframes spin {
+.section-loader-compact .section-loader-spinner {
+  width: 22px;
+  height: 22px;
+  border-width: 2px;
+}
+
+.section-loader-label {
+  font-size: 0.9rem;
+}
+
+@keyframes section-loader-spin {
   to { transform: rotate(360deg); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .section-loader-spinner {
+    animation: none;
+  }
+}

@@ -2,6 +2,7 @@ import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { createPersonPlaceholderSvg, getPersonImageUrl } from '../../utils/image.js';
 import { MediaCarousel } from '../../components/mediaCarousel.js';
+import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
 
 export function createActorModal({ currentItemId }) {
   const modalOverlay = createElement('div', { className: 'actor-modal-overlay' });
@@ -181,9 +182,7 @@ export function createActorModal({ currentItemId }) {
     const modalClose = createModalCloseButton();
     const modalContent = createElement('div', { className: 'actor-modal' },
       modalClose,
-      createElement('div', { className: 'search-empty-state', style: { minHeight: '300px' } },
-        createElement('div', { className: 'loader-spinner' })
-      )
+      createSectionLoader({ label: 'Schauspieler wird geladen' })
     );
 
     modalOverlay.appendChild(modalContent);
@@ -191,6 +190,7 @@ export function createActorModal({ currentItemId }) {
       document.body.appendChild(modalOverlay);
     }
     modalOverlay.classList.add('active');
+    setSectionBusy(modalContent, true);
     lockModalScroll();
 
     window.addEventListener('keydown', handleEscapeKey);
@@ -243,6 +243,8 @@ export function createActorModal({ currentItemId }) {
           createElement('p', {}, err.message || 'Die Person ist auf dem Server nicht näher dokumentiert.')
         )
       );
+    } finally {
+      setSectionBusy(modalContent, false);
     }
   };
 

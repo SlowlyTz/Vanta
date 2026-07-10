@@ -42,6 +42,46 @@ describe('ProfilePage', () => {
     expect(MediaApi.getProfileFavorites).not.toHaveBeenCalled();
   });
 
+  it('shows only the tab-content loader while header and tabs stay visible', async () => {
+    let resolveContinue;
+    MediaApi.getProfileContinueWatching.mockReturnValue(new Promise(resolve => { resolveContinue = resolve; }));
+
+    const container = ProfilePage();
+
+    expect(container.querySelector('.profile-title').textContent).toBe('Profil');
+    expect(container.querySelectorAll('.profile-tab-button')).toHaveLength(3);
+    expect(container.querySelector('.profile-tab-content .section-loader')).toBeTruthy();
+    expect(container.querySelector('.profile-tab-content').getAttribute('aria-busy')).toBe('true');
+
+    resolveContinue({ items: [makeItem('1')], page: 1, limit: 24, totalItems: 1, totalPages: 1 });
+    await flush();
+
+    expect(container.querySelector('.profile-tab-content .section-loader')).toBeNull();
+    expect(container.querySelector('.profile-tab-content').hasAttribute('aria-busy')).toBe(false);
+  });
+
+  it('keeps existing cards visible and shows a button-level loading state when loading more', async () => {
+    MediaApi.getProfileContinueWatching
+      .mockResolvedValueOnce({ items: [makeItem('1'), makeItem('2')], page: 1, limit: 2, totalItems: 4, totalPages: 2 });
+
+    const container = ProfilePage();
+    await flush();
+
+    let resolveNext;
+    MediaApi.getProfileContinueWatching.mockReturnValue(new Promise(resolve => { resolveNext = resolve; }));
+    const loadMoreBtn = container.querySelector('.profile-load-more');
+    loadMoreBtn.click();
+
+    expect(container.querySelectorAll('.media-card')).toHaveLength(2);
+    expect(container.querySelector('.profile-load-more').disabled).toBe(true);
+    expect(container.querySelector('.profile-load-more').getAttribute('aria-busy')).toBe('true');
+
+    resolveNext({ items: [makeItem('3'), makeItem('4')], page: 2, limit: 2, totalItems: 4, totalPages: 2 });
+    await flush();
+
+    expect(container.querySelectorAll('.media-card')).toHaveLength(4);
+  });
+
   it('loads the History tab only when clicked', async () => {
     MediaApi.getProfileContinueWatching.mockResolvedValue({ items: [], page: 1, limit: 24, totalItems: 0, totalPages: 0 });
     MediaApi.getProfileHistory.mockResolvedValue({ items: [makeItem('2')], page: 1, limit: 24, totalItems: 1, totalPages: 1 });

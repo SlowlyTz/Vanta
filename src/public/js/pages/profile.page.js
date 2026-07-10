@@ -3,6 +3,7 @@ import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 
 const LIMIT = 24;
 
@@ -79,11 +80,7 @@ export default function ProfilePage() {
     contentEl.innerHTML = '';
 
     if (tabState.loading && tabState.items.length === 0) {
-      contentEl.appendChild(
-        createElement('div', { className: 'search-empty-state' },
-          createElement('p', {}, 'Lädt...')
-        )
-      );
+      contentEl.appendChild(createSectionLoader({ label: `${tab.label} wird geladen` }));
       return;
     }
 
@@ -122,6 +119,7 @@ export default function ProfilePage() {
         className: 'btn-secondary profile-load-more',
         type: 'button',
         disabled: tabState.loading,
+        'aria-busy': tabState.loading ? 'true' : null,
         onClick: () => loadTab(state.activeTab, tabState.page + 1, { append: true })
       }, tabState.loading ? 'Lädt...' : 'Mehr laden');
 
@@ -135,9 +133,9 @@ export default function ProfilePage() {
     const tabState = state.pages[tabKey];
     tabState.loading = true;
     tabState.error = null;
+    setSectionBusy(contentEl, true);
     renderTabContent();
 
-    appStore.setLoading(true);
     try {
       const tab = TABS.find(t => t.key === tabKey);
       const result = await tab.load(page);
@@ -153,8 +151,8 @@ export default function ProfilePage() {
       appStore.showToast('Fehler beim Laden des Profils', 'error');
     } finally {
       tabState.loading = false;
-      appStore.setLoading(false);
       if (tabKey === state.activeTab) {
+        setSectionBusy(contentEl, false);
         renderTabContent();
       }
     }

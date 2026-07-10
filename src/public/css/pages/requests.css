@@ -1320,23 +1320,11 @@
 }
 
 .requests-search-loading {
-  min-height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
   margin-top: 18px;
-  color: var(--text-secondary);
-  font-size: 0.95rem;
 }
 
 .requests-search-loading.hidden {
   display: none;
-}
-
-.requests-search-loading .loader-spinner {
-  width: 30px;
-  height: 30px;
 }
 
 @media (max-width: 767px) {

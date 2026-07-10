@@ -1,6 +1,7 @@
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { MediaCard } from '../../components/mediaCard.js';
+import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
 
 export function buildSeasonsSection(item, seasons) {
   const episodeGrid = createElement('div', { className: 'episodes-grid' });
@@ -12,11 +13,8 @@ export function buildSeasonsSection(item, seasons) {
     tabButton.classList.add('active');
 
     episodeGrid.innerHTML = '';
-
-    const gridLoader = createElement('div', { className: 'search-empty-state', style: { gridColumn: '1/-1', minHeight: '150px' } },
-      createElement('div', { className: 'loader-spinner', style: { width: '30px', height: '30px' } })
-    );
-    episodeGrid.appendChild(gridLoader);
+    setSectionBusy(episodeGrid, true);
+    episodeGrid.appendChild(createSectionLoader({ label: 'Episoden werden geladen', compact: true }));
 
     try {
       const episodes = await MediaApi.getEpisodes(item.Id, seasonId);
@@ -42,6 +40,8 @@ export function buildSeasonsSection(item, seasons) {
           createElement('p', {}, 'Fehler beim Laden der Episoden.')
         )
       );
+    } finally {
+      setSectionBusy(episodeGrid, false);
     }
   };
 
