@@ -3,6 +3,7 @@ import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { createIntroModal } from './trailer-scroller/intro.js';
 import { YouTubePlayerManager } from './trailer-scroller/player.js';
+import { createScrollerViewportLock } from './trailer-scroller/viewport.js';
 import {
   createInitialState,
   mergeTrailerPage,
@@ -19,10 +20,67 @@ const RETURN_TRAILER_KEY = 'vantaTrailerScrollerReturnTrailerId';
 const RETURN_TRAILER_DATA_KEY = 'vantaTrailerScrollerReturnTrailerData';
 let scrollerInstanceCounter = 0;
 
+const SCROLLER_ICONS = {
+  previous: '<path d="m18 15-6-6-6 6"></path>',
+  next: '<path d="m6 9 6 6 6-6"></path>',
+  favorite: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"></path>',
+  details: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path>',
+  share: '<circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.6-4.5"></path><path d="m8.2 13.2 7.6 4.5"></path>',
+  film: '<rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="m10 9 5 3-5 3Z"></path>',
+  retry: '<path d="M20 6v5h-5"></path><path d="M4 18v-5h5"></path><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8"></path><path d="M5.5 15A7 7 0 0 0 17.8 17.8L20 16"></path>'
+};
+
+function createScrollerIcon(name, className = 'trailer-ui-icon') {
+  const icon = createElement('span', { className, 'aria-hidden': 'true' });
+  icon.innerHTML = `
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      ${SCROLLER_ICONS[name] || ''}
+    </svg>
+  `;
+  return icon;
+}
+
 export default function TrailerScrollerPage() {
   const instanceId = ++scrollerInstanceCounter;
   const container = createElement('div', { className: 'trailer-scroller-page' });
+  const viewportLock = createScrollerViewportLock();
+
+  const previousButton = createElement('button', {
+    className: 'trailer-nav-button trailer-nav-previous',
+    type: 'button',
+    disabled: true,
+    title: 'Vorheriger Trailer (Pfeil hoch)',
+    'aria-label': 'Vorheriger Trailer',
+    onClick: () => navigateRelative(-1)
+  }, createScrollerIcon('previous'));
+
+  const nextButton = createElement('button', {
+    className: 'trailer-nav-button trailer-nav-next',
+    type: 'button',
+    disabled: true,
+    title: 'Nächster Trailer (Pfeil runter)',
+    'aria-label': 'Nächster Trailer',
+    onClick: () => navigateRelative(1)
+  }, createScrollerIcon('next'));
+
+  const header = createElement('header', { className: 'trailer-scroller-header' },
+    createElement('div', { className: 'trailer-scroller-heading' },
+      createElement('span', { className: 'trailer-scroller-eyebrow' }, 'VANTA Auswahl'),
+      createElement('h1', { className: 'trailer-scroller-title' }, 'Trailer entdecken')
+    ),
+    createElement('p', { className: 'trailer-scroller-hint' },
+      createElement('span', { className: 'trailer-hint-key', 'aria-hidden': 'true' }, '↑'),
+      createElement('span', { className: 'trailer-hint-key', 'aria-hidden': 'true' }, '↓'),
+      createElement('span', {}, 'scrollen · YouTube steuert die Wiedergabe')
+    ),
+    createElement('div', { className: 'trailer-scroller-navigation' },
+      previousButton,
+      nextButton
+    )
+  );
+
   const track = createElement('div', { className: 'trailer-scroller-track' });
+  container.appendChild(header);
   container.appendChild(track);
 
   const playerManager = new YouTubePlayerManager();
@@ -30,25 +88,12 @@ export default function TrailerScrollerPage() {
   let cleanupFns = [];
   let syncPlayersTimeout = null;
   let syncPlayersRunId = 0;
+  let navigationUnlockTimeout = null;
   let isDestroyed = false;
-  let scrollLockY = 0;
   let shareModal = null;
   let suppressIntersectionUpdates = true;
+  let lastLoadFailed = false;
   const expandedOverviewIds = new Set();
-
-  function lockViewport() {
-    scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
-    document.documentElement.classList.add('trailer-scroller-active');
-    document.body.classList.add('trailer-scroller-active');
-    document.body.style.top = `-${scrollLockY}px`;
-  }
-
-  function unlockViewport() {
-    document.documentElement.classList.remove('trailer-scroller-active');
-    document.body.classList.remove('trailer-scroller-active');
-    document.body.style.top = '';
-    window.scrollTo(0, scrollLockY);
-  }
 
   function onCleanup(fn) {
     cleanupFns.push(fn);
@@ -64,8 +109,12 @@ export default function TrailerScrollerPage() {
       clearTimeout(syncPlayersTimeout);
       syncPlayersTimeout = null;
     }
+    if (navigationUnlockTimeout) {
+      clearTimeout(navigationUnlockTimeout);
+      navigationUnlockTimeout = null;
+    }
     syncPlayersRunId += 1;
-    unlockViewport();
+    viewportLock.unlock();
   }
 
   function getContainerId(index) {
@@ -164,6 +213,77 @@ export default function TrailerScrollerPage() {
     return state.trailers.findIndex((trailer) => trailer.id === trailerId);
   }
 
+  function updateChrome() {
+    const total = state.trailers.length;
+
+    previousButton.disabled = total === 0 || state.activeIndex <= 0;
+    nextButton.disabled = total === 0 || (state.activeIndex >= total - 1 && !state.hasMore) || state.loading;
+    container.classList.toggle('is-feed-loading', state.loading);
+  }
+
+  function showLoadingState() {
+    if (state.trailers.length > 0) return;
+
+    track.replaceChildren(
+      createElement('div', {
+        className: 'trailer-feed-state trailer-loading-state',
+        role: 'status',
+        'aria-live': 'polite'
+      },
+        createElement('div', { className: 'trailer-loading-preview', 'aria-hidden': 'true' },
+          createElement('div', { className: 'trailer-loading-video' }),
+          createElement('div', { className: 'trailer-loading-lines' },
+            createElement('span', {}),
+            createElement('span', {}),
+            createElement('span', {})
+          )
+        ),
+        createElement('p', { className: 'trailer-feed-state-title' }, 'Trailer werden vorbereitet'),
+        createElement('p', { className: 'trailer-feed-state-text' }, 'VANTA lädt deine YouTube-Trailer und bereitet den ersten Player vor.')
+      )
+    );
+  }
+
+  function showErrorState(error) {
+    track.replaceChildren(
+      createElement('div', {
+        className: 'trailer-feed-state trailer-error-state',
+        role: 'alert'
+      },
+        createScrollerIcon('retry', 'trailer-feed-state-icon'),
+        createElement('p', { className: 'trailer-feed-state-title' }, 'Trailer konnten nicht geladen werden'),
+        createElement('p', { className: 'trailer-feed-state-text' },
+          error?.message || 'Bitte prüfe die Verbindung zu deiner Mediathek und versuche es erneut.'
+        ),
+        createElement('button', {
+          className: 'trailer-feed-state-action',
+          type: 'button',
+          onClick: () => loadTrailers(false, { activateFirst: true })
+        }, createScrollerIcon('retry'), 'Erneut versuchen')
+      )
+    );
+  }
+
+  async function navigateRelative(direction) {
+    if (state.trailers.length === 0 || state.loading) return;
+
+    const targetIndex = state.activeIndex + direction;
+    if (targetIndex < 0) return;
+
+    if (targetIndex >= state.trailers.length) {
+      if (!state.hasMore) return;
+
+      const previousLength = state.trailers.length;
+      await loadTrailers(false, { activateFirst: false });
+      if (state.trailers.length > previousLength) {
+        setActive(previousLength);
+      }
+      return;
+    }
+
+    setActive(targetIndex);
+  }
+
   function closeShareModal() {
     if (!shareModal) return;
     shareModal.remove();
@@ -251,21 +371,25 @@ export default function TrailerScrollerPage() {
 
   function createSlide(trailer, index) {
     const containerId = getContainerId(index);
+    const titleId = `trailer-title-${instanceId}-${index}`;
 
     const playerTarget = createElement('div', {
       className: 'trailer-youtube-player',
       id: containerId
     });
-    const videoContainer = createElement('div', { className: 'trailer-video-container' },
-      playerTarget
-    );
 
     const thumbnail = createElement('img', {
       className: 'trailer-video-thumb',
       src: `https://img.youtube.com/vi/${trailer.youtubeVideoId}/hqdefault.jpg`,
-      alt: trailer.title,
+      alt: '',
+      'aria-hidden': 'true',
       loading: 'lazy'
     });
+
+    const videoContainer = createElement('div', { className: 'trailer-video-container' },
+      playerTarget,
+      thumbnail
+    );
 
     const likeButton = createElement('button', {
       className: `trailer-action trailer-action-like${trailer.isFavorite ? ' is-favorite' : ''}`,
@@ -274,7 +398,8 @@ export default function TrailerScrollerPage() {
       'aria-pressed': String(Boolean(trailer.isFavorite)),
       onClick: () => toggleFavorite(trailer.itemId)
     },
-      createElement('span', { className: 'trailer-action-icon' }, '♥')
+      createScrollerIcon('favorite', 'trailer-action-icon'),
+      createElement('span', { className: 'trailer-action-label' }, trailer.isFavorite ? 'Gespeichert' : 'Favorit')
     );
 
     const detailButton = createElement('button', {
@@ -285,7 +410,8 @@ export default function TrailerScrollerPage() {
         navigateToDetail(trailer);
       }
     },
-      createElement('span', { className: 'trailer-action-icon' }, 'ⓘ')
+      createScrollerIcon('details', 'trailer-action-icon'),
+      createElement('span', { className: 'trailer-action-label' }, 'Details')
     );
 
     const shareButton = createElement('button', {
@@ -294,26 +420,29 @@ export default function TrailerScrollerPage() {
       'aria-label': 'Trailer teilen',
       onClick: () => openShareModal(trailer)
     },
-      createElement('span', { className: 'trailer-action-icon' }, '↗')
+      createScrollerIcon('share', 'trailer-action-icon'),
+      createElement('span', { className: 'trailer-action-label' }, 'Teilen')
     );
 
     const actions = createElement('div', { className: 'trailer-actions' }, likeButton, detailButton, shareButton);
 
     const meta = createElement('div', { className: 'trailer-info-meta' });
     if (trailer.year) {
-      meta.appendChild(createElement('span', {}, String(trailer.year)));
+      meta.appendChild(createElement('span', { className: 'trailer-meta-chip' }, String(trailer.year)));
     }
     if (trailer.typeLabel || trailer.itemType) {
-      meta.appendChild(createElement('span', {}, trailer.typeLabel || (trailer.itemType === 'Movie' ? 'Film' : 'Serie')));
+      meta.appendChild(createElement('span', { className: 'trailer-meta-chip trailer-meta-type' },
+        trailer.typeLabel || (trailer.itemType === 'Movie' ? 'Film' : 'Serie')
+      ));
     }
     if (trailer.fsk) {
-      meta.appendChild(createElement('span', { className: 'trailer-info-fsk' }, trailer.fsk));
+      meta.appendChild(createElement('span', { className: 'trailer-meta-chip trailer-info-fsk' }, trailer.fsk));
     }
     if (trailer.rating) {
-      meta.appendChild(createElement('span', { className: 'trailer-info-rating' }, `⭐ ${Number(trailer.rating).toFixed(1)}`));
+      meta.appendChild(createElement('span', { className: 'trailer-meta-chip trailer-info-rating' }, `★ ${Number(trailer.rating).toFixed(1)}`));
     }
 
-    const title = createElement('h2', { className: 'trailer-info-title' }, trailer.title);
+    const title = createElement('h2', { className: 'trailer-info-title', id: titleId }, trailer.title);
     const isExpanded = expandedOverviewIds.has(trailer.itemId);
     const hasLongOverview = (trailer.overview || '').length > 180;
     const overview = createElement('p', {
@@ -327,8 +456,29 @@ export default function TrailerScrollerPage() {
       }, isExpanded ? 'Weniger zeigen' : 'Mehr lesen')
       : null;
 
-    const info = createElement('div', { className: 'trailer-info' }, meta, title, overview, overviewToggle);
-    const card = createElement('div', { className: 'trailer-card' }, videoContainer, thumbnail, actions, info);
+    const playerStatus = createElement('div', {
+      className: 'trailer-player-status',
+      role: 'status',
+      'aria-live': 'polite'
+    },
+      createElement('span', { className: 'trailer-player-status-dot', 'aria-hidden': 'true' }),
+      createElement('span', { className: 'trailer-player-status-text' }, 'YouTube-Player wird vorbereitet'),
+      createElement('button', {
+        className: 'trailer-player-skip',
+        type: 'button',
+        onClick: () => navigateRelative(1)
+      }, 'Nächster Trailer')
+    );
+
+    const info = createElement('div', { className: 'trailer-info' },
+      playerStatus,
+      meta,
+      title,
+      overview,
+      overviewToggle,
+      actions
+    );
+    const card = createElement('article', { className: 'trailer-card', 'aria-labelledby': titleId }, videoContainer, info);
 
     const slide = createElement('div', {
       className: 'trailer-slide',
@@ -340,8 +490,12 @@ export default function TrailerScrollerPage() {
   }
 
   function renderSlides() {
-    const existingSlides = Array.from(track.children);
+    const existingSlides = Array.from(track.querySelectorAll('.trailer-slide'));
     const existingCount = existingSlides.length;
+
+    if (existingCount === 0 && state.trailers.length > 0) {
+      track.replaceChildren();
+    }
 
     state.trailers.slice(existingCount).forEach((trailer, offset) => {
       const index = existingCount + offset;
@@ -360,6 +514,8 @@ export default function TrailerScrollerPage() {
         likeButton.classList.toggle('is-favorite', trailer.isFavorite);
         likeButton.setAttribute('aria-label', trailer.isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen');
         likeButton.setAttribute('aria-pressed', String(Boolean(trailer.isFavorite)));
+        const likeLabel = likeButton.querySelector('.trailer-action-label');
+        if (likeLabel) likeLabel.textContent = trailer.isFavorite ? 'Gespeichert' : 'Favorit';
       }
 
       const overview = slide.querySelector('.trailer-info-overview');
@@ -371,6 +527,8 @@ export default function TrailerScrollerPage() {
         overviewToggle.textContent = expandedOverviewIds.has(trailer.itemId) ? 'Weniger zeigen' : 'Mehr lesen';
       }
     });
+
+    updateChrome();
   }
 
   function updateActiveClasses() {
@@ -380,6 +538,24 @@ export default function TrailerScrollerPage() {
       slide.classList.toggle('is-prev', index === state.activeIndex - 1);
       slide.classList.toggle('is-next', index === state.activeIndex + 1);
     });
+  }
+
+  function setPlayerStatus(slide, status) {
+    if (!slide) return;
+
+    slide.classList.toggle('is-player-ready', status === 'ready');
+    slide.classList.toggle('has-player-error', status === 'error');
+
+    const statusText = slide.querySelector('.trailer-player-status-text');
+    if (!statusText) return;
+
+    if (status === 'ready') {
+      statusText.textContent = '';
+    } else if (status === 'error') {
+      statusText.textContent = 'Dieser YouTube-Trailer ist nicht verfügbar';
+    } else {
+      statusText.textContent = 'YouTube-Player wird vorbereitet';
+    }
   }
 
   async function syncPlayers() {
@@ -405,34 +581,40 @@ export default function TrailerScrollerPage() {
         const slide = track.children[i];
         if (!slide) continue;
 
-        const thumb = slide.querySelector('.trailer-video-thumb');
+        if (slide.classList.contains('has-player-error')) continue;
 
         const isActive = i === state.activeIndex;
         const existingPlayer = playerManager.players.get(containerId);
 
         if (existingPlayer) {
-          if (thumb) thumb.style.opacity = '0';
+          setPlayerStatus(slide, 'ready');
           if (isActive) playerManager.play(containerId);
           else playerManager.pause(containerId);
           continue;
         }
 
-        await playerManager.createPlayer(containerId, trailer.youtubeVideoId, {
-          autoplay: isActive ? 1 : 0,
-          muted: false,
-          onReady: () => {
-            if (isDestroyed || runId !== syncPlayersRunId) return;
-            if (thumb) thumb.style.opacity = '0';
-            if (isActive) {
-              playerManager.play(containerId);
-            } else {
-              playerManager.pause(containerId);
+        setPlayerStatus(slide, 'loading');
+        try {
+          await playerManager.createPlayer(containerId, trailer.youtubeVideoId, {
+            autoplay: isActive ? 1 : 0,
+            muted: false,
+            onReady: () => {
+              if (isDestroyed || runId !== syncPlayersRunId) return;
+              setPlayerStatus(slide, 'ready');
+              if (isActive) {
+                playerManager.play(containerId);
+              } else {
+                playerManager.pause(containerId);
+              }
+            },
+            onError: () => {
+              setPlayerStatus(slide, 'error');
             }
-          },
-          onError: () => {
-            if (thumb) thumb.style.opacity = '1';
-          }
-        });
+          });
+        } catch (error) {
+          console.error('[Trailer YouTube Player Error]', error);
+          setPlayerStatus(slide, 'error');
+        }
 
         if (isDestroyed || runId !== syncPlayersRunId) return;
       }
@@ -447,8 +629,7 @@ export default function TrailerScrollerPage() {
         if (i >= start && i < end) continue;
         const slide = track.children[i];
         if (!slide) continue;
-        const thumb = slide.querySelector('.trailer-video-thumb');
-        if (thumb) thumb.style.opacity = '1';
+        setPlayerStatus(slide, 'loading');
       }
     }, 100);
   }
@@ -464,19 +645,33 @@ export default function TrailerScrollerPage() {
     });
   }
 
-  function setActive(index, { behavior = 'smooth' } = {}) {
+  function scrollToSlide(slide, behavior) {
+    if (!slide) return;
+
+    suppressIntersectionUpdates = true;
+    if (navigationUnlockTimeout) clearTimeout(navigationUnlockTimeout);
+
+    if (typeof track.scrollTo === 'function') {
+      track.scrollTo({ top: slide.offsetTop, behavior });
+    } else {
+      track.scrollTop = slide.offsetTop;
+    }
+
+    navigationUnlockTimeout = setTimeout(() => {
+      suppressIntersectionUpdates = false;
+      navigationUnlockTimeout = null;
+    }, behavior === 'smooth' ? 450 : 0);
+  }
+
+  function setActive(index, { behavior = 'smooth', scroll = true } = {}) {
     state = setActiveIndex(state, index);
     updateActiveClasses();
+    updateChrome();
     const activeTrailer = state.trailers[state.activeIndex];
     updateTrailerHash(activeTrailer);
 
     const slide = track.children[state.activeIndex];
-    if (slide) {
-      track.scrollTo({
-        top: slide.offsetTop,
-        behavior
-      });
-    }
+    if (scroll) scrollToSlide(slide, behavior);
 
     syncPlayers();
 
@@ -489,6 +684,9 @@ export default function TrailerScrollerPage() {
     if (state.loading || (!state.hasMore && !refresh)) return;
 
     state = { ...state, loading: true };
+    lastLoadFailed = false;
+    updateChrome();
+    showLoadingState();
     appStore.setLoading(true);
 
     try {
@@ -499,6 +697,7 @@ export default function TrailerScrollerPage() {
         targetTrailerId
       );
       state = mergeTrailerPage(state, page);
+      lastLoadFailed = false;
       renderSlides();
 
       if (refresh) {
@@ -513,12 +712,19 @@ export default function TrailerScrollerPage() {
         setActive(0);
       }
     } catch (error) {
-      if (error.isAuthError) return;
+      if (error.isAuthError) {
+        state = { ...state, loading: false };
+        lastLoadFailed = true;
+        return;
+      }
       console.error('[Trailer Scroller Load Error]', error);
       appStore.showToast('Fehler beim Laden der Trailer', 'error');
       state = { ...state, loading: false };
+      lastLoadFailed = true;
+      if (state.trailers.length === 0) showErrorState(error);
     } finally {
       appStore.setLoading(false);
+      updateChrome();
     }
   }
 
@@ -567,13 +773,21 @@ export default function TrailerScrollerPage() {
   }
 
   function showEmptyState() {
-    track.innerHTML = '';
-    track.appendChild(
-      createElement('div', { className: 'trailer-empty-state' },
-        createElement('h3', {}, 'Keine Trailer gefunden'),
-        createElement('p', {}, 'In deiner Jellyfin-Bibliothek sind aktuell keine YouTube-Trailer vorhanden.')
+    track.replaceChildren(
+      createElement('div', { className: 'trailer-feed-state trailer-empty-state' },
+        createScrollerIcon('film', 'trailer-feed-state-icon'),
+        createElement('p', { className: 'trailer-feed-state-title' }, 'Keine Trailer gefunden'),
+        createElement('p', { className: 'trailer-feed-state-text' },
+          'In deiner Jellyfin-Bibliothek sind aktuell keine abspielbaren YouTube-Trailer hinterlegt.'
+        ),
+        createElement('button', {
+          className: 'trailer-feed-state-action',
+          type: 'button',
+          onClick: () => loadTrailers(true, { activateFirst: true })
+        }, createScrollerIcon('retry'), 'Bibliothek erneut prüfen')
       )
     );
+    updateChrome();
   }
 
   function handleKeydown(event) {
@@ -590,11 +804,11 @@ export default function TrailerScrollerPage() {
       case 'ArrowDown':
       case ' ':
         event.preventDefault();
-        setActive(state.activeIndex + 1);
+        navigateRelative(1);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        setActive(state.activeIndex - 1);
+        navigateRelative(-1);
         break;
       case 'l':
       case 'L':
@@ -633,7 +847,7 @@ export default function TrailerScrollerPage() {
     if (bestEntry && bestEntry.isIntersecting && bestEntry.intersectionRatio >= 0.5) {
       const index = parseInt(bestEntry.target.dataset.index, 10);
       if (!Number.isNaN(index) && index !== state.activeIndex) {
-        setActive(index);
+        setActive(index, { scroll: false });
       }
     }
   }, { threshold: [0.5, 0.75, 1] });
@@ -652,7 +866,6 @@ export default function TrailerScrollerPage() {
   window.addEventListener('pageshow', resyncActivePlayer);
   window.addEventListener('focus', resyncActivePlayer);
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  lockViewport();
 
   function handleVisibilityChange() {
     if (!document.hidden) resyncActivePlayer();
@@ -680,6 +893,7 @@ export default function TrailerScrollerPage() {
   async function init() {
     await waitForConnected();
     if (isDestroyed) return;
+    viewportLock.lock();
 
     const initialTrailerId = getInitialTrailerId();
     const initialTrailerData = initialTrailerId ? consumeReturnTrailerData(initialTrailerId) : null;
@@ -709,7 +923,7 @@ export default function TrailerScrollerPage() {
     }
 
     if (state.trailers.length === 0) {
-      showEmptyState();
+      if (!lastLoadFailed) showEmptyState();
       return;
     }
 
@@ -737,6 +951,8 @@ export default function TrailerScrollerPage() {
     }
   }
 
+  showLoadingState();
+  updateChrome();
   init();
 
   return container;
