@@ -83,32 +83,6 @@
   display: none !important;
 }
 
-.admin-view-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.admin-view-back-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 0.92rem;
-  font-weight: 640;
-  transition: background var(--transition-fast);
-}
-
-.admin-view-back-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
 /* Admin option hidden state */
 .admin-option-container[hidden] {
   display: none;
