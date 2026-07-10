@@ -21,17 +21,21 @@ describe('HomePage restore', () => {
   });
 
   it('fetches fresh data and caches it when there is no return marker', async () => {
-    MediaApi.getHomeSections.mockResolvedValue({
-      hero: [makeItem('h1')],
-      resume: [],
-      sections: []
-    });
+    let resolveSections;
+    MediaApi.getHomeSections.mockReturnValue(new Promise(resolve => { resolveSections = resolve; }));
 
-    HomePage();
+    const container = HomePage();
+    expect(container.querySelector('.section-loader')).toBeTruthy();
+    expect(container.getAttribute('aria-busy')).toBe('true');
+
+    resolveSections({ hero: [makeItem('h1')], resume: [], sections: [] });
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
     expect(MediaApi.getHomeSections).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.section-loader')).toBeNull();
+    expect(container.hasAttribute('aria-busy')).toBe(false);
     const cached = JSON.parse(sessionStorage.getItem('vantaRouteState:#/home'));
     expect(cached.data.hero).toEqual([makeItem('h1')]);
   });

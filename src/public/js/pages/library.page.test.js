@@ -31,6 +31,47 @@ describe('LibraryPage restore', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 
+  it('keeps the title visible while a local loader covers only the body, then clears it on success', async () => {
+    let resolveLibrary;
+    MediaApi.getLibrary.mockReturnValue(new Promise(resolve => { resolveLibrary = resolve; }));
+
+    const container = LibraryPage({ type: 'Movie' });
+    expect(container.querySelector('.library-title').textContent).toBe('Alle Filme');
+    expect(container.querySelector('.section-loader')).toBeTruthy();
+
+    resolveLibrary({ items: [makeItem('1')], totalItems: 1, totalPages: 1 });
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(container.querySelector('.library-title').textContent).toBe('Alle Filme');
+    expect(container.querySelector('.section-loader')).toBeNull();
+    expect(container.querySelectorAll('.media-card')).toHaveLength(1);
+  });
+
+  it('keeps existing cards and pagination on screen while paginating, showing only the local loader', async () => {
+    MediaApi.getLibrary.mockResolvedValue({ items: [makeItem('1')], totalItems: 100, totalPages: 2 });
+
+    const container = LibraryPage({ type: 'Movie' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    let resolveNext;
+    MediaApi.getLibrary.mockReturnValue(new Promise(resolve => { resolveNext = resolve; }));
+    const nextBtn = Array.from(container.querySelectorAll('.pagination-btn')).find(b => b.textContent === 'Vor');
+    nextBtn.click();
+
+    expect(container.querySelector('.section-loader')).toBeTruthy();
+
+    resolveNext({ items: [makeItem('2')], totalItems: 100, totalPages: 2 });
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(container.querySelector('.section-loader')).toBeNull();
+    expect(container.querySelectorAll('.media-card')).toHaveLength(1);
+  });
+
   it('restores the saved page and limit when returning from a detail page', async () => {
     window.location.hash = '#/movies';
     saveRouteState('#/movies', { page: 3, limit: 20 });

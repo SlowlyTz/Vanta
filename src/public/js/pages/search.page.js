@@ -2,9 +2,11 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 
 export default function SearchPage() {
   let debounceTimeout = null;
+  let searchRunId = 0;
 
   const getQueryFromHash = () => {
     const [, queryString = ''] = window.location.hash.split('?');
@@ -21,8 +23,11 @@ export default function SearchPage() {
   );
 
   const performSearch = async (query) => {
+    const runId = ++searchRunId;
+
     if (!query) {
       resultsGrid.innerHTML = '';
+      setSectionBusy(resultsGrid, false);
       statusContainer.innerHTML = '';
       statusContainer.appendChild(createElement('h3', {}, 'Finde deine Lieblingsinhalte'));
       statusContainer.appendChild(createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in die Suche oben ein.'));
@@ -31,10 +36,14 @@ export default function SearchPage() {
     }
 
     statusContainer.classList.add('hidden');
-    appStore.setLoading(true);
+    resultsGrid.innerHTML = '';
+    setSectionBusy(resultsGrid, true);
+    resultsGrid.appendChild(createSectionLoader({ label: `Suche nach "${query}"...` }));
 
     try {
       const results = await MediaApi.search(query);
+      if (runId !== searchRunId) return;
+
       resultsGrid.innerHTML = '';
 
       if (results.length === 0) {
@@ -49,16 +58,20 @@ export default function SearchPage() {
         });
       }
     } catch (error) {
+      if (runId !== searchRunId) return;
       if (error.isAuthError) return;
 
       console.error('[Search Page Error]', error);
       appStore.showToast('Fehler bei der Suche', 'error');
+      resultsGrid.innerHTML = '';
       statusContainer.innerHTML = '';
       statusContainer.appendChild(createElement('h3', {}, 'Suche fehlgeschlagen'));
       statusContainer.appendChild(createElement('p', {}, error.message));
       statusContainer.classList.remove('hidden');
     } finally {
-      appStore.setLoading(false);
+      if (runId === searchRunId) {
+        setSectionBusy(resultsGrid, false);
+      }
     }
   };
 

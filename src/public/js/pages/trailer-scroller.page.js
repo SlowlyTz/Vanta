@@ -687,7 +687,6 @@ export default function TrailerScrollerPage() {
     lastLoadFailed = false;
     updateChrome();
     showLoadingState();
-    appStore.setLoading(true);
 
     try {
       const page = await MediaApi.getTrailers(
@@ -723,7 +722,6 @@ export default function TrailerScrollerPage() {
       lastLoadFailed = true;
       if (state.trailers.length === 0) showErrorState(error);
     } finally {
-      appStore.setLoading(false);
       updateChrome();
     }
   }

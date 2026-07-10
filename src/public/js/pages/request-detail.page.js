@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
+import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
@@ -10,7 +11,10 @@ export default function RequestDetailPage({ type, id }) {
   const container = createElement('div', { className: 'page-container request-detail-page' });
 
   const loadDetails = async () => {
-    appStore.setLoading(true);
+    container.innerHTML = '';
+    setSectionBusy(container, true);
+    container.appendChild(createSectionLoader({ label: 'Details werden geladen' }));
+
     try {
       const [details, crossCheck] = await Promise.all([
         RequestsApi.getDetails(parseInt(id), type),
@@ -64,6 +68,7 @@ export default function RequestDetailPage({ type, id }) {
           className: 'btn-primary request-detail-request-btn',
           onClick: async () => {
             requestBtn.disabled = true;
+            requestBtn.setAttribute('aria-busy', 'true');
             requestBtn.textContent = 'Wird angefragt...';
             try {
               await RequestsApi.createRequest(parseInt(id), type, '');
@@ -71,9 +76,11 @@ export default function RequestDetailPage({ type, id }) {
               requestBtn.classList.remove('btn-primary');
               requestBtn.classList.add('btn-requested');
               requestBtn.disabled = true;
+              requestBtn.removeAttribute('aria-busy');
               appStore.showToast('Anfrage erfolgreich!', 'success');
             } catch (error) {
               requestBtn.disabled = false;
+              requestBtn.removeAttribute('aria-busy');
               requestBtn.textContent = 'Anfragen';
               appStore.showToast(error.message || 'Fehler beim Anfrage', 'error');
             }
@@ -190,8 +197,21 @@ export default function RequestDetailPage({ type, id }) {
 
       console.error('[Detail Page Error]', error);
       appStore.showToast('Fehler beim Laden', 'error');
+      container.innerHTML = '';
+      container.appendChild(
+        createElement('div', { className: 'content-section' },
+          createElement('div', { className: 'search-empty-state' },
+            createElement('h3', {}, 'Fehler beim Laden'),
+            createElement('p', {}, error.message || 'Die Details konnten nicht abgerufen werden.'),
+            createElement('button', {
+              className: 'btn-primary',
+              onClick: loadDetails
+            }, 'Erneut versuchen')
+          )
+        )
+      );
     } finally {
-      appStore.setLoading(false);
+      setSectionBusy(container, false);
     }
   };
 

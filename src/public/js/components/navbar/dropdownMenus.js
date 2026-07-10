@@ -56,10 +56,18 @@ export function renderStudiosMenu(menu, studios) {
   });
 }
 
+function showMenuLoading(menu) {
+  menu.innerHTML = '';
+  menu.setAttribute('aria-busy', 'true');
+  menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Lädt…'));
+}
+
 export function loadDropdowns(navbarElement) {
   NAV_LINKS.filter(link => link.type).forEach(link => {
     const menu = $(`#${link.menuId}`, navbarElement);
     if (!menu) return;
+
+    showMenuLoading(menu);
 
     MediaApi.getGenres(link.type)
       .then(genres => renderGenreMenu(menu, genres, link.type))
@@ -67,20 +75,24 @@ export function loadDropdowns(navbarElement) {
         console.error(`Failed to load ${link.type} genres:`, error);
         menu.innerHTML = '';
         menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Keine Genres gefunden'));
-      });
+      })
+      .finally(() => menu.removeAttribute('aria-busy'));
   });
 
   const studiosLink = NAV_LINKS.find(link => link.isStudios);
   if (studiosLink) {
     const menu = $(`#${studiosLink.menuId}`, navbarElement);
     if (menu) {
+      showMenuLoading(menu);
+
       MediaApi.getStudios()
         .then(studios => renderStudiosMenu(menu, studios))
         .catch(error => {
           console.error('Failed to load studios:', error);
           menu.innerHTML = '';
           menu.appendChild(createElement('li', { className: 'dropdown-item-disabled' }, 'Keine Publisher gefunden'));
-        });
+        })
+        .finally(() => menu.removeAttribute('aria-busy'));
     }
   }
 }
