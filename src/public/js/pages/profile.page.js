@@ -32,11 +32,13 @@ function createEmptyPageState() {
   return { items: [], page: 0, totalPages: 0, loading: false, loaded: false, error: null };
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ initialTab = 'continue' } = {}) {
   const container = createElement('div', { className: 'page-container content-section profile-page' });
 
+  const validInitialTab = TABS.some(tab => tab.key === initialTab) ? initialTab : TABS[0].key;
+
   const state = {
-    activeTab: TABS[0].key,
+    activeTab: validInitialTab,
     pages: {
       continue: createEmptyPageState(),
       history: createEmptyPageState(),

@@ -18,7 +18,7 @@
   padding: 0;
   background: var(--bg-secondary);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: var(--abyss-radius);
   cursor: pointer;
   transition: all var(--transition-fast);
   overflow: hidden;
@@ -76,8 +76,8 @@
 
 .publisher-search-input:focus {
   background: var(--bg-tertiary);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+  border-color: rgba(var(--abyss-accent), 0.3);
+  box-shadow: 0 0 0 3px rgba(var(--abyss-accent), 0.08);
 }
 
 .publisher-search-input::placeholder {

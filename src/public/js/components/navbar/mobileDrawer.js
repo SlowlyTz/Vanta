@@ -100,6 +100,11 @@ export function createMobileDrawer({ onLogout, onChangePassword, onNavigate }) {
       if (isActive) anchor.setAttribute('aria-current', 'page');
       else anchor.removeAttribute('aria-current');
     });
+
+    const profileActive = isNavLinkActive({ key: 'profile' }, currentHash);
+    mobileProfileLink.classList.toggle('active', profileActive);
+    if (profileActive) mobileProfileLink.setAttribute('aria-current', 'page');
+    else mobileProfileLink.removeAttribute('aria-current');
   };
 
   const resetToNav = () => {

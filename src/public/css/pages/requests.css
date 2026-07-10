@@ -15,13 +15,13 @@
   margin: 0 auto 22px;
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--abyss-radius);
+  background: rgba(var(--abyss-glass-tint), 0.5);
 }
 
 .requests-tab {
   min-height: 42px;
-  border-radius: 8px;
+  border-radius: calc(var(--abyss-radius) - 4px);
   color: var(--text-secondary);
   font-weight: 650;
   cursor: pointer;
@@ -33,8 +33,8 @@
 }
 
 .requests-tab.active {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.1);
+  color: rgb(var(--abyss-accent));
+  background: rgba(var(--abyss-accent), 0.12);
 }
 
 .requests-new-view,
@@ -85,10 +85,8 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
-    rgba(12, 13, 18, 0.9);
+  border-radius: var(--abyss-radius);
+  background: rgba(var(--abyss-glass-tint), 0.55);
   transition: all var(--transition-fast);
 }
 
@@ -648,7 +646,7 @@
     grid-template-columns: 76px minmax(0, 1fr);
     align-items: stretch;
     min-height: 126px;
-    border-radius: 13px;
+    border-radius: var(--abyss-radius);
   }
 
   .request-card-poster {

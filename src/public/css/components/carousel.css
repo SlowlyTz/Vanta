@@ -13,7 +13,7 @@
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
 .carousel-header {
@@ -87,7 +87,7 @@
 }
 
 .media-carousel.landscape-carousel .media-carousel-item {
-  flex: 0 0 280px; /* Landscape width */
+  flex: 0 0 300px; /* Landscape width */
 }
 
 @media (min-width: 768px) {
@@ -95,7 +95,7 @@
     flex: 0 0 180px;
   }
   .media-carousel.landscape-carousel .media-carousel-item {
-    flex: 0 0 320px;
+    flex: 0 0 360px;
   }
 }
 

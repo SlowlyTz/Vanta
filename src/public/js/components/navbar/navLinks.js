@@ -7,3 +7,15 @@ export const NAV_LINKS = [
   { key: 'requests', label: 'Anfragen', href: '#/requests' },
   { key: 'search', label: 'Suche', href: '#/search' }
 ];
+
+export const TOP_TABS = [
+  { key: 'home', label: 'Home', href: '#/home' },
+  { key: 'favorites', label: 'Favourites', href: '#/favorites' }
+];
+
+export const TOP_ACTIONS = [
+  { key: 'group', label: 'Gruppe' },
+  { key: 'cast', label: 'Cast' },
+  { key: 'search', label: 'Suche', href: '#/search' },
+  { key: 'profile', label: 'Profil', href: '#/profile' }
+];

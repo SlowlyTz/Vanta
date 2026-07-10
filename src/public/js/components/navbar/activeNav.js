@@ -14,6 +14,10 @@ export function isNavLinkActive(link, currentHash) {
       return currentHash === '#/requests';
     case 'search':
       return currentHash.startsWith('#/search');
+    case 'favorites':
+      return currentHash.startsWith('#/favorites');
+    case 'profile':
+      return currentHash.startsWith('#/profile');
     default:
       return false;
   }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AuthApi } from '../../api/auth.api.js';
 import { MediaApi } from '../../api/media.api.js';
 import { Navbar } from './Navbar.js';
+import { NAV_LINKS } from './navLinks.js';
 
 vi.mock('../../api/auth.api.js', () => ({
   AuthApi: { getCurrentUser: vi.fn() }
@@ -37,41 +38,82 @@ describe('Navbar', () => {
     document.documentElement.className = '';
   });
 
-  it('mounts nav links, mobile drawer and settings dialog into the document', () => {
+  it('mounts the top tabs, top actions and mobile drawer into the document', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
-    expect(navbar.element.querySelectorAll('.navbar-item').length).toBeGreaterThan(0);
+    expect(navbar.element.querySelectorAll('.navbar-top-tab').length).toBe(2);
+    expect(navbar.element.querySelectorAll('.navbar-action-button').length).toBeGreaterThan(0);
     expect(document.getElementById('mobile-navigation')).toBeTruthy();
-    expect(document.getElementById('settings-dialog')).toBeTruthy();
   });
 
-  it('marks the matching nav link active on update, in both desktop and mobile nav', () => {
+  it('renders only Home and Favourites in the top tab navigation', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    const labels = Array.from(navbar.element.querySelectorAll('.navbar-top-tab')).map(el => el.textContent);
+    expect(labels).toEqual(['Home', 'Favourites']);
+
+    const favoritesTab = navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]');
+    expect(favoritesTab).toBeTruthy();
+  });
+
+  it('renders group, cast, search and profile actions on the right', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    expect(navbar.element.querySelector('.navbar-action-group')).toBeTruthy();
+    expect(navbar.element.querySelector('.navbar-action-cast')).toBeTruthy();
+
+    const searchAction = navbar.element.querySelector('.navbar-action-search');
+    expect(searchAction.getAttribute('href')).toBe('#/search');
+
+    const profileAction = navbar.element.querySelector('.navbar-action-profile');
+    expect(profileAction.getAttribute('href')).toBe('#/profile');
+  });
+
+  it('keeps all primary nav links in the hamburger drawer', () => {
+    Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    const mobileNav = document.getElementById('mobile-navigation');
+    NAV_LINKS.forEach(link => {
+      const anchor = mobileNav.querySelector(`a[href="${link.href}"]`);
+      expect(anchor, `expected drawer link for ${link.key}`).toBeTruthy();
+    });
+  });
+
+  it('marks the Home top tab active on update and switches to Favourites active on #/favorites', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/home"]').classList.contains('active')).toBe(true);
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]').classList.contains('active')).toBe(false);
+
+    navbar.update({ currentHash: '#/favorites', user: { username: 'alice' }, scrolled: false });
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/home"]').classList.contains('active')).toBe(false);
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]').classList.contains('active')).toBe(true);
+  });
+
+  it('marks the matching nav link active in the drawer on update', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     navbar.update({ currentHash: '#/movies', user: { username: 'alice' }, scrolled: false });
-
-    const desktopLink = navbar.element.querySelector('#nav-movies');
-    expect(desktopLink.classList.contains('active')).toBe(true);
-
     const mobileLink = document.querySelector('#mobile-navigation a[href="#/movies"]');
     expect(mobileLink.classList.contains('active')).toBe(true);
 
     navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
-    expect(desktopLink.classList.contains('active')).toBe(false);
+    expect(mobileLink.classList.contains('active')).toBe(false);
   });
 
-  it('opens the settings dialog when the menu button is clicked on desktop', () => {
+  it('opens the drawer when the menu button is clicked on desktop', () => {
     stubMatchMedia(true);
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     const menuButton = navbar.element.querySelector('.mobile-menu-button');
     menuButton.click();
 
-    const settingsDialogEl = document.getElementById('settings-dialog');
-    expect(settingsDialogEl.closest('.settings-modal-backdrop').classList.contains('open')).toBe(true);
+    expect(navbar.element.classList.contains('mobile-open')).toBe(true);
+    expect(menuButton.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('opens the mobile drawer instead of settings when the menu button is clicked on mobile', () => {
+  it('opens the same drawer when the menu button is clicked on mobile', () => {
     stubMatchMedia(false);
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
@@ -83,24 +125,6 @@ describe('Navbar', () => {
 
     document.querySelector('.mobile-drawer-close').click();
     expect(navbar.element.classList.contains('mobile-open')).toBe(false);
-  });
-
-  it('shows a Profil option in the desktop settings Overview section and navigates on click', () => {
-    Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
-    window.location.hash = '#/home';
-
-    const dialog = document.getElementById('settings-dialog');
-    const overviewSection = Array.from(dialog.querySelectorAll('.settings-section'))
-      .find(section => section.querySelector('.settings-section-title')?.textContent === 'Overview');
-    const profileOption = Array.from(overviewSection.querySelectorAll('.settings-option'))
-      .find(option => option.textContent.includes('Profil'));
-
-    expect(profileOption).toBeTruthy();
-
-    profileOption.click();
-
-    expect(window.location.hash).toBe('#/profile');
-    expect(dialog.closest('.settings-modal-backdrop').classList.contains('open')).toBe(false);
   });
 
   it('shows a Profil link directly under Einstellungen in the mobile drawer list and closes the drawer on click', () => {
@@ -125,5 +149,19 @@ describe('Navbar', () => {
     profileLink.click();
 
     expect(navbar.element.classList.contains('mobile-open')).toBe(false);
+  });
+
+  it('marks the drawer Profil link active on #/profile', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    const mobileNav = document.getElementById('mobile-navigation');
+    const profileLink = Array.from(mobileNav.querySelectorAll('a')).find(a => a.getAttribute('href') === '#/profile');
+
+    navbar.update({ currentHash: '#/profile', user: { username: 'alice' }, scrolled: false });
+    expect(profileLink.classList.contains('active')).toBe(true);
+
+    navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
+    expect(profileLink.classList.contains('active')).toBe(false);
   });
 });
