@@ -75,12 +75,10 @@ export function Footer() {
       createElement('div', { className: 'footer-bottom' },
         createElement('p', { className: 'footer-copyright' },
           `© ${year} VANTA`,
-          createElement('span', { 'aria-hidden': 'true' }, '·'),
-          createElement('span', {}, 'Für lange Nächte und gute Geschichten.')
+          createElement('span', { 'aria-hidden': 'true' }),
         ),
         createElement('p', { className: 'footer-status' },
-          createElement('span', { className: 'footer-status-dot', 'aria-hidden': 'true' }),
-          'Bereit für den nächsten Filmabend'
+
         )
       )
     ),

@@ -53,9 +53,9 @@ export function getYouTubeEmbedUrl(videoId, { autoplay = 1, mute = 0 } = {}) {
   const params = new URLSearchParams({
     autoplay: String(autoplay),
     mute: String(mute),
-    controls: '0',
-    disablekb: '1',
-    fs: '0',
+    controls: '1',
+    disablekb: '0',
+    fs: '1',
     iv_load_policy: '3',
     rel: '0',
     modestbranding: '1',

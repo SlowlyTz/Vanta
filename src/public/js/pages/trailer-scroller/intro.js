@@ -2,22 +2,52 @@ import { createElement } from '../../utils/dom.js';
 import { markIntroAsSeen } from '../trailer-scroller.state.js';
 
 export function createIntroModal({ onStart }) {
-  const title = createElement('h2', { className: 'trailer-intro-title' }, 'Willkommen beim Scroller');
+  const title = createElement('h2', { className: 'trailer-intro-title', id: 'trailer-intro-title' }, 'Dein Trailer-Feed');
   const text = createElement('p', { className: 'trailer-intro-text' },
-    'Entdecke Trailer aus deiner Jellyfin-Bibliothek. Scrolle vertikal durch die Clips, tippe auf das Herz, um Filme und Serien als Favoriten zu markieren, oder öffne die Detailseite für mehr Infos.'
+    'Entdecke Filme und Serien aus deiner Mediathek in einem ruhigen, vertikalen Feed.'
+  );
+
+  const features = createElement('ul', { className: 'trailer-intro-features' },
+    createElement('li', {},
+      createElement('span', { className: 'trailer-intro-feature-number' }, '01'),
+      createElement('span', {},
+        createElement('strong', {}, 'Scrollen oder wischen'),
+        createElement('small', {}, 'Wechsle vertikal zwischen den Trailern.')
+      )
+    ),
+    createElement('li', {},
+      createElement('span', { className: 'trailer-intro-feature-number' }, '02'),
+      createElement('span', {},
+        createElement('strong', {}, 'YouTube bedienen'),
+        createElement('small', {}, 'Wiedergabe, Ton und Vollbild bleiben im originalen Player.')
+      )
+    ),
+    createElement('li', {},
+      createElement('span', { className: 'trailer-intro-feature-number' }, '03'),
+      createElement('span', {},
+        createElement('strong', {}, 'Merken oder weitersehen'),
+        createElement('small', {}, 'Speichere Favoriten oder öffne direkt die Detailseite.')
+      )
+    )
   );
 
   const startButton = createElement('button', {
     className: 'btn-primary trailer-intro-button',
     type: 'button'
-  }, 'Starten');
+  }, 'Scroller öffnen');
 
   const modalContent = createElement('div', {
     className: 'trailer-intro-content',
     role: 'dialog',
     'aria-modal': 'true',
     'aria-labelledby': 'trailer-intro-title'
-  }, title, text, startButton);
+  },
+    createElement('span', { className: 'trailer-intro-eyebrow' }, 'VANTA SCROLLER'),
+    title,
+    text,
+    features,
+    startButton
+  );
 
   const backdrop = createElement('div', {
     className: 'trailer-intro-backdrop'
@@ -25,6 +55,7 @@ export function createIntroModal({ onStart }) {
 
   const close = () => {
     markIntroAsSeen();
+    window.removeEventListener('keydown', onKeydown);
     backdrop.remove();
     if (onStart) onStart();
   };
@@ -38,7 +69,6 @@ export function createIntroModal({ onStart }) {
   const onKeydown = (event) => {
     if (event.key === 'Escape') {
       close();
-      window.removeEventListener('keydown', onKeydown);
     }
   };
   window.addEventListener('keydown', onKeydown);
