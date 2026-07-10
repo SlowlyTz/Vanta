@@ -17,6 +17,7 @@ router.add('#/requests/mine', () => import('./pages/requests.page.js'), { requir
 router.add('#/request-detail/:type/:id', () => import('./pages/request-detail.page.js'), { requiresAuth: true });
 router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth: true });
 router.add('#/profile', () => import('./pages/profile.page.js'), { requiresAuth: true });
+router.add('#/favorites', () => import('./pages/profile.page.js'), { requiresAuth: true, defaultParams: { initialTab: 'favorites' } });
 router.add('#/player/:id', () => import('./pages/player.page.js'), { requiresAuth: true });
 
 // Initialise client router on page load
