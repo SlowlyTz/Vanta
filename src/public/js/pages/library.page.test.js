@@ -36,7 +36,7 @@ describe('LibraryPage restore', () => {
     MediaApi.getLibrary.mockReturnValue(new Promise(resolve => { resolveLibrary = resolve; }));
 
     const container = LibraryPage({ type: 'Movie' });
-    expect(container.querySelector('.library-title').textContent).toBe('Alle Filme');
+    expect(container.querySelector('.page-heading-title').textContent).toBe('Alle Filme');
     expect(container.querySelector('.section-loader')).toBeTruthy();
 
     resolveLibrary({ items: [makeItem('1')], totalItems: 1, totalPages: 1 });
@@ -44,7 +44,7 @@ describe('LibraryPage restore', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(container.querySelector('.library-title').textContent).toBe('Alle Filme');
+    expect(container.querySelector('.page-heading-title').textContent).toBe('Alle Filme');
     expect(container.querySelector('.section-loader')).toBeNull();
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
   });
@@ -118,7 +118,7 @@ describe('LibraryPage restore', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(container.querySelector('.library-title').textContent).toBe('Warner Bros');
+    expect(container.querySelector('.page-heading-title').textContent).toBe('Warner Bros');
     expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 50, { publisherId: 'warner-bros' });
   });
 
@@ -130,7 +130,7 @@ describe('LibraryPage restore', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(container.querySelector('.library-title')).toBeTruthy();
+    expect(container.querySelector('.page-heading-title')).toBeTruthy();
     expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 50, { publisherId: 'unknown-publisher' });
   });
 

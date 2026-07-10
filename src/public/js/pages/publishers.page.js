@@ -3,24 +3,14 @@ import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../constants/featuredPublishers.js';
+import { PageHeading } from '../components/pageHeading.js';
 
 export default function PublishersPage() {
   const container = createElement('div', { className: 'page-container content-section' });
 
-  const titleEl = createElement('h1', {
-    style: {
-      fontSize: '2rem',
-      fontWeight: '700',
-      marginBottom: 'var(--spacing-xl)',
-      background: 'linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%)',
-      '-webkit-background-clip': 'text',
-      '-webkit-text-fill-color': 'transparent'
-    }
-  }, 'Publisher');
-
   const bodySlot = createElement('div', { className: 'publishers-body' });
 
-  container.appendChild(titleEl);
+  container.appendChild(PageHeading({ title: 'Publisher' }));
   container.appendChild(bodySlot);
 
   const loadStudios = async () => {

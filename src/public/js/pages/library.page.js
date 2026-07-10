@@ -5,6 +5,7 @@ import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
+import { PageHeading } from '../components/pageHeading.js';
 
 const LIMIT_OPTIONS = [20, 50, 100];
 const DEFAULT_LIMIT = 50;
@@ -41,11 +42,10 @@ export default function LibraryPage(params) {
         ? (isMixedType ? `${genre}` : `${labelType}: ${genre}`)
         : (isMixedType ? 'Alle Titel' : `Alle ${labelType}`);
 
-  const titleEl = createElement('h1', { className: 'library-title' }, pageTitle);
   const bodySlot = createElement('div', { className: 'library-body' });
 
   container.appendChild(
-    createElement('div', { className: 'library-content' }, titleEl, bodySlot)
+    createElement('div', { className: 'library-content' }, PageHeading({ title: pageTitle }), bodySlot)
   );
 
   const restoreScrollPosition = ({ scrollY, itemId }) => {

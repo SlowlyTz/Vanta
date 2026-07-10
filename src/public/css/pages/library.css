@@ -16,18 +16,6 @@
   max-width: 100%;
 }
 
-.library-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: var(--spacing-xl);
-  background: linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  line-height: 1.2;
-}
-
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -58,11 +46,6 @@
 @media (max-width: 600px) {
   .library-page.content-section {
     padding: 14px;
-  }
-
-  .library-title {
-    font-size: clamp(1.25rem, 5vw, 1.65rem);
-    margin-bottom: 16px;
   }
 
   .library-grid {

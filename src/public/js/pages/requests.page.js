@@ -3,6 +3,7 @@ import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
+import { PageHeading } from '../components/pageHeading.js';
 
 const STATUS_MAP = {
   pending: { label: 'ausstehend', cls: 'pending' },
@@ -46,33 +47,30 @@ export default function RequestsPage(params = {}) {
   let searchRunId = 0;
   const restoredSearchState = loadRequestSearchState();
 
+  const activeView = params.view === 'list' ? 'list' : 'new';
+
   const container = createElement('div', { className: 'page-container content-section requests-page' });
 
-  const pageHeader = createElement('div', { className: 'requests-page-header' },
-    createElement('h1', { className: 'requests-page-title' }, 'Anfragen'),
-    createElement('p', { className: 'requests-page-subtitle' }, 'Suche neue Titel oder verfolge den Status deiner bisherigen Anfragen.')
-  );
-
-  const choiceView = createElement('div', { className: 'requests-choice-view' });
-  const newRequestBtn = createElement('button', {
-    className: 'requests-choice-btn',
-    onClick: () => {
-      clearRequestSearchState();
-      window.location.hash = '#/requests/new';
-    }
+  const tabs = createElement('div', {
+    className: 'requests-tabs',
+    role: 'tablist',
+    'aria-label': 'Anfragen'
   },
-    createElement('span', { className: 'requests-choice-label' }, 'Neue Anfrage'),
-    createElement('span', { className: 'requests-choice-copy' }, 'Film oder Serie suchen und direkt anfragen.')
+    createElement('button', {
+      className: `requests-tab${activeView === 'new' ? ' active' : ''}`,
+      type: 'button',
+      role: 'tab',
+      'aria-selected': String(activeView === 'new'),
+      onClick: () => { window.location.hash = '#/requests/new'; }
+    }, 'Neue Anfrage'),
+    createElement('button', {
+      className: `requests-tab${activeView === 'list' ? ' active' : ''}`,
+      type: 'button',
+      role: 'tab',
+      'aria-selected': String(activeView === 'list'),
+      onClick: () => { window.location.hash = '#/requests/mine'; }
+    }, 'Meine Anfragen')
   );
-  const myRequestsBtn = createElement('button', {
-    className: 'requests-choice-btn',
-    onClick: () => { window.location.hash = '#/requests/mine'; }
-  },
-    createElement('span', { className: 'requests-choice-label' }, 'Meine Anfragen'),
-    createElement('span', { className: 'requests-choice-copy' }, 'Status und Verlauf deiner Anfragen ansehen.')
-  );
-  choiceView.appendChild(newRequestBtn);
-  choiceView.appendChild(myRequestsBtn);
 
   const newRequestSearchInput = createElement('input', {
     type: 'text',
@@ -94,19 +92,9 @@ export default function RequestsPage(params = {}) {
     createElement('h3', {}, 'Medien anfragen'),
     createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.')
   );
-  const newRequestBackBtn = createElement('button', {
-    className: 'btn-secondary requests-back-btn',
-    onClick: () => { window.location.hash = '#/requests'; }
-  }, 'Zurück');
-  const newRequestHeader = createElement('div', { className: 'requests-view-header' },
-    newRequestBackBtn,
-    createElement('div', { className: 'requests-view-copy' },
-      createElement('h2', { className: 'requests-view-title' }, 'Neue Anfrage'),
-      createElement('p', { className: 'requests-view-subtitle' }, 'Titel suchen, Verfügbarkeit prüfen und Anfrage starten.')
-    )
-  );
-  const newRequestView = createElement('div', { className: 'requests-new-view hidden' },
-    newRequestHeader,
+  const newRequestView = createElement('div', {
+    className: `requests-new-view${activeView === 'new' ? '' : ' hidden'}`
+  },
     newRequestSearchWrapper,
     newRequestLoading,
     newRequestResultsGrid,
@@ -130,66 +118,21 @@ export default function RequestsPage(params = {}) {
     createElement('h3', {}, 'Keine Anfragen'),
     createElement('p', {}, 'Du hast noch keine Medien angefragt.')
   );
-  const myRequestsBackBtn = createElement('button', {
-    className: 'btn-secondary requests-back-btn',
-    onClick: () => { window.location.hash = '#/requests'; }
-  }, 'Zurück');
-  const myRequestsHeader = createElement('div', { className: 'requests-view-header' },
-    myRequestsBackBtn,
-    createElement('div', { className: 'requests-view-copy' },
-      createElement('h2', { className: 'requests-view-title' }, 'Meine Anfragen'),
-      createElement('p', { className: 'requests-view-subtitle' }, 'Prüfe, was noch offen ist und was bereits entschieden wurde.')
-    )
-  );
-  const myRequestsView = createElement('div', { className: 'requests-list-view hidden' },
-    myRequestsHeader,
+  const myRequestsView = createElement('div', {
+    className: `requests-list-view${activeView === 'list' ? '' : ' hidden'}`
+  },
     myRequestsSearchWrapper,
     myRequestsList,
     myRequestsStatus
   );
 
-  container.appendChild(pageHeader);
-  container.appendChild(choiceView);
+  container.appendChild(PageHeading({
+    title: 'Anfragen',
+    subtitle: 'Suche neue Titel oder verfolge den Status deiner bisherigen Anfragen.'
+  }));
+  container.appendChild(tabs);
   container.appendChild(newRequestView);
   container.appendChild(myRequestsView);
-
-  const setView = (view) => {
-    pageHeader.classList.toggle('hidden', view !== 'choice');
-    choiceView.classList.toggle('hidden', view !== 'choice');
-    newRequestView.classList.toggle('hidden', view !== 'new');
-    myRequestsView.classList.toggle('hidden', view !== 'list');
-
-    if (view === 'new') {
-      const shouldRestoreSearch = Boolean(restoredSearchState.query);
-      newRequestSearchInput.value = shouldRestoreSearch ? restoredSearchState.query : '';
-      newRequestResultsGrid.innerHTML = '';
-      newRequestLoading.classList.add('hidden');
-      searchResults = Array.isArray(restoredSearchState.results) ? restoredSearchState.results : [];
-
-      if (shouldRestoreSearch && searchResults.length > 0) {
-        searchResults.forEach(item => {
-          newRequestResultsGrid.appendChild(createSearchResultCard(item));
-        });
-        newRequestStatus.classList.add('hidden');
-      } else if (shouldRestoreSearch) {
-        newRequestStatus.innerHTML = '';
-        newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
-        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${restoredSearchState.query}".`));
-        newRequestStatus.classList.remove('hidden');
-      } else {
-        newRequestStatus.innerHTML = '';
-        newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
-        newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
-        newRequestStatus.classList.remove('hidden');
-        setTimeout(() => newRequestSearchInput.focus(), 100);
-      }
-    }
-
-    if (view === 'list') {
-      myRequestsSearchInput.value = '';
-      renderMyRequests();
-    }
-  };
 
   const performSearch = async (query) => {
     const runId = ++searchRunId;
@@ -381,9 +324,26 @@ export default function RequestsPage(params = {}) {
     });
   };
 
-  const initialView = params.view === 'new' || params.view === 'list' ? params.view : 'choice';
-  setView(initialView);
-  if (initialView === 'list') {
+  if (activeView === 'new') {
+    const shouldRestoreSearch = Boolean(restoredSearchState.query);
+    newRequestSearchInput.value = shouldRestoreSearch ? restoredSearchState.query : '';
+    searchResults = Array.isArray(restoredSearchState.results) ? restoredSearchState.results : [];
+
+    if (shouldRestoreSearch && searchResults.length > 0) {
+      searchResults.forEach(item => {
+        newRequestResultsGrid.appendChild(createSearchResultCard(item));
+      });
+      newRequestStatus.classList.add('hidden');
+    } else if (shouldRestoreSearch) {
+      newRequestStatus.innerHTML = '';
+      newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
+      newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${restoredSearchState.query}".`));
+    } else {
+      setTimeout(() => newRequestSearchInput.focus(), 100);
+    }
+  }
+
+  if (activeView === 'list') {
     loadMyRequests();
   }
 
