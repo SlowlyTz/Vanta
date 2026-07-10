@@ -2,13 +2,130 @@ import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
-import { createPosterPlaceholder } from '../utils/poster.js';
+import { DetailView } from '../components/detailView.js';
+import { openTrailerModal } from '../components/trailerModal.js';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
+const TMDB_PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+
+function normalizeRequestDetail(details, type) {
+  const title = details.title || details.name || 'Unbekannt';
+  const year = (details.release_date || details.first_air_date || '').slice(0, 4);
+
+  return {
+    id: details.id,
+    name: title,
+    originalTitle: details.original_title || details.original_name || null,
+    typeLabel: type === 'tv' ? 'Serie' : 'Film',
+    year: year || null,
+    duration: details.runtime ? `${details.runtime} min` : null,
+    rating: details.vote_average || null,
+    tagline: details.tagline || null,
+    overview: details.overview || 'Keine Beschreibung verfügbar.',
+    genres: (details.genres || []).map(genre => genre.name).filter(Boolean),
+    posterUrl: details.poster_path ? `${TMDB_IMAGE_BASE}${details.poster_path}` : null,
+    backdropUrl: details.backdrop_path ? `${TMDB_BACKDROP_BASE}${details.backdrop_path}` : null
+  };
+}
+
+function buildStatusContent({ crossCheck, isBanned, isRequested, type }) {
+  const badges = createElement('div', { className: 'request-detail-badges' });
+
+  if (crossCheck.exists) {
+    badges.appendChild(createElement('span', { className: 'request-detail-badge badge-available' }, 'In Mediathek verfügbar'));
+  }
+
+  if (isBanned) {
+    badges.appendChild(createElement('span', { className: 'request-detail-badge badge-banned' }, 'Abgelehnt'));
+  } else if (isRequested) {
+    badges.appendChild(createElement('span', { className: 'request-detail-badge badge-requested' }, 'Bereits angefragt'));
+  }
+
+  const nodes = [];
+  if (badges.children.length > 0) nodes.push(badges);
+
+  if (crossCheck.exists && type === 'tv' && crossCheck.seasons && crossCheck.seasons.length > 0) {
+    const seasonList = createElement('div', { className: 'request-detail-seasons' });
+    crossCheck.seasons.forEach(s => {
+      seasonList.appendChild(createElement('div', {
+        className: `request-detail-season${s.exists ? ' season-available' : ' season-missing'}`
+      }, `${s.name} ${s.exists ? '(vorhanden)' : '(nicht vorhanden)'}`));
+    });
+    nodes.push(seasonList);
+  }
+
+  return nodes.length > 0 ? nodes : null;
+}
+
+function buildCastSection(cast) {
+  if (!cast || cast.length === 0) return null;
+
+  const section = createElement('div', { className: 'request-detail-cast' },
+    createElement('h3', { className: 'request-detail-section-title' }, 'Besetzung')
+  );
+  const grid = createElement('div', { className: 'request-detail-cast-grid' });
+
+  cast.forEach(actor => {
+    const item = createElement('div', { className: 'request-detail-cast-item' });
+    if (actor.profile_path) {
+      item.appendChild(createElement('img', {
+        src: `${TMDB_PROFILE_BASE}${actor.profile_path}`,
+        alt: actor.name,
+        loading: 'lazy',
+        onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
+      }));
+    }
+    item.appendChild(createElement('div', { className: 'request-detail-cast-name' }, actor.name));
+    if (actor.character) {
+      item.appendChild(createElement('div', { className: 'request-detail-cast-role' }, actor.character));
+    }
+    grid.appendChild(item);
+  });
+
+  section.appendChild(grid);
+  return section;
+}
+
+function buildSeasonsSection(seasons) {
+  const relevant = (seasons || []).filter(s => s.season_number >= 0);
+  if (relevant.length === 0) return null;
+
+  const section = createElement('div', { className: 'request-detail-seasons-section' },
+    createElement('h3', { className: 'request-detail-section-title' }, 'Staffeln')
+  );
+  const grid = createElement('div', { className: 'request-detail-seasons-grid' });
+
+  relevant.forEach(season => {
+    const card = createElement('div', { className: 'request-detail-season-card' });
+    if (season.poster_path) {
+      card.appendChild(createElement('img', {
+        src: `${TMDB_IMAGE_BASE}${season.poster_path}`,
+        alt: season.name,
+        loading: 'lazy',
+        onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
+      }));
+    }
+    card.appendChild(createElement('div', { className: 'request-detail-season-name' }, season.name));
+    card.appendChild(createElement('div', { className: 'request-detail-season-episodes' }, `${season.episode_count || 0} Folgen`));
+    grid.appendChild(card);
+  });
+
+  section.appendChild(grid);
+  return section;
+}
 
 export default function RequestDetailPage({ type, id }) {
   const container = createElement('div', { className: 'page-container request-detail-page' });
+
+  const isAlreadyRequested = async (tmdbId, tmdbType) => {
+    try {
+      const requests = await RequestsApi.getMyRequests();
+      return requests.some(r => r.tmdb_id === tmdbId && r.tmdb_type === tmdbType && r.status !== 'rejected');
+    } catch {
+      return false;
+    }
+  };
 
   const loadDetails = async () => {
     container.innerHTML = '';
@@ -21,181 +138,75 @@ export default function RequestDetailPage({ type, id }) {
         RequestsApi.crossCheck(parseInt(id), type).catch(() => ({ exists: false, seasons: [] }))
       ]);
 
-      container.innerHTML = '';
-      const title = details.title || details.name || 'Unbekannt';
-      const posterPath = details.poster_path;
-      const posterUrl = posterPath ? `${TMDB_IMAGE_BASE}${posterPath}` : null;
-      const backdropPath = details.backdrop_path;
-      const backdropUrl = backdropPath ? `${TMDB_BACKDROP_BASE}${backdropPath}` : null;
-      const year = (details.release_date || details.first_air_date || '').substring(0, 4);
-      const runtime = details.runtime ? `${details.runtime} min` : '';
-      const rating = details.vote_average ? details.vote_average.toFixed(1) : null;
-      const mediaType = type === 'tv' ? 'Serie' : 'Film';
+      const normalized = normalizeRequestDetail(details, type);
       const isBanned = Boolean(details.banned || crossCheck.banned);
       const isRequested = Boolean(details.requested) || await isAlreadyRequested(parseInt(id), type);
+      const canRequest = !isRequested && !crossCheck.exists && !isBanned;
 
-      if (backdropUrl) {
-        const backdropWrapper = createElement('div', {
-          className: 'request-detail-backdrop',
-          style: `background-image: url(${backdropUrl});`
-        });
-        container.appendChild(backdropWrapper);
-      }
-
-      const content = createElement('div', { className: 'content-section request-detail-content' });
-
-      const mainRow = createElement('div', { className: 'request-detail-main' });
-
-      const posterWrap = createElement('div', { className: 'request-detail-poster-wrap' },
-        createElement('img', {
-          className: 'request-detail-poster',
-          src: posterUrl || createPosterPlaceholder(title),
-          alt: title,
-          loading: 'lazy',
-          onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPosterPlaceholder(title); }
-        })
-      );
-
-      const info = createElement('div', { className: 'request-detail-info' });
-      const titleRow = createElement('div', { className: 'request-detail-title-row' });
-      const actions = createElement('div', { className: 'request-detail-actions' });
-      let requestBtn = null;
-
-      titleRow.appendChild(createElement('h1', { className: 'request-detail-title' }, title));
-
-      if (!isRequested && !crossCheck.exists && !isBanned) {
-        requestBtn = createElement('button', {
-          className: 'btn-primary request-detail-request-btn',
-          onClick: async () => {
-            requestBtn.disabled = true;
-            requestBtn.setAttribute('aria-busy', 'true');
-            requestBtn.textContent = 'Wird angefragt...';
-            try {
-              await RequestsApi.createRequest(parseInt(id), type, '');
-              requestBtn.textContent = 'Angefragt';
-              requestBtn.classList.remove('btn-primary');
-              requestBtn.classList.add('btn-requested');
-              requestBtn.disabled = true;
-              requestBtn.removeAttribute('aria-busy');
-              appStore.showToast('Anfrage erfolgreich!', 'success');
-            } catch (error) {
-              requestBtn.disabled = false;
-              requestBtn.removeAttribute('aria-busy');
-              requestBtn.textContent = 'Anfragen';
-              appStore.showToast(error.message || 'Fehler beim Anfrage', 'error');
-            }
-          }
-        }, 'Anfragen');
-
-        titleRow.appendChild(requestBtn);
-      }
-
-      info.appendChild(titleRow);
-
-      const meta = createElement('div', { className: 'request-detail-meta' });
-      if (year) meta.appendChild(createElement('span', {}, year));
-      meta.appendChild(createElement('span', {}, mediaType));
-      if (runtime) meta.appendChild(createElement('span', {}, runtime));
-      if (rating) meta.appendChild(createElement('span', { className: 'request-detail-rating' }, `★ ${rating}`));
-      info.appendChild(meta);
-
-      if (details.overview) {
-        info.appendChild(createElement('p', { className: 'request-detail-overview' }, details.overview));
-      }
-
-      const badges = createElement('div', { className: 'request-detail-badges' });
-
-      if (crossCheck.exists) {
-        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-available' }, 'In Mediathek verfügbar'));
-
-        if (type === 'tv' && crossCheck.seasons && crossCheck.seasons.length > 0) {
-          const seasonList = createElement('div', { className: 'request-detail-seasons' });
-          crossCheck.seasons.forEach(s => {
-            seasonList.appendChild(createElement('div', {
-              className: `request-detail-season${s.exists ? ' season-available' : ' season-missing'}`
-            }, `${s.name} ${s.exists ? '(vorhanden)' : '(nicht vorhanden)'}`));
-          });
-          info.appendChild(seasonList);
+      const handleRequest = async (event) => {
+        const btn = event.currentTarget;
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.textContent = 'Wird angefragt...';
+        try {
+          await RequestsApi.createRequest(parseInt(id), type, '');
+          btn.textContent = 'Angefragt';
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-requested');
+          btn.disabled = true;
+          btn.removeAttribute('aria-busy');
+          appStore.showToast('Anfrage erfolgreich!', 'success');
+        } catch (error) {
+          btn.disabled = false;
+          btn.removeAttribute('aria-busy');
+          btn.textContent = 'Anfragen';
+          appStore.showToast(error.message || 'Fehler beim Anfrage', 'error');
         }
-      }
+      };
 
-      if (isBanned) {
-        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-banned' }, 'Abgelehnt'));
-      } else if (isRequested) {
-        badges.appendChild(createElement('span', { className: 'request-detail-badge badge-requested' }, 'Bereits angefragt'));
-      }
-
-      if (badges.children.length > 0) {
-        info.appendChild(badges);
-      }
-
-      const backBtn = createElement('button', {
-        className: 'btn-secondary request-detail-back-btn',
-        onClick: () => { window.history.back(); }
-      }, 'Zurück');
-      actions.appendChild(backBtn);
-
-      if (actions.children.length > 0) {
-        info.appendChild(actions);
-      }
-
-      mainRow.appendChild(posterWrap);
-      mainRow.appendChild(info);
-      content.appendChild(mainRow);
-
-      if (details.cast && details.cast.length > 0) {
-        const castSection = createElement('div', { className: 'request-detail-cast' });
-        castSection.appendChild(createElement('h3', { className: 'request-detail-section-title' }, 'Besetzung'));
-        const castGrid = createElement('div', { className: 'request-detail-cast-grid' });
-        details.cast.forEach(actor => {
-          const actorItem = createElement('div', { className: 'request-detail-cast-item' });
-          if (actor.profile_path) {
-            const img = createElement('img', {
-              src: `https://image.tmdb.org/t/p/w185${actor.profile_path}`,
-              alt: actor.name,
-              loading: 'lazy',
-              onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
-            });
-            actorItem.appendChild(img);
+      const trailerAction = details.trailer && details.trailer.site === 'YouTube' && details.trailer.key
+        ? {
+            label: 'Trailer',
+            className: 'btn-secondary',
+            onClick: () => openTrailerModal({ title: `${normalized.name} Trailer`, videoId: details.trailer.key })
           }
-          actorItem.appendChild(createElement('div', { className: 'request-detail-cast-name' }, actor.name));
-          if (actor.character) {
-            actorItem.appendChild(createElement('div', { className: 'request-detail-cast-role' }, actor.character));
-          }
-          castGrid.appendChild(actorItem);
-        });
-        castSection.appendChild(castGrid);
-        content.appendChild(castSection);
-      }
+        : null;
 
-      if (type === 'tv' && details.seasons && details.seasons.length > 0) {
-        const seasonsSection = createElement('div', { className: 'request-detail-seasons-section' });
-        seasonsSection.appendChild(createElement('h3', { className: 'request-detail-section-title' }, 'Staffeln'));
-        const seasonsGrid = createElement('div', { className: 'request-detail-seasons-grid' });
-        (details.seasons || []).filter(s => s.season_number >= 0).forEach(season => {
-          const seasonCard = createElement('div', { className: 'request-detail-season-card' });
-          if (season.poster_path) {
-            seasonCard.appendChild(createElement('img', {
-              src: `${TMDB_IMAGE_BASE}${season.poster_path}`,
-              alt: season.name,
-              loading: 'lazy',
-              onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
-            }));
-          }
-          seasonCard.appendChild(createElement('div', { className: 'request-detail-season-name' }, season.name));
-          seasonCard.appendChild(createElement('div', { className: 'request-detail-season-episodes' }, `${season.episode_count || 0} Folgen`));
-          seasonsGrid.appendChild(seasonCard);
-        });
-        seasonsSection.appendChild(seasonsGrid);
-        content.appendChild(seasonsSection);
-      }
+      const actions = [
+        canRequest ? {
+          label: 'Anfragen',
+          className: 'btn-primary',
+          onClick: handleRequest
+        } : null,
+        trailerAction,
+        {
+          label: 'Zurück',
+          className: 'btn-secondary',
+          onClick: () => { window.history.back(); }
+        }
+      ].filter(Boolean);
 
-      container.appendChild(content);
+      const statusContent = buildStatusContent({ crossCheck, isBanned, isRequested, type });
+      const castSection = buildCastSection(details.cast);
+      const seasonsSection = type === 'tv' ? buildSeasonsSection(details.seasons) : null;
+
+      const detailView = DetailView({
+        item: normalized,
+        actions,
+        castSection,
+        seasonsSection,
+        statusContent
+      });
+
+      container.innerHTML = '';
+      while (detailView.firstChild) {
+        container.appendChild(detailView.firstChild);
+      }
 
     } catch (error) {
       if (error.isAuthError) return;
 
-      console.error('[Detail Page Error]', error);
+      console.error('[Request Detail Page Error]', error);
       appStore.showToast('Fehler beim Laden', 'error');
       container.innerHTML = '';
       container.appendChild(
@@ -212,15 +223,6 @@ export default function RequestDetailPage({ type, id }) {
       );
     } finally {
       setSectionBusy(container, false);
-    }
-  };
-
-  const isAlreadyRequested = async (tmdbId, tmdbType) => {
-    try {
-      const requests = await RequestsApi.getMyRequests();
-      return requests.some(r => r.tmdb_id === tmdbId && r.tmdb_type === tmdbType && r.status !== 'rejected');
-    } catch {
-      return false;
     }
   };
 

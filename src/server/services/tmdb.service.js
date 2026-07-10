@@ -26,6 +26,25 @@ function setMemoryCache(key, data) {
   memoryCache.set(key, { data, timestamp: Date.now() });
 }
 
+const TRAILER_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function findTmdbYouTubeTrailer(videos = []) {
+  const preferred = videos
+    .filter(video => video.site === 'YouTube' && video.key)
+    .sort((a, b) => {
+      const typeScore = (video) => video.type === 'Trailer' ? 0 : video.type === 'Teaser' ? 1 : 2;
+      return typeScore(a) - typeScore(b);
+    });
+
+  const video = preferred[0];
+  return video ? {
+    site: 'YouTube',
+    key: video.key,
+    name: video.name || 'Trailer',
+    type: video.type || 'Trailer'
+  } : null;
+}
+
 const isV4Token = env.TMDB_API_KEY.startsWith('eyJ');
 
 const buildTmdbUrl = (path, params = {}) => {
@@ -73,6 +92,30 @@ const fetchTmdbJson = async (path, params = {}) => {
   return data;
 };
 
+async function getYouTubeTrailer(tmdbType, tmdbId) {
+  const cacheKey = `tmdb_trailer_${tmdbType}_${tmdbId}`;
+  const cached = getMemoryCache(cacheKey, TRAILER_CACHE_TTL);
+  if (cached) return cached.trailer;
+
+  const path = tmdbType === 'tv' ? `/tv/${tmdbId}/videos` : `/movie/${tmdbId}/videos`;
+  let trailer = null;
+
+  try {
+    const deVideos = await fetchTmdbJson(path, { language: 'de-DE' });
+    trailer = findTmdbYouTubeTrailer(deVideos.results || []);
+
+    if (!trailer) {
+      const enVideos = await fetchTmdbJson(path, { language: 'en-US' });
+      trailer = findTmdbYouTubeTrailer(enVideos.results || []);
+    }
+  } catch (error) {
+    trailer = null;
+  }
+
+  setMemoryCache(cacheKey, { trailer });
+  return trailer;
+}
+
 class TmdbService {
   static async search(query, page = 1) {
     const searchParams = {
@@ -111,12 +154,14 @@ class TmdbService {
     // Check cache
     const cached = getCached.get(movieId);
     if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
-      return { ...cached, id: cached.tmdb_id, media_type: 'movie' };
+      const trailer = await getYouTubeTrailer('movie', movieId);
+      return { ...cached, id: cached.tmdb_id, media_type: 'movie', trailer };
     }
 
-    const [details, credits] = await Promise.all([
+    const [details, credits, trailer] = await Promise.all([
       fetchTmdbJson(`/movie/${movieId}`, { language: 'de-DE' }),
-      fetchTmdbJson(`/movie/${movieId}/credits`, { language: 'de-DE' })
+      fetchTmdbJson(`/movie/${movieId}/credits`, { language: 'de-DE' }),
+      getYouTubeTrailer('movie', movieId)
     ]);
 
     cacheMovie.run(movieId, details.title, details.overview, details.poster_path, details.backdrop_path, details.release_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
@@ -127,18 +172,21 @@ class TmdbService {
       media_type: 'movie',
       cast: credits.cast?.slice(0, 10) || [],
       runtime: details.runtime,
+      trailer
     };
   }
 
   static async getTvDetails(tvId) {
     const cached = getCached.get(tvId);
     if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
-      return { ...cached, id: cached.tmdb_id, media_type: 'tv' };
+      const trailer = await getYouTubeTrailer('tv', tvId);
+      return { ...cached, id: cached.tmdb_id, media_type: 'tv', trailer };
     }
 
-    const [details, credits] = await Promise.all([
+    const [details, credits, trailer] = await Promise.all([
       fetchTmdbJson(`/tv/${tvId}`, { language: 'de-DE' }),
-      fetchTmdbJson(`/tv/${tvId}/credits`, { language: 'de-DE' })
+      fetchTmdbJson(`/tv/${tvId}/credits`, { language: 'de-DE' }),
+      getYouTubeTrailer('tv', tvId)
     ]);
 
     cacheTv.run(tvId, details.name, details.overview, details.poster_path, details.backdrop_path, details.first_air_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
@@ -147,6 +195,7 @@ class TmdbService {
       ...details,
       media_type: 'tv',
       cast: credits.cast?.slice(0, 10) || [],
+      trailer
     };
   }
 
@@ -236,4 +285,4 @@ class TmdbService {
   }
 }
 
-export { TmdbService };
+export { TmdbService, findTmdbYouTubeTrailer };

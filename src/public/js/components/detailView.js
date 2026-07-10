@@ -1,7 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
-export function DetailView({ item, actions, favoriteButton, castSection, seasonsSection, similarSection }) {
+export function DetailView({ item, actions, favoriteButton, castSection, seasonsSection, similarSection, statusContent = null }) {
   const container = createElement('div', { className: 'page-container' });
 
   const genreTags = (item.genres || []).map(genre =>
@@ -110,17 +110,23 @@ export function DetailView({ item, actions, favoriteButton, castSection, seasons
           metadataItems.length > 0 ? createElement('div', { className: 'detail-metadata' }, metadataItems) : null,
           genreTags.length > 0 ? createElement('div', { className: 'detail-genres' }, genreTags) : null,
           taglineEl,
+          statusContent,
           actionButtons.length > 0 ? createElement('div', { className: 'detail-actions' }, actionButtons) : null,
           createElement('p', { className: 'detail-overview' }, item.overview),
           crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null
         )
-      ),
-      castSection,
-      seasonsSection
+      )
     )
   );
 
   container.appendChild(detailPageEl);
+
+  const extraSections = [castSection, seasonsSection].filter(Boolean);
+  if (extraSections.length > 0) {
+    container.appendChild(
+      createElement('div', { className: 'content-section detail-extra-section' }, extraSections)
+    );
+  }
 
   if (similarSection) {
     container.appendChild(

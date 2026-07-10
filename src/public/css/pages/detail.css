@@ -2,6 +2,7 @@
    DETAIL PAGE
 --------------------------------- */
 .detail-page {
+  --detail-hero-height: clamp(600px, 76vh, 700px);
   position: relative;
   width: 100%;
   overflow: hidden;
@@ -12,10 +13,11 @@
 .detail-hero-backdrop {
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
   width: 100%;
-  height: min(76vh, 720px);
-  min-height: 520px;
+  height: auto;
+  min-height: 0;
   background-size: cover;
   background-position: center 24%;
   pointer-events: none;
@@ -46,6 +48,7 @@
   flex-direction: column;
   gap: clamp(20px, 2.5vw, 32px);
   min-width: 0;
+  min-height: var(--detail-hero-height);
 }
 
 .detail-hero-main {
@@ -53,7 +56,7 @@
   grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
   align-items: center;
   gap: clamp(36px, 5vw, 72px);
-  min-height: clamp(430px, 54vh, 620px);
+  min-height: 0;
   min-width: 0;
 }
 
@@ -67,7 +70,7 @@
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  background-color: #0c0c10; /* Dark premium background for letterboxing/pillarboxing */
+  background-color: #0c0c10;
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
@@ -77,7 +80,7 @@
 .detail-poster img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .detail-info {
@@ -353,9 +356,13 @@
 }
 
 @media (max-width: 992px) {
+  .detail-page {
+    --detail-hero-height: 0px;
+  }
+
   .detail-hero-backdrop {
-    height: 58vh;
-    min-height: 480px;
+    height: auto;
+    min-height: 0;
     background-position: center top;
   }
 
@@ -549,8 +556,8 @@
 
 @media (max-width: 768px) {
   .detail-hero-backdrop {
-    height: 64vh;
-    min-height: 420px;
+    height: auto;
+    min-height: 0;
   }
   .detail-content {
     padding: 28px var(--spacing-md) 16px;

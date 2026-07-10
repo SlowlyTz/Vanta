@@ -27,6 +27,59 @@ describe('RequestsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    window.location.hash = '#/requests';
+  });
+
+  it('defaults to the Neue Anfrage tab and view when no view param is given', () => {
+    RequestsApi.search.mockResolvedValue([]);
+
+    const container = RequestsPage({});
+    const tabs = container.querySelectorAll('.requests-tab');
+
+    expect(tabs[0].textContent).toBe('Neue Anfrage');
+    expect(tabs[0].classList.contains('active')).toBe(true);
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    expect(tabs[1].classList.contains('active')).toBe(false);
+    expect(tabs[1].getAttribute('aria-selected')).toBe('false');
+    expect(container.querySelector('.requests-new-view').classList.contains('hidden')).toBe(false);
+    expect(container.querySelector('.requests-list-view').classList.contains('hidden')).toBe(true);
+  });
+
+  it('activates the Meine Anfragen tab and loads requests when view is list', async () => {
+    RequestsApi.getMyRequests.mockResolvedValue([]);
+
+    const container = RequestsPage({ view: 'list' });
+    const tabs = container.querySelectorAll('.requests-tab');
+
+    expect(tabs[1].textContent).toBe('Meine Anfragen');
+    expect(tabs[1].classList.contains('active')).toBe(true);
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+    expect(container.querySelector('.requests-list-view').classList.contains('hidden')).toBe(false);
+    expect(container.querySelector('.requests-new-view').classList.contains('hidden')).toBe(true);
+    expect(RequestsApi.getMyRequests).toHaveBeenCalled();
+
+    await flush();
+  });
+
+  it('navigates via the hash when a tab is clicked', () => {
+    RequestsApi.getMyRequests.mockResolvedValue([]);
+
+    const container = RequestsPage({});
+    const tabs = container.querySelectorAll('.requests-tab');
+
+    tabs[1].click();
+    expect(window.location.hash).toBe('#/requests/mine');
+  });
+
+  it('shows a compact empty state for Meine Anfragen when there are no requests', async () => {
+    RequestsApi.getMyRequests.mockResolvedValue([]);
+
+    const container = RequestsPage({ view: 'list' });
+    await flush();
+
+    const status = container.querySelector('.requests-list-view .search-empty-state');
+    expect(status.classList.contains('hidden')).toBe(false);
+    expect(status.textContent).toContain('Keine Anfragen');
   });
 
   it('shows a local compact loader in the new-request search area without blocking the search input', async () => {
