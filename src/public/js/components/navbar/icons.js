@@ -36,8 +36,8 @@ export function createNavIcon(key) {
     `,
     scroller: `
       <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="6" y="3" width="12" height="18" rx="3"></rect>
-        <path d="M10 8l4 4-4 4"></path>
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="m10 8.5 6 3.5-6 3.5z" fill="currentColor" stroke="none"></path>
       </svg>
     `,
     publishers: `
