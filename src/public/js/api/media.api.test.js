@@ -56,6 +56,44 @@ describe('MediaApi', () => {
     });
   });
 
+  describe('getLibrary', () => {
+    it('requests the base library url without optional filters', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getLibrary('Movie', null, null, 1, 50);
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/library?type=Movie&page=1&limit=50');
+    });
+
+    it('encodes and appends the studio filter', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getLibrary('Movie', null, 'Warner Bros. Pictures', 1, 50);
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/library?type=Movie&page=1&limit=50&studio=Warner%20Bros.%20Pictures');
+    });
+
+    it('appends the publisher filter when options.publisherId is set', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getLibrary('Movie,Series', null, null, 1, 50, { publisherId: 'warner-bros' });
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/library?type=Movie%2CSeries&page=1&limit=50&publisher=warner-bros');
+    });
+
+    it('does not append a publisher filter when options is omitted', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [] }));
+
+      await MediaApi.getLibrary('Movie', 'Action', null, 2, 20);
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/library?type=Movie&page=2&limit=20&genre=Action');
+    });
+  });
+
   describe('getProfileContinueWatching', () => {
     it('requests continue watching with default pagination', async () => {
       fetch.mockReturnValue(createJsonResponse({ items: [], page: 1, limit: 24, totalItems: 0, totalPages: 0 }));

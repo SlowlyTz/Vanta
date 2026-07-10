@@ -2,7 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
-import { FEATURED_STUDIOS, matchFeaturedStudio } from '../constants/featuredStudios.js';
+import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../constants/featuredPublishers.js';
 
 export default function PublishersPage() {
   const container = createElement('div', { className: 'page-container content-section' });
@@ -69,38 +69,22 @@ export default function PublishersPage() {
       return;
     }
 
-    const featured = [];
-    const seen = new Set();
-    const others = [];
-
-    studios.forEach(studio => {
-      const match = matchFeaturedStudio(studio.Name);
-      if (match && !seen.has(match.label)) {
-        seen.add(match.label);
-        featured.push({ ...studio, _featured: match });
-      } else if (!match) {
-        others.push(studio);
-      }
-    });
-
-    featured.sort((a, b) => {
-      const order = FEATURED_STUDIOS.map(e => e.label);
-      return order.indexOf(a._featured.label) - order.indexOf(b._featured.label);
-    });
+    const featured = getFeaturedPublishersFromStudios(studios);
+    const others = studios.filter(studio => !matchFeaturedPublisher(studio.Name));
 
     const wrapper = createElement('div', {});
 
     if (featured.length > 0) {
       const featuredGrid = createElement('div', { className: 'publishers-featured-grid' });
 
-      featured.forEach(studio => {
-        const { label, image } = studio._featured;
+      featured.forEach(publisher => {
+        const { id, label, image } = publisher;
 
         const card = createElement('button', {
           className: 'publisher-featured-card',
           'aria-label': label,
           onClick: () => {
-            window.location.hash = `#/publisher/${encodeURIComponent(studio.Name)}`;
+            window.location.hash = `#/publisher-group/${encodeURIComponent(id)}`;
           }
         });
 
