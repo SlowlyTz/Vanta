@@ -14,6 +14,10 @@ function makeItem(id) {
   return { Id: id, Name: `Movie ${id}`, Type: 'Movie', ProductionYear: 2020 };
 }
 
+function makeSeries(id) {
+  return { Id: id, Name: `Series ${id}`, Type: 'Series', ChildCount: 2 };
+}
+
 async function flush() {
   await Promise.resolve();
   await Promise.resolve();
@@ -53,6 +57,45 @@ describe('ProfilePage', () => {
 
     expect(MediaApi.getProfileHistory).toHaveBeenCalledWith(1, 24);
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
+  });
+
+  it('renders one series card per grouped series in Weiter ansehen and navigates to its detail route', async () => {
+    MediaApi.getProfileContinueWatching.mockResolvedValue({
+      items: [makeSeries('s1'), makeItem('1')], page: 1, limit: 24, totalItems: 2, totalPages: 1
+    });
+
+    const container = ProfilePage();
+    await flush();
+
+    const cards = container.querySelectorAll('.media-card');
+    expect(cards).toHaveLength(2);
+
+    const seriesCard = Array.from(cards).find(c => c.querySelector('.media-card-badge')?.textContent === 'SERIE');
+    expect(seriesCard).toBeTruthy();
+    expect(seriesCard.textContent).not.toMatch(/S\d{2}E\d{2}/);
+
+    seriesCard.click();
+    expect(window.location.hash).toBe('#/item/s1');
+  });
+
+  it('renders one series card per grouped series in History and navigates to its detail route', async () => {
+    MediaApi.getProfileContinueWatching.mockResolvedValue({ items: [], page: 1, limit: 24, totalItems: 0, totalPages: 0 });
+    MediaApi.getProfileHistory.mockResolvedValue({
+      items: [makeSeries('s2')], page: 1, limit: 24, totalItems: 1, totalPages: 1
+    });
+
+    const container = ProfilePage();
+    await flush();
+
+    const historyButton = Array.from(container.querySelectorAll('.profile-tab-button')).find(b => b.textContent === 'History');
+    historyButton.click();
+    await flush();
+
+    const seriesCard = container.querySelector('.media-card');
+    expect(seriesCard.querySelector('.media-card-badge').textContent).toBe('SERIE');
+
+    seriesCard.click();
+    expect(window.location.hash).toBe('#/item/s2');
   });
 
   it('loads the Favoriten tab when clicked', async () => {

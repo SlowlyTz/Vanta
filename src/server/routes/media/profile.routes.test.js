@@ -56,6 +56,16 @@ describe('Profile Routes', () => {
       expect(ProfileService.getHistory).toHaveBeenCalledWith('test-user', 'test-token', { page: 2, limit: 10 });
     });
 
+    it('passes through grouped Series cards with correct pagination metadata', async () => {
+      const seriesCard = { Id: 's1', Type: 'Series', Name: 'Breaking Bad' };
+      ProfileService.getHistory.mockResolvedValue({ items: [seriesCard], totalItems: 5 });
+
+      const res = await request(createApp()).get('/history?page=1&limit=2');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ items: [seriesCard], page: 1, limit: 2, totalItems: 5, totalPages: 3 });
+    });
+
     it('treats an empty Jellyfin result as a valid response', async () => {
       ProfileService.getHistory.mockResolvedValue({ items: [], totalItems: 0 });
 
