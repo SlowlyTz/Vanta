@@ -3,7 +3,7 @@
   top: max(14px, env(safe-area-inset-top));
   left: 0;
   right: 0;
-  z-index: 1600;
+  z-index: 1860;
   height: 44px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -13,6 +13,10 @@
   background: transparent;
   border: 0;
   box-shadow: none;
+}
+
+.navbar.navbar-spotlight.mobile-open {
+  z-index: 1900;
 }
 
 .navbar-left,
@@ -144,6 +148,16 @@
 
 .navbar.mobile-open .mobile-menu-line:nth-child(3) {
   transform: translateY(-6.5px) rotate(-45deg);
+}
+
+@media (max-width: 768px) {
+  .navbar-center {
+    display: none;
+  }
+
+  .navbar.navbar-spotlight {
+    grid-template-columns: auto 1fr auto;
+  }
 }
 
 @media (max-width: 520px) {

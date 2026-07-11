@@ -25,6 +25,7 @@ function shuffleArray(arr) {
 
 export default function HomePage() {
   const container = createElement('div', { className: 'page-container' });
+  container.dataset.edgeTop = 'true';
   let sectionsContainer = null;
   let currentData = null;
   const sectionGroupResults = new Map();

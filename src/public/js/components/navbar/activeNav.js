@@ -9,7 +9,9 @@ export function isNavLinkActive(link, currentHash) {
     case 'scroller':
       return currentHash === '#/scroller';
     case 'publishers':
-      return currentHash === '#/publishers' || currentHash.startsWith('#/publisher/');
+      return currentHash === '#/publishers'
+        || currentHash.startsWith('#/publisher/')
+        || currentHash.startsWith('#/publisher-group/');
     case 'requests':
       return currentHash === '#/requests';
     case 'search':

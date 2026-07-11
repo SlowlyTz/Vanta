@@ -41,19 +41,18 @@ describe('Navbar', () => {
   it('mounts the top tabs, top actions and mobile drawer into the document', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
-    expect(navbar.element.querySelectorAll('.navbar-top-tab').length).toBe(2);
+    expect(navbar.element.querySelectorAll('.navbar-top-tab').length).toBe(3);
     expect(navbar.element.querySelectorAll('.navbar-action-button').length).toBeGreaterThan(0);
     expect(document.getElementById('mobile-navigation')).toBeTruthy();
   });
 
-  it('renders only Home and Favourites in the top tab navigation', () => {
+  it('renders Home, Filme and Serien in the desktop top tab navigation', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     const labels = Array.from(navbar.element.querySelectorAll('.navbar-top-tab')).map(el => el.textContent);
-    expect(labels).toEqual(['Home', 'Favourites']);
+    expect(labels).toEqual(['Home', 'Filme', 'Serien']);
 
-    const favoritesTab = navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]');
-    expect(favoritesTab).toBeTruthy();
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]')).toBeFalsy();
   });
 
   it('renders group, cast, search and profile actions on the right', () => {
@@ -73,33 +72,81 @@ describe('Navbar', () => {
     Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     const mobileNav = document.getElementById('mobile-navigation');
+    const ACCORDION_KEYS = ['movies', 'series', 'publishers'];
+
     NAV_LINKS.forEach(link => {
+      if (ACCORDION_KEYS.includes(link.key)) {
+        const trigger = mobileNav.querySelector(`[data-mobile-accordion="${link.key}"] button`);
+        expect(trigger, `expected drawer accordion trigger for ${link.key}`).toBeTruthy();
+        return;
+      }
       const anchor = mobileNav.querySelector(`a[href="${link.href}"]`);
       expect(anchor, `expected drawer link for ${link.key}`).toBeTruthy();
     });
   });
 
-  it('marks the Home top tab active on update and switches to Favourites active on #/favorites', () => {
+  it('renders Filme, Serien and Publisher as drawer accordions', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    const drawer = document.getElementById('mobile-navigation');
+
+    expect(drawer.querySelector('[data-mobile-accordion="movies"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-mobile-accordion="series"]')).toBeTruthy();
+    expect(drawer.querySelector('[data-mobile-accordion="publishers"]')).toBeTruthy();
+  });
+
+  it('loads movie genres when the Filme accordion opens', async () => {
+    MediaApi.getGenres.mockResolvedValue([{ Name: 'Horror' }]);
+
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    document.querySelector('[data-mobile-accordion="movies"] button').click();
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('a[href="#/genre/Movie/Horror"]')).toBeTruthy();
+    });
+  });
+
+  it('loads featured publishers when the Publisher accordion opens', async () => {
+    MediaApi.getStudios.mockResolvedValue([
+      { Name: 'Netflix' },
+      { Name: 'Warner Bros. Pictures' }
+    ]);
+
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    document.querySelector('[data-mobile-accordion="publishers"] button').click();
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('a[href="#/publisher-group/netflix"]')).toBeTruthy();
+      expect(document.querySelector('a[href="#/publisher-group/warner-bros"]')).toBeTruthy();
+    });
+  });
+
+  it('marks the Home top tab active on update and switches to Filme active on #/movies', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
     expect(navbar.element.querySelector('.navbar-top-tab[href="#/home"]').classList.contains('active')).toBe(true);
-    expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]').classList.contains('active')).toBe(false);
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/movies"]').classList.contains('active')).toBe(false);
 
-    navbar.update({ currentHash: '#/favorites', user: { username: 'alice' }, scrolled: false });
+    navbar.update({ currentHash: '#/movies', user: { username: 'alice' }, scrolled: false });
     expect(navbar.element.querySelector('.navbar-top-tab[href="#/home"]').classList.contains('active')).toBe(false);
-    expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]').classList.contains('active')).toBe(true);
+    expect(navbar.element.querySelector('.navbar-top-tab[href="#/movies"]').classList.contains('active')).toBe(true);
   });
 
-  it('marks the matching nav link active in the drawer on update', () => {
+  it('marks the matching accordion trigger active in the drawer on update', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     navbar.update({ currentHash: '#/movies', user: { username: 'alice' }, scrolled: false });
-    const mobileLink = document.querySelector('#mobile-navigation a[href="#/movies"]');
-    expect(mobileLink.classList.contains('active')).toBe(true);
+    const trigger = document.querySelector('#mobile-navigation [data-mobile-accordion="movies"] button');
+    expect(trigger.classList.contains('active')).toBe(true);
 
     navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
-    expect(mobileLink.classList.contains('active')).toBe(false);
+    expect(trigger.classList.contains('active')).toBe(false);
   });
 
   it('opens the drawer when the menu button is clicked on desktop', () => {

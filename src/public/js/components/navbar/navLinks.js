@@ -10,7 +10,8 @@ export const NAV_LINKS = [
 
 export const TOP_TABS = [
   { key: 'home', label: 'Home', href: '#/home' },
-  { key: 'favorites', label: 'Favourites', href: '#/favorites' }
+  { key: 'movies', label: 'Filme', href: '#/movies' },
+  { key: 'series', label: 'Serien', href: '#/series' }
 ];
 
 export const TOP_ACTIONS = [
