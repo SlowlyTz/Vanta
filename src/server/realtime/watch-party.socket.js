@@ -10,6 +10,10 @@ function ownerError(message) {
   return error;
 }
 
+function isPlaybackControlAllowed(party) {
+  return party.status === 'playing' || party.status === 'paused';
+}
+
 export class WatchPartySocketHub {
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -140,11 +144,59 @@ export class WatchPartySocketHub {
           return;
         }
 
-        case 'OWNER_START': {
-          const { party, startsAtServerTimeMs, positionMs } = WatchPartyService.startParty({ partyId, ownerUserId: userId });
-          this.broadcastParty(partyId, { type: 'COUNTDOWN', startsAtServerTimeMs, positionMs });
+        case 'PLAYER_READY_STATE': {
+          const party = WatchPartyService.setPlayerReady({
+            partyId,
+            userId,
+            ready: false,
+            state: message.state,
+            message: message.message
+          });
           this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
-          this.scheduleCountdownCompletion(partyId, startsAtServerTimeMs, positionMs);
+          return;
+        }
+
+        case 'PLAYER_READY': {
+          const party = WatchPartyService.setPlayerReady({
+            partyId,
+            userId,
+            ready: true,
+            state: 'ready',
+            message: 'Bereit'
+          });
+          this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
+
+          const countdown = WatchPartyService.beginCountdownIfReady({ partyId });
+          if (countdown) {
+            this.broadcastParty(partyId, {
+              type: 'COUNTDOWN',
+              startsAtServerTimeMs: countdown.startsAtServerTimeMs,
+              positionMs: countdown.positionMs
+            });
+            this.broadcastParty(partyId, {
+              type: 'PARTY_UPDATED',
+              party: WatchPartyService.serializeParty(countdown.party)
+            });
+            this.scheduleCountdownCompletion(partyId, countdown.startsAtServerTimeMs, countdown.positionMs);
+          }
+          return;
+        }
+
+        case 'OWNER_OPEN_READY_ROOM': {
+          const party = WatchPartyService.openReadyRoom({ partyId, ownerUserId: userId });
+          this.broadcastParty(partyId, {
+            type: 'PARTY_UPDATED',
+            party: WatchPartyService.serializeParty(party)
+          });
+          return;
+        }
+
+        case 'OWNER_START': {
+          const party = WatchPartyService.openReadyRoom({ partyId, ownerUserId: userId });
+          this.broadcastParty(partyId, {
+            type: 'PARTY_UPDATED',
+            party: WatchPartyService.serializeParty(party)
+          });
           return;
         }
 
@@ -261,6 +313,11 @@ export class WatchPartySocketHub {
     }
 
     const now = Date.now();
+
+    if (!isPlaybackControlAllowed(party)) {
+      if (message.type === 'OWNER_SYNC') return;
+      throw ownerError('Die Watch Party wurde noch nicht gestartet');
+    }
 
     if (message.type === 'OWNER_PLAY') {
       party.status = 'playing';

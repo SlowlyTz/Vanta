@@ -6,18 +6,19 @@ function createFakeControl() {
   return {
     style: {},
     setAttribute(name, value) { attributes[name] = value; },
-    getAttribute(name) { return attributes[name] ?? null; }
+    getAttribute(name) { return attributes[name] ?? null; },
+    removeAttribute(name) { delete attributes[name]; }
   };
 }
 
-function createFakeRoot(controls) {
+function createFakeRoot(controls, gestures = []) {
   const classes = new Set();
   return {
     classList: {
       add: (...names) => names.forEach(name => classes.add(name)),
       contains: (name) => classes.has(name)
     },
-    querySelectorAll: () => controls
+    querySelectorAll: selector => (selector === 'media-gesture' ? gestures : controls)
   };
 }
 
@@ -53,6 +54,27 @@ describe('applyWatchPartyPermissions', () => {
 
     // Volume controls are intentionally excluded from the locked-control selector,
     // so querySelectorAll (and this whole flow) never touches them.
+  });
+
+  it('deaktiviert Doppeltipp-Seek-Gesten für Viewer', () => {
+    const gesture = createFakeControl();
+    gesture.setAttribute('action', 'seek:-10');
+    const root = createFakeRoot([], [gesture]);
+
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false } });
+
+    expect(gesture.getAttribute('action')).toBeNull();
+    expect(gesture.style.pointerEvents).toBe('none');
+  });
+
+  it('lässt Doppeltipp-Seek-Gesten für den Owner unverändert', () => {
+    const gesture = createFakeControl();
+    gesture.setAttribute('action', 'seek:-10');
+    const root = createFakeRoot([], [gesture]);
+
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: true } });
+
+    expect(gesture.getAttribute('action')).toBe('seek:-10');
   });
 });
 

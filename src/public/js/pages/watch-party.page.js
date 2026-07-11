@@ -9,16 +9,47 @@ import { loadEpisodeContext } from '../utils/episodeContext.js';
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 const OWNER_SYNC_INTERVAL_MS = 5000;
 
-const PRELOAD_LABELS = {
-  waiting: 'Wartet auf Player',
-  loading: 'Stream wird vorbereitet …',
-  ready: 'Bereit',
-  blocked: 'Autoplay blockiert',
-  error: 'Fehler beim Laden'
-};
+const PLAYER_ROOM_STATUSES = new Set(['ready-room', 'countdown', 'playing', 'paused']);
+const PLAYBACK_STATUSES = new Set(['playing', 'paused']);
+
+function shouldShowPlayerForParty(nextParty) {
+  return PLAYER_ROOM_STATUSES.has(nextParty?.status);
+}
+
+function connectedMemberCount(members) {
+  return members.filter(member => member.connected).length;
+}
 
 function memberInitial(username) {
   return (username || '?').trim().charAt(0).toUpperCase() || '?';
+}
+
+function formatPosition(positionMs) {
+  if (!positionMs || positionMs <= 0) return 'Von Anfang an';
+  const totalSeconds = Math.floor(positionMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const time = hours > 0
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    : `${minutes}:${String(seconds).padStart(2, '0')}`;
+  return `Fortsetzen bei ${time}`;
+}
+
+function formatRuntime(runtimeTicks) {
+  if (!runtimeTicks) return null;
+  const minutes = Math.round(runtimeTicks / 10_000_000 / 60);
+  return minutes > 0 ? `${minutes} Min.` : null;
+}
+
+function countdownMetaParts(snapshot) {
+  const parts = [];
+  if (snapshot.productionYear) parts.push(String(snapshot.productionYear));
+  if (snapshot.officialRating) parts.push(snapshot.officialRating);
+  if (snapshot.communityRating) parts.push(`★ ${Number(snapshot.communityRating).toFixed(1)}`);
+  const runtime = formatRuntime(snapshot.runtimeTicks);
+  if (runtime) parts.push(runtime);
+  return parts;
 }
 
 function getPosterUrl(item) {
@@ -37,6 +68,9 @@ export default function WatchPartyPage({ partyId }) {
   let controller = null;
   let ownerHeartbeatTimer = null;
   let countdownTimer = null;
+  let watchPartyConfig = null;
+  let localReadyPreparing = false;
+  let lastPlayStartServerTimeMs = null;
   let destroyed = false;
   let scrollLockY = 0;
   let ending = false;
@@ -91,15 +125,50 @@ export default function WatchPartyPage({ partyId }) {
     type: 'button',
     hidden: true,
     onClick: () => handleStart()
-  }, 'Party starten');
+  }, 'Starten');
 
-  const actionsRow = createElement('div', { className: 'watch-party-actions' }, startButton);
+  const startHint = createElement('div', { className: 'watch-party-start-hint' });
+
+  const actionsRow = createElement('div', { className: 'watch-party-actions' }, startButton, startHint);
 
   const lobby = createElement('div', { className: 'watch-party-lobby' }, mediaSummary, inviteRow, membersList, actionsRow);
 
   const playerMount = createElement('div', { className: 'watch-party-player-mount' });
 
-  const countdownOverlay = createElement('div', { className: 'watch-party-countdown-overlay', hidden: true });
+  const countdownNumber = createElement('div', {
+    className: 'watch-party-countdown-number',
+    hidden: true,
+    'aria-hidden': 'true'
+  });
+  const countdownGraphic = createElement('div', { className: 'numero_counting_wrapper' },
+    createElement('div', { className: 'numero_shape' })
+  );
+  const countdownTitle = createElement('div', { className: 'watch-party-countdown-title' });
+  const countdownMeta = createElement('div', { className: 'watch-party-countdown-meta' });
+  const countdownPosition = createElement('div', { className: 'watch-party-countdown-position' });
+  const countdownModal = createElement('div', { className: 'watch-party-countdown-modal' },
+    countdownGraphic, countdownNumber, countdownTitle, countdownMeta, countdownPosition
+  );
+  const countdownOverlay = createElement('div', { className: 'watch-party-countdown-overlay', hidden: true }, countdownModal);
+
+  const readyTitle = createElement('h2', { className: 'watch-party-ready-title' }, 'Bereit zum gemeinsamen Schauen?');
+  const readySubtitle = createElement('p', { className: 'watch-party-ready-subtitle' }, 'Jeder Teilnehmer muss einmal Bereit klicken, bevor die Wiedergabe startet.');
+  const readyMembersList = createElement('ul', { className: 'watch-party-ready-members' });
+  const readyButton = createElement('button', {
+    className: 'watch-party-ready-button',
+    type: 'button',
+    onClick: () => handleReadyClick()
+  }, 'Bereit');
+  const readyStatus = createElement('p', { className: 'watch-party-ready-status' });
+  const readyOverlay = createElement('div', { className: 'watch-party-ready-overlay', hidden: true },
+    createElement('div', { className: 'watch-party-ready-panel' },
+      readyTitle,
+      readySubtitle,
+      readyMembersList,
+      readyButton,
+      readyStatus
+    )
+  );
 
   const autoplayActivateButton = createElement('button', {
     className: 'watch-party-autoplay-button',
@@ -115,6 +184,7 @@ export default function WatchPartyPage({ partyId }) {
 
   container.appendChild(header);
   container.appendChild(lobby);
+  container.appendChild(readyOverlay);
   container.appendChild(countdownOverlay);
   container.appendChild(autoplayOverlay);
   container.appendChild(endedState);
@@ -176,10 +246,6 @@ export default function WatchPartyPage({ partyId }) {
     }
   }
 
-  function preloadLabel(member) {
-    return member.preloadMessage || PRELOAD_LABELS[member.preloadState] || PRELOAD_LABELS.waiting;
-  }
-
   function renderMembers() {
     membersList.innerHTML = '';
 
@@ -193,8 +259,8 @@ export default function WatchPartyPage({ partyId }) {
           member.role === 'owner' ? createElement('span', { className: 'watch-party-member-badge' }, 'Owner') : null
         ),
         createElement('span', {
-          className: `watch-party-member-status is-${member.preloadState || 'waiting'}`
-        }, preloadLabel(member))
+          className: `watch-party-member-status ${member.connected ? 'is-connected' : 'is-waiting'}`
+        }, member.connected ? 'Verbunden' : 'Verbindet …')
       );
 
       if (isOwner() && !isSelf) {
@@ -214,14 +280,65 @@ export default function WatchPartyPage({ partyId }) {
     const owner = isOwner();
     startButton.hidden = !owner;
     endButton.hidden = !owner || party.status === 'ended';
+    startHint.hidden = !owner;
 
     if (owner) {
-      const canStart = party.members.every(member => member.ready || member.role === 'owner');
       const stillInLobby = party.status === 'lobby';
-      startButton.disabled = !canStart || !stillInLobby;
-      startButton.textContent = stillInLobby
-        ? (canStart ? 'Party starten' : 'Warte auf Teilnehmer …')
-        : (party.status === 'countdown' ? 'Startet …' : 'Party läuft');
+      startButton.textContent = 'Starten';
+      startButton.disabled = !stillInLobby;
+
+      if (!stillInLobby) {
+        startHint.textContent = party.status === 'ready-room'
+          ? 'Warte auf Bereitmeldungen'
+          : (party.status === 'countdown' ? 'Startet …' : 'Party läuft');
+      } else {
+        const count = connectedMemberCount(party.members);
+        startHint.textContent = count > 1 ? 'Bereit zum Öffnen des Player-Raums' : 'Du kannst auch alleine starten';
+      }
+    }
+  }
+
+  function readyStateLabel(member) {
+    if (member.ready || member.preloadState === 'ready') return 'Bereit';
+    if (member.preloadState === 'preparing') return 'Wird vorbereitet …';
+    if (member.preloadState === 'error') return member.preloadMessage || 'Fehler';
+    return 'Wartet';
+  }
+
+  function readyStateClass(member) {
+    if (member.ready || member.preloadState === 'ready') return 'is-ready';
+    if (member.preloadState === 'preparing') return 'is-preparing';
+    if (member.preloadState === 'error') return 'is-error';
+    return 'is-idle';
+  }
+
+  function renderReadyOverlay() {
+    if (!party) return;
+    readyMembersList.innerHTML = '';
+    const self = party.members.find(member => member.userId === currentUser?.id);
+
+    party.members.forEach(member => {
+      readyMembersList.appendChild(createElement('li', {
+        className: `watch-party-ready-member ${readyStateClass(member)}`
+      },
+        createElement('span', { className: 'watch-party-member-avatar' }, memberInitial(member.username)),
+        createElement('span', { className: 'watch-party-ready-member-name' }, `${member.username}${member.userId === currentUser?.id ? ' (Du)' : ''}`),
+        createElement('span', { className: 'watch-party-ready-member-state' }, readyStateLabel(member))
+      ));
+    });
+
+    const allReady = party.members.length > 0 && party.members.every(member => member.ready);
+    const selfReady = Boolean(self?.ready);
+    const selfPreparing = localReadyPreparing || self?.preloadState === 'preparing';
+    readyButton.hidden = party.status !== 'ready-room';
+    readyButton.disabled = selfReady || selfPreparing || party.status !== 'ready-room';
+    readyButton.textContent = selfReady ? 'Bereit' : (selfPreparing ? 'Wird bestätigt …' : 'Bereit');
+    readyStatus.textContent = allReady
+      ? 'Alle sind bereit. Countdown startet gleich.'
+      : 'Warte, bis alle Teilnehmer bereit sind.';
+
+    if (party.status === 'countdown') {
+      readyStatus.textContent = 'Alle sind bereit. Countdown läuft.';
     }
   }
 
@@ -284,7 +401,28 @@ export default function WatchPartyPage({ partyId }) {
   }
 
   function handleStart() {
-    socket?.sendJson({ type: 'OWNER_START' });
+    if (!isOwner() || party?.status !== 'lobby') return;
+    socket?.sendJson({ type: 'OWNER_OPEN_READY_ROOM' });
+  }
+
+  async function handleReadyClick() {
+    if (localReadyPreparing || party?.status !== 'ready-room') return;
+    localReadyPreparing = true;
+    renderReadyOverlay();
+
+    try {
+      await ensurePlayerReadyRoom();
+      socket?.sendJson({ type: 'PLAYER_READY' });
+    } catch (error) {
+      socket?.sendJson({
+        type: 'PLAYER_READY_STATE',
+        state: 'error',
+        message: error.message || 'Player-Raum konnte nicht geöffnet werden'
+      });
+    } finally {
+      localReadyPreparing = false;
+      renderReadyOverlay();
+    }
   }
 
   async function handleEnd() {
@@ -312,22 +450,37 @@ export default function WatchPartyPage({ partyId }) {
   }
 
   // --- Countdown ---
-  function showCountdown(startsAtServerTimeMs) {
+  function showCountdown({ startsAtServerTimeMs, positionMs }) {
+    hideReadyOverlay();
     countdownOverlay.hidden = false;
     if (countdownTimer) window.clearInterval(countdownTimer);
 
+    const snapshot = party?.itemSnapshot || {};
+    const metaParts = countdownMetaParts(snapshot);
+    countdownTitle.textContent = snapshot.name || 'Unbekanntes Medium';
+    countdownMeta.textContent = metaParts.join(' · ');
+    countdownMeta.hidden = metaParts.length === 0;
+    countdownPosition.textContent = formatPosition(positionMs);
+
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((startsAtServerTimeMs - Date.now()) / 1000));
-      countdownOverlay.textContent = remaining > 0 ? `Startet in ${remaining} …` : 'Los geht’s …';
+      countdownNumber.textContent = String(remaining);
       if (remaining <= 0) {
         window.clearInterval(countdownTimer);
         countdownTimer = null;
-        window.setTimeout(() => { countdownOverlay.hidden = true; }, 600);
       }
     };
 
     tick();
     countdownTimer = window.setInterval(tick, 250);
+  }
+
+  function hideCountdown() {
+    countdownOverlay.hidden = true;
+    if (countdownTimer) {
+      window.clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
   }
 
   // --- Player + sync ---
@@ -341,6 +494,15 @@ export default function WatchPartyPage({ partyId }) {
         playing: !controller.player.paused
       });
     }, OWNER_SYNC_INTERVAL_MS);
+  }
+
+  function shouldRunOwnerHeartbeat() {
+    return isOwner() && Boolean(controller?.player) && ['playing', 'paused'].includes(party?.status);
+  }
+
+  function maybeStartOwnerHeartbeat() {
+    if (!shouldRunOwnerHeartbeat()) return;
+    startOwnerHeartbeat();
   }
 
   function applySync({ positionMs, playing, serverTimeMs }) {
@@ -367,13 +529,17 @@ export default function WatchPartyPage({ partyId }) {
     setSyncStatus('sync', 'Synchron');
   }
 
+  let blockedPlayPayload = null;
+
   async function safeApplyRemoteControl(payload) {
     if (!controller) return;
     try {
       await controller.applyRemoteControl(payload);
+      blockedPlayPayload = null;
       autoplayOverlay.hidden = true;
     } catch (error) {
       if (payload.action === 'play') {
+        blockedPlayPayload = payload;
         autoplayOverlay.hidden = false;
       } else {
         console.warn('[Watch Party Remote Control]', error);
@@ -381,28 +547,83 @@ export default function WatchPartyPage({ partyId }) {
     }
   }
 
-  autoplayActivateButton.addEventListener('click', async () => {
+  async function handleControlPlay(payload) {
     try {
-      await controller?.applyRemoteControl({
-        action: 'play',
-        positionMs: party?.positionMs || 0,
-        serverTimeMs: party?.lastServerTimeMs || Date.now(),
-        playing: true
-      });
-      autoplayOverlay.hidden = true;
+      const playStartServerTimeMs = Number(payload.serverTimeMs) || Date.now();
+      if (lastPlayStartServerTimeMs === playStartServerTimeMs) return;
+      lastPlayStartServerTimeMs = playStartServerTimeMs;
+
+      if (party) {
+        party.status = 'playing';
+        party.positionMs = payload.positionMs;
+        party.lastServerTimeMs = playStartServerTimeMs;
+      }
+      hideReadyOverlay();
+      hideCountdown();
+      await ensurePlayerPlayback();
+      showPlayerSurface();
+      if (controller?.prepareInitialPlayback) {
+        await controller.prepareInitialPlayback({ position: (payload.positionMs || 0) / 1000 });
+      }
+      maybeStartOwnerHeartbeat();
+      await safeApplyRemoteControl(payload);
     } catch (error) {
-      console.error('[Watch Party Autoplay Retry Error]', error);
+      lastPlayStartServerTimeMs = null;
+      appStore.showToast(error.message || 'Wiedergabe konnte nicht gestartet werden', 'error');
     }
+  }
+
+  autoplayActivateButton.addEventListener('click', async () => {
+    if (!blockedPlayPayload) return;
+    await safeApplyRemoteControl(blockedPlayPayload);
   });
 
-  async function mountPlayer({ itemId, positionMs, force = false }) {
-    if (destroyed) return;
-    if (controller && !force) return;
+  function ensurePlayerMountAttached() {
+    if (!playerMount.isConnected) {
+      container.insertBefore(playerMount, countdownOverlay);
+    }
+  }
 
+  function showPlayerSurface() {
     lobby.hidden = true;
-    if (!playerMount.isConnected) container.insertBefore(playerMount, countdownOverlay);
+    ensurePlayerMountAttached();
+    playerMount.removeAttribute('aria-hidden');
     playerMount.classList.add('player-page', 'vanta-player-root');
     lockPlayerViewport();
+  }
+
+  function showReadyRoom() {
+    showPlayerSurface();
+    readyOverlay.hidden = false;
+    autoplayOverlay.hidden = true;
+    setSyncStatus('preparing', 'Bereitmachen');
+    renderReadyOverlay();
+  }
+
+  function hideReadyOverlay() {
+    readyOverlay.hidden = true;
+  }
+
+  function setPlaybackPhase() {
+    if (watchPartyConfig) watchPartyConfig.phase = 'playback';
+  }
+
+  async function mountPlayer({ itemId, positionMs, force = false, phase = 'playback', deferInitialLoad = false }) {
+    if (destroyed) return;
+
+    if (controller && !force) {
+      if (phase === 'ready-room') {
+        showReadyRoom();
+      } else {
+        showPlayerSurface();
+      }
+      if (watchPartyConfig) watchPartyConfig.phase = phase;
+      return;
+    }
+
+    ensurePlayerMountAttached();
+    showPlayerSurface();
+    if (phase === 'ready-room') showReadyRoom();
     setSyncStatus('preparing', 'Wird vorbereitet');
 
     try {
@@ -415,6 +636,16 @@ export default function WatchPartyPage({ partyId }) {
       const episodeContext = await loadEpisodeContext(item).catch(() => null);
       if (destroyed) return;
 
+      watchPartyConfig = {
+        enabled: true,
+        phase,
+        isOwner: isOwner(),
+        disableQualityMenu: true,
+        onOwnerPlay: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
+        onOwnerPause: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
+        onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs })
+      };
+
       controller = await playerModule.mountVantaPlayer({
         root: playerMount,
         itemId,
@@ -424,15 +655,8 @@ export default function WatchPartyPage({ partyId }) {
         resolvePlayback: (mode, options) => MediaApi.getPlayback(itemId, mode, options),
         reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
         onBack: goHome,
-        watchParty: {
-          enabled: true,
-          isOwner: isOwner(),
-          disableQualityMenu: true,
-          onOwnerPlay: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
-          onOwnerPause: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
-          onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs }),
-          onPreloadStateChange: ({ state, message }) => socket?.sendJson({ type: 'PRELOAD_STATE', state, message })
-        },
+        watchParty: watchPartyConfig,
+        deferInitialLoad,
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,
@@ -450,11 +674,41 @@ export default function WatchPartyPage({ partyId }) {
         return;
       }
 
-      if (isOwner()) startOwnerHeartbeat();
+      maybeStartOwnerHeartbeat();
+      if (phase === 'ready-room') renderReadyOverlay();
     } catch (error) {
       console.error('[Watch Party Player Error]', error);
       if (!destroyed) appStore.showToast('Player konnte nicht gestartet werden', 'error');
     }
+  }
+
+  async function ensurePlayerReadyRoom() {
+    if (controller) {
+      showReadyRoom();
+      if (watchPartyConfig) watchPartyConfig.phase = 'ready-room';
+      return;
+    }
+    await mountPlayer({
+      itemId: party.playableItemId,
+      positionMs: party.positionMs,
+      phase: 'ready-room',
+      deferInitialLoad: true
+    });
+  }
+
+  async function ensurePlayerPlayback() {
+    if (controller) {
+      showPlayerSurface();
+      setPlaybackPhase();
+      return;
+    }
+    await mountPlayer({
+      itemId: party.playableItemId,
+      positionMs: party.positionMs,
+      phase: 'playback',
+      deferInitialLoad: true
+    });
+    setPlaybackPhase();
   }
 
   async function replacePlayer({ itemId, positionMs }) {
@@ -480,25 +734,62 @@ export default function WatchPartyPage({ partyId }) {
       case 'PARTY_STATE': {
         party = message.party;
         renderParty();
-        if (controller) {
+        if (party.status === 'ready-room' || party.status === 'countdown') {
+          ensurePlayerReadyRoom();
+        } else if (controller && PLAYBACK_STATUSES.has(party.status)) {
           applySync({
             positionMs: message.effectivePositionMs ?? party.positionMs,
             playing: party.status === 'playing',
             serverTimeMs: message.serverTimeMs
           });
-        } else if (['playing', 'paused', 'countdown'].includes(party.status)) {
-          mountPlayer({ itemId: party.playableItemId, positionMs: message.effectivePositionMs ?? party.positionMs });
+          maybeStartOwnerHeartbeat();
+        } else if (shouldShowPlayerForParty(party)) {
+          mountPlayer({
+            itemId: party.playableItemId,
+            positionMs: message.effectivePositionMs ?? party.positionMs,
+            phase: 'playback'
+          });
         }
         return;
       }
 
       case 'PARTY_UPDATED':
+        const previousStatus = party?.status;
         party = message.party;
         renderParty();
+        if (party.status === 'ready-room' || party.status === 'countdown') {
+          ensurePlayerReadyRoom();
+          renderReadyOverlay();
+        } else if (party.status === 'playing' && previousStatus === 'countdown') {
+          void handleControlPlay({
+            action: 'play',
+            positionMs: party.positionMs,
+            serverTimeMs: party.lastServerTimeMs || Date.now(),
+            playing: true
+          });
+        } else if (shouldShowPlayerForParty(party)) {
+          if (controller) {
+            showPlayerSurface();
+            setPlaybackPhase();
+            maybeStartOwnerHeartbeat();
+          } else if (party.playableItemId) {
+            mountPlayer({
+              itemId: party.playableItemId,
+              positionMs: party.positionMs,
+              phase: 'playback'
+            });
+          }
+        }
         return;
 
       case 'COUNTDOWN':
-        showCountdown(message.startsAtServerTimeMs);
+        if (party) party.status = 'countdown';
+        ensurePlayerReadyRoom();
+        showCountdown({
+          startsAtServerTimeMs: message.startsAtServerTimeMs,
+          positionMs: message.positionMs ?? party?.positionMs
+        });
+        renderReadyOverlay();
         return;
 
       case 'LOAD_MEDIA':
@@ -510,14 +801,22 @@ export default function WatchPartyPage({ partyId }) {
         }
         return;
 
-      case 'CONTROL':
-        safeApplyRemoteControl({
+      case 'CONTROL': {
+        const payload = {
           action: message.action,
           positionMs: message.positionMs,
           serverTimeMs: message.serverTimeMs,
           playing: message.action === 'play' || Boolean(message.playing)
-        });
+        };
+
+        if (message.action === 'play') {
+          void handleControlPlay(payload);
+          return;
+        }
+
+        safeApplyRemoteControl(payload);
         return;
+      }
 
       case 'SYNC':
         applySync(message);
@@ -568,7 +867,11 @@ export default function WatchPartyPage({ partyId }) {
         onReconnecting: () => setSyncStatus('lost', 'Verbindung verloren. Reconnect läuft …')
       });
 
-      mountPlayer({ itemId: party.playableItemId, positionMs: party.positionMs });
+      if (party.status === 'ready-room' || party.status === 'countdown') {
+        ensurePlayerReadyRoom();
+      } else if (PLAYBACK_STATUSES.has(party.status)) {
+        mountPlayer({ itemId: party.playableItemId, positionMs: party.positionMs, phase: 'playback' });
+      }
     } catch (error) {
       if (!destroyed) renderError(error);
     }

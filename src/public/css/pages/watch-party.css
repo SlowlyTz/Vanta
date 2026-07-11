@@ -1,3 +1,5 @@
+@import './watch-party-countdown.css';
+
 .watch-party-page {
   min-height: 100vh;
   width: 100%;
@@ -193,20 +195,12 @@
   font-size: 0.82rem;
 }
 
-.watch-party-member-status.is-ready {
+.watch-party-member-status.is-connected {
   color: #4ade80;
 }
 
-.watch-party-member-status.is-loading {
+.watch-party-member-status.is-waiting {
   color: #facc15;
-}
-
-.watch-party-member-status.is-blocked {
-  color: #facc15;
-}
-
-.watch-party-member-status.is-error {
-  color: #ff8080;
 }
 
 .watch-party-kick-button {
@@ -227,7 +221,19 @@
 
 .watch-party-actions {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.watch-party-start-hint {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.watch-party-start-hint:empty {
+  display: none;
 }
 
 .watch-party-start-button {
@@ -275,25 +281,118 @@
   color: var(--text-secondary);
 }
 
-.watch-party-countdown-overlay {
+.watch-party-ready-overlay {
   position: fixed;
   inset: 0;
   z-index: 100000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #fff;
-  font-size: clamp(1.6rem, 5vw, 2.6rem);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
-.watch-party-countdown-overlay[hidden] {
+.watch-party-ready-overlay[hidden] {
   display: none;
+}
+
+.watch-party-ready-panel {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 28px;
+  border-radius: var(--abyss-radius-dialog, var(--abyss-radius));
+  background: rgba(var(--abyss-glass-tint), 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.watch-party-ready-title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.watch-party-ready-subtitle,
+.watch-party-ready-status {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.watch-party-ready-members {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.watch-party-ready-member {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.watch-party-ready-member-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 650;
+}
+
+.watch-party-ready-member-state {
+  flex: 0 0 auto;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.watch-party-ready-member.is-ready .watch-party-ready-member-state {
+  color: #4ade80;
+}
+
+.watch-party-ready-member.is-preparing .watch-party-ready-member-state,
+.watch-party-ready-member.is-idle .watch-party-ready-member-state {
+  color: #facc15;
+}
+
+.watch-party-ready-member.is-error .watch-party-ready-member-state {
+  color: #ff8080;
+}
+
+.watch-party-ready-button {
+  align-self: center;
+  min-width: 180px;
+  min-height: 48px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: rgb(var(--abyss-accent));
+  color: #121212;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.watch-party-ready-button:disabled {
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.62);
+  cursor: default;
 }
 
 .watch-party-autoplay-overlay {
@@ -311,6 +410,7 @@
   -webkit-backdrop-filter: blur(14px);
   text-align: center;
   color: #fff;
+  pointer-events: auto;
 }
 
 .watch-party-autoplay-overlay[hidden] {
@@ -331,6 +431,7 @@
   color: #121212;
   font-size: 0.95rem;
   font-weight: 700;
+  pointer-events: auto;
 }
 
 @media (max-width: 600px) {
