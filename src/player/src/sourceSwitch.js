@@ -107,6 +107,8 @@ export function createSourceSwitch({
     try {
       setLoadingStatus('Wiedergabe wird gestartet …');
       await player.play();
+      const video = player.querySelector('video');
+      if (video?.paused) await video.play();
       autoplayBlocked = false;
       const isHls = currentPlayback?.delivery === 'hls';
       setLoadingStatus(isHls
@@ -307,9 +309,42 @@ export function createSourceSwitch({
     }
   };
 
+  const startCurrentPlayback = async () => {
+    if (!currentPlayback) {
+      await player.play();
+      return;
+    }
+
+    const version = loadVersion;
+    switching = true;
+    clearSeekTimer();
+    hideError();
+    setLoading(true, 'Wiedergabe wird gestartet …');
+    setInlineLoading(false);
+    ui.setState('booting');
+
+    try {
+      const shouldPlay = !shouldPreventPlayback?.();
+      await applyPlaybackState({ shouldPlay });
+      if (!isCurrentLoad(version)) return;
+      switching = false;
+      if (!autoplayBlocked) {
+        setLoading(false);
+        syncPlayingState();
+      }
+    } catch (error) {
+      if (isCurrentLoad(version)) {
+        switching = false;
+        setLoading(false);
+      }
+      throw error;
+    }
+  };
+
   return {
     loadPlayback,
     switchTo,
+    startCurrentPlayback,
     performSeek,
     captureState,
     restoreState,

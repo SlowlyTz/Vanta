@@ -219,7 +219,8 @@ export async function mountVantaPlayer({
   reportPlayback,
   onBack,
   watchParty = null,
-  episodeBrowser = null
+  episodeBrowser = null,
+  deferInitialLoad = false
 }) {
   await customElements.whenDefined('media-player');
 
@@ -234,6 +235,17 @@ export async function mountVantaPlayer({
   let waitingTimer = null;
   let lastWheelSeekAt = 0;
   let applyingRemoteControl = false;
+
+  const watchPartyPhase = () => watchParty?.phase || watchParty?.mode || (watchParty?.enabled ? 'playback' : null);
+  const isDeferredReadyRoom = () => watchPartyPhase() === 'ready-room';
+  const canEmitOwnerControl = () => (
+    watchParty?.enabled && watchParty.isOwner && watchPartyPhase() === 'playback' && !applyingRemoteControl
+  );
+  const forcePlaybackPhase = () => {
+    if (!watchParty?.enabled) return;
+    watchParty.phase = 'playback';
+    watchParty.mode = 'playback';
+  };
 
   if (watchParty?.enabled && !watchParty.isOwner) {
     player.keyShortcuts = { toggleMuted: 'm', toggleFullscreen: 'f' };
@@ -450,15 +462,15 @@ export async function mountVantaPlayer({
   const handlePlaybackFailure = async error => {
     if (sourceSwitch.isSwitching() || destroyed) return;
     if (sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
-      await switchToHls(error);
+      await switchToHls(error, { silent: isDeferredReadyRoom() });
       return;
     }
     showError(error?.message);
   };
 
-  const switchToHls = async reason => {
+  const switchToHls = async (reason, { silent = false } = {}) => {
     if (fallbackAttempted || destroyed) {
-      showError(reason?.message);
+      if (!silent) showError(reason?.message);
       return;
     }
     fallbackAttempted = true;
@@ -470,13 +482,13 @@ export async function mountVantaPlayer({
       if (destroyed) return;
       await sourceSwitch.loadPlayback(hlsPlayback, {
         position: state.position,
-        shouldPlay: state.shouldPlay,
+        shouldPlay: silent ? false : state.shouldPlay,
         label: 'Stream wird gewechselt …'
       });
       updateMenus(hlsPlayback);
     } catch (error) {
       if (destroyed) return;
-      showError(error.message);
+      if (!silent) showError(error.message);
     }
   };
 
@@ -492,6 +504,7 @@ export async function mountVantaPlayer({
   };
 
   const handleWheel = event => {
+    if (watchParty?.enabled && !watchParty.isOwner) return;
     if (!supportsFinePointer() || Math.abs(event.deltaY) < 4) return;
     const now = performance.now();
     if (now - lastWheelSeekAt < WHEEL_SEEK_DEBOUNCE_MS) return;
@@ -579,19 +592,19 @@ export async function mountVantaPlayer({
   });
 
   listen(player, 'play', () => {
-    if (watchParty?.enabled && watchParty.isOwner && !applyingRemoteControl) {
+    if (canEmitOwnerControl()) {
       watchParty.onOwnerPlay?.(Math.round(player.currentTime * 1000));
     }
   });
 
   listen(player, 'pause', () => {
-    if (watchParty?.enabled && watchParty.isOwner && !applyingRemoteControl) {
+    if (canEmitOwnerControl()) {
       watchParty.onOwnerPause?.(Math.round(player.currentTime * 1000));
     }
   });
 
   listen(player, 'seeked', () => {
-    if (watchParty?.enabled && watchParty.isOwner && !applyingRemoteControl) {
+    if (canEmitOwnerControl()) {
       watchParty.onOwnerSeek?.(Math.round(player.currentTime * 1000));
     }
   });
@@ -618,44 +631,65 @@ export async function mountVantaPlayer({
     }
   });
 
-  const bootShouldPlay = !watchParty?.enabled;
+  let initialPlaybackPrepared = false;
+  let initialPlaybackPromise = null;
 
-  setLoading(true, 'Wiedergabequelle wird beim Server angefragt …');
-  watchParty?.onPreloadStateChange?.({ state: 'loading', message: 'Wiedergabequelle wird vorbereitet …' });
-  try {
-    const initialPlayback = await resolvePlayback('auto');
-    if (!destroyed) {
-      await sourceSwitch.loadPlayback(initialPlayback, {
-        position: resumePosition,
-        shouldPlay: bootShouldPlay,
-        isBoot: true
-      });
-      updateMenus(initialPlayback, { preserveSubtitleSelection: false });
-      watchParty?.onPreloadStateChange?.({ state: 'ready', message: 'Bereit' });
-    }
-  } catch (error) {
-    if (!destroyed) {
-      if (sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
-        await switchToHls(error);
-        if (!destroyed) {
-          const recovered = Boolean(sourceSwitch.getCurrentPlayback());
-          watchParty?.onPreloadStateChange?.({
-            state: recovered ? 'ready' : 'error',
-            message: recovered ? 'Bereit' : 'Player konnte nicht vorbereitet werden'
-          });
-        }
-      } else {
-        showError(error.message);
-        watchParty?.onPreloadStateChange?.({ state: 'error', message: 'Player konnte nicht vorbereitet werden' });
+  async function prepareInitialPlayback({ position = resumePosition } = {}) {
+    if (initialPlaybackPrepared) return;
+    if (initialPlaybackPromise) return initialPlaybackPromise;
+
+    initialPlaybackPromise = (async () => {
+      const bootShouldPlay = !watchParty?.enabled;
+      setLoading(true, 'Wiedergabequelle wird beim Server angefragt …');
+      const initialPlayback = await resolvePlayback('auto');
+      if (!destroyed) {
+        await sourceSwitch.loadPlayback(initialPlayback, {
+          position,
+          shouldPlay: bootShouldPlay,
+          isBoot: true
+        });
+        updateMenus(initialPlayback, { preserveSubtitleSelection: false });
+        initialPlaybackPrepared = true;
       }
+    })();
+
+    try {
+      await initialPlaybackPromise;
+    } catch (error) {
+      initialPlaybackPromise = null;
+      if (!destroyed) {
+        if (sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
+          await switchToHls(error, { silent: isDeferredReadyRoom() });
+          if (!destroyed && sourceSwitch.getCurrentPlayback()) {
+            initialPlaybackPrepared = true;
+            return;
+          }
+        }
+        if (!isDeferredReadyRoom()) showError(error.message);
+      }
+      throw error;
+    }
+
+    return initialPlaybackPromise;
+  }
+
+  if (deferInitialLoad) {
+    setLoading(false);
+  } else {
+    try {
+      await prepareInitialPlayback({ position: resumePosition });
+    } catch {
+      // visible error handling happens in prepareInitialPlayback
     }
   }
 
   return {
     player,
+    prepareInitialPlayback,
     applyRemoteControl: async ({ action, positionMs, serverTimeMs, playing }) => {
       applyingRemoteControl = true;
       try {
+        if (action === 'play') forcePlaybackPhase();
         const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
           action, positionMs, serverTimeMs, playing, currentTime: player.currentTime
         });
@@ -663,7 +697,8 @@ export async function mountVantaPlayer({
         if (shouldSeek) player.currentTime = targetSeconds;
 
         if (shouldPlay) {
-          await player.play();
+          sourceSwitch.setIntendsToPlay(true);
+          await sourceSwitch.startCurrentPlayback();
         } else if (shouldPause) {
           player.pause();
         }

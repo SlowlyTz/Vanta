@@ -6,8 +6,10 @@ const PARTY_TTL_MS = 6 * 60 * 60 * 1000;
 const LOBBY_IDLE_TTL_MS = 30 * 60 * 1000;
 const ENDED_PARTY_RETENTION_MS = 5 * 60 * 1000;
 const RESUME_TTL_MS = 48 * 60 * 60 * 1000;
-const COUNTDOWN_MS = 3000;
-const READY_PRELOAD_STATES = new Set(['ready', 'blocked']);
+const COUNTDOWN_MS = 5000;
+const READY_PRELOAD_STATES = new Set(['ready']);
+const MAX_PARTY_MEMBERS = 4;
+const READY_ROOM_STATUS = 'ready-room';
 
 function notFound(message) {
   const error = new Error(message);
@@ -51,6 +53,20 @@ function shuffle(list) {
 function getEffectivePosition(party, now = Date.now()) {
   if (party.status !== 'playing') return party.positionMs;
   return party.positionMs + (now - party.lastServerTimeMs);
+}
+
+function createItemSnapshot(playableItem, fallbackItem) {
+  return {
+    id: playableItem.Id,
+    name: playableItem.Name || playableItem.SeriesName || fallbackItem.Name,
+    type: playableItem.Type,
+    seriesName: playableItem.SeriesName || null,
+    productionYear: playableItem.ProductionYear || fallbackItem.ProductionYear || null,
+    officialRating: playableItem.OfficialRating || fallbackItem.OfficialRating || null,
+    communityRating: playableItem.CommunityRating || fallbackItem.CommunityRating || null,
+    criticRating: playableItem.CriticRating || fallbackItem.CriticRating || null,
+    runtimeTicks: playableItem.RunTimeTicks || fallbackItem.RunTimeTicks || null
+  };
 }
 
 export class WatchPartyService {
@@ -135,13 +151,7 @@ export class WatchPartyService {
       id,
       itemId: item.Id,
       playableItemId,
-      itemSnapshot: {
-        id: playableItem.Id,
-        name: playableItem.Name || playableItem.SeriesName || item.Name,
-        type: playableItem.Type,
-        seriesName: playableItem.SeriesName || null,
-        productionYear: playableItem.ProductionYear || null
-      },
+      itemSnapshot: createItemSnapshot(playableItem, item),
       ownerUserId: userId,
       ownerName: username,
       status: 'lobby',
@@ -185,6 +195,9 @@ export class WatchPartyService {
       existing.lastSeenAt = now;
       existing.username = username;
     } else {
+      if (party.members.size >= MAX_PARTY_MEMBERS) {
+        throw conflict('Diese Watch Party ist voll.');
+      }
       party.members.set(userId, {
         userId,
         username,
@@ -212,6 +225,45 @@ export class WatchPartyService {
     member.lastSeenAt = Date.now();
 
     return this.serializeParty(party);
+  }
+
+  static openReadyRoom({ partyId, ownerUserId }) {
+    const party = this.getPartyOrThrow(partyId);
+    assertOwner(party, ownerUserId);
+
+    if (party.status === 'ended') throw badRequest('Diese Watch Party wurde bereits beendet');
+    if (party.status !== 'lobby') {
+      throw conflict('Diese Watch Party kann nicht mehr vorbereitet werden.');
+    }
+
+    party.status = READY_ROOM_STATUS;
+    party.lastServerTimeMs = Date.now();
+
+    for (const member of party.members.values()) {
+      member.ready = false;
+      member.preloadState = 'idle';
+      member.preloadMessage = '';
+      member.lastSeenAt = Date.now();
+    }
+
+    return party;
+  }
+
+  static setPlayerReady({ partyId, userId, ready, state = null, message = '' }) {
+    const party = this.getPartyOrThrow(partyId);
+    if (![READY_ROOM_STATUS, 'countdown'].includes(party.status)) {
+      throw conflict('Die Watch Party ist nicht im Bereit-Modus.');
+    }
+
+    const member = party.members.get(userId);
+    if (!member) throw forbidden('Du bist kein Mitglied dieser Watch Party');
+
+    member.ready = Boolean(ready);
+    member.preloadState = state || (ready ? 'ready' : 'idle');
+    member.preloadMessage = message || '';
+    member.lastSeenAt = Date.now();
+
+    return party;
   }
 
   static setReady({ partyId, userId, ready }) {
@@ -253,7 +305,9 @@ export class WatchPartyService {
   }
 
   static canStart(party) {
-    return [...party.members.values()].every(member => member.ready || member.role === 'owner');
+    return party.status === READY_ROOM_STATUS
+      && [...party.members.values()].length > 0
+      && [...party.members.values()].every(member => member.ready === true);
   }
 
   static startParty({ partyId, ownerUserId }) {
@@ -262,6 +316,13 @@ export class WatchPartyService {
 
     if (party.status === 'ended') throw badRequest('Diese Watch Party wurde bereits beendet');
     if (!this.canStart(party)) throw conflict('Not all members are ready');
+
+    return this.beginCountdownIfReady({ partyId });
+  }
+
+  static beginCountdownIfReady({ partyId }) {
+    const party = this.getPartyOrThrow(partyId);
+    if (!this.canStart(party)) return null;
 
     const now = Date.now();
     party.status = 'countdown';
@@ -295,13 +356,7 @@ export class WatchPartyService {
 
     party.itemId = item.Id;
     party.playableItemId = item.Id;
-    party.itemSnapshot = {
-      id: item.Id,
-      name: item.Name || item.SeriesName,
-      type: item.Type,
-      seriesName: item.SeriesName || null,
-      productionYear: item.ProductionYear || null
-    };
+    party.itemSnapshot = createItemSnapshot(item, item);
     party.positionMs = 0;
     party.status = 'paused';
     party.lastServerTimeMs = Date.now();

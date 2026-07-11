@@ -6,6 +6,8 @@ const LOCKED_CONTROL_SELECTOR = [
   '.vanta-player-center-skip'
 ].join(', ');
 
+const GESTURE_SELECTOR = 'media-gesture';
+
 export function applyWatchPartyPermissions({ root, watchParty }) {
   if (!watchParty?.enabled || watchParty.isOwner) return;
 
@@ -14,6 +16,11 @@ export function applyWatchPartyPermissions({ root, watchParty }) {
   root.querySelectorAll(LOCKED_CONTROL_SELECTOR).forEach(control => {
     control.setAttribute('aria-disabled', 'true');
     control.style.pointerEvents = 'none';
+  });
+
+  root.querySelectorAll(GESTURE_SELECTOR).forEach(gesture => {
+    gesture.removeAttribute('action');
+    gesture.style.pointerEvents = 'none';
   });
 }
 

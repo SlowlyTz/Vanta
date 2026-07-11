@@ -17,6 +17,9 @@ vi.mock('../services/watch-party.service.js', () => ({
     setReady: vi.fn(),
     setConnected: vi.fn(),
     setPreloadState: vi.fn(),
+    setPlayerReady: vi.fn(),
+    openReadyRoom: vi.fn(),
+    beginCountdownIfReady: vi.fn(),
     startParty: vi.fn(),
     beginPlayback: vi.fn(),
     changeEpisode: vi.fn(),
@@ -125,6 +128,61 @@ describe('WatchPartySocketHub', () => {
     ]);
   });
 
+  it('lehnt OWNER_PLAY/OWNER_PAUSE/OWNER_SEEK des Owners ab, solange die Party noch nicht gestartet ist', () => {
+    const hub = new WatchPartySocketHub();
+    const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'lobby', positionMs: 0, lastServerTimeMs: 0 };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+
+    const ownerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_PLAY', positionMs: 100 }, ws: ownerWs });
+
+    expect(party.status).toBe('lobby');
+    expect(ownerWs.sent).toEqual([expect.objectContaining({ type: 'ERROR' })]);
+  });
+
+  it('ignoriert OWNER_SYNC des Owners in lobby und countdown ohne den Status zu ändern', () => {
+    const hub = new WatchPartySocketHub();
+    const lobbyParty = { id: 'party-1', ownerUserId: 'owner-1', status: 'lobby', positionMs: 0, lastServerTimeMs: 0 };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(lobbyParty);
+
+    const ownerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SYNC', positionMs: 500, playing: true }, ws: ownerWs });
+
+    expect(lobbyParty.status).toBe('lobby');
+    expect(ownerWs.sent).toEqual([]);
+
+    const countdownParty = { id: 'party-1', ownerUserId: 'owner-1', status: 'countdown', positionMs: 0, lastServerTimeMs: 0 };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(countdownParty);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SYNC', positionMs: 500, playing: true }, ws: ownerWs });
+
+    expect(countdownParty.status).toBe('countdown');
+    expect(ownerWs.sent).toEqual([]);
+  });
+
+  it('OWNER_SYNC in playing aktualisiert die Position und broadcastet SYNC', () => {
+    const hub = new WatchPartySocketHub();
+    const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'playing', positionMs: 0, lastServerTimeMs: 0 };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+
+    const ownerWs = createFakeWs();
+    const viewerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SYNC', positionMs: 7000, playing: true }, ws: ownerWs });
+
+    expect(party.status).toBe('playing');
+    expect(party.positionMs).toBe(7000);
+    expect(viewerWs.sent).toEqual([
+      expect.objectContaining({ type: 'SYNC', positionMs: 7000, playing: true })
+    ]);
+  });
+
   it('liefert ERROR, wenn ein Nicht-Owner OWNER_PLAY sendet', () => {
     const hub = new WatchPartySocketHub();
     const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'paused', positionMs: 0, lastServerTimeMs: 0 };
@@ -180,16 +238,35 @@ describe('WatchPartySocketHub', () => {
     ]);
   });
 
-  describe('OWNER_START Countdown', () => {
+  describe('Ready-Room Countdown', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    it('broadcastet COUNTDOWN und danach CONTROL play', () => {
+    it('OWNER_OPEN_READY_ROOM broadcastet nur PARTY_UPDATED', () => {
       const hub = new WatchPartySocketHub();
+      const readyRoomParty = { id: 'party-1', status: 'ready-room' };
+      WatchPartyService.openReadyRoom.mockReturnValue(readyRoomParty);
+
+      const ws = createFakeWs();
+      hub.registerConnection('party-1', 'owner-1', ws);
+
+      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_OPEN_READY_ROOM' }, ws });
+
+      expect(WatchPartyService.openReadyRoom).toHaveBeenCalledWith({ partyId: 'party-1', ownerUserId: 'owner-1' });
+      expect(ws.sent).toEqual([
+        expect.objectContaining({ type: 'PARTY_UPDATED', party: readyRoomParty })
+      ]);
+      expect(ws.sent.some(message => message.type === 'COUNTDOWN')).toBe(false);
+    });
+
+    it('PLAYER_READY startet COUNTDOWN und danach CONTROL play, wenn alle ready sind', () => {
+      const hub = new WatchPartySocketHub();
+      const readyRoomParty = { id: 'party-1', status: 'ready-room' };
+      WatchPartyService.setPlayerReady.mockReturnValue(readyRoomParty);
       const countdownParty = { id: 'party-1', status: 'countdown' };
-      WatchPartyService.startParty.mockReturnValue({
+      WatchPartyService.beginCountdownIfReady.mockReturnValue({
         party: countdownParty,
-        startsAtServerTimeMs: Date.now() + 3000,
+        startsAtServerTimeMs: Date.now() + 5000,
         positionMs: 0
       });
 
@@ -199,11 +276,18 @@ describe('WatchPartySocketHub', () => {
       const ws = createFakeWs();
       hub.registerConnection('party-1', 'owner-1', ws);
 
-      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_START' }, ws });
+      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'PLAYER_READY' }, ws });
 
-      expect(ws.sent[0]).toMatchObject({ type: 'COUNTDOWN' });
+      expect(WatchPartyService.setPlayerReady).toHaveBeenCalledWith({
+        partyId: 'party-1',
+        userId: 'owner-1',
+        ready: true,
+        state: 'ready',
+        message: 'Bereit'
+      });
+      expect(ws.sent.some(message => message.type === 'COUNTDOWN')).toBe(true);
 
-      vi.advanceTimersByTime(3000);
+      vi.advanceTimersByTime(5000);
 
       expect(WatchPartyService.beginPlayback).toHaveBeenCalledWith({ partyId: 'party-1', positionMs: 0 });
       const controlMessage = ws.sent.find(m => m.type === 'CONTROL');
