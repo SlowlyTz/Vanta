@@ -17,6 +17,15 @@
   background: #000;
 }
 
+.is-watch-party-viewer .vanta-player-center-play,
+.is-watch-party-viewer .vanta-player-center-skip,
+.is-watch-party-viewer .vanta-player-play-button,
+.is-watch-party-viewer .vanta-player-skip-button,
+.is-watch-party-viewer .vanta-player-time-slider {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .vanta-media-player {
   --video-border-radius: 0;
   --video-border: 0;
