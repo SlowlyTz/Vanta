@@ -21,7 +21,8 @@
     "hls.js": "^1.6.16",
     "morgan": "^1.10.0",
     "sql.js": "^1.14.1",
-    "vidstack": "^0.6.15"
+    "vidstack": "^0.6.15",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

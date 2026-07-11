@@ -3,6 +3,7 @@ import { createMobileDrawer } from './mobileDrawer.js';
 import { TOP_TABS, TOP_ACTIONS } from './navLinks.js';
 import { createTopbarIcon } from './icons.js';
 import { isNavLinkActive } from './activeNav.js';
+import { createWatchPartyDialog } from '../watch-party/createWatchPartyDialog.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -35,7 +36,7 @@ function createTopTabs({ onNavigate }) {
   return { element, updateActive };
 }
 
-function createTopActions() {
+function createTopActions({ onOpenWatchParty }) {
   const buttons = TOP_ACTIONS.map(action => {
     const attrs = {
       className: `navbar-action-button navbar-action-${action.key}`,
@@ -48,7 +49,8 @@ function createTopActions() {
 
     return createElement('button', {
       ...attrs,
-      type: 'button'
+      type: 'button',
+      onClick: action.key === 'group' ? () => onOpenWatchParty?.() : undefined
     }, createTopbarIcon(action.key));
   });
 
@@ -65,8 +67,10 @@ export function Navbar({ onLogout, onChangePassword }) {
     onNavigate: () => setMobileNavOpen(false)
   });
 
+  const watchPartyDialog = createWatchPartyDialog();
+
   const topTabs = createTopTabs({ onNavigate: () => setMobileNavOpen(false) });
-  const topActions = createTopActions();
+  const topActions = createTopActions({ onOpenWatchParty: () => watchPartyDialog.open() });
 
   const mobileMenuButton = createElement('button', {
     className: 'mobile-menu-button',
@@ -92,6 +96,7 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   document.body.appendChild(mobileDrawer.mobileNavBackdrop);
   document.body.appendChild(mobileDrawer.mobileNavList);
+  document.body.appendChild(watchPartyDialog.element);
 
   const update = ({ currentHash, user, scrolled }) => {
     element.classList.toggle('scrolled', !!scrolled);

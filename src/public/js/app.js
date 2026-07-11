@@ -19,6 +19,7 @@ router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth:
 router.add('#/profile', () => import('./pages/profile.page.js'), { requiresAuth: true });
 router.add('#/favorites', () => import('./pages/profile.page.js'), { requiresAuth: true, defaultParams: { initialTab: 'favorites' } });
 router.add('#/player/:id', () => import('./pages/player.page.js'), { requiresAuth: true });
+router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js'), { requiresAuth: true });
 
 // Initialise client router on page load
 document.addEventListener('DOMContentLoaded', () => {
