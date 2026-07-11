@@ -47,15 +47,44 @@
 .watch-party-dialog-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
 .watch-party-dialog-header h2 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: var(--text-primary);
   font-size: 1.08rem;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watch-party-dialog-back {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.76);
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.watch-party-dialog-back:hover {
+  background: rgba(255, 255, 255, 0.13);
+  color: var(--text-primary);
+}
+
+.watch-party-dialog-back[hidden] {
+  display: none;
 }
 
 .watch-party-dialog-close {
@@ -109,17 +138,130 @@
   margin: 0;
   padding: 0;
   overflow-y: auto;
+}
+
+.watch-party-empty-state {
+  padding: 24px 4px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* Season tabs (episode picker) */
+
+.watch-party-season-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.watch-party-season-tabs[hidden] {
+  display: none;
+}
+
+.watch-party-season-tab {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.watch-party-season-tab.active {
+  background: rgb(var(--abyss-accent));
+  color: #121212;
+  border-color: transparent;
+}
+
+/* Poster card grid (suggestions / search results) */
+
+.watch-party-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: 14px;
+  max-height: min(62vh, 620px);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.watch-party-card {
+  width: 100%;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+}
+
+.watch-party-card:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.watch-party-card-poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+}
+
+.watch-party-card-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watch-party-card-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.watch-party-card-title {
+  display: block;
+  margin-top: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 650;
+}
+
+.watch-party-card-meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+/* Episode list (episode picker) */
+
+.watch-party-episode-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: min(56vh, 560px);
+  overflow-y: auto;
 }
 
-.watch-party-result-button {
+.watch-party-episode-button {
   width: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  align-items: center;
+  gap: 12px;
   min-height: 52px;
   padding: 8px 12px;
   border-radius: 10px;
@@ -129,23 +271,67 @@
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
-.watch-party-result-button:hover:not(:disabled) {
+.watch-party-episode-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-.watch-party-result-button:disabled {
+.watch-party-episode-button:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-.watch-party-result-title {
-  color: var(--text-primary);
-  font-size: 0.94rem;
-  font-weight: 600;
+.watch-party-episode-index {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.watch-party-result-subtitle {
+.watch-party-episode-title {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Resume-vs-new choice */
+
+.watch-party-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.watch-party-choice-button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 60px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+  text-align: left;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.watch-party-choice-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.watch-party-choice-title {
+  color: var(--text-primary);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.watch-party-choice-meta {
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }

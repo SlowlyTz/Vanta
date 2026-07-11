@@ -32,6 +32,7 @@ import { createQualityMenu } from './quality.js';
 import { createSubtitleMenu } from './subtitles.js';
 import { createPlayerUi } from './ui/playerUi.js';
 import { applyWatchPartyPermissions, computeRemoteControlTarget } from './watchParty.js';
+import { createEpisodeBrowser } from './episodes.js';
 
 const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 const WHEEL_SEEK_DEBOUNCE_MS = 320;
@@ -217,7 +218,8 @@ export async function mountVantaPlayer({
   resolvePlayback,
   reportPlayback,
   onBack,
-  watchParty = null
+  watchParty = null,
+  episodeBrowser = null
 }) {
   await customElements.whenDefined('media-player');
 
@@ -423,6 +425,16 @@ export async function mountVantaPlayer({
     reporter
   });
 
+  const episodeBrowserMenu = episodeBrowser?.enabled
+    ? createEpisodeBrowser({
+        buttonContainer: menuButtonContainer,
+        menuContainer: menuOverlayContainer,
+        context: episodeBrowser.context,
+        readonly: Boolean(episodeBrowser.readonly),
+        onSelectEpisode: episodeBrowser.onSelectEpisode
+      })
+    : null;
+
   const updateMenus = (playback, options = {}) => {
     qualityMenu.update(playback.quality.profiles, playback.quality.current);
     subtitleMenu.update(playback, {
@@ -606,23 +618,35 @@ export async function mountVantaPlayer({
     }
   });
 
+  const bootShouldPlay = !watchParty?.enabled;
+
   setLoading(true, 'Wiedergabequelle wird beim Server angefragt …');
+  watchParty?.onPreloadStateChange?.({ state: 'loading', message: 'Wiedergabequelle wird vorbereitet …' });
   try {
     const initialPlayback = await resolvePlayback('auto');
     if (!destroyed) {
       await sourceSwitch.loadPlayback(initialPlayback, {
         position: resumePosition,
-        shouldPlay: true,
+        shouldPlay: bootShouldPlay,
         isBoot: true
       });
       updateMenus(initialPlayback, { preserveSubtitleSelection: false });
+      watchParty?.onPreloadStateChange?.({ state: 'ready', message: 'Bereit' });
     }
   } catch (error) {
     if (!destroyed) {
       if (sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
         await switchToHls(error);
+        if (!destroyed) {
+          const recovered = Boolean(sourceSwitch.getCurrentPlayback());
+          watchParty?.onPreloadStateChange?.({
+            state: recovered ? 'ready' : 'error',
+            message: recovered ? 'Bereit' : 'Player konnte nicht vorbereitet werden'
+          });
+        }
       } else {
         showError(error.message);
+        watchParty?.onPreloadStateChange?.({ state: 'error', message: 'Player konnte nicht vorbereitet werden' });
       }
     }
   }
@@ -639,7 +663,7 @@ export async function mountVantaPlayer({
         if (shouldSeek) player.currentTime = targetSeconds;
 
         if (shouldPlay) {
-          await player.play().catch(() => {});
+          await player.play();
         } else if (shouldPause) {
           player.pause();
         }
@@ -666,6 +690,7 @@ export async function mountVantaPlayer({
       orientationGate.destroy();
       reporter.destroy();
       subtitleMenu.destroy();
+      episodeBrowserMenu?.destroy();
       ui.destroy();
       disposers.splice(0).forEach(dispose => dispose());
       player.destroy?.();

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
 
 let sessionOverride = null;
@@ -16,10 +16,15 @@ vi.mock('../services/watch-party.service.js', () => ({
     getPartyOrThrow: vi.fn(),
     setReady: vi.fn(),
     setConnected: vi.fn(),
+    setPreloadState: vi.fn(),
     startParty: vi.fn(),
+    beginPlayback: vi.fn(),
+    changeEpisode: vi.fn(),
+    endParty: vi.fn(),
     serializeParty: vi.fn(party => party)
   },
-  startWatchPartyCleanup: vi.fn()
+  startWatchPartyCleanup: vi.fn(),
+  getPartyEffectivePosition: vi.fn(party => party.positionMs)
 }));
 
 import { WatchPartyService } from '../services/watch-party.service.js';
@@ -30,11 +35,19 @@ function createFakeWs() {
     readyState: 1,
     OPEN: 1,
     sent: [],
+    listeners: {},
     send(payload) {
       this.sent.push(JSON.parse(payload));
     },
+    on(event, handler) {
+      this.listeners[event] = handler;
+    },
     close: vi.fn()
   };
+}
+
+function makeUser(userId, overrides = {}) {
+  return { userId, username: 'user', accessToken: 'token', ...overrides };
 }
 
 describe('WatchPartySocketHub', () => {
@@ -74,6 +87,26 @@ describe('WatchPartySocketHub', () => {
     expect(handleUpgradeSpy).toHaveBeenCalled();
   });
 
+  it('sendet PARTY_STATE direkt nach dem Connect', () => {
+    const hub = new WatchPartySocketHub();
+    const party = {
+      id: 'party-1',
+      ownerUserId: 'owner-1',
+      status: 'lobby',
+      positionMs: 0,
+      members: new Map([['owner-1', { userId: 'owner-1', connected: false }]])
+    };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+
+    const ws = createFakeWs();
+    hub.handleConnection({ ws, partyId: 'party-1', user: makeUser('owner-1') });
+
+    expect(ws.sent[0]).toMatchObject({
+      type: 'PARTY_STATE',
+      party: { id: 'party-1', ownerUserId: 'owner-1', status: 'lobby', positionMs: 0 }
+    });
+  });
+
   it('broadcastet CONTROL, wenn der Owner OWNER_PLAY sendet', () => {
     const hub = new WatchPartySocketHub();
     const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'paused', positionMs: 0, lastServerTimeMs: 0 };
@@ -84,7 +117,7 @@ describe('WatchPartySocketHub', () => {
     hub.registerConnection('party-1', 'owner-1', ownerWs);
     hub.registerConnection('party-1', 'viewer-1', viewerWs);
 
-    hub.handleMessage({ partyId: 'party-1', userId: 'owner-1', message: { type: 'OWNER_PLAY', positionMs: 4200 }, ws: ownerWs });
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_PLAY', positionMs: 4200 }, ws: ownerWs });
 
     expect(party.status).toBe('playing');
     expect(viewerWs.sent).toEqual([
@@ -100,7 +133,7 @@ describe('WatchPartySocketHub', () => {
     const viewerWs = createFakeWs();
     hub.registerConnection('party-1', 'viewer-1', viewerWs);
 
-    hub.handleMessage({ partyId: 'party-1', userId: 'viewer-1', message: { type: 'OWNER_PLAY', positionMs: 100 }, ws: viewerWs });
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('viewer-1'), message: { type: 'OWNER_PLAY', positionMs: 100 }, ws: viewerWs });
 
     expect(viewerWs.sent).toEqual([
       expect.objectContaining({ type: 'ERROR' })
@@ -116,11 +149,134 @@ describe('WatchPartySocketHub', () => {
     const ownerWs = createFakeWs();
     hub.registerConnection('party-1', 'owner-1', ownerWs);
 
-    hub.handleMessage({ partyId: 'party-1', userId: 'viewer-1', message: { type: 'READY', ready: true }, ws: createFakeWs() });
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('viewer-1'), message: { type: 'READY', ready: true }, ws: createFakeWs() });
 
     expect(WatchPartyService.setReady).toHaveBeenCalledWith({ partyId: 'party-1', userId: 'viewer-1', ready: true });
     expect(ownerWs.sent).toEqual([
       expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty })
     ]);
+  });
+
+  it('PRELOAD_STATE ready aktualisiert die Party und broadcastet PARTY_UPDATED', () => {
+    const hub = new WatchPartySocketHub();
+    const updatedParty = { id: 'party-1', status: 'lobby' };
+    WatchPartyService.setPreloadState.mockReturnValue(updatedParty);
+
+    const ownerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+
+    hub.handleMessage({
+      partyId: 'party-1',
+      user: makeUser('viewer-1'),
+      message: { type: 'PRELOAD_STATE', state: 'ready', message: 'Bereit' },
+      ws: createFakeWs()
+    });
+
+    expect(WatchPartyService.setPreloadState).toHaveBeenCalledWith({
+      partyId: 'party-1', userId: 'viewer-1', state: 'ready', message: 'Bereit'
+    });
+    expect(ownerWs.sent).toEqual([
+      expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty })
+    ]);
+  });
+
+  describe('OWNER_START Countdown', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('broadcastet COUNTDOWN und danach CONTROL play', () => {
+      const hub = new WatchPartySocketHub();
+      const countdownParty = { id: 'party-1', status: 'countdown' };
+      WatchPartyService.startParty.mockReturnValue({
+        party: countdownParty,
+        startsAtServerTimeMs: Date.now() + 3000,
+        positionMs: 0
+      });
+
+      const playingParty = { id: 'party-1', status: 'playing', positionMs: 0, lastServerTimeMs: Date.now() };
+      WatchPartyService.beginPlayback.mockReturnValue(playingParty);
+
+      const ws = createFakeWs();
+      hub.registerConnection('party-1', 'owner-1', ws);
+
+      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_START' }, ws });
+
+      expect(ws.sent[0]).toMatchObject({ type: 'COUNTDOWN' });
+
+      vi.advanceTimersByTime(3000);
+
+      expect(WatchPartyService.beginPlayback).toHaveBeenCalledWith({ partyId: 'party-1', positionMs: 0 });
+      const controlMessage = ws.sent.find(m => m.type === 'CONTROL');
+      expect(controlMessage).toMatchObject({ action: 'play' });
+    });
+  });
+
+  it('OWNER_CHANGE_EPISODE broadcastet LOAD_MEDIA mit reason episode-change', async () => {
+    const hub = new WatchPartySocketHub();
+    const party = { id: 'party-1', playableItemId: 'episode-2', itemSnapshot: { name: 'Episode 2' } };
+    WatchPartyService.changeEpisode.mockResolvedValue(party);
+
+    const ws = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ws);
+
+    hub.handleMessage({
+      partyId: 'party-1',
+      user: makeUser('owner-1'),
+      message: { type: 'OWNER_CHANGE_EPISODE', itemId: 'episode-2' },
+      ws
+    });
+
+    await vi.waitFor(() => {
+      expect(ws.sent.some(m => m.type === 'LOAD_MEDIA' && m.reason === 'episode-change')).toBe(true);
+    });
+  });
+
+  describe('Owner-Disconnect Grace Period', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('startet einen Grace-Timer und beendet die Party nach Ablauf ohne Reconnect', () => {
+      const hub = new WatchPartySocketHub();
+      const party = {
+        id: 'party-1',
+        ownerUserId: 'owner-1',
+        status: 'playing',
+        members: new Map([['owner-1', { userId: 'owner-1', connected: false }]])
+      };
+      WatchPartyService.parties.set('party-1', party);
+      WatchPartyService.endParty.mockReturnValue({ id: 'party-1', status: 'ended' });
+
+      hub.scheduleOwnerDisconnectEnd('party-1', 'owner-1');
+      expect(hub.ownerDisconnectTimers.has('party-1')).toBe(true);
+
+      const ws = createFakeWs();
+      hub.registerConnection('party-1', 'viewer-1', ws);
+
+      vi.advanceTimersByTime(30_000);
+
+      expect(WatchPartyService.endParty).toHaveBeenCalledWith({
+        partyId: 'party-1', ownerUserId: 'owner-1', reason: 'owner-disconnected'
+      });
+      expect(ws.sent.some(m => m.type === 'PARTY_ENDED')).toBe(true);
+
+      WatchPartyService.parties.delete('party-1');
+    });
+
+    it('bricht den Grace-Timer bei Reconnect des Owners ab', () => {
+      const hub = new WatchPartySocketHub();
+      const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'playing', members: new Map([['owner-1', { userId: 'owner-1', connected: false }]]) };
+      WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+
+      hub.scheduleOwnerDisconnectEnd('party-1', 'owner-1');
+      expect(hub.ownerDisconnectTimers.has('party-1')).toBe(true);
+
+      const ws = createFakeWs();
+      hub.handleConnection({ ws, partyId: 'party-1', user: makeUser('owner-1') });
+
+      expect(hub.ownerDisconnectTimers.has('party-1')).toBe(false);
+
+      vi.advanceTimersByTime(30_000);
+      expect(WatchPartyService.endParty).not.toHaveBeenCalled();
+    });
   });
 });

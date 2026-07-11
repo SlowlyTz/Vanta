@@ -1,7 +1,7 @@
 const RECONNECT_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 10000;
 
-export function createWatchPartySocket({ partyId, onMessage, onOpen, onClose }) {
+export function createWatchPartySocket({ partyId, onMessage, onOpen, onClose, onReconnecting }) {
   let socket = null;
   let closedByClient = false;
   let reconnectAttempt = 0;
@@ -32,6 +32,7 @@ export function createWatchPartySocket({ partyId, onMessage, onOpen, onClose }) 
 
       const delay = Math.min(RECONNECT_DELAY_MS * 2 ** reconnectAttempt, MAX_RECONNECT_DELAY_MS);
       reconnectAttempt += 1;
+      onReconnecting?.();
       reconnectTimer = window.setTimeout(connect, delay);
     });
   }
