@@ -1,6 +1,8 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
-import { WatchPartyService, startWatchPartyCleanup } from '../services/watch-party.service.js';
+import { WatchPartyService, startWatchPartyCleanup, getPartyEffectivePosition } from '../services/watch-party.service.js';
+
+const OWNER_DISCONNECT_GRACE_MS = 30_000;
 
 function ownerError(message) {
   const error = new Error(message);
@@ -12,6 +14,8 @@ export class WatchPartySocketHub {
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
     this.connectionsByParty = new Map(); // partyId -> Map<userId, Set<ws>>
+    this.ownerDisconnectTimers = new Map(); // partyId -> Timeout
+    this.countdownTimers = new Map(); // partyId -> Timeout
   }
 
   attach(server) {
@@ -35,7 +39,11 @@ export class WatchPartySocketHub {
     this.wss.on('connection', (ws, req) => {
       const url = new URL(req.url, 'http://localhost');
       const partyId = url.pathname.split('/').pop();
-      const user = { userId: req.session.userId, username: req.session.username };
+      const user = {
+        userId: req.session.userId,
+        username: req.session.username,
+        accessToken: req.session.accessToken
+      };
 
       this.handleConnection({ ws, partyId, user });
     });
@@ -63,6 +71,18 @@ export class WatchPartySocketHub {
 
     this.registerConnection(partyId, user.userId, ws);
     WatchPartyService.setConnected({ partyId, userId: user.userId, connected: true });
+
+    if (party.ownerUserId === user.userId) {
+      this.cancelOwnerDisconnectTimer(partyId);
+    }
+
+    this.sendTo(ws, {
+      type: 'PARTY_STATE',
+      party: WatchPartyService.serializeParty(party, user.userId),
+      effectivePositionMs: getPartyEffectivePosition(party),
+      serverTimeMs: Date.now()
+    });
+
     this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
 
     ws.on('message', raw => {
@@ -72,7 +92,7 @@ export class WatchPartySocketHub {
       } catch {
         return;
       }
-      this.handleMessage({ partyId, userId: user.userId, message, ws });
+      this.handleMessage({ partyId, user, message, ws });
     });
 
     ws.on('close', () => {
@@ -83,14 +103,19 @@ export class WatchPartySocketHub {
 
       WatchPartyService.setConnected({ partyId, userId: user.userId, connected: false });
       const currentParty = WatchPartyService.parties.get(partyId);
-      if (currentParty) {
-        this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(currentParty) });
+      if (!currentParty) return;
+
+      if (currentParty.ownerUserId === user.userId && currentParty.status !== 'ended') {
+        this.scheduleOwnerDisconnectEnd(partyId, user.userId);
       }
+
+      this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(currentParty) });
     });
   }
 
-  handleMessage({ partyId, userId, message, ws }) {
+  handleMessage({ partyId, user, message, ws }) {
     if (!message || typeof message.type !== 'string') return;
+    const userId = user.userId;
 
     try {
       switch (message.type) {
@@ -104,16 +129,28 @@ export class WatchPartySocketHub {
           return;
         }
 
-        case 'OWNER_START': {
-          const party = WatchPartyService.startParty({ partyId, ownerUserId: userId });
-          this.broadcastParty(partyId, {
-            type: 'LOAD_MEDIA',
-            itemId: party.playableItemId,
-            positionMs: 0
+        case 'PRELOAD_STATE': {
+          const party = WatchPartyService.setPreloadState({
+            partyId,
+            userId,
+            state: message.state,
+            message: message.message
           });
-          this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
+          this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party });
           return;
         }
+
+        case 'OWNER_START': {
+          const { party, startsAtServerTimeMs, positionMs } = WatchPartyService.startParty({ partyId, ownerUserId: userId });
+          this.broadcastParty(partyId, { type: 'COUNTDOWN', startsAtServerTimeMs, positionMs });
+          this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
+          this.scheduleCountdownCompletion(partyId, startsAtServerTimeMs, positionMs);
+          return;
+        }
+
+        case 'OWNER_CHANGE_EPISODE':
+          this.handleChangeEpisode({ partyId, user, itemId: message.itemId });
+          return;
 
         case 'OWNER_PLAY':
         case 'OWNER_PAUSE':
@@ -127,6 +164,93 @@ export class WatchPartySocketHub {
       }
     } catch (error) {
       this.sendTo(ws, { type: 'ERROR', message: error.message });
+    }
+  }
+
+  async handleChangeEpisode({ partyId, user, itemId }) {
+    try {
+      const party = await WatchPartyService.changeEpisode({
+        partyId,
+        ownerUserId: user.userId,
+        accessToken: user.accessToken,
+        itemId
+      });
+
+      this.broadcastParty(partyId, {
+        type: 'LOAD_MEDIA',
+        itemId: party.playableItemId,
+        positionMs: 0,
+        reason: 'episode-change',
+        message: `${party.itemSnapshot.name} wird abgespielt`
+      });
+
+      this.broadcastParty(partyId, {
+        type: 'PARTY_UPDATED',
+        party: WatchPartyService.serializeParty(party)
+      });
+    } catch (error) {
+      this.sendToUser(partyId, user.userId, { type: 'ERROR', message: error.message });
+    }
+  }
+
+  scheduleCountdownCompletion(partyId, startsAtServerTimeMs, positionMs) {
+    this.cancelCountdown(partyId);
+
+    const delay = Math.max(0, startsAtServerTimeMs - Date.now());
+    const timer = setTimeout(() => {
+      this.countdownTimers.delete(partyId);
+      const party = WatchPartyService.beginPlayback({ partyId, positionMs });
+      if (!party) return;
+
+      this.broadcastParty(partyId, {
+        type: 'CONTROL',
+        action: 'play',
+        positionMs: party.positionMs,
+        serverTimeMs: party.lastServerTimeMs
+      });
+      this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
+    }, delay);
+    timer.unref?.();
+    this.countdownTimers.set(partyId, timer);
+  }
+
+  cancelCountdown(partyId) {
+    const timer = this.countdownTimers.get(partyId);
+    if (timer) {
+      clearTimeout(timer);
+      this.countdownTimers.delete(partyId);
+    }
+  }
+
+  scheduleOwnerDisconnectEnd(partyId, ownerUserId) {
+    this.cancelOwnerDisconnectTimer(partyId);
+
+    const timer = setTimeout(() => {
+      this.ownerDisconnectTimers.delete(partyId);
+      const party = WatchPartyService.parties.get(partyId);
+      if (!party || party.status === 'ended') return;
+
+      const ownerConnected = party.members.get(ownerUserId)?.connected;
+      if (ownerConnected) return;
+
+      this.cancelCountdown(partyId);
+      const ended = WatchPartyService.endParty({ partyId, ownerUserId, reason: 'owner-disconnected' });
+
+      this.broadcastParty(partyId, {
+        type: 'PARTY_ENDED',
+        party: ended,
+        message: 'Die Watch Party wurde beendet, weil der Owner die Verbindung verloren hat.'
+      });
+    }, OWNER_DISCONNECT_GRACE_MS);
+    timer.unref?.();
+    this.ownerDisconnectTimers.set(partyId, timer);
+  }
+
+  cancelOwnerDisconnectTimer(partyId) {
+    const timer = this.ownerDisconnectTimers.get(partyId);
+    if (timer) {
+      clearTimeout(timer);
+      this.ownerDisconnectTimers.delete(partyId);
     }
   }
 

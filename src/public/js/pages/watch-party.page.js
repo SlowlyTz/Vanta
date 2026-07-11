@@ -4,9 +4,18 @@ import { MediaApi } from '../api/media.api.js';
 import { createWatchPartySocket } from '../realtime/watch-party.socket.js';
 import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
+import { loadEpisodeContext } from '../utils/episodeContext.js';
 
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 const OWNER_SYNC_INTERVAL_MS = 5000;
+
+const PRELOAD_LABELS = {
+  waiting: 'Wartet auf Player',
+  loading: 'Stream wird vorbereitet …',
+  ready: 'Bereit',
+  blocked: 'Autoplay blockiert',
+  error: 'Fehler beim Laden'
+};
 
 function memberInitial(username) {
   return (username || '?').trim().charAt(0).toUpperCase() || '?';
@@ -27,11 +36,12 @@ export default function WatchPartyPage({ partyId }) {
   let socket = null;
   let controller = null;
   let ownerHeartbeatTimer = null;
+  let countdownTimer = null;
   let destroyed = false;
   let scrollLockY = 0;
+  let ending = false;
 
   const isOwner = () => Boolean(party && currentUser && party.ownerUserId === currentUser.id);
-  const currentMember = () => party?.members.find(member => member.userId === currentUser?.id) || null;
 
   // --- DOM ---
   const backButton = createElement('button', {
@@ -40,9 +50,23 @@ export default function WatchPartyPage({ partyId }) {
     onClick: () => goHome()
   }, '← Zurück');
 
+  const syncStatusBadge = createElement('span', {
+    className: 'watch-party-sync-status',
+    dataset: { status: 'preparing' }
+  }, 'Wird vorbereitet');
+
+  const endButton = createElement('button', {
+    className: 'watch-party-end-button',
+    type: 'button',
+    hidden: true,
+    onClick: () => handleEnd()
+  }, 'Party beenden');
+
   const header = createElement('div', { className: 'watch-party-header' },
     backButton,
-    createElement('h1', { className: 'watch-party-title' }, 'Watch Party')
+    createElement('h1', { className: 'watch-party-title' }, 'Watch Party'),
+    syncStatusBadge,
+    endButton
   );
 
   const mediaSummary = createElement('div', { className: 'watch-party-media-summary' });
@@ -62,28 +86,38 @@ export default function WatchPartyPage({ partyId }) {
 
   const membersList = createElement('ul', { className: 'watch-party-members' });
 
-  const readyButton = createElement('button', {
-    className: 'watch-party-ready-button',
-    type: 'button',
-    onClick: () => handleReadyToggle()
-  }, 'Bereit');
-
   const startButton = createElement('button', {
     className: 'watch-party-start-button',
     type: 'button',
+    hidden: true,
     onClick: () => handleStart()
   }, 'Party starten');
 
-  const actionsRow = createElement('div', { className: 'watch-party-actions' }, readyButton, startButton);
+  const actionsRow = createElement('div', { className: 'watch-party-actions' }, startButton);
 
   const lobby = createElement('div', { className: 'watch-party-lobby' }, mediaSummary, inviteRow, membersList, actionsRow);
 
   const playerMount = createElement('div', { className: 'watch-party-player-mount' });
 
+  const countdownOverlay = createElement('div', { className: 'watch-party-countdown-overlay', hidden: true });
+
+  const autoplayActivateButton = createElement('button', {
+    className: 'watch-party-autoplay-button',
+    type: 'button'
+  }, 'Wiedergabe aktivieren');
+  const autoplayOverlay = createElement('div', { className: 'watch-party-autoplay-overlay', hidden: true },
+    createElement('p', {}, 'Dein Browser hat die automatische Wiedergabe blockiert.'),
+    autoplayActivateButton
+  );
+
+  const endedState = createElement('div', { className: 'watch-party-ended-state', hidden: true });
   const errorState = createElement('div', { className: 'watch-party-error', hidden: true });
 
   container.appendChild(header);
   container.appendChild(lobby);
+  container.appendChild(countdownOverlay);
+  container.appendChild(autoplayOverlay);
+  container.appendChild(endedState);
   container.appendChild(errorState);
 
   // --- Lifecycle ---
@@ -97,6 +131,7 @@ export default function WatchPartyPage({ partyId }) {
     destroyed = true;
     window.removeEventListener('hashchange', handleHashChange);
     if (ownerHeartbeatTimer) window.clearInterval(ownerHeartbeatTimer);
+    if (countdownTimer) window.clearInterval(countdownTimer);
     socket?.close();
     try {
       controller?.destroy();
@@ -122,6 +157,11 @@ export default function WatchPartyPage({ partyId }) {
     window.scrollTo(0, scrollLockY);
   }
 
+  function setSyncStatus(status, label) {
+    syncStatusBadge.dataset.status = status;
+    syncStatusBadge.textContent = label;
+  }
+
   // --- Rendering ---
   function renderMediaSummary() {
     mediaSummary.innerHTML = '';
@@ -134,6 +174,10 @@ export default function WatchPartyPage({ partyId }) {
     if (subtitleParts.length) {
       mediaSummary.appendChild(createElement('div', { className: 'watch-party-media-subtitle' }, subtitleParts.join(' · ')));
     }
+  }
+
+  function preloadLabel(member) {
+    return member.preloadMessage || PRELOAD_LABELS[member.preloadState] || PRELOAD_LABELS.waiting;
   }
 
   function renderMembers() {
@@ -149,8 +193,8 @@ export default function WatchPartyPage({ partyId }) {
           member.role === 'owner' ? createElement('span', { className: 'watch-party-member-badge' }, 'Owner') : null
         ),
         createElement('span', {
-          className: `watch-party-member-status${member.ready ? ' is-ready' : ''}`
-        }, member.ready ? 'Bereit' : 'Wartet …')
+          className: `watch-party-member-status is-${member.preloadState || 'waiting'}`
+        }, preloadLabel(member))
       );
 
       if (isOwner() && !isSelf) {
@@ -168,20 +212,16 @@ export default function WatchPartyPage({ partyId }) {
 
   function renderActions() {
     const owner = isOwner();
-    readyButton.hidden = owner;
     startButton.hidden = !owner;
+    endButton.hidden = !owner || party.status === 'ended';
 
-    if (!owner) {
-      const ready = Boolean(currentMember()?.ready);
-      readyButton.textContent = ready ? 'Bereit ✓' : 'Bereit';
-      readyButton.classList.toggle('is-ready', ready);
-    } else {
+    if (owner) {
       const canStart = party.members.every(member => member.ready || member.role === 'owner');
       const stillInLobby = party.status === 'lobby';
       startButton.disabled = !canStart || !stillInLobby;
       startButton.textContent = stillInLobby
         ? (canStart ? 'Party starten' : 'Warte auf Teilnehmer …')
-        : 'Party läuft';
+        : (party.status === 'countdown' ? 'Startet …' : 'Party läuft');
     }
   }
 
@@ -206,21 +246,35 @@ export default function WatchPartyPage({ partyId }) {
     }, 'Zurück zur Startseite'));
   }
 
-  // --- Actions ---
-  async function handleReadyToggle() {
-    const nextReady = !currentMember()?.ready;
-    readyButton.disabled = true;
-    try {
-      const { party: updated } = await WatchPartyApi.setReady(partyId, nextReady);
-      party = updated;
-      renderParty();
-    } catch (error) {
-      appStore.showToast(error.message || 'Status konnte nicht aktualisiert werden', 'error');
-    } finally {
-      readyButton.disabled = false;
+  function showEndedState(message) {
+    if (ownerHeartbeatTimer) {
+      window.clearInterval(ownerHeartbeatTimer);
+      ownerHeartbeatTimer = null;
     }
+    try {
+      controller?.destroy();
+    } catch (error) {
+      console.warn('[Watch Party Ended Cleanup]', error);
+    }
+    controller = null;
+    unlockPlayerViewport();
+    playerMount.remove();
+    countdownOverlay.hidden = true;
+    autoplayOverlay.hidden = true;
+    lobby.hidden = true;
+
+    endedState.hidden = false;
+    endedState.innerHTML = '';
+    endedState.appendChild(createElement('h2', {}, 'Watch Party beendet'));
+    endedState.appendChild(createElement('p', {}, message || 'Die Watch Party wurde beendet.'));
+    endedState.appendChild(createElement('button', {
+      className: 'btn-primary',
+      type: 'button',
+      onClick: () => goHome()
+    }, 'Zurück zur Startseite'));
   }
 
+  // --- Actions ---
   async function handleKick(userId) {
     try {
       await WatchPartyApi.kick(partyId, userId);
@@ -233,6 +287,21 @@ export default function WatchPartyPage({ partyId }) {
     socket?.sendJson({ type: 'OWNER_START' });
   }
 
+  async function handleEnd() {
+    if (ending) return;
+    ending = true;
+    try {
+      const positionMs = controller?.player
+        ? Math.round(controller.player.currentTime * 1000)
+        : party?.positionMs || 0;
+      await WatchPartyApi.end(partyId, positionMs);
+    } catch (error) {
+      appStore.showToast(error.message || 'Watch Party konnte nicht beendet werden', 'error');
+    } finally {
+      ending = false;
+    }
+  }
+
   async function handleCopyInvite() {
     try {
       await navigator.clipboard.writeText(inviteInput.value);
@@ -240,6 +309,25 @@ export default function WatchPartyPage({ partyId }) {
     } catch {
       inviteInput.select();
     }
+  }
+
+  // --- Countdown ---
+  function showCountdown(startsAtServerTimeMs) {
+    countdownOverlay.hidden = false;
+    if (countdownTimer) window.clearInterval(countdownTimer);
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((startsAtServerTimeMs - Date.now()) / 1000));
+      countdownOverlay.textContent = remaining > 0 ? `Startet in ${remaining} …` : 'Los geht’s …';
+      if (remaining <= 0) {
+        window.clearInterval(countdownTimer);
+        countdownTimer = null;
+        window.setTimeout(() => { countdownOverlay.hidden = true; }, 600);
+      }
+    };
+
+    tick();
+    countdownTimer = window.setInterval(tick, 250);
   }
 
   // --- Player + sync ---
@@ -263,30 +351,68 @@ export default function WatchPartyPage({ partyId }) {
 
     if (Math.abs(drift) > 2.5) {
       controller.player.currentTime = Math.max(0, targetSeconds);
+      setSyncStatus('preparing', 'Synchronisiert …');
       return;
     }
 
     if (playing && Math.abs(drift) > 0.35) {
       controller.player.playbackRate = drift > 0 ? 0.98 : 1.02;
+      setSyncStatus('preparing', 'Synchronisiert …');
       window.setTimeout(() => {
         if (controller?.player) controller.player.playbackRate = 1;
       }, 2500);
+      return;
+    }
+
+    setSyncStatus('sync', 'Synchron');
+  }
+
+  async function safeApplyRemoteControl(payload) {
+    if (!controller) return;
+    try {
+      await controller.applyRemoteControl(payload);
+      autoplayOverlay.hidden = true;
+    } catch (error) {
+      if (payload.action === 'play') {
+        autoplayOverlay.hidden = false;
+      } else {
+        console.warn('[Watch Party Remote Control]', error);
+      }
     }
   }
 
-  async function mountPlayer({ itemId, positionMs }) {
-    if (controller || destroyed) return;
+  autoplayActivateButton.addEventListener('click', async () => {
+    try {
+      await controller?.applyRemoteControl({
+        action: 'play',
+        positionMs: party?.positionMs || 0,
+        serverTimeMs: party?.lastServerTimeMs || Date.now(),
+        playing: true
+      });
+      autoplayOverlay.hidden = true;
+    } catch (error) {
+      console.error('[Watch Party Autoplay Retry Error]', error);
+    }
+  });
+
+  async function mountPlayer({ itemId, positionMs, force = false }) {
+    if (destroyed) return;
+    if (controller && !force) return;
 
     lobby.hidden = true;
+    if (!playerMount.isConnected) container.insertBefore(playerMount, countdownOverlay);
     playerMount.classList.add('player-page', 'vanta-player-root');
-    container.appendChild(playerMount);
     lockPlayerViewport();
+    setSyncStatus('preparing', 'Wird vorbereitet');
 
     try {
       const [item, playerModule] = await Promise.all([
         MediaApi.getItem(itemId),
         import(PLAYER_MODULE_URL)
       ]);
+      if (destroyed) return;
+
+      const episodeContext = await loadEpisodeContext(item).catch(() => null);
       if (destroyed) return;
 
       controller = await playerModule.mountVantaPlayer({
@@ -304,12 +430,23 @@ export default function WatchPartyPage({ partyId }) {
           disableQualityMenu: true,
           onOwnerPlay: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
           onOwnerPause: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
-          onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs })
-        }
+          onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs }),
+          onPreloadStateChange: ({ state, message }) => socket?.sendJson({ type: 'PRELOAD_STATE', state, message })
+        },
+        episodeBrowser: episodeContext ? {
+          enabled: true,
+          context: episodeContext,
+          readonly: !isOwner(),
+          onSelectEpisode: episode => {
+            if (!isOwner()) return;
+            socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
+          }
+        } : null
       });
 
       if (destroyed) {
         controller?.destroy();
+        controller = null;
         return;
       }
 
@@ -320,22 +457,61 @@ export default function WatchPartyPage({ partyId }) {
     }
   }
 
+  async function replacePlayer({ itemId, positionMs }) {
+    if (ownerHeartbeatTimer) {
+      window.clearInterval(ownerHeartbeatTimer);
+      ownerHeartbeatTimer = null;
+    }
+    try {
+      controller?.destroy();
+    } catch (error) {
+      console.warn('[Watch Party Replace Cleanup]', error);
+    }
+    controller = null;
+    playerMount.innerHTML = '';
+    await mountPlayer({ itemId, positionMs, force: true });
+  }
+
   // --- Socket ---
   function handleSocketMessage(message) {
-    if (!message?.type) return;
+    if (!message?.type || destroyed) return;
 
     switch (message.type) {
+      case 'PARTY_STATE': {
+        party = message.party;
+        renderParty();
+        if (controller) {
+          applySync({
+            positionMs: message.effectivePositionMs ?? party.positionMs,
+            playing: party.status === 'playing',
+            serverTimeMs: message.serverTimeMs
+          });
+        } else if (['playing', 'paused', 'countdown'].includes(party.status)) {
+          mountPlayer({ itemId: party.playableItemId, positionMs: message.effectivePositionMs ?? party.positionMs });
+        }
+        return;
+      }
+
       case 'PARTY_UPDATED':
         party = message.party;
         renderParty();
         return;
 
+      case 'COUNTDOWN':
+        showCountdown(message.startsAtServerTimeMs);
+        return;
+
       case 'LOAD_MEDIA':
-        mountPlayer({ itemId: message.itemId, positionMs: message.positionMs });
+        if (message.reason === 'episode-change') {
+          appStore.showToast(message.message || 'Folge gewechselt', 'success');
+          replacePlayer({ itemId: message.itemId, positionMs: message.positionMs });
+        } else {
+          mountPlayer({ itemId: message.itemId, positionMs: message.positionMs });
+        }
         return;
 
       case 'CONTROL':
-        controller?.applyRemoteControl?.({
+        safeApplyRemoteControl({
           action: message.action,
           positionMs: message.positionMs,
           serverTimeMs: message.serverTimeMs,
@@ -345,6 +521,11 @@ export default function WatchPartyPage({ partyId }) {
 
       case 'SYNC':
         applySync(message);
+        return;
+
+      case 'PARTY_ENDED':
+        party = message.party || party;
+        showEndedState(message.message);
         return;
 
       case 'KICKED':
@@ -373,13 +554,21 @@ export default function WatchPartyPage({ partyId }) {
 
       party = joined;
       inviteInput.value = `${window.location.origin}/#/watch-party/${partyId}`;
+
+      if (party.status === 'ended') {
+        showEndedState('Diese Watch Party wurde bereits beendet.');
+        return;
+      }
+
       renderParty();
 
-      socket = createWatchPartySocket({ partyId, onMessage: handleSocketMessage });
+      socket = createWatchPartySocket({
+        partyId,
+        onMessage: handleSocketMessage,
+        onReconnecting: () => setSyncStatus('lost', 'Verbindung verloren. Reconnect läuft …')
+      });
 
-      if (party.status === 'playing' || party.status === 'paused') {
-        mountPlayer({ itemId: party.playableItemId, positionMs: party.positionMs });
-      }
+      mountPlayer({ itemId: party.playableItemId, positionMs: party.positionMs });
     } catch (error) {
       if (!destroyed) renderError(error);
     }

@@ -647,6 +647,71 @@
   white-space: nowrap;
 }
 
+.vanta-player-episodes-panel {
+  min-width: 260px;
+  max-width: min(360px, calc(100vw - 32px));
+  max-height: min(440px, 68vh);
+  padding: 10px;
+}
+
+.vanta-player-episode-season {
+  margin-bottom: 6px;
+}
+
+.vanta-player-episode-season h3 {
+  margin: 4px 8px;
+  color: rgb(255 255 255 / 0.6);
+  font: 700 0.72rem Outfit, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vanta-player-episode-row {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--abyss-radius);
+  padding: 8px 12px;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 140ms ease;
+}
+
+.vanta-player-episode-row:hover,
+.vanta-player-episode-row:focus-visible {
+  background: rgb(255 255 255 / 0.12);
+  outline: none;
+}
+
+.vanta-player-episode-row.is-current {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.vanta-player-episode-row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.vanta-player-episode-row-code {
+  flex: 0 0 auto;
+  color: rgb(255 255 255 / 0.62);
+  font: 700 0.74rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-episode-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 0.86rem Outfit, system-ui, sans-serif;
+}
+
 .vanta-player-menu-item-check {
   flex-shrink: 0;
   width: 20px;

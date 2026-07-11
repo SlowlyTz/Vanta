@@ -32,9 +32,25 @@ export const WatchPartyApi = {
     });
   },
 
-  end(partyId) {
-    return request(`/api/watch-parties/${encodeURIComponent(partyId)}`, {
-      method: 'DELETE'
+  end(partyId, positionMs) {
+    return request(`/api/watch-parties/${encodeURIComponent(partyId)}/end`, {
+      method: 'POST',
+      body: { positionMs }
+    });
+  },
+
+  suggestions(limit = 18) {
+    return request(`/api/watch-parties/suggestions?limit=${limit}`);
+  },
+
+  resumable() {
+    return request('/api/watch-parties/resumable');
+  },
+
+  resume(originalPartyId) {
+    return request('/api/watch-parties/resume', {
+      method: 'POST',
+      body: { originalPartyId }
     });
   }
 };

@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
+import { loadEpisodeContext } from '../utils/episodeContext.js';
 
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 
@@ -115,6 +116,9 @@ export default function PlayerPage({ id }) {
       if (cleaningUp) return;
 
       const resumePosition = Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
+      const episodeContext = await loadEpisodeContext(item).catch(() => null);
+      if (cleaningUp) return;
+
       controller = await playerModule.mountVantaPlayer({
         root: container,
         itemId: playableId,
@@ -123,7 +127,16 @@ export default function PlayerPage({ id }) {
         resumePosition,
         resolvePlayback: (mode, options) => MediaApi.getPlayback(playableId, mode, options),
         reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
-        onBack: goBack
+        onBack: goBack,
+        episodeBrowser: episodeContext ? {
+          enabled: true,
+          context: episodeContext,
+          readonly: false,
+          onSelectEpisode: episode => {
+            cleanup();
+            window.location.hash = `#/player/${episode.Id}`;
+          }
+        } : null
       });
 
       if (cleaningUp) controller?.destroy();
