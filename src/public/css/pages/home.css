@@ -7,7 +7,7 @@
   min-height: 620px;
   width: 100%;
   overflow: hidden;
-  margin-top: -64px;
+  margin-top: 0;
   margin-bottom: 0;
   isolation: isolate;
 }
@@ -243,7 +243,7 @@
     height: 74vh;
     min-height: 560px;
     max-height: none;
-    margin-top: -60px;
+    margin-top: 0;
   }
   .home-hero-backdrop {
     background-position: center top;

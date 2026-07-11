@@ -107,6 +107,10 @@ class Router {
     }
 
     this.mountShell();
+    this.main.classList.toggle(
+      'app-main--edge-top',
+      pageElement?.dataset?.edgeTop === 'true'
+    );
 
     const previous = this.main.firstElementChild;
     if (previous) {

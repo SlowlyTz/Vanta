@@ -21,6 +21,10 @@
   overflow-x: clip;
 }
 
+.app-main.app-main--edge-top {
+  padding-top: 0;
+}
+
 .route-view-enter {
   opacity: 0;
   transform: translate3d(0, 14px, 0) scale(0.992);

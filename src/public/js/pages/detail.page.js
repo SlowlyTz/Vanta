@@ -94,6 +94,7 @@ function createFavoriteButton(item) {
 
 export default function DetailPage({ id }) {
   const container = createElement('div', { className: 'page-container' });
+  container.dataset.edgeTop = 'true';
   const actorModal = createActorModal({ currentItemId: id });
   const returnToHash = getReturnToHash();
 

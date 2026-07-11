@@ -76,6 +76,59 @@ describe('HomeSectionsService._buildPublisherSections', () => {
   });
 });
 
+describe('HomeSectionsService._buildGenreSections', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('links movie-only home genre sections to the movie genre route', async () => {
+    LibraryService.getGenres.mockImplementation((userId, token, type) => (
+      Promise.resolve(type === 'Movie' ? [{ Name: 'Musik' }] : [])
+    ));
+
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
+      { Id: 'm1', Name: 'Movie', Type: 'Movie', Genres: ['Musik'], ProductionYear: 2026 }
+    ]);
+
+    expect(sections).toHaveLength(1);
+    expect(sections[0]).toMatchObject({
+      title: 'Musik',
+      href: '#/genre/Movie/Musik'
+    });
+  });
+
+  it('links series-only home genre sections to the series genre route', async () => {
+    LibraryService.getGenres.mockImplementation((userId, token, type) => (
+      Promise.resolve(type === 'Series' ? [{ Name: 'Drama' }] : [])
+    ));
+
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
+      { Id: 's1', Name: 'Series', Type: 'Series', Genres: ['Drama'], ProductionYear: 2025 }
+    ]);
+
+    expect(sections).toHaveLength(1);
+    expect(sections[0]).toMatchObject({
+      title: 'Drama',
+      href: '#/genre/Series/Drama'
+    });
+  });
+
+  it('links shared home genre sections to the mixed library route', async () => {
+    LibraryService.getGenres.mockResolvedValue([{ Name: 'Horror' }]);
+
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
+      { Id: 'm1', Name: 'Movie', Type: 'Movie', Genres: ['Horror'], ProductionYear: 2026 },
+      { Id: 's1', Name: 'Series', Type: 'Series', Genres: ['Horror'], ProductionYear: 2025 }
+    ]);
+
+    expect(sections).toHaveLength(1);
+    expect(sections[0]).toMatchObject({
+      title: 'Horror',
+      href: '#/genre/Movie,Series/Horror'
+    });
+  });
+});
+
 describe('HomeSectionsService._buildNowPlayingSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
