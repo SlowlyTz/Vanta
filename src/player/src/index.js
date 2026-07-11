@@ -31,6 +31,7 @@ import { createSourceSwitch } from './sourceSwitch.js';
 import { createQualityMenu } from './quality.js';
 import { createSubtitleMenu } from './subtitles.js';
 import { createPlayerUi } from './ui/playerUi.js';
+import { applyWatchPartyPermissions, computeRemoteControlTarget } from './watchParty.js';
 
 const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 const WHEEL_SEEK_DEBOUNCE_MS = 320;
@@ -215,7 +216,8 @@ export async function mountVantaPlayer({
   resumePosition = 0,
   resolvePlayback,
   reportPlayback,
-  onBack
+  onBack,
+  watchParty = null
 }) {
   await customElements.whenDefined('media-player');
 
@@ -229,6 +231,12 @@ export async function mountVantaPlayer({
   let knownDuration = 0;
   let waitingTimer = null;
   let lastWheelSeekAt = 0;
+  let applyingRemoteControl = false;
+
+  if (watchParty?.enabled && !watchParty.isOwner) {
+    player.keyShortcuts = { toggleMuted: 'm', toggleFullscreen: 'f' };
+  }
+  applyWatchPartyPermissions({ root, watchParty });
 
   if (isIOSLike()) root.classList.add('is-ios');
   if (!isPictureInPictureSupported()) root.classList.add('no-pip');
@@ -384,27 +392,29 @@ export async function mountVantaPlayer({
   const menuButtonContainer = root.querySelector('.vanta-player-controls-right');
   const menuOverlayContainer = root.querySelector('.vanta-player-shell');
 
-  const qualityMenu = createQualityMenu({
-    buttonContainer: menuButtonContainer,
-    menuContainer: menuOverlayContainer,
-    onSelect: async profileId => {
-      const currentPlayback = sourceSwitch.getCurrentPlayback();
-      if (!currentPlayback) return;
-      try {
-        const playback = await resolvePlayback('auto', { qualityProfile: profileId });
-        if (destroyed) return;
-        await sourceSwitch.switchTo(playback, {
-          position: sourceSwitch.captureState().position,
-          shouldPlay: sourceSwitch.getIntendsToPlay(),
-          label: 'Qualität wird gewechselt …'
-        });
-        if (destroyed) return;
-        updateMenus(playback);
-      } catch (error) {
-        if (!destroyed) showError(error.message);
-      }
-    }
-  });
+  const qualityMenu = watchParty?.disableQualityMenu
+    ? { update: () => {} }
+    : createQualityMenu({
+        buttonContainer: menuButtonContainer,
+        menuContainer: menuOverlayContainer,
+        onSelect: async profileId => {
+          const currentPlayback = sourceSwitch.getCurrentPlayback();
+          if (!currentPlayback) return;
+          try {
+            const playback = await resolvePlayback('auto', { qualityProfile: profileId });
+            if (destroyed) return;
+            await sourceSwitch.switchTo(playback, {
+              position: sourceSwitch.captureState().position,
+              shouldPlay: sourceSwitch.getIntendsToPlay(),
+              label: 'Qualität wird gewechselt …'
+            });
+            if (destroyed) return;
+            updateMenus(playback);
+          } catch (error) {
+            if (!destroyed) showError(error.message);
+          }
+        }
+      });
 
   const subtitleMenu = createSubtitleMenu({
     buttonContainer: menuButtonContainer,
@@ -556,6 +566,24 @@ export async function mountVantaPlayer({
     }
   });
 
+  listen(player, 'play', () => {
+    if (watchParty?.enabled && watchParty.isOwner && !applyingRemoteControl) {
+      watchParty.onOwnerPlay?.(Math.round(player.currentTime * 1000));
+    }
+  });
+
+  listen(player, 'pause', () => {
+    if (watchParty?.enabled && watchParty.isOwner && !applyingRemoteControl) {
+      watchParty.onOwnerPause?.(Math.round(player.currentTime * 1000));
+    }
+  });
+
+  listen(player, 'seeked', () => {
+    if (watchParty?.enabled && watchParty.isOwner && !applyingRemoteControl) {
+      watchParty.onOwnerSeek?.(Math.round(player.currentTime * 1000));
+    }
+  });
+
   listen(player, 'ended', () => {
     exitPictureInPicture().catch(() => {});
     reporter.stop({ ended: true });
@@ -601,6 +629,26 @@ export async function mountVantaPlayer({
 
   return {
     player,
+    applyRemoteControl: async ({ action, positionMs, serverTimeMs, playing }) => {
+      applyingRemoteControl = true;
+      try {
+        const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
+          action, positionMs, serverTimeMs, playing, currentTime: player.currentTime
+        });
+
+        if (shouldSeek) player.currentTime = targetSeconds;
+
+        if (shouldPlay) {
+          await player.play().catch(() => {});
+        } else if (shouldPause) {
+          player.pause();
+        }
+      } finally {
+        window.setTimeout(() => {
+          applyingRemoteControl = false;
+        }, 250);
+      }
+    },
     destroy: () => {
       if (destroyed) return;
       destroyed = true;

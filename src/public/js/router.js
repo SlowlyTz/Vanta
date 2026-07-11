@@ -171,7 +171,10 @@ class Router {
       return;
     }
 
-    const pageUsesShell = isAuthenticated && !hash.startsWith('#/login') && !hash.startsWith('#/player');
+    const pageUsesShell = isAuthenticated
+      && !hash.startsWith('#/login')
+      && !hash.startsWith('#/player')
+      && !hash.startsWith('#/watch-party');
 
     try {
       const pageParams = { ...route.defaultParams, ...params };
