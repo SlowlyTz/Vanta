@@ -27,16 +27,52 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
+router.get('/suggestions', requireAuth, asyncHandler(async (req, res) => {
+  const limit = Math.max(1, Math.min(36, parseInt(req.query.limit, 10) || 18));
+  const items = await WatchPartyService.getSuggestions({
+    userId: req.session.userId,
+    accessToken: req.session.accessToken,
+    limit
+  });
+
+  return res.json({ items });
+}));
+
+router.get('/resumable', requireAuth, asyncHandler(async (req, res) => {
+  const snapshot = WatchPartyService.getResumableForOwner(req.session.userId);
+  return res.json({ party: snapshot });
+}));
+
+router.post('/resume', requireAuth, asyncHandler(async (req, res) => {
+  const { originalPartyId } = req.body || {};
+
+  if (!originalPartyId) {
+    return res.status(400).json({ error: 'originalPartyId is required' });
+  }
+
+  const party = WatchPartyService.resumeEndedParty({
+    userId: req.session.userId,
+    username: req.session.username,
+    originalPartyId
+  });
+
+  return res.status(201).json({
+    party,
+    inviteUrl: `/#/watch-party/${party.id}`
+  });
+}));
+
 router.get('/:partyId', requireAuth, asyncHandler(async (req, res) => {
   const party = WatchPartyService.getPartyOrThrow(req.params.partyId);
   return res.json({ party: WatchPartyService.serializeParty(party, req.session.userId) });
 }));
 
 router.post('/:partyId/join', requireAuth, asyncHandler(async (req, res) => {
-  const party = WatchPartyService.joinParty({
+  const party = await WatchPartyService.joinParty({
     partyId: req.params.partyId,
     userId: req.session.userId,
-    username: req.session.username
+    username: req.session.username,
+    accessToken: req.session.accessToken
   });
 
   watchPartySocketHub.broadcastParty(party.id, {
@@ -82,10 +118,25 @@ router.post('/:partyId/kick', requireAuth, asyncHandler(async (req, res) => {
   return res.json({ party });
 }));
 
-router.delete('/:partyId', requireAuth, asyncHandler(async (req, res) => {
-  WatchPartyService.deleteParty({ partyId: req.params.partyId, userId: req.session.userId });
-  watchPartySocketHub.broadcastParty(req.params.partyId, { type: 'ENDED' });
-  return res.status(204).end();
+router.post('/:partyId/end', requireAuth, asyncHandler(async (req, res) => {
+  const { positionMs } = req.body || {};
+
+  const party = WatchPartyService.endParty({
+    partyId: req.params.partyId,
+    ownerUserId: req.session.userId,
+    positionMs: Number.isFinite(positionMs) ? positionMs : null,
+    reason: 'owner-ended'
+  });
+
+  watchPartySocketHub.cancelOwnerDisconnectTimer(req.params.partyId);
+  watchPartySocketHub.cancelCountdown(req.params.partyId);
+  watchPartySocketHub.broadcastParty(party.id, {
+    type: 'PARTY_ENDED',
+    party,
+    message: 'Die Watch Party wurde vom Owner beendet.'
+  });
+
+  return res.json({ party });
 }));
 
 export default router;

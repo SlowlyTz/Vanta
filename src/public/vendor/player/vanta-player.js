@@ -1,5 +1,5 @@
 import { $ as e, E as t, H as n, K as r, O as i, X as a, Y as o, d as s, i as c, j as l, w as u } from "./std-EJr84HPl.js";
-import { A as d, C as f, D as p, E as m, F as h, G as g, I as _, K as v, M as y, N as b, O as x, Q as S, T as C, U as w, V as T, W as E, a as D, c as O, ct as k, d as A, dt as j, et as M, f as N, h as ee, i as P, j as te, k as ne, l as re, lt as ie, n as ae, o as oe, ot as se, r as ce, rt as le, s as ue, st as de, t as fe, tt as pe, u as me, ut as he, v as ge, w as _e } from "./media-ui-D5tS2kPu.js";
+import { A as d, C as f, D as p, E as m, F as h, G as g, I as _, K as v, M as y, N as b, O as x, Q as S, T as C, U as w, V as T, W as E, a as D, c as O, ct as k, d as A, dt as j, et as M, f as N, h as ee, i as te, j as P, k as ne, l as re, lt as ie, n as ae, o as oe, ot as se, r as ce, rt as le, s as ue, st as de, t as fe, tt as pe, u as me, ut as he, v as ge, w as _e } from "./media-ui-D5tS2kPu.js";
 //#region node_modules/hls.js/dist/hls.mjs
 var F = Number.isFinite || function(e) {
 	return typeof e == "number" && isFinite(e);
@@ -1677,8 +1677,8 @@ var Mn = class extends Ee {
 			b ? this.bwEstimator.sample(l - Math.min(g, y), s.loaded) : this.bwEstimator.sampleTTFB(l);
 			let ee = S[N].maxBitrate;
 			this.getBwEstimate() * j > ee && this.resetEstimator(ee);
-			let P = this.findBestLevel(ee, u, N, 0, v, 1, 1);
-			P > -1 && (N = P), this.warn(`Fragment ${t.sn}${n ? " part " + n.index : ""} of level ${d} is loading too slowly;
+			let te = this.findBestLevel(ee, u, N, 0, v, 1, 1);
+			te > -1 && (N = te), this.warn(`Fragment ${t.sn}${n ? " part " + n.index : ""} of level ${d} is loading too slowly;
       Fragment duration: ${t.duration.toFixed(3)}
       Time to underbuffer: ${v.toFixed(3)} s
       Estimated load time for current fragment: ${O.toFixed(3)} s
@@ -1687,7 +1687,7 @@ var Mn = class extends Ee {
       Current BW estimate: ${F(x) ? x | 0 : "Unknown"} bps
       New BW estimate: ${this.getBwEstimate() | 0} bps
       Switching to level ${N} @ ${ee | 0} bps`), r.nextLoadLevel = r.nextAutoLevel = N, this.clearTimer();
-			let te = () => {
+			let P = () => {
 				if (this.clearTimer(), this.fragCurrent === t && this.hls.loadLevel === N && N > 0) {
 					let e = this.getStarvationDelay();
 					if (this.warn(`Aborting inflight request ${N > 0 ? "and switching down" : ""}
@@ -1698,7 +1698,7 @@ var Mn = class extends Ee {
 					}
 				}
 			};
-			p || O > M * 2 ? te() : this.timer = self.setInterval(te, M * 1e3), r.trigger(R.FRAG_LOAD_EMERGENCY_ABORTED, {
+			p || O > M * 2 ? P() : this.timer = self.setInterval(P, M * 1e3), r.trigger(R.FRAG_LOAD_EMERGENCY_ABORTED, {
 				frag: t,
 				part: n,
 				stats: s
@@ -6300,7 +6300,7 @@ var mo = class {
 				t.readBits(1);
 			}
 		}
-		let N = 0, ee = 1, P = 1, te = !0, ne = 1, re = 0;
+		let N = 0, ee = 1, te = 1, P = !0, ne = 1, re = 0;
 		t.readBoolean(), t.readBoolean();
 		let ie = !1;
 		if (t.readBoolean()) {
@@ -6323,7 +6323,7 @@ var mo = class {
 					4,
 					3,
 					2
-				][e - 1], P = [
+				][e - 1], te = [
 					1,
 					11,
 					11,
@@ -6340,14 +6340,14 @@ var mo = class {
 					3,
 					2,
 					1
-				][e - 1]) : e === 255 && (ee = t.readBits(16), P = t.readBits(16));
+				][e - 1]) : e === 255 && (ee = t.readBits(16), te = t.readBits(16));
 			}
 			if (t.readBoolean() && t.readBoolean(), t.readBoolean() && (t.readBits(3), t.readBoolean(), t.readBoolean() && (t.readUByte(), t.readUByte(), t.readUByte())), t.readBoolean() && (t.readUEG(), t.readUEG()), t.readBoolean(), t.readBoolean(), t.readBoolean(), ie = t.readBoolean(), ie && (t.skipUEG(), t.skipUEG(), t.skipUEG(), t.skipUEG()), t.readBoolean() && (ne = t.readBits(32), re = t.readBits(32), t.readBoolean() && t.readUEG(), t.readBoolean())) {
 				let e = t.readBoolean(), r = t.readBoolean(), i = !1;
 				(e || r) && (i = t.readBoolean(), i && (t.readUByte(), t.readBits(5), t.readBoolean(), t.readBits(5)), t.readBits(4), t.readBits(4), i && t.readBits(4), t.readBits(5), t.readBits(5), t.readBits(5));
 				for (let a = 0; a <= n; a++) {
-					te = t.readBoolean();
-					let n = te || t.readBoolean(), a = !1;
+					P = t.readBoolean();
+					let n = P || t.readBoolean(), a = !1;
 					n ? t.readEG() : a = t.readBoolean();
 					let o = a ? 1 : t.readUEG() + 1;
 					if (e) for (let e = 0; e < o; e++) t.readUEG(), t.readUEG(), i && (t.readUEG(), t.readUEG()), t.skipBits(1);
@@ -6395,13 +6395,13 @@ var mo = class {
 				min_spatial_segmentation_idc: N,
 				chroma_format_idc: y,
 				frame_rate: {
-					fixed: te,
+					fixed: P,
 					fps: re / ne
 				}
 			},
 			width: ae,
 			height: oe,
-			pixelRatio: [ee, P]
+			pixelRatio: [ee, te]
 		};
 	}
 	readPPS(e) {
@@ -18522,7 +18522,7 @@ var wd = class {
 	static el = k({
 		tagName: "media-player",
 		props: pe,
-		store: te
+		store: P
 	});
 	j;
 	u;
@@ -18734,7 +18734,7 @@ var wd = class {
 };
 //#endregion
 //#region node_modules/vidstack/dist/prod/define/media-captions.js
-Dd([he], $.prototype, "provider", 1), Dd([he], $.prototype, "user", 1), Dd([he], $.prototype, "orientation", 2), Dd([he], $.prototype, "qualities", 1), Dd([he], $.prototype, "audioTracks", 1), Dd([he], $.prototype, "textTracks", 1), Dd([he], $.prototype, "textRenderers", 1), Dd([he], $.prototype, "paused", 1), Dd([he], $.prototype, "muted", 1), Dd([he], $.prototype, "currentTime", 1), Dd([he], $.prototype, "volume", 1), Dd([he], $.prototype, "playsinline", 1), Dd([he], $.prototype, "playbackRate", 1), Dd([ie], $.prototype, "play", 1), Dd([ie], $.prototype, "pause", 1), Dd([ie], $.prototype, "enterFullscreen", 1), Dd([ie], $.prototype, "exitFullscreen", 1), Dd([ie], $.prototype, "enterPictureInPicture", 1), Dd([ie], $.prototype, "exitPictureInPicture", 1), Dd([ie], $.prototype, "seekToLiveEdge", 1), Dd([ie], $.prototype, "startLoading", 1), j($), j(b), j(b), j(ue), j(O), j(me), j(re), j(D), j(A), j(ce), j(oe), j(P), j(fe);
+Dd([he], $.prototype, "provider", 1), Dd([he], $.prototype, "user", 1), Dd([he], $.prototype, "orientation", 2), Dd([he], $.prototype, "qualities", 1), Dd([he], $.prototype, "audioTracks", 1), Dd([he], $.prototype, "textTracks", 1), Dd([he], $.prototype, "textRenderers", 1), Dd([he], $.prototype, "paused", 1), Dd([he], $.prototype, "muted", 1), Dd([he], $.prototype, "currentTime", 1), Dd([he], $.prototype, "volume", 1), Dd([he], $.prototype, "playsinline", 1), Dd([he], $.prototype, "playbackRate", 1), Dd([ie], $.prototype, "play", 1), Dd([ie], $.prototype, "pause", 1), Dd([ie], $.prototype, "enterFullscreen", 1), Dd([ie], $.prototype, "exitFullscreen", 1), Dd([ie], $.prototype, "enterPictureInPicture", 1), Dd([ie], $.prototype, "exitPictureInPicture", 1), Dd([ie], $.prototype, "seekToLiveEdge", 1), Dd([ie], $.prototype, "startLoading", 1), j($), j(b), j(b), j(ue), j(O), j(me), j(re), j(D), j(A), j(ce), j(oe), j(te), j(fe);
 //#endregion
 //#region src/player/src/time.js
 var Od = 1e7;
@@ -19454,8 +19454,85 @@ function Bf({ action: e, positionMs: t, serverTimeMs: n, playing: r, currentTime
 	};
 }
 //#endregion
+//#region src/player/src/episodes.js
+var Vf = "<path d=\"M4 4h16v4H4V4zm0 6h10v4H4v-4zm0 6h16v4H4v-4z\"/>";
+function Hf(e) {
+	return `<svg viewBox="0 0 24 24" aria-hidden="true">${e}</svg>`;
+}
+function Uf(e) {
+	return String(e).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#39;");
+}
+function Wf(e) {
+	return `S${String(e.ParentIndexNumber || 1).padStart(2, "0")}E${String(e.IndexNumber || 1).padStart(2, "0")}`;
+}
+function Gf(e, t) {
+	for (let n of Object.values(e?.episodesBySeason || {})) {
+		let e = n.find((e) => e.Id === t);
+		if (e) return e;
+	}
+	return null;
+}
+function Kf({ buttonContainer: e, menuContainer: t = e, context: n, readonly: r = !1, onSelectEpisode: i }) {
+	let a = !1, o = document.createElement("button");
+	o.type = "button", o.className = "vanta-player-menu-button vanta-player-episodes-button", o.setAttribute("aria-label", "Folgen anzeigen"), o.setAttribute("aria-haspopup", "true"), o.setAttribute("aria-expanded", "false"), o.innerHTML = Hf(Vf);
+	let s = document.createElement("div");
+	s.className = "vanta-player-menu vanta-player-episodes-panel", s.setAttribute("role", "menu"), s.setAttribute("aria-label", "Folgen"), s.hidden = !0, e.insertBefore(o, e.firstChild), t.appendChild(s);
+	function c() {
+		s.innerHTML = (n?.seasons || []).map((e) => `
+      <section class="vanta-player-episode-season">
+        <h3>${Uf(e.Name || `Staffel ${e.IndexNumber ?? ""}`)}</h3>
+        ${(n.episodesBySeason?.[e.Id] || []).map((e) => `
+          <button
+            type="button"
+            class="vanta-player-episode-row${e.Id === n.currentEpisodeId ? " is-current" : ""}"
+            role="menuitem"
+            data-episode-id="${Uf(e.Id)}"
+            tabindex="-1"
+            ${r ? "disabled aria-disabled=\"true\"" : ""}
+          >
+            <span class="vanta-player-episode-row-code">${Wf(e)}</span>
+            <strong class="vanta-player-episode-row-title">${Uf(e.Name || "Unbenannte Folge")}</strong>
+          </button>
+        `).join("")}
+      </section>
+    `).join("");
+	}
+	let l = () => {
+		a && (a = !1, s.hidden = !0, o.setAttribute("aria-expanded", "false"));
+	}, u = () => {
+		a || (mf(s), a = !0, s.hidden = !1, o.setAttribute("aria-expanded", "true"));
+	}, d = () => {
+		a ? l() : u();
+	}, f = (e) => {
+		gf(e), d();
+	}, p = (e) => {
+		let t = e.target.closest("[data-episode-id]");
+		if (!t || r) return;
+		gf(e);
+		let a = Gf(n, t.dataset.episodeId);
+		a && i?.(a), l();
+	}, m = (e) => {
+		hf(e, s) && l();
+	};
+	o.addEventListener("click", f), o.addEventListener("pointerdown", _f), s.addEventListener("click", p), s.addEventListener("pointerdown", _f), document.addEventListener(pf, m);
+	let h = (e) => {
+		a && !s.contains(e.target) && !o.contains(e.target) && l();
+	};
+	return document.addEventListener("click", h), c(), {
+		button: o,
+		update(e) {
+			n = e, c();
+		},
+		open: u,
+		close: l,
+		destroy: () => {
+			l(), o.removeEventListener("click", f), o.removeEventListener("pointerdown", _f), s.removeEventListener("click", p), s.removeEventListener("pointerdown", _f), document.removeEventListener(pf, m), document.removeEventListener("click", h), o.remove(), s.remove();
+		}
+	};
+}
+//#endregion
 //#region src/player/src/index.js
-var Vf = 9e4, Hf = 320, Uf = "radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)", Wf = {
+var qf = 9e4, Jf = 320, Yf = "radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)", Xf = {
 	arrowBack: "<path d=\"M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z\"/>",
 	play: "<path d=\"M8 5v14l11-7z\"/>",
 	pause: "<path d=\"M6 19h4V5H6v14zm8-14v14h4V5h-4z\"/>",
@@ -19469,15 +19546,15 @@ var Vf = 9e4, Hf = 320, Uf = "radial-gradient(circle at 50% 50%, #1a1a20 0%, #05
 	pipEnter: "<path d=\"M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z\"/>",
 	pipExit: "<path d=\"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7.02-3H19V8h-1.98v6.18L11 8v6h.98l-2-2v2.82l2 2z\"/>"
 };
-function Gf(e, t) {
-	let n = Wf[e];
+function Zf(e, t) {
+	let n = Xf[e];
 	return n ? `<svg viewBox="0 0 24 24" aria-hidden="true"${t ? ` slot="${t}"` : ""}>${n}</svg>` : "";
 }
-function Kf(e) {
+function Qf(e) {
 	return String(e).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#39;");
 }
-function qf(e, { title: t, poster: n }) {
-	let r = t ? Kf(t) : "";
+function $f(e, { title: t, poster: n }) {
+	let r = t ? Qf(t) : "";
 	e.innerHTML = `
     <div class="vanta-player-shell">
       <media-player class="vanta-media-player" aria-label="Videoplayer">
@@ -19490,7 +19567,7 @@ function qf(e, { title: t, poster: n }) {
         <div class="vanta-player-controls-layer">
           <div class="vanta-player-topbar">
             <button class="vanta-player-back" type="button" aria-label="Zurück">
-              ${Gf("arrowBack")}
+              ${Zf("arrowBack")}
               <span>Zurück</span>
             </button>
             <div class="vanta-player-title">${r}</div>
@@ -19498,14 +19575,14 @@ function qf(e, { title: t, poster: n }) {
 
           <div class="vanta-player-center-controls">
             <media-seek-button class="vanta-player-center-skip vanta-player-center-skip-left" seconds="-10" aria-label="10 Sekunden zurück">
-              ${Gf("skipBackward", "backward")}
+              ${Zf("skipBackward", "backward")}
             </media-seek-button>
             <media-play-button class="vanta-player-center-play" aria-label="Wiedergabe">
-              ${Gf("play", "play")}
-              ${Gf("pause", "pause")}
+              ${Zf("play", "play")}
+              ${Zf("pause", "pause")}
             </media-play-button>
             <media-seek-button class="vanta-player-center-skip vanta-player-center-skip-right" seconds="10" aria-label="10 Sekunden vorwärts">
-              ${Gf("skipForward", "forward")}
+              ${Zf("skipForward", "forward")}
             </media-seek-button>
           </div>
 
@@ -19521,29 +19598,29 @@ function qf(e, { title: t, poster: n }) {
             <div class="vanta-player-controls-row">
               <div class="vanta-player-controls-left">
                 <media-play-button class="vanta-player-play-button" aria-label="Wiedergabe">
-                  ${Gf("play", "play")}
-                  ${Gf("pause", "pause")}
+                  ${Zf("play", "play")}
+                  ${Zf("pause", "pause")}
                 </media-play-button>
                 <media-seek-button class="vanta-player-skip-button" seconds="-10" aria-label="10 Sekunden zurück">
-                  ${Gf("skipBackward", "backward")}
+                  ${Zf("skipBackward", "backward")}
                 </media-seek-button>
                 <media-seek-button class="vanta-player-skip-button" seconds="10" aria-label="10 Sekunden vorwärts">
-                  ${Gf("skipForward", "forward")}
+                  ${Zf("skipForward", "forward")}
                 </media-seek-button>
               </div>
               <div class="vanta-player-controls-right">
                 <media-mute-button class="vanta-player-mute-button" aria-label="Stummschalten">
-                  ${Gf("volumeMute", "volume-muted")}
-                  ${Gf("volumeLow", "volume-low")}
-                  ${Gf("volumeHigh", "volume-high")}
+                  ${Zf("volumeMute", "volume-muted")}
+                  ${Zf("volumeLow", "volume-low")}
+                  ${Zf("volumeHigh", "volume-high")}
                 </media-mute-button>
                 <media-volume-slider class="vanta-player-volume-slider" aria-label="Lautstärke"></media-volume-slider>
                 <media-pip-button class="vanta-player-pip-button" aria-label="Bild-in-Bild">
-                  ${Gf("pipEnter", "enter")}
-                  ${Gf("pipExit", "exit")}
+                  ${Zf("pipEnter", "enter")}
+                  ${Zf("pipExit", "exit")}
                 </media-pip-button>
                 <button class="vanta-player-fullscreen-button" type="button" aria-label="Vollbild">
-                  ${Gf("fullscreenEnter")}
+                  ${Zf("fullscreenEnter")}
                 </button>
               </div>
             </div>
@@ -19585,7 +19662,7 @@ function qf(e, { title: t, poster: n }) {
 		seekForward: "ArrowRight"
 	};
 	let a = e.querySelector(".vanta-player-loading-backdrop");
-	return n ? a.style.backgroundImage = `url("${n.replaceAll("\"", "%22")}")` : a.style.backgroundImage = Uf, {
+	return n ? a.style.backgroundImage = `url("${n.replaceAll("\"", "%22")}")` : a.style.backgroundImage = Yf, {
 		player: i,
 		backButton: e.querySelector(".vanta-player-back"),
 		loading: e.querySelector(".vanta-player-loading"),
@@ -19597,31 +19674,31 @@ function qf(e, { title: t, poster: n }) {
 		errorBackButton: e.querySelector(".vanta-player-error-back")
 	};
 }
-async function Jf({ root: e, itemId: t, title: n, poster: r, resumePosition: i = 0, resolvePlayback: a, reportPlayback: o, onBack: s, watchParty: c = null }) {
+async function ep({ root: e, itemId: t, title: n, poster: r, resumePosition: i = 0, resolvePlayback: a, reportPlayback: o, onBack: s, watchParty: c = null, episodeBrowser: l = null }) {
 	await customElements.whenDefined("media-player");
-	let l = qf(e, {
+	let u = $f(e, {
 		title: n,
 		poster: r
-	}), { player: u } = l, d = [], f = Lf(e), p = !1, m = !1, h = null, g = 0, _ = !1;
-	c?.enabled && !c.isOwner && (u.keyShortcuts = {
+	}), { player: d } = u, f = [], p = Lf(e), m = !1, h = !1, g = null, _ = 0, v = !1;
+	c?.enabled && !c.isOwner && (d.keyShortcuts = {
 		toggleMuted: "m",
 		toggleFullscreen: "f"
 	}), zf({
 		root: e,
 		watchParty: c
 	}), Id() && e.classList.add("is-ios"), Rd() || e.classList.add("no-pip");
-	let v = e.querySelector(".vanta-player-shell"), y = e.querySelector(".vanta-player-fullscreen-button"), b = () => {
-		if (!y) return;
+	let y = e.querySelector(".vanta-player-shell"), b = e.querySelector(".vanta-player-fullscreen-button"), x = () => {
+		if (!b) return;
 		let e = Bd();
-		y.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), y.innerHTML = Gf(e ? "fullscreenExit" : "fullscreenEnter");
+		b.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), b.innerHTML = Zf(e ? "fullscreenExit" : "fullscreenEnter");
 	};
-	if (y) {
+	if (b) {
 		let e = async () => {
 			try {
-				Bd() ? await Hd() : await Vd(v);
+				Bd() ? await Hd() : await Vd(y);
 			} catch {}
 		};
-		y.addEventListener("click", e), d.push(() => y.removeEventListener("click", e));
+		b.addEventListener("click", e), f.push(() => b.removeEventListener("click", e));
 	}
 	[
 		"fullscreenchange",
@@ -19629,214 +19706,239 @@ async function Jf({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 		"mozfullscreenchange",
 		"MSFullscreenChange"
 	].forEach((e) => {
-		document.addEventListener(e, b), d.push(() => document.removeEventListener(e, b));
+		document.addEventListener(e, x), f.push(() => document.removeEventListener(e, x));
 	});
-	let x = Fd({
-		player: u,
+	let S = Fd({
+		player: d,
 		itemId: t,
 		report: o
-	}), S = Ud(), C = S, w = !1, T = Yd({
+	}), C = Ud(), w = C, T = !1, E = Yd({
 		root: e,
 		onEnter: async () => {
 			try {
 				await Xd({
 					root: e,
 					onError: () => {}
-				}), Wd() && D();
+				}), Wd() && O();
 			} catch {}
 		}
-	}), E = () => {
-		w = !0, T.show(), u.paused = !0, P.setIntendsToPlay(!1);
-	}, D = () => {
-		w = !1, T.hide(), P.setIntendsToPlay(!0), u.play().catch(() => {});
+	}), D = () => {
+		T = !0, E.show(), d.paused = !0, P.setIntendsToPlay(!1);
 	}, O = () => {
-		C && (Wd() ? D() : E());
+		T = !1, E.hide(), P.setIntendsToPlay(!0), d.play().catch(() => {});
 	}, k = () => {
-		h &&= (window.clearTimeout(h), null);
-	}, A = (e, t) => {
-		t && (l.loadingStatus.textContent = t), l.loading.classList.toggle("is-hidden", !e);
-	}, j = (e) => {
-		e && (l.loadingStatus.textContent = e);
+		w && (Wd() ? O() : D());
+	}, A = () => {
+		g &&= (window.clearTimeout(g), null);
+	}, j = (e, t) => {
+		t && (u.loadingStatus.textContent = t), u.loading.classList.toggle("is-hidden", !e);
 	}, M = (e) => {
-		e && !l.loading.classList.contains("is-hidden") || (l.inlineLoading.hidden = !e);
-	}, N = () => {
-		l.error.hidden = !0;
-	}, ee = (e) => {
-		k(), P.clearSeekTimer(), A(!1), M(!1), f.setState("error"), l.errorMessage.textContent = e || "Der Medienstrom konnte nicht wiedergegeben werden.", l.error.hidden = !1;
+		e && (u.loadingStatus.textContent = e);
+	}, N = (e) => {
+		e && !u.loading.classList.contains("is-hidden") || (u.inlineLoading.hidden = !e);
+	}, ee = () => {
+		u.error.hidden = !0;
+	}, te = (e) => {
+		A(), P.clearSeekTimer(), j(!1), N(!1), p.setState("error"), u.errorMessage.textContent = e || "Der Medienstrom konnte nicht wiedergegeben werden.", u.error.hidden = !1;
 	}, P = ff({
-		player: u,
-		reporter: x,
-		ui: f,
+		player: d,
+		reporter: S,
+		ui: p,
 		callbacks: {
-			setLoading: A,
-			setLoadingStatus: j,
-			setInlineLoading: M,
-			showError: ee,
-			hideError: N
+			setLoading: j,
+			setLoadingStatus: M,
+			setInlineLoading: N,
+			showError: te,
+			hideError: ee
 		},
 		onBeforeSourceChange: () => {
 			zd().catch(() => {});
 		},
-		shouldPreventPlayback: () => w
+		shouldPreventPlayback: () => T
 	});
-	S && (e.classList.add("is-smartphone"), window.addEventListener("orientationchange", O), d.push(() => window.removeEventListener("orientationchange", O)), (async () => {
+	C && (e.classList.add("is-smartphone"), window.addEventListener("orientationchange", k), f.push(() => window.removeEventListener("orientationchange", k)), (async () => {
 		try {
 			await Xd({
 				root: e,
 				onError: () => {}
-			}), Wd() || E();
+			}), Wd() || D();
 		} catch {
-			E();
+			D();
 		}
 	})());
-	let te = e.querySelector(".vanta-player-controls-right"), ne = e.querySelector(".vanta-player-shell"), re = c?.disableQualityMenu ? { update: () => {} } : Cf({
-		buttonContainer: te,
-		menuContainer: ne,
+	let ne = e.querySelector(".vanta-player-controls-right"), re = e.querySelector(".vanta-player-shell"), ie = c?.disableQualityMenu ? { update: () => {} } : Cf({
+		buttonContainer: ne,
+		menuContainer: re,
 		onSelect: async (e) => {
 			if (P.getCurrentPlayback()) try {
 				let t = await a("auto", { qualityProfile: e });
-				if (p || (await P.switchTo(t, {
+				if (m || (await P.switchTo(t, {
 					position: P.captureState().position,
 					shouldPlay: P.getIntendsToPlay(),
 					label: "Qualität wird gewechselt …"
-				}), p)) return;
-				ae(t);
+				}), m)) return;
+				ce(t);
 			} catch (e) {
-				p || ee(e.message);
+				m || te(e.message);
 			}
 		}
-	}), ie = Pf({
-		buttonContainer: te,
-		menuContainer: ne,
-		player: u,
-		reporter: x
-	}), ae = (e, t = {}) => {
-		re.update(e.quality.profiles, e.quality.current), ie.update(e, { preserveSelection: t.preserveSubtitleSelection !== !1 });
-	}, oe = (e, t, n, r) => {
-		e.addEventListener(t, n, r), d.push(() => e.removeEventListener(t, n, r));
-	}, ce = async (e) => {
-		if (!(P.isSwitching() || p)) {
+	}), ae = Pf({
+		buttonContainer: ne,
+		menuContainer: re,
+		player: d,
+		reporter: S
+	}), oe = l?.enabled ? Kf({
+		buttonContainer: ne,
+		menuContainer: re,
+		context: l.context,
+		readonly: !!l.readonly,
+		onSelectEpisode: l.onSelectEpisode
+	}) : null, ce = (e, t = {}) => {
+		ie.update(e.quality.profiles, e.quality.current), ae.update(e, { preserveSelection: t.preserveSubtitleSelection !== !1 });
+	}, le = (e, t, n, r) => {
+		e.addEventListener(t, n, r), f.push(() => e.removeEventListener(t, n, r));
+	}, ue = async (e) => {
+		if (!(P.isSwitching() || m)) {
 			if (P.getCurrentPlayback()?.delivery !== "hls") {
-				await le(e);
+				await de(e);
 				return;
 			}
-			ee(e?.message);
+			te(e?.message);
 		}
-	}, le = async (e) => {
-		if (m || p) {
-			ee(e?.message);
+	}, de = async (e) => {
+		if (h || m) {
+			te(e?.message);
 			return;
 		}
-		m = !0;
+		h = !0;
 		let t = P.captureState();
-		A(!0, "HLS-Fallback wird beim Server angefragt …");
+		j(!0, "HLS-Fallback wird beim Server angefragt …");
 		try {
 			let e = await a("hls");
-			if (p) return;
+			if (m) return;
 			await P.loadPlayback(e, {
 				position: t.position,
 				shouldPlay: t.shouldPlay,
 				label: "Stream wird gewechselt …"
-			}), ae(e);
+			}), ce(e);
 		} catch (e) {
-			if (p) return;
-			ee(e.message);
+			if (m) return;
+			te(e.message);
 		}
-	}, ue = () => {
-		P.isSwitching() || p || (k(), f.setState("buffering"), M(!0), h = window.setTimeout(() => {
-			h = null, ce(/* @__PURE__ */ Error("Der Medienstrom antwortet nicht rechtzeitig."));
+	}, fe = () => {
+		P.isSwitching() || m || (A(), p.setState("buffering"), N(!0), g = window.setTimeout(() => {
+			g = null, ue(/* @__PURE__ */ Error("Der Medienstrom antwortet nicht rechtzeitig."));
 		}, 25e3));
 	};
-	oe(u, "provider-change", (e) => {
+	le(d, "provider-change", (e) => {
 		se(e.detail) && (e.detail.library = Cd, e.detail.config = {
 			enableWorker: !0,
 			backBufferLength: 30,
 			manifestLoadingTimeOut: 3e4,
 			levelLoadingTimeOut: 3e4,
-			fragLoadingTimeOut: Vf,
+			fragLoadingTimeOut: qf,
 			fragLoadingMaxRetry: 2,
 			fragLoadingRetryDelay: 1e3,
 			fragLoadingMaxRetryTimeout: 1e4
-		}, P.isSwitching() && j("HLS-Wiedergabe wird initialisiert …"));
-	}), oe(u, "error", (e) => {
-		if (P.isSwitching() || p) return;
+		}, P.isSwitching() && M("HLS-Wiedergabe wird initialisiert …"));
+	}), le(d, "error", (e) => {
+		if (P.isSwitching() || m) return;
 		let t = e.detail || {}, n = t.message || "Wiedergabefehler";
-		(t.code >= 2 && t.code <= 4 || /not supported|decode|network|media_err/i.test(n)) && ce(Error(n));
-	}), oe(u, "duration-change", (e) => {
+		(t.code >= 2 && t.code <= 4 || /not supported|decode|network|media_err/i.test(n)) && ue(Error(n));
+	}), le(d, "duration-change", (e) => {
 		Number(e.detail);
-	}), oe(u, "play", () => {
+	}), le(d, "play", () => {
 		P.isSwitching() || P.setIntendsToPlay(!0);
-	}), oe(u, "pause", () => {
-		P.isSwitching() || (P.setIntendsToPlay(!1), k(), P.clearSeekTimer(), M(!1), f.setState("ready-paused"));
-	}), oe(u, "waiting", () => {
-		P.isSwitching() || ue();
-	}), oe(u, "seeking", () => {
-		P.isSwitching() || (f.setState("seeking"), M(!0), P.startSeekTimer());
-	}), oe(u, "playing", () => {
-		k(), P.clearSeekTimer(), P.isSwitching() || (P.setAutoplayBlocked(!1), A(!1), M(!1), P.syncPlayingState());
-	}), oe(u, "seeked", () => {
-		P.clearSeekTimer(), !P.isSwitching() && !p && (M(!1), P.syncPlayingState());
-	}), oe(u, "play", () => {
-		c?.enabled && c.isOwner && !_ && c.onOwnerPlay?.(Math.round(u.currentTime * 1e3));
-	}), oe(u, "pause", () => {
-		c?.enabled && c.isOwner && !_ && c.onOwnerPause?.(Math.round(u.currentTime * 1e3));
-	}), oe(u, "seeked", () => {
-		c?.enabled && c.isOwner && !_ && c.onOwnerSeek?.(Math.round(u.currentTime * 1e3));
-	}), oe(u, "ended", () => {
-		zd().catch(() => {}), x.stop({ ended: !0 });
-	}), oe(u, "wheel", (e) => {
+	}), le(d, "pause", () => {
+		P.isSwitching() || (P.setIntendsToPlay(!1), A(), P.clearSeekTimer(), N(!1), p.setState("ready-paused"));
+	}), le(d, "waiting", () => {
+		P.isSwitching() || fe();
+	}), le(d, "seeking", () => {
+		P.isSwitching() || (p.setState("seeking"), N(!0), P.startSeekTimer());
+	}), le(d, "playing", () => {
+		A(), P.clearSeekTimer(), P.isSwitching() || (P.setAutoplayBlocked(!1), j(!1), N(!1), P.syncPlayingState());
+	}), le(d, "seeked", () => {
+		P.clearSeekTimer(), !P.isSwitching() && !m && (N(!1), P.syncPlayingState());
+	}), le(d, "play", () => {
+		c?.enabled && c.isOwner && !v && c.onOwnerPlay?.(Math.round(d.currentTime * 1e3));
+	}), le(d, "pause", () => {
+		c?.enabled && c.isOwner && !v && c.onOwnerPause?.(Math.round(d.currentTime * 1e3));
+	}), le(d, "seeked", () => {
+		c?.enabled && c.isOwner && !v && c.onOwnerSeek?.(Math.round(d.currentTime * 1e3));
+	}), le(d, "ended", () => {
+		zd().catch(() => {}), S.stop({ ended: !0 });
+	}), le(d, "wheel", (e) => {
 		if (!Ld() || Math.abs(e.deltaY) < 4) return;
 		let t = performance.now();
-		t - g < Hf || (g = t, e.preventDefault(), nf(u, e.deltaY > 0 ? 10 : -10, { endEpsilon: .25 }));
-	}, { passive: !1 }), oe(l.backButton, "click", s), oe(l.errorBackButton, "click", s), oe(l.retryButton, "click", async () => {
-		N(), m = !1;
-		let e = Math.max(x.getPosition(), P.getLastRequestedPosition());
+		t - _ < Jf || (_ = t, e.preventDefault(), nf(d, e.deltaY > 0 ? 10 : -10, { endEpsilon: .25 }));
+	}, { passive: !1 }), le(u.backButton, "click", s), le(u.errorBackButton, "click", s), le(u.retryButton, "click", async () => {
+		ee(), h = !1;
+		let e = Math.max(S.getPosition(), P.getLastRequestedPosition());
 		try {
 			let t = await a(P.getCurrentPlayback()?.delivery === "hls" ? "hls" : "auto");
 			await P.switchTo(t, {
 				position: e,
 				shouldPlay: !0,
 				label: "Stream wird neu geladen …"
-			}), ae(t);
+			}), ce(t);
 		} catch (e) {
-			p || ee(e.message);
+			m || te(e.message);
 		}
-	}), A(!0, "Wiedergabequelle wird beim Server angefragt …");
+	});
+	let pe = !c?.enabled;
+	j(!0, "Wiedergabequelle wird beim Server angefragt …"), c?.onPreloadStateChange?.({
+		state: "loading",
+		message: "Wiedergabequelle wird vorbereitet …"
+	});
 	try {
 		let e = await a("auto");
-		p || (await P.loadPlayback(e, {
+		m || (await P.loadPlayback(e, {
 			position: i,
-			shouldPlay: !0,
+			shouldPlay: pe,
 			isBoot: !0
-		}), ae(e, { preserveSubtitleSelection: !1 }));
+		}), ce(e, { preserveSubtitleSelection: !1 }), c?.onPreloadStateChange?.({
+			state: "ready",
+			message: "Bereit"
+		}));
 	} catch (e) {
-		p || (P.getCurrentPlayback()?.delivery === "hls" ? ee(e.message) : await le(e));
+		if (!m) if (P.getCurrentPlayback()?.delivery !== "hls") {
+			if (await de(e), !m) {
+				let e = !!P.getCurrentPlayback();
+				c?.onPreloadStateChange?.({
+					state: e ? "ready" : "error",
+					message: e ? "Bereit" : "Player konnte nicht vorbereitet werden"
+				});
+			}
+		} else te(e.message), c?.onPreloadStateChange?.({
+			state: "error",
+			message: "Player konnte nicht vorbereitet werden"
+		});
 	}
 	return {
-		player: u,
+		player: d,
 		applyRemoteControl: async ({ action: e, positionMs: t, serverTimeMs: n, playing: r }) => {
-			_ = !0;
+			v = !0;
 			try {
 				let { targetSeconds: i, shouldSeek: a, shouldPlay: o, shouldPause: s } = Bf({
 					action: e,
 					positionMs: t,
 					serverTimeMs: n,
 					playing: r,
-					currentTime: u.currentTime
+					currentTime: d.currentTime
 				});
-				a && (u.currentTime = i), o ? await u.play().catch(() => {}) : s && u.pause();
+				a && (d.currentTime = i), o ? await d.play() : s && d.pause();
 			} finally {
 				window.setTimeout(() => {
-					_ = !1;
+					v = !1;
 				}, 250);
 			}
 		},
 		destroy: () => {
-			if (p) return;
-			p = !0, C = !1, w = !1, k(), P.clearSeekTimer();
-			let t = x.stop({ keepalive: !0 }), n = zd().catch(() => {});
-			T.destroy(), x.destroy(), ie.destroy(), f.destroy(), d.splice(0).forEach((e) => e()), u.destroy?.(), e.innerHTML = "", Promise.all([
-				S ? Zd().catch(() => {}) : Promise.resolve(),
+			if (m) return;
+			m = !0, w = !1, T = !1, A(), P.clearSeekTimer();
+			let t = S.stop({ keepalive: !0 }), n = zd().catch(() => {});
+			E.destroy(), S.destroy(), ae.destroy(), oe?.destroy(), p.destroy(), f.splice(0).forEach((e) => e()), d.destroy?.(), e.innerHTML = "", Promise.all([
+				C ? Zd().catch(() => {}) : Promise.resolve(),
 				n,
 				t?.catch(() => {})
 			]).catch(() => {});
@@ -19844,4 +19946,4 @@ async function Jf({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 	};
 }
 //#endregion
-export { Jf as mountVantaPlayer };
+export { ep as mountVantaPlayer };
