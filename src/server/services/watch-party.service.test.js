@@ -53,6 +53,10 @@ async function joinAsViewer(partyId, userId = 'viewer-1', username = 'Bob') {
   return WatchPartyService.joinParty({ partyId, userId, username, accessToken: 'viewer-token' });
 }
 
+function markConnected(partyId, userId) {
+  return WatchPartyService.setConnected({ partyId, userId, connected: true });
+}
+
 describe('WatchPartyService', () => {
   beforeEach(() => {
     WatchPartyService.parties.clear();
@@ -119,24 +123,33 @@ describe('WatchPartyService', () => {
     })).toThrow(expect.objectContaining({ status: 403 }));
   });
 
-  it('erlaubt den Start nur, wenn alle Mitglieder ready sind, und startet einen Countdown', async () => {
+  it('öffnet per Owner-Start erst den Ready-Room und startet Countdown erst wenn alle ready sind', async () => {
     const created = await createTestParty();
     await joinAsViewer(created.id);
 
-    expect(() => WatchPartyService.startParty({ partyId: created.id, ownerUserId: 'owner-1' }))
-      .toThrow(expect.objectContaining({ status: 409 }));
+    const readyRoom = WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
+    expect(readyRoom.status).toBe('ready-room');
+    expect(readyRoom.members.get('owner-1').ready).toBe(false);
+    expect(readyRoom.members.get('viewer-1').preloadState).toBe('idle');
 
-    WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'ready' });
+    expect(WatchPartyService.beginCountdownIfReady({ partyId: created.id })).toBeNull();
 
-    const { party, startsAtServerTimeMs, positionMs } = WatchPartyService.startParty({ partyId: created.id, ownerUserId: 'owner-1' });
-    expect(party.status).toBe('countdown');
-    expect(positionMs).toBe(0);
-    expect(startsAtServerTimeMs).toBeGreaterThan(Date.now());
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
+
+    const countdown = WatchPartyService.beginCountdownIfReady({ partyId: created.id });
+    expect(countdown.party.status).toBe('countdown');
+    expect(countdown.positionMs).toBe(0);
+    expect(countdown.startsAtServerTimeMs).toBeGreaterThan(Date.now());
   });
 
   it('wechselt von countdown zu playing über beginPlayback', async () => {
     const created = await createTestParty();
-    WatchPartyService.startParty({ partyId: created.id, ownerUserId: 'owner-1' });
+    await joinAsViewer(created.id);
+    WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
+    WatchPartyService.beginCountdownIfReady({ partyId: created.id });
 
     const party = WatchPartyService.beginPlayback({ partyId: created.id, positionMs: 0 });
     expect(party.status).toBe('playing');
@@ -213,12 +226,16 @@ describe('WatchPartyService', () => {
     })).toThrow(expect.objectContaining({ status: 404 }));
   });
 
-  it('startParty nutzt party.positionMs statt immer 0 (z.B. nach einem Resume)', async () => {
+  it('beginCountdownIfReady nutzt party.positionMs statt immer 0 (z.B. nach einem Resume)', async () => {
     const created = await createTestParty();
     WatchPartyService.endParty({ partyId: created.id, ownerUserId: 'owner-1', positionMs: 60_000 });
     const resumed = WatchPartyService.resumeEndedParty({ userId: 'owner-1', username: 'Alice', originalPartyId: created.id });
+    await joinAsViewer(resumed.id);
+    WatchPartyService.openReadyRoom({ partyId: resumed.id, ownerUserId: 'owner-1' });
+    WatchPartyService.setPlayerReady({ partyId: resumed.id, userId: 'owner-1', ready: true, state: 'ready' });
+    WatchPartyService.setPlayerReady({ partyId: resumed.id, userId: 'viewer-1', ready: true, state: 'ready' });
 
-    const { positionMs } = WatchPartyService.startParty({ partyId: resumed.id, ownerUserId: 'owner-1' });
+    const { positionMs } = WatchPartyService.beginCountdownIfReady({ partyId: resumed.id });
     expect(positionMs).toBe(60_000);
   });
 
@@ -237,6 +254,61 @@ describe('WatchPartyService', () => {
     items.forEach(item => {
       expect(['Movie', 'Series']).toContain(item.Type);
     });
+  });
+
+  it('erlaubt maximal 4 Mitglieder inklusive Owner und lehnt ein fünftes neues Mitglied ab', async () => {
+    const created = await createTestParty();
+    await joinAsViewer(created.id, 'viewer-1', 'Bob');
+    await joinAsViewer(created.id, 'viewer-2', 'Carl');
+    await joinAsViewer(created.id, 'viewer-3', 'Dana');
+
+    await expect(joinAsViewer(created.id, 'viewer-4', 'Eve')).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('erlaubt Rejoin eines existierenden Mitglieds, auch wenn die Party voll ist', async () => {
+    const created = await createTestParty();
+    await joinAsViewer(created.id, 'viewer-1', 'Bob');
+    await joinAsViewer(created.id, 'viewer-2', 'Carl');
+    await joinAsViewer(created.id, 'viewer-3', 'Dana');
+
+    const rejoined = await joinAsViewer(created.id, 'viewer-1', 'Bob');
+    expect(rejoined.members).toHaveLength(4);
+  });
+
+  it('beginCountdownIfReady setzt einen Countdown von 5 Sekunden', async () => {
+    const created = await createTestParty();
+    await joinAsViewer(created.id);
+    WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
+
+    const { startsAtServerTimeMs } = WatchPartyService.beginCountdownIfReady({ partyId: created.id });
+    expect(startsAtServerTimeMs - Date.now()).toBeGreaterThanOrEqual(4990);
+    expect(startsAtServerTimeMs - Date.now()).toBeLessThanOrEqual(5000);
+  });
+
+  it('setPreloadState("blocked") setzt das Mitglied nicht ready, beeinflusst canStart aber nicht mehr', async () => {
+    const created = await createTestParty();
+    await joinAsViewer(created.id);
+
+    const blockedParty = WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'blocked', message: 'Autoplay blockiert' });
+    expect(blockedParty.members.find(m => m.userId === 'viewer-1').ready).toBe(false);
+  });
+
+  it('canStart erfordert ready-room und alle Mitglieder ready', async () => {
+    const created = await createTestParty();
+    const party = WatchPartyService.parties.get(created.id);
+    expect(WatchPartyService.canStart(party)).toBe(false);
+
+    await joinAsViewer(created.id);
+    WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
+    expect(WatchPartyService.canStart(party)).toBe(false);
+
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
+    expect(WatchPartyService.canStart(party)).toBe(false);
+
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
+    expect(WatchPartyService.canStart(party)).toBe(true);
   });
 
   it('serialisiert keine Access-Tokens im Party-State', async () => {
