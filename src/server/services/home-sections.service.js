@@ -53,6 +53,18 @@ function sortByNewest(items) {
   });
 }
 
+function buildGenreHref(genre) {
+  if (genre.movieName && genre.seriesName) {
+    return `#/genre/Movie,Series/${encodeURIComponent(genre.label)}`;
+  }
+
+  if (genre.seriesName) {
+    return `#/genre/Series/${encodeURIComponent(genre.seriesName)}`;
+  }
+
+  return `#/genre/Movie/${encodeURIComponent(genre.movieName || genre.label)}`;
+}
+
 export class HomeSectionsService {
   static async getHomeCore(userId, accessToken) {
     const [resume, movies, series] = await Promise.all([
@@ -205,7 +217,7 @@ export class HomeSectionsService {
       sections.push({
         type: 'standard',
         title: genre.label,
-        href: `#/genre/${encodeURIComponent(genre.label)}`,
+        href: buildGenreHref(genre),
         items: sortedItems
       });
     }
