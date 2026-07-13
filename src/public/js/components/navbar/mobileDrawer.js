@@ -17,10 +17,9 @@ function createSubmenuLink(href, label, onNavigate) {
   );
 }
 
-function renderGenreSubmenu(submenu, genres, type, overviewHref, overviewLabel, onNavigate) {
+function renderGenreSubmenu(submenu, genres, type, onNavigate) {
   submenu.innerHTML = '';
   submenu.removeAttribute('aria-busy');
-  submenu.appendChild(createSubmenuLink(overviewHref, overviewLabel, onNavigate));
 
   (genres || []).slice(0, 12).forEach(genre => {
     submenu.appendChild(
@@ -32,7 +31,6 @@ function renderGenreSubmenu(submenu, genres, type, overviewHref, overviewLabel, 
 function renderPublisherSubmenu(submenu, publishers, onNavigate) {
   submenu.innerHTML = '';
   submenu.removeAttribute('aria-busy');
-  submenu.appendChild(createSubmenuLink('#/publishers', 'Alle Publisher', onNavigate));
 
   (publishers || []).forEach(publisher => {
     submenu.appendChild(
@@ -88,13 +86,13 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
 
   const accordionLoaders = {
     movies: (submenu) => MediaApi.getGenres('Movie')
-      .then(genres => renderGenreSubmenu(submenu, genres, 'Movie', '#/movies', 'Alle Filme', onNavigate))
+      .then(genres => renderGenreSubmenu(submenu, genres, 'Movie', onNavigate))
       .catch(error => {
         console.error('Failed to load movie genres:', error);
         showSubmenuError(submenu, 'Genres konnten nicht geladen werden');
       }),
     series: (submenu) => MediaApi.getGenres('Series')
-      .then(genres => renderGenreSubmenu(submenu, genres, 'Series', '#/series', 'Alle Serien', onNavigate))
+      .then(genres => renderGenreSubmenu(submenu, genres, 'Series', onNavigate))
       .catch(error => {
         console.error('Failed to load series genres:', error);
         showSubmenuError(submenu, 'Genres konnten nicht geladen werden');
@@ -140,24 +138,38 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     if (ACCORDION_KEYS.has(link.key)) {
       const submenu = createElement('ul', { className: 'mobile-drawer-submenu', hidden: true });
 
-      const trigger = createElement('button', {
-        className: 'navbar-link mobile-drawer-accordion-trigger',
-        type: 'button',
-        'aria-expanded': 'false'
+      const overviewLink = createElement('a', {
+        className: 'navbar-link mobile-drawer-accordion-link',
+        href: link.href,
+        onClick: () => onNavigate?.()
       },
         createNavIcon(link.key),
-        createElement('span', { className: 'mobile-nav-label' }, link.label),
-        createElement('span', { className: 'mobile-drawer-chevron' }, createChevronIcon())
+        createElement('span', { className: 'mobile-nav-label' }, link.label)
       );
+
+      const toggleButton = createElement('button', {
+        className: 'mobile-drawer-accordion-toggle',
+        type: 'button',
+        'aria-expanded': 'false',
+        'aria-label': `${link.label} Untermenü öffnen`
+      }, createElement('span', { className: 'mobile-drawer-chevron' }, createChevronIcon()));
+
+      const trigger = createElement('div', { className: 'mobile-drawer-accordion-trigger' }, overviewLink, toggleButton);
 
       const item = createElement('li', {
         className: 'navbar-item mobile-nav-link-item mobile-drawer-accordion',
         dataset: { mobileAccordion: link.key }
       }, trigger, submenu);
 
-      trigger.addEventListener('click', () => toggleAccordion(link.key, item, trigger, submenu));
+      const handleToggle = () => toggleAccordion(link.key, item, toggleButton, submenu);
+      toggleButton.addEventListener('click', handleToggle);
+      toggleButton.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        handleToggle();
+      });
 
-      mobileNavEntries.set(link.key, trigger);
+      mobileNavEntries.set(link.key, overviewLink);
       accordionSubmenus.set(link.key, submenu);
       mobileNavLinksList.appendChild(item);
       return;

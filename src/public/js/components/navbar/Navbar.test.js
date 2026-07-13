@@ -127,6 +127,71 @@ describe('Navbar', () => {
     });
   });
 
+  it('zeigt keine "Alle anzeigen"-Einträge mehr in den Accordion-Untermenüs', async () => {
+    MediaApi.getGenres.mockResolvedValue([{ Name: 'Horror' }]);
+    MediaApi.getStudios.mockResolvedValue([{ Name: 'Netflix' }]);
+
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    document.querySelector('[data-mobile-accordion="movies"] button').click();
+    document.querySelector('[data-mobile-accordion="publishers"] button').click();
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('a[href="#/genre/Movie/Horror"]')).toBeTruthy();
+      expect(document.querySelector('a[href="#/publisher-group/netflix"]')).toBeTruthy();
+    });
+
+    expect(document.querySelector('.mobile-drawer-submenu a[href="#/movies"]')).toBeFalsy();
+    expect(document.querySelector('.mobile-drawer-submenu a[href="#/publishers"]')).toBeFalsy();
+    const submenuLabels = Array.from(document.querySelectorAll('.mobile-drawer-submenu-link')).map(a => a.textContent);
+    expect(submenuLabels).not.toContain('Alle Filme');
+    expect(submenuLabels).not.toContain('Alle Serien');
+    expect(submenuLabels).not.toContain('Alle Publisher');
+  });
+
+  it('trennt Link- und Chevron-Zone im Accordion-Trigger: Klick auf Label navigiert, Chevron öffnet nur das Untermenü', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+    expect(navbar.element.classList.contains('mobile-open')).toBe(true);
+
+    const moviesItem = document.querySelector('[data-mobile-accordion="movies"]');
+    const overviewLink = moviesItem.querySelector('a.mobile-drawer-accordion-link');
+    expect(overviewLink.getAttribute('href')).toBe('#/movies');
+
+    const toggleButton = moviesItem.querySelector('button.mobile-drawer-accordion-toggle');
+    toggleButton.click();
+    expect(moviesItem.classList.contains('is-open')).toBe(true);
+    expect(navbar.element.classList.contains('mobile-open')).toBe(true);
+
+    overviewLink.click();
+    expect(navbar.element.classList.contains('mobile-open')).toBe(false);
+  });
+
+  it('öffnet/schließt das Untermenü per Enter und Space auf dem Chevron', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    const moviesItem = document.querySelector('[data-mobile-accordion="movies"]');
+    const toggleButton = moviesItem.querySelector('button.mobile-drawer-accordion-toggle');
+
+    toggleButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(moviesItem.classList.contains('is-open')).toBe(true);
+
+    toggleButton.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    expect(moviesItem.classList.contains('is-open')).toBe(false);
+  });
+
+  it('schließt den Drawer per Escape-Taste', () => {
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    navbar.element.querySelector('.mobile-menu-button').click();
+    expect(navbar.element.classList.contains('mobile-open')).toBe(true);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(navbar.element.classList.contains('mobile-open')).toBe(false);
+  });
+
   it('marks the Home top tab active on update and switches to Filme active on #/movies', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
@@ -143,7 +208,7 @@ describe('Navbar', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     navbar.update({ currentHash: '#/movies', user: { username: 'alice' }, scrolled: false });
-    const trigger = document.querySelector('#mobile-navigation [data-mobile-accordion="movies"] button');
+    const trigger = document.querySelector('#mobile-navigation [data-mobile-accordion="movies"] a');
     expect(trigger.classList.contains('active')).toBe(true);
 
     navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });

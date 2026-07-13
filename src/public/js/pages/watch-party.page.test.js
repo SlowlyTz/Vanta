@@ -350,6 +350,81 @@ describe('WatchPartyPage', () => {
     expect(viewerCall.episodeBrowser.readonly).toBe(true);
   });
 
+  it('erlaubt Admins (nicht nur Owner) einen editierbaren Episode-Browser', async () => {
+    const episodeItem = { Id: 'ep-1', Name: 'Pilot', Type: 'Episode', SeriesId: 'series-1', SeriesName: 'Test Series' };
+    MediaApi.getItem.mockResolvedValue(episodeItem);
+    MediaApi.getSeasons.mockResolvedValue([{ Id: 'season-1', Name: 'Staffel 1' }]);
+    MediaApi.getEpisodes.mockResolvedValue([{ Id: 'ep-1', Name: 'Pilot', ParentIndexNumber: 1, IndexNumber: 1 }]);
+
+    authStore.getState.mockReturnValue({ user: { id: 'admin-1', name: 'Carol' } });
+    WatchPartyApi.join.mockResolvedValue({
+      party: makeParty({
+        status: 'playing',
+        playableItemId: 'ep-1',
+        members: [
+          { userId: 'owner-1', username: 'Alice', role: 'owner', ready: true, connected: true },
+          { userId: 'admin-1', username: 'Carol', role: 'admin', ready: true, connected: true }
+        ]
+      })
+    });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const adminCall = mountVantaPlayer.mock.calls.at(-1)[0];
+    expect(adminCall.episodeBrowser.readonly).toBe(false);
+  });
+
+  it('sendet OWNER_CHANGE_EPISODE, wenn ein Admin das Next-Episode-Overlay bestätigt', async () => {
+    const episodeItem = { Id: 'ep-1', Name: 'Pilot', Type: 'Episode', SeriesId: 'series-1', SeriesName: 'Test Series' };
+    MediaApi.getItem.mockResolvedValue(episodeItem);
+    MediaApi.getSeasons.mockResolvedValue([{ Id: 'season-1', Name: 'Staffel 1' }]);
+    MediaApi.getEpisodes.mockResolvedValue([
+      { Id: 'ep-1', Name: 'Pilot', ParentIndexNumber: 1, IndexNumber: 1 },
+      { Id: 'ep-2', Name: 'Folge 2', ParentIndexNumber: 1, IndexNumber: 2 }
+    ]);
+
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({
+      party: makeParty({ status: 'playing', playableItemId: 'ep-1' })
+    });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const ownerCall = mountVantaPlayer.mock.calls.at(-1)[0];
+    ownerCall.episodeBrowser.onNextEpisode({ episode: { Id: 'ep-2' } });
+
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({
+      type: 'OWNER_CHANGE_EPISODE',
+      itemId: 'ep-2',
+      positionMs: 0
+    });
+  });
+
+  it('ignoriert onNextEpisode für Zuschauer ohne Adminrechte', async () => {
+    const episodeItem = { Id: 'ep-1', Name: 'Pilot', Type: 'Episode', SeriesId: 'series-1', SeriesName: 'Test Series' };
+    MediaApi.getItem.mockResolvedValue(episodeItem);
+    MediaApi.getSeasons.mockResolvedValue([{ Id: 'season-1', Name: 'Staffel 1' }]);
+    MediaApi.getEpisodes.mockResolvedValue([{ Id: 'ep-1', Name: 'Pilot', ParentIndexNumber: 1, IndexNumber: 1 }]);
+
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({
+      party: makeParty({ status: 'playing', playableItemId: 'ep-1' })
+    });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const viewerCall = mountVantaPlayer.mock.calls.at(-1)[0];
+    viewerCall.episodeBrowser.onNextEpisode({ episode: { Id: 'ep-2' } });
+
+    expect(fakeSocket.sendJson).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'OWNER_CHANGE_EPISODE' }));
+  });
+
   it('behält die sichtbare Lobby bei status=lobby und mountet keinen Player (Bug-Fix)', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'lobby' }) });

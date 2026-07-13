@@ -15,6 +15,159 @@ function item(id, name = `Item ${id}`) {
   return { Id: id, Name: name, SortName: name };
 }
 
+function episode(id, { seasonId = 's1', season = 1, index = 1, seriesId = 'series-1', userData = {}, runtimeTicks = 10_000_000_000 } = {}) {
+  return {
+    Id: id,
+    Type: 'Episode',
+    Name: `Episode ${id}`,
+    SeriesId: seriesId,
+    ParentIndexNumber: season,
+    IndexNumber: index,
+    RunTimeTicks: runtimeTicks,
+    UserData: userData
+  };
+}
+
+function movie(id, userData = {}) {
+  return { Id: id, Type: 'Movie', Name: `Movie ${id}`, UserData: userData };
+}
+
+describe('LibraryService.getResumeItems', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function mockUpstream({ resumable, seasons = [], episodesBySeason = {} }) {
+    jellyfinJson.mockImplementation((path, options) => {
+      if (path.endsWith('/Items') && options.query.Filters === 'IsResumable') {
+        return Promise.resolve({ Items: resumable });
+      }
+      if (path.includes('/Seasons')) {
+        return Promise.resolve({ Items: seasons });
+      }
+      if (path.includes('/Episodes')) {
+        const seasonId = options.query.seasonId;
+        return Promise.resolve({ Items: episodesBySeason[seasonId] || [] });
+      }
+      return Promise.resolve({ Items: [] });
+    });
+  }
+
+  it('lässt Filme unverändert', async () => {
+    mockUpstream({ resumable: [movie('m1', { PlayedPercentage: 40 })] });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items).toEqual([movie('m1', { PlayedPercentage: 40 })]);
+  });
+
+  it('lässt Episoden unter 90% Fortschritt unverändert', async () => {
+    mockUpstream({ resumable: [episode('e1', { userData: { PlayedPercentage: 50 } })] });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items).toHaveLength(1);
+    expect(items[0].Id).toBe('e1');
+  });
+
+  it('mappt eine fast fertige Episode auf die nächste Folge derselben Staffel', async () => {
+    mockUpstream({
+      resumable: [episode('e1', { userData: { PlayedPercentage: 95 } })],
+      seasons: [{ Id: 's1', IndexNumber: 1 }],
+      episodesBySeason: {
+        s1: [
+          { Id: 'e1', ParentIndexNumber: 1, IndexNumber: 1 },
+          { Id: 'e2', ParentIndexNumber: 1, IndexNumber: 2 }
+        ]
+      }
+    });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items).toHaveLength(1);
+    expect(items[0].Id).toBe('e2');
+  });
+
+  it('mappt die letzte Folge einer Staffel auf die erste Folge der nächsten Staffel', async () => {
+    mockUpstream({
+      resumable: [episode('e2', { userData: { PlayedPercentage: 95 } })],
+      seasons: [{ Id: 's1', IndexNumber: 1 }, { Id: 's2', IndexNumber: 2 }],
+      episodesBySeason: {
+        s1: [
+          { Id: 'e1', ParentIndexNumber: 1, IndexNumber: 1 },
+          { Id: 'e2', ParentIndexNumber: 1, IndexNumber: 2 }
+        ],
+        s2: [
+          { Id: 'e3', ParentIndexNumber: 2, IndexNumber: 1 }
+        ]
+      }
+    });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items).toHaveLength(1);
+    expect(items[0].Id).toBe('e3');
+  });
+
+  it('entfernt die letzte Folge der gesamten Serie aus Continue Watching', async () => {
+    mockUpstream({
+      resumable: [episode('e2', { userData: { PlayedPercentage: 95 } })],
+      seasons: [{ Id: 's1', IndexNumber: 1 }],
+      episodesBySeason: {
+        s1: [
+          { Id: 'e1', ParentIndexNumber: 1, IndexNumber: 1 },
+          { Id: 'e2', ParentIndexNumber: 1, IndexNumber: 2 }
+        ]
+      }
+    });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items).toEqual([]);
+  });
+
+  it('nutzt PlaybackPositionTicks/RunTimeTicks als Fallback ohne PlayedPercentage', async () => {
+    mockUpstream({
+      resumable: [episode('e1', {
+        userData: { PlaybackPositionTicks: 9_500_000_000 },
+        runtimeTicks: 10_000_000_000
+      })],
+      seasons: [{ Id: 's1', IndexNumber: 1 }],
+      episodesBySeason: {
+        s1: [
+          { Id: 'e1', ParentIndexNumber: 1, IndexNumber: 1 },
+          { Id: 'e2', ParentIndexNumber: 1, IndexNumber: 2 }
+        ]
+      }
+    });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items).toHaveLength(1);
+    expect(items[0].Id).toBe('e2');
+  });
+
+  it('dedupliziert, wenn die nächste Episode bereits separat in Continue Watching enthalten ist', async () => {
+    mockUpstream({
+      resumable: [
+        episode('e1', { userData: { PlayedPercentage: 95 } }),
+        episode('e2', { userData: { PlayedPercentage: 10 } })
+      ],
+      seasons: [{ Id: 's1', IndexNumber: 1 }],
+      episodesBySeason: {
+        s1: [
+          { Id: 'e1', ParentIndexNumber: 1, IndexNumber: 1 },
+          { Id: 'e2', ParentIndexNumber: 1, IndexNumber: 2 }
+        ]
+      }
+    });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items.map(item => item.Id)).toEqual(['e2']);
+  });
+});
+
 describe('LibraryService.getPublisherStudioNames', () => {
   beforeEach(() => {
     vi.clearAllMocks();

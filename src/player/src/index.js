@@ -35,10 +35,14 @@ import { createPlayerUi } from './ui/playerUi.js';
 import { applyWatchPartyPermissions, computeRemoteControlTarget } from './watchParty.js';
 import { createEpisodeBrowser } from './episodes.js';
 import { createWatchPartyParticipantsMenu } from './watchPartyParticipants.js';
+import { findNextEpisode, shouldShowNextEpisodePrompt, canStartNextEpisode, createNextEpisodeGate } from './nextEpisode.js';
+import { createNextEpisodePrompt } from './nextEpisodePrompt.js';
 
 const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 const WHEEL_SEEK_DEBOUNCE_MS = 320;
 const POSTER_FALLBACK_GRADIENT = 'radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)';
+const NEXT_EPISODE_THRESHOLD = 0.9;
+const NEXT_EPISODE_VIEWER_MESSAGE = 'Die nächste Folge kann von einem WatchTogether-Admin gestartet werden.';
 
 const ICONS = {
   arrowBack: '<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>',
@@ -505,6 +509,42 @@ export async function mountVantaPlayer({
       })
     : null;
 
+  const nextEpisodeGate = createNextEpisodeGate();
+
+  const nextEpisodePrompt = episodeBrowser?.enabled
+    ? createNextEpisodePrompt({
+        root: menuOverlayContainer,
+        onConfirm: next => {
+          episodeBrowser.onNextEpisode?.(next);
+        },
+        onDismiss: () => {
+          nextEpisodeGate.markDismissed(episodeBrowser.context?.currentEpisodeId);
+        }
+      })
+    : null;
+
+  const maybeShowNextEpisodePrompt = () => {
+    if (!nextEpisodePrompt || !episodeBrowser?.context) return;
+
+    const currentEpisodeId = episodeBrowser.context.currentEpisodeId;
+    if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
+    if (!shouldShowNextEpisodePrompt({
+      currentTime: player.currentTime,
+      duration: knownDuration || player.duration,
+      threshold: NEXT_EPISODE_THRESHOLD
+    })) return;
+
+    const next = findNextEpisode(episodeBrowser.context, currentEpisodeId);
+    if (!next) return;
+
+    nextEpisodeGate.markShown(currentEpisodeId);
+    const interactive = canStartNextEpisode(watchParty);
+    nextEpisodePrompt.show(next, {
+      interactive,
+      message: interactive ? null : NEXT_EPISODE_VIEWER_MESSAGE
+    });
+  };
+
   const updateMenus = (playback, options = {}) => {
     qualityMenu.update(playback.quality.profiles, playback.quality.current);
     subtitleMenu.update(playback, {
@@ -607,6 +647,8 @@ export async function mountVantaPlayer({
     const duration = Number(event.detail);
     if (Number.isFinite(duration) && duration > 0) knownDuration = duration;
   });
+
+  listen(player, 'time-update', maybeShowNextEpisodePrompt);
 
   listen(player, 'play', () => {
     if (!sourceSwitch.isSwitching()) sourceSwitch.setIntendsToPlay(true);
@@ -786,7 +828,7 @@ export async function mountVantaPlayer({
       }
     },
     destroy: () => {
-      if (destroyed) return;
+      if (destroyed) return Promise.resolve();
       destroyed = true;
       phoneOrientationActive = false;
       gateActive = false;
@@ -805,13 +847,15 @@ export async function mountVantaPlayer({
       subtitleMenu.destroy();
       participantsMenu?.destroy();
       episodeBrowserMenu?.destroy();
+      nextEpisodePrompt?.destroy();
       ui.destroy();
       disposers.splice(0).forEach(dispose => dispose());
       player.destroy?.();
       root.innerHTML = '';
 
-      // Complete browser cleanup and reporting in the background without blocking navigation.
-      Promise.all([
+      // Callers that immediately request a new stream (e.g. next-episode navigation) must
+      // await this so the server releases the stream-limit slot before the new one is reserved.
+      return Promise.all([
         isPhone ? exitSmartphoneFullscreen().catch(() => {}) : Promise.resolve(),
         pipPromise,
         stopPromise?.catch(() => {})

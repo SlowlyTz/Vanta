@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MediaApi } from '../api/media.api.js';
 import PlayerPage from './player.page.js';
 
+const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
+
 vi.mock('../api/media.api.js', () => ({
   MediaApi: {
     getItem: vi.fn(),
@@ -15,6 +17,10 @@ vi.mock('../api/media.api.js', () => ({
 
 vi.mock('/vendor/player/vanta-player.js', () => ({
   mountVantaPlayer: vi.fn().mockResolvedValue({ destroy: vi.fn() })
+}));
+
+vi.mock('../router.js', () => ({
+  router: { handleRoute: vi.fn() }
 }));
 
 async function flush() {
@@ -64,6 +70,60 @@ describe('PlayerPage bootstrap errors', () => {
   });
 });
 
+describe('PlayerPage episode navigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.location.hash = '';
+  });
+
+  afterEach(() => {
+    document.documentElement.classList.remove('player-active');
+    document.body.classList.remove('player-active');
+    window.location.hash = '';
+  });
+
+  it('navigiert zur nächsten Folge, wenn das Overlay onNextEpisode auslöst, ohne einen neuen History-Eintrag zu erzeugen', async () => {
+    const { mountVantaPlayer } = await import(PLAYER_MODULE_URL);
+    const { router } = await import('../router.js');
+    const destroy = vi.fn().mockResolvedValue(undefined);
+    mountVantaPlayer.mockResolvedValueOnce({ destroy });
+
+    MediaApi.getItem.mockResolvedValue({
+      Id: 'ep-1',
+      Type: 'Episode',
+      SeriesId: 'series-1',
+      Name: 'Folge 1',
+      UserData: {}
+    });
+    MediaApi.getSeasons.mockResolvedValue([{ Id: 'season-1', Name: 'Staffel 1', IndexNumber: 1 }]);
+    MediaApi.getEpisodes.mockResolvedValue([
+      { Id: 'ep-1', Name: 'Folge 1', ParentIndexNumber: 1, IndexNumber: 1 },
+      { Id: 'ep-2', Name: 'Folge 2', ParentIndexNumber: 1, IndexNumber: 2 }
+    ]);
+
+    PlayerPage({ id: 'ep-1' });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await flush();
+
+    const mountCall = mountVantaPlayer.mock.calls.at(-1)[0];
+    expect(mountCall.episodeBrowser.enabled).toBe(true);
+
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+    const pushStateSpy = vi.spyOn(window.history, 'pushState');
+
+    await mountCall.episodeBrowser.onNextEpisode({ episode: { Id: 'ep-2' } });
+
+    expect(destroy).toHaveBeenCalled();
+    expect(window.location.hash).toBe('#/player/ep-2');
+    expect(replaceStateSpy).toHaveBeenCalled();
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(router.handleRoute).toHaveBeenCalled();
+
+    replaceStateSpy.mockRestore();
+    pushStateSpy.mockRestore();
+  });
+});
+
 describe('PlayerPage viewport lock', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -101,6 +161,7 @@ describe('PlayerPage viewport lock', () => {
     window.dispatchEvent(Object.assign(new Event('hashchange'), {}));
     window.location.hash = '#/home';
     window.dispatchEvent(new Event('hashchange'));
+    await flush();
 
     expect(document.documentElement.classList.contains('player-active')).toBe(false);
     expect(document.body.classList.contains('player-active')).toBe(false);
