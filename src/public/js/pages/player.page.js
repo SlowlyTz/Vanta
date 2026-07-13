@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';
+import { router } from '../router.js';
 
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 
@@ -34,12 +35,12 @@ export default function PlayerPage({ id }) {
     window.scrollTo(0, scrollLockY);
   };
 
-  const cleanup = () => {
+  const cleanup = async () => {
     if (cleaningUp) return;
     cleaningUp = true;
     window.removeEventListener('hashchange', handleHashChange);
     try {
-      controller?.destroy();
+      await controller?.destroy();
     } catch (error) {
       console.warn('[Player Cleanup]', error);
     }
@@ -49,6 +50,18 @@ export default function PlayerPage({ id }) {
   const goBack = () => {
     cleanup();
     window.history.back();
+  };
+
+  // Replaces the current history entry instead of pushing a new one, so switching
+  // episodes in-player doesn't leave a trail of stale player entries that "Zurück"
+  // would have to click through before reaching the series page.
+  const navigateToEpisode = episodeId => {
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${window.location.search}#/player/${episodeId}`
+    );
+    router.handleRoute();
   };
 
   function handleHashChange() {
@@ -132,9 +145,13 @@ export default function PlayerPage({ id }) {
           enabled: true,
           context: episodeContext,
           readonly: false,
-          onSelectEpisode: episode => {
-            cleanup();
-            window.location.hash = `#/player/${episode.Id}`;
+          onSelectEpisode: async episode => {
+            await cleanup();
+            navigateToEpisode(episode.Id);
+          },
+          onNextEpisode: async ({ episode }) => {
+            await cleanup();
+            navigateToEpisode(episode.Id);
           }
         } : null
       });

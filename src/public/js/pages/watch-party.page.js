@@ -978,9 +978,13 @@ export default function WatchPartyPage({ partyId }) {
           episodeBrowser: episodeContext ? {
             enabled: true,
             context: episodeContext,
-            readonly: !isOwner(),
+            readonly: !isPartyAdmin(),
             onSelectEpisode: episode => {
-              if (!isOwner()) return;
+              if (!isPartyAdmin()) return;
+              socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
+            },
+            onNextEpisode: ({ episode }) => {
+              if (!isPartyAdmin()) return;
               socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
             }
           } : null
@@ -1042,7 +1046,9 @@ export default function WatchPartyPage({ partyId }) {
       ownerHeartbeatTimer = null;
     }
     try {
-      controller?.destroy();
+      // Await so the server releases the old stream-limit slot before the new
+      // episode's playback is reserved (otherwise it can briefly hit the stream limit).
+      await controller?.destroy();
     } catch (error) {
       console.warn('[Watch Party Replace Cleanup]', error);
     }
