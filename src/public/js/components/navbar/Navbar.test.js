@@ -11,7 +11,8 @@ vi.mock('../../api/media.api.js', () => ({
   MediaApi: {
     getGenres: vi.fn().mockResolvedValue([]),
     getStudios: vi.fn().mockResolvedValue([]),
-    getLibrary: vi.fn().mockResolvedValue({ totalItems: 0 })
+    getLibrary: vi.fn().mockResolvedValue({ totalItems: 0 }),
+    getStats: vi.fn().mockResolvedValue({ totalItems: 0 })
   }
 }));
 vi.mock('../../api/requests.api.js', () => ({
@@ -196,6 +197,24 @@ describe('Navbar', () => {
     profileLink.click();
 
     expect(navbar.element.classList.contains('mobile-open')).toBe(false);
+  });
+
+  it('opens settings in a separate dialog and closes the mobile drawer', () => {
+    stubMatchMedia(false);
+    const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
+    navbar.element.querySelector('.mobile-menu-button').click();
+
+    const mobileNav = document.getElementById('mobile-navigation');
+    const settingsButton = mobileNav.querySelector('.navbar-mobile-settings');
+
+    settingsButton.click();
+
+    expect(navbar.element.classList.contains('mobile-open')).toBe(false);
+    expect(document.querySelector('.settings-modal-backdrop.open')).toBeTruthy();
+    expect(mobileNav.querySelector('.settings-panel')).toBeFalsy();
+    expect(document.querySelector('.settings-dialog .settings-profile-name').textContent).toBe('alice');
   });
 
   it('marks the drawer Profil link active on #/profile', () => {

@@ -45,6 +45,16 @@ describe('SearchPage', () => {
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
   });
 
+  it('rendert das Suchfeld direkt auf der Search-Page statt als mobile-only Element', () => {
+    const container = SearchPage();
+
+    const wrapper = container.querySelector('.search-input-wrapper');
+    expect(wrapper).toBeTruthy();
+    expect(wrapper.classList.contains('mobile-search-input-wrapper')).toBe(false);
+    expect(container.querySelector('.search-input-field')).toBeTruthy();
+    expect(container.querySelector('.search-empty-state p').textContent).toBe('Tippe den Namen eines Films oder einer Serie in das Suchfeld ein.');
+  });
+
   it('ignores a stale response that resolves after a newer search has started', async () => {
     const container = SearchPage();
 

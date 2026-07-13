@@ -1,7 +1,6 @@
 import { createElement } from '../../utils/dom.js';
 import { NAV_LINKS } from './navLinks.js';
 import { createNavIcon, createCloseIcon, createChevronIcon } from './icons.js';
-import { createMobileSettings } from './mobileSettings.js';
 import { isNavLinkActive } from './activeNav.js';
 import { MediaApi } from '../../api/media.api.js';
 import { getFeaturedPublishersFromStudios } from '../../constants/featuredPublishers.js';
@@ -58,7 +57,7 @@ function showSubmenuError(submenu, message) {
   submenu.appendChild(createElement('li', { className: 'mobile-drawer-submenu-item mobile-drawer-submenu-empty' }, message));
 }
 
-export function createMobileDrawer({ onLogout, onChangePassword, onNavigate }) {
+export function createMobileDrawer({ onNavigate, onOpenSettings }) {
   const mobileNavList = createElement('nav', {
     className: 'mobile-drawer-nav',
     id: 'mobile-navigation',
@@ -182,9 +181,8 @@ export function createMobileDrawer({ onLogout, onChangePassword, onNavigate }) {
     className: 'navbar-link navbar-mobile-settings',
     type: 'button',
     onClick: () => {
-      mobileDrawerHeader.hidden = true;
-      mobileNavLinksList.hidden = true;
-      mobileSettings.setMobileSettingsView('root');
+      onNavigate?.();
+      onOpenSettings?.();
     }
   },
     createNavIcon('settings'),
@@ -205,17 +203,6 @@ export function createMobileDrawer({ onLogout, onChangePassword, onNavigate }) {
 
   const mobileProfileItem = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, mobileProfileLink);
   mobileNavLinksList.appendChild(mobileProfileItem);
-
-  const mobileSettings = createMobileSettings({
-    onLogout,
-    onChangePassword,
-    onNav: () => {
-      mobileDrawerHeader.hidden = false;
-      mobileNavLinksList.hidden = false;
-    }
-  });
-
-  mobileNavList.appendChild(mobileSettings.element);
 
   const mobileNavBackdrop = createElement('div', {
     className: 'mobile-nav-backdrop',
@@ -250,13 +237,13 @@ export function createMobileDrawer({ onLogout, onChangePassword, onNavigate }) {
   };
 
   const resetToNav = () => {
-    mobileSettings.setMobileSettingsView('nav');
+    mobileDrawerHeader.hidden = false;
+    mobileNavLinksList.hidden = false;
   };
 
   return {
     mobileNavList,
     mobileNavBackdrop,
-    mobileSettings,
     updateActive,
     resetToNav
   };

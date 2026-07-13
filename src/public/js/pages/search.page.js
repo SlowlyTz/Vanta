@@ -19,7 +19,7 @@ export default function SearchPage() {
   const resultsGrid = createElement('div', { className: 'grid-container' });
   const statusContainer = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Finde deine Lieblingsinhalte'),
-    createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in die Suche oben ein.')
+    createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in das Suchfeld ein.')
   );
 
   const performSearch = async (query) => {
@@ -30,7 +30,7 @@ export default function SearchPage() {
       setSectionBusy(resultsGrid, false);
       statusContainer.innerHTML = '';
       statusContainer.appendChild(createElement('h3', {}, 'Finde deine Lieblingsinhalte'));
-      statusContainer.appendChild(createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in die Suche oben ein.'));
+      statusContainer.appendChild(createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in das Suchfeld ein.'));
       statusContainer.classList.remove('hidden');
       return;
     }
@@ -106,7 +106,7 @@ export default function SearchPage() {
   }
 
   const searchWrapper = createElement('div', { className: 'search-container' },
-    createElement('div', { className: 'search-input-wrapper mobile-search-input-wrapper' }, searchInput),
+    createElement('div', { className: 'search-input-wrapper' }, searchInput),
     resultsGrid,
     statusContainer
   );

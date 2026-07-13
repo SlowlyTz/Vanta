@@ -4,6 +4,7 @@ import { TOP_TABS, TOP_ACTIONS } from './navLinks.js';
 import { createTopbarIcon } from './icons.js';
 import { isNavLinkActive } from './activeNav.js';
 import { createWatchPartyDialog } from '../watch-party/createWatchPartyDialog.js';
+import { createSettingsDialog } from './settingsDialog.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -61,10 +62,11 @@ function createTopActions({ onOpenWatchParty }) {
 export function Navbar({ onLogout, onChangePassword }) {
   let mobileNavOpen = false;
 
+  const settingsDialog = createSettingsDialog({ onLogout, onChangePassword });
+
   const mobileDrawer = createMobileDrawer({
-    onLogout,
-    onChangePassword,
-    onNavigate: () => setMobileNavOpen(false)
+    onNavigate: () => setMobileNavOpen(false),
+    onOpenSettings: () => settingsDialog.setSettingsOpen(true)
   });
 
   const watchPartyDialog = createWatchPartyDialog();
@@ -96,13 +98,14 @@ export function Navbar({ onLogout, onChangePassword }) {
 
   document.body.appendChild(mobileDrawer.mobileNavBackdrop);
   document.body.appendChild(mobileDrawer.mobileNavList);
+  document.body.appendChild(settingsDialog.element);
   document.body.appendChild(watchPartyDialog.element);
 
   const update = ({ currentHash, user, scrolled }) => {
     element.classList.toggle('scrolled', !!scrolled);
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
-    mobileDrawer.mobileSettings.mobileSettingsUsername.textContent = displayName;
+    settingsDialog.settingsUsername.textContent = displayName;
 
     topTabs.updateActive(currentHash);
     mobileDrawer.updateActive(currentHash);
@@ -133,7 +136,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     if (mobileNavOpen) setMobileNavOpen(false);
   });
 
-  mobileDrawer.mobileSettings.loadAdminVisibility?.();
+  settingsDialog.loadAdminVisibility?.();
 
   return { element, update };
 }
