@@ -52,5 +52,35 @@ export const WatchPartyApi = {
       method: 'POST',
       body: { originalPartyId }
     });
+  },
+
+  resolveInviteUser(partyId, username) {
+    return request(`/api/watch-parties/${encodeURIComponent(partyId)}/invitations/resolve-user`, {
+      method: 'POST',
+      body: { username }
+    });
+  },
+
+  sendInvitation(partyId, username) {
+    return request(`/api/watch-parties/${encodeURIComponent(partyId)}/invitations`, {
+      method: 'POST',
+      body: { username }
+    });
+  },
+
+  pendingInvitations() {
+    return request('/api/watch-party-invitations/pending');
+  },
+
+  acceptInvitation(invitationId) {
+    return request(`/api/watch-party-invitations/${encodeURIComponent(invitationId)}/accept`, {
+      method: 'POST'
+    });
+  },
+
+  declineInvitation(invitationId) {
+    return request(`/api/watch-party-invitations/${encodeURIComponent(invitationId)}/decline`, {
+      method: 'POST'
+    });
   }
 };
