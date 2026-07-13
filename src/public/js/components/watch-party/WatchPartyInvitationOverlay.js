@@ -59,9 +59,16 @@ function createInvitationCard(invitation) {
   }
 
   return createElement('div', { className: 'watch-party-invitation-card' },
-    createElement('div', { className: 'watch-party-invitation-title' }, 'Watch Party Einladung'),
-    createElement('p', { className: 'watch-party-invitation-text' },
-      `${invitation.inviterUsername} lädt dich zu "${invitation.itemName}" ein.`),
-    createElement('div', { className: 'watch-party-invitation-actions' }, acceptButton, declineButton)
+    createElement('div', { className: 'watch-party-invitation-header' },
+      createElement('span', { className: 'watch-party-invitation-kicker' }, 'Watch Party'),
+      createElement('span', { className: 'watch-party-invitation-persist' }, 'Bleibt offen')
+    ),
+    createElement('div', { className: 'watch-party-invitation-body' },
+      createElement('strong', { className: 'watch-party-invitation-title' },
+        `${invitation.inviterUsername} lädt dich ein`),
+      createElement('span', { className: 'watch-party-invitation-media' },
+        invitation.itemName || 'Watch Party')
+    ),
+    createElement('div', { className: 'watch-party-invitation-actions' }, declineButton, acceptButton)
   );
 }
