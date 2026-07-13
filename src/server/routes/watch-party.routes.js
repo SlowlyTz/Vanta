@@ -1,8 +1,10 @@
 import express from 'express';
 import { WatchPartyService } from '../services/watch-party.service.js';
+import { WatchPartyInvitationService } from '../services/watch-party-invitation.service.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { watchPartySocketHub } from '../realtime/watch-party.socket.js';
+import { appSocketHub } from '../realtime/app.socket.js';
 
 const router = express.Router();
 
@@ -137,6 +139,28 @@ router.post('/:partyId/end', requireAuth, asyncHandler(async (req, res) => {
   });
 
   return res.json({ party });
+}));
+
+router.post('/:partyId/invitations/resolve-user', requireAuth, asyncHandler(async (req, res) => {
+  const user = WatchPartyInvitationService.resolveInviteeByUsername((req.body || {}).username);
+  return res.json({
+    user: user ? { id: user.userId, username: user.username } : null
+  });
+}));
+
+router.post('/:partyId/invitations', requireAuth, asyncHandler(async (req, res) => {
+  const invitation = WatchPartyInvitationService.createInvitation({
+    partyId: req.params.partyId,
+    inviterUserId: req.session.userId,
+    invitedUsername: (req.body || {}).username
+  });
+
+  appSocketHub.sendToUser(invitation.invitedUserId, {
+    type: 'WATCH_PARTY_INVITATION',
+    invitation
+  });
+
+  return res.status(201).json({ invitation });
 }));
 
 export default router;

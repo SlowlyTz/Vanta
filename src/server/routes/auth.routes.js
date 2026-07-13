@@ -1,6 +1,7 @@
 import express from 'express';
 import { AuthService } from '../services/jellyfin/auth.service.js';
 import { UserBanService } from '../services/user-ban.service.js';
+import { KnownUsersService } from '../services/known-users.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
 
@@ -30,6 +31,8 @@ router.post('/login', asyncHandler(async (req, res) => {
     req.session.username = data.User.Name;
     req.session.isAdmin = isAdmin;
 
+    KnownUsersService.remember({ userId: data.User.Id, username: data.User.Name });
+
     return res.json({
       user: {
         id: data.User.Id,
@@ -54,6 +57,8 @@ router.get('/me', asyncHandler(async (req, res) => {
       const user = await AuthService.getCurrentUser(req.session.userId, req.session.accessToken);
       const isAdmin = AuthService.isAdministrator(user);
       req.session.isAdmin = isAdmin;
+
+      KnownUsersService.remember({ userId: req.session.userId, username: user.Name || req.session.username });
 
       return res.json({
         user: {

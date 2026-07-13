@@ -18,8 +18,15 @@ vi.mock('../services/user-ban.service.js', () => ({
   }
 }));
 
+vi.mock('../services/known-users.service.js', () => ({
+  KnownUsersService: {
+    remember: vi.fn()
+  }
+}));
+
 import { AuthService } from '../services/jellyfin/auth.service.js';
 import { UserBanService } from '../services/user-ban.service.js';
+import { KnownUsersService } from '../services/known-users.service.js';
 
 function createApp() {
   const app = express();
@@ -52,6 +59,7 @@ describe('Auth Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.user).toEqual({ id: 'user-1', name: 'alice', isAdmin: false });
+      expect(KnownUsersService.remember).toHaveBeenCalledWith({ userId: 'user-1', username: 'alice' });
     });
 
     it('returns a generic 401 for wrong credentials', async () => {
@@ -77,6 +85,7 @@ describe('Auth Routes', () => {
         error: 'Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.',
         reason: 'Account geteilt'
       });
+      expect(KnownUsersService.remember).not.toHaveBeenCalled();
     });
 
     it('requires a username', async () => {
@@ -105,6 +114,7 @@ describe('Auth Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.user).toEqual({ id: 'user-1', name: 'alice', isAdmin: false });
+      expect(KnownUsersService.remember).toHaveBeenCalledWith({ userId: 'user-1', username: 'alice' });
     });
 
     it('destroys the session and rejects when the user has since been banned', async () => {
@@ -114,6 +124,7 @@ describe('Auth Routes', () => {
 
       expect(res.status).toBe(401);
       expect(AuthService.getCurrentUser).not.toHaveBeenCalled();
+      expect(KnownUsersService.remember).not.toHaveBeenCalled();
     });
 
     it('returns 401 when there is no session', async () => {

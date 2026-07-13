@@ -29,8 +29,23 @@ vi.mock('../realtime/watch-party.socket.js', () => ({
   }
 }));
 
+vi.mock('../services/watch-party-invitation.service.js', () => ({
+  WatchPartyInvitationService: {
+    resolveInviteeByUsername: vi.fn(),
+    createInvitation: vi.fn()
+  }
+}));
+
+vi.mock('../realtime/app.socket.js', () => ({
+  appSocketHub: {
+    sendToUser: vi.fn()
+  }
+}));
+
 import { WatchPartyService } from '../services/watch-party.service.js';
 import { watchPartySocketHub } from '../realtime/watch-party.socket.js';
+import { WatchPartyInvitationService } from '../services/watch-party-invitation.service.js';
+import { appSocketHub } from '../realtime/app.socket.js';
 
 function createApp({ authenticated = true } = {}) {
   const app = express();
@@ -206,6 +221,69 @@ describe('Watch party routes', () => {
         type: 'PARTY_ENDED',
         party: { id: 'party-1', status: 'ended' }
       }));
+    });
+  });
+
+  describe('POST /:partyId/invitations/resolve-user', () => {
+    it('liefert den gefundenen User', async () => {
+      WatchPartyInvitationService.resolveInviteeByUsername.mockReturnValue({ userId: 'viewer-1', username: 'Bob' });
+
+      const res = await request(createApp()).post('/party-1/invitations/resolve-user').send({ username: 'bob' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.user).toEqual({ id: 'viewer-1', username: 'Bob' });
+      expect(WatchPartyInvitationService.resolveInviteeByUsername).toHaveBeenCalledWith('bob');
+    });
+
+    it('liefert null, wenn kein exakter Treffer existiert', async () => {
+      WatchPartyInvitationService.resolveInviteeByUsername.mockReturnValue(null);
+
+      const res = await request(createApp()).post('/party-1/invitations/resolve-user').send({ username: 'unknown' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.user).toBeNull();
+    });
+
+    it('erfordert Auth', async () => {
+      const res = await request(createApp({ authenticated: false })).post('/party-1/invitations/resolve-user').send({ username: 'bob' });
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('POST /:partyId/invitations', () => {
+    it('erstellt eine Einladung und pusht sie an den eingeladenen User', async () => {
+      WatchPartyInvitationService.createInvitation.mockReturnValue({
+        id: 'inv-1', invitedUserId: 'viewer-1', partyId: 'party-1', status: 'pending'
+      });
+
+      const res = await request(createApp()).post('/party-1/invitations').send({ username: 'bob' });
+
+      expect(res.status).toBe(201);
+      expect(res.body.invitation.id).toBe('inv-1');
+      expect(WatchPartyInvitationService.createInvitation).toHaveBeenCalledWith({
+        partyId: 'party-1',
+        inviterUserId: 'user-1',
+        invitedUsername: 'bob'
+      });
+      expect(appSocketHub.sendToUser).toHaveBeenCalledWith('viewer-1', expect.objectContaining({
+        type: 'WATCH_PARTY_INVITATION',
+        invitation: expect.objectContaining({ id: 'inv-1' })
+      }));
+    });
+
+    it('gibt den Service-Fehler weiter, z.B. 409 bei bereits vorhandenem Mitglied', async () => {
+      const error = new Error('Dieser Nutzer ist bereits in der Watch Party.');
+      error.status = 409;
+      WatchPartyInvitationService.createInvitation.mockImplementation(() => { throw error; });
+
+      const res = await request(createApp()).post('/party-1/invitations').send({ username: 'bob' });
+
+      expect(res.status).toBe(409);
+    });
+
+    it('erfordert Auth', async () => {
+      const res = await request(createApp({ authenticated: false })).post('/party-1/invitations').send({ username: 'bob' });
+      expect(res.status).toBe(401);
     });
   });
 });

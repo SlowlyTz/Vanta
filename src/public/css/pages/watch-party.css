@@ -130,6 +130,129 @@
   font-size: 0.88rem;
 }
 
+.watch-party-invite-user {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  font-weight: 650;
+  font-size: 0.88rem;
+  transition: background var(--transition-fast);
+}
+
+.watch-party-invite-user:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.watch-party-invite-user[hidden] {
+  display: none;
+}
+
+.watch-party-invite-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.watch-party-invite-menu-overlay[hidden] {
+  display: none;
+}
+
+.watch-party-invite-menu-panel {
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border-radius: var(--abyss-radius-dialog, var(--abyss-radius));
+  background: rgba(var(--abyss-glass-tint), 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.watch-party-invite-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.watch-party-invite-menu-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.watch-party-invite-menu-close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.watch-party-invite-username-input {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.watch-party-invite-result {
+  min-height: 20px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.watch-party-invite-result:empty {
+  display: none;
+}
+
+.watch-party-invite-result-user {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgb(var(--abyss-accent));
+  color: #121212;
+  font-weight: 650;
+  font-size: 0.88rem;
+}
+
+.watch-party-invite-result-user:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.watch-party-invite-status {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.watch-party-invite-status:empty {
+  display: none;
+}
+
+.watch-party-invite-status.is-error {
+  color: #ff8080;
+}
+
 .watch-party-members {
   list-style: none;
   margin: 0;

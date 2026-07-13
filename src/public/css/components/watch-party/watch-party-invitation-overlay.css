@@ -1,0 +1,77 @@
+.watch-party-invitation-stack {
+  position: fixed;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  z-index: 100100;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.watch-party-invitation-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--abyss-radius, 10px);
+  background: rgba(18, 18, 22, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+}
+
+.watch-party-invitation-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(var(--abyss-accent));
+}
+
+.watch-party-invitation-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.watch-party-invitation-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.watch-party-invitation-accept,
+.watch-party-invitation-decline {
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.watch-party-invitation-accept {
+  background: rgb(var(--abyss-accent));
+  color: #121212;
+}
+
+.watch-party-invitation-decline {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.watch-party-invitation-accept:disabled,
+.watch-party-invitation-decline:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .watch-party-invitation-stack {
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    width: auto;
+  }
+}

@@ -8,7 +8,7 @@ const ENDED_PARTY_RETENTION_MS = 5 * 60 * 1000;
 const RESUME_TTL_MS = 48 * 60 * 60 * 1000;
 const COUNTDOWN_MS = 5000;
 const READY_PRELOAD_STATES = new Set(['ready']);
-const MAX_PARTY_MEMBERS = 4;
+export const MAX_PARTY_MEMBERS = 4;
 const READY_ROOM_STATUS = 'ready-room';
 
 function notFound(message) {

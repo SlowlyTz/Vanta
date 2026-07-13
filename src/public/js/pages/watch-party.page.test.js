@@ -12,7 +12,9 @@ vi.mock('../api/watch-party.api.js', () => ({
     kick: vi.fn(),
     create: vi.fn(),
     get: vi.fn(),
-    end: vi.fn()
+    end: vi.fn(),
+    resolveInviteUser: vi.fn(),
+    sendInvitation: vi.fn()
   }
 }));
 
@@ -764,6 +766,164 @@ describe('WatchPartyPage', () => {
 
       const item = container.querySelector('.watch-party-notification');
       expect(item.querySelector('.watch-party-notification-icon').textContent).toBe('i');
+    });
+  });
+
+  describe('Invite per Username', () => {
+    it('zeigt den User-einladen-Button nur für den Owner', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+
+      expect(container.querySelector('.watch-party-invite-user').hidden).toBe(true);
+    });
+
+    it('öffnet und schließt das Einladungsmenü', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+
+      const overlay = container.querySelector('.watch-party-invite-menu-overlay');
+      expect(overlay.hidden).toBe(true);
+
+      container.querySelector('.watch-party-invite-user').click();
+      expect(overlay.hidden).toBe(false);
+
+      container.querySelector('.watch-party-invite-menu-close').click();
+      expect(overlay.hidden).toBe(true);
+    });
+
+    it('versucht keinen Resolve bei leerer Eingabe', async () => {
+      vi.useFakeTimers();
+      try {
+        authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+        WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+        const container = WatchPartyPage({ partyId: 'party-1' });
+        await vi.advanceTimersByTimeAsync(50);
+
+        container.querySelector('.watch-party-invite-user').click();
+        const input = container.querySelector('.watch-party-invite-username-input');
+        input.value = '   ';
+        input.dispatchEvent(new Event('input'));
+
+        await vi.advanceTimersByTimeAsync(300);
+
+        expect(WatchPartyApi.resolveInviteUser).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('trimmt die Eingabe und zeigt bei exaktem Treffer genau einen klickbaren User', async () => {
+      vi.useFakeTimers();
+      try {
+        authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+        WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+        WatchPartyApi.resolveInviteUser.mockResolvedValue({ user: { id: 'viewer-1', username: 'Bob' } });
+
+        const container = WatchPartyPage({ partyId: 'party-1' });
+        await vi.advanceTimersByTimeAsync(50);
+
+        container.querySelector('.watch-party-invite-user').click();
+        const input = container.querySelector('.watch-party-invite-username-input');
+        input.value = '  Bob  ';
+        input.dispatchEvent(new Event('input'));
+
+        await vi.advanceTimersByTimeAsync(300);
+
+        expect(WatchPartyApi.resolveInviteUser).toHaveBeenCalledWith('party-1', 'Bob');
+        const resultButtons = container.querySelectorAll('.watch-party-invite-result-user');
+        expect(resultButtons.length).toBe(1);
+        expect(resultButtons[0].textContent).toBe('Bob');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('zeigt "Kein exakter Treffer" bei Teiltreffer ohne exact match', async () => {
+      vi.useFakeTimers();
+      try {
+        authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+        WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+        WatchPartyApi.resolveInviteUser.mockResolvedValue({ user: null });
+
+        const container = WatchPartyPage({ partyId: 'party-1' });
+        await vi.advanceTimersByTimeAsync(50);
+
+        container.querySelector('.watch-party-invite-user').click();
+        const input = container.querySelector('.watch-party-invite-username-input');
+        input.value = 'Bo';
+        input.dispatchEvent(new Event('input'));
+
+        await vi.advanceTimersByTimeAsync(300);
+
+        expect(container.querySelector('.watch-party-invite-result').textContent).toBe('Kein exakter Treffer');
+        expect(container.querySelector('.watch-party-invite-result-user')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('sendet die Einladung beim Klick auf den gefundenen User und zeigt Erfolgs-Feedback', async () => {
+      vi.useFakeTimers();
+      try {
+        authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+        WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+        WatchPartyApi.resolveInviteUser.mockResolvedValue({ user: { id: 'viewer-1', username: 'Bob' } });
+        WatchPartyApi.sendInvitation.mockResolvedValue({ invitation: { id: 'inv-1' } });
+
+        const container = WatchPartyPage({ partyId: 'party-1' });
+        await vi.advanceTimersByTimeAsync(50);
+
+        container.querySelector('.watch-party-invite-user').click();
+        const input = container.querySelector('.watch-party-invite-username-input');
+        input.value = 'Bob';
+        input.dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(300);
+
+        container.querySelector('.watch-party-invite-result-user').click();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(WatchPartyApi.sendInvitation).toHaveBeenCalledWith('party-1', 'Bob');
+        expect(container.querySelector('.watch-party-invite-status').textContent).toBe('Einladung an Bob gesendet.');
+        expect(container.querySelector('.watch-party-invite-menu-overlay').hidden).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('zeigt eine verständliche Fehlermeldung, wenn das Senden fehlschlägt', async () => {
+      vi.useFakeTimers();
+      try {
+        authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+        WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+        WatchPartyApi.resolveInviteUser.mockResolvedValue({ user: { id: 'viewer-1', username: 'Bob' } });
+        WatchPartyApi.sendInvitation.mockRejectedValue(new Error('Diese Watch Party ist voll.'));
+
+        const container = WatchPartyPage({ partyId: 'party-1' });
+        await vi.advanceTimersByTimeAsync(50);
+
+        container.querySelector('.watch-party-invite-user').click();
+        const input = container.querySelector('.watch-party-invite-username-input');
+        input.value = 'Bob';
+        input.dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(300);
+
+        const resultButton = container.querySelector('.watch-party-invite-result-user');
+        resultButton.click();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(container.querySelector('.watch-party-invite-status').textContent).toBe('Diese Watch Party ist voll.');
+        expect(container.querySelector('.watch-party-invite-status').classList.contains('is-error')).toBe(true);
+        expect(resultButton.disabled).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

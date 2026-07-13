@@ -1,11 +1,13 @@
 import http from 'http';
 import app from './src/server/app.js';
 import env from './src/server/config/env.js';
+import { attachAppSocketServer } from './src/server/realtime/app.socket.js';
 import { attachWatchPartySocketServer } from './src/server/realtime/watch-party.socket.js';
 
 const PORT = env.PORT || 3000;
 const server = http.createServer(app);
 
+attachAppSocketServer(server);
 attachWatchPartySocketServer(server);
 
 server.listen(PORT, () => {
