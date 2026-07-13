@@ -65,8 +65,10 @@ describe('WatchPartyInvitationOverlay', () => {
 
     const card = document.querySelector('.watch-party-invitation-card');
     expect(card).not.toBeNull();
-    expect(card.textContent).toContain('Alice');
-    expect(card.textContent).toContain('Blade Runner');
+    expect(card.querySelector('.watch-party-invitation-kicker').textContent).toBe('Watch Party');
+    expect(card.querySelector('.watch-party-invitation-persist').textContent).toBe('Bleibt offen');
+    expect(card.querySelector('.watch-party-invitation-title').textContent).toContain('Alice lädt dich ein');
+    expect(card.querySelector('.watch-party-invitation-media').textContent).toBe('Blade Runner');
     expect(card.querySelector('.watch-party-invitation-accept')).not.toBeNull();
     expect(card.querySelector('.watch-party-invitation-decline')).not.toBeNull();
   });

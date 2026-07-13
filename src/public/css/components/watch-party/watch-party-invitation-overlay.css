@@ -1,12 +1,12 @@
 .watch-party-invitation-stack {
   position: fixed;
-  top: max(18px, env(safe-area-inset-top));
-  right: max(18px, env(safe-area-inset-right));
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
   z-index: 100100;
-  width: min(380px, calc(100vw - 32px));
+  width: min(340px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   pointer-events: none;
 }
 
@@ -14,28 +14,51 @@
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding: 14px;
-  border-radius: var(--abyss-radius, 10px);
-  background: rgba(18, 18, 22, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgb(18, 19, 23);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+}
+
+.watch-party-invitation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.watch-party-invitation-kicker,
+.watch-party-invitation-persist {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.watch-party-invitation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.watch-party-invitation-title,
+.watch-party-invitation-media {
+  overflow-wrap: anywhere;
 }
 
 .watch-party-invitation-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: rgb(var(--abyss-accent));
+  font-size: 0.94rem;
+  line-height: 1.25;
+  font-weight: 800;
 }
 
-.watch-party-invitation-text {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  overflow-wrap: break-word;
+.watch-party-invitation-media {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.3;
 }
 
 .watch-party-invitation-actions {
@@ -46,20 +69,21 @@
 
 .watch-party-invitation-accept,
 .watch-party-invitation-decline {
-  min-height: 40px;
-  border-radius: 999px;
-  font-size: 0.86rem;
-  font-weight: 650;
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 750;
 }
 
 .watch-party-invitation-accept {
   background: rgb(var(--abyss-accent));
-  color: #121212;
+  color: #111;
 }
 
 .watch-party-invitation-decline {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .watch-party-invitation-accept:disabled,
