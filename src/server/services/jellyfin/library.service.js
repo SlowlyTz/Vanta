@@ -1,6 +1,10 @@
 import { jellyfinJson } from './client.js';
 import { COMMON_ITEM_FIELDS, TRAILER_ITEM_FIELDS } from './fields.js';
 import { getFeaturedPublisherById, matchFeaturedPublisher } from '../../../public/js/constants/featuredPublishers.js';
+import { ItemsService } from './items.service.js';
+import { findNextEpisode } from '../../../player/src/nextEpisode.js';
+
+const NEXT_EPISODE_PROGRESS_THRESHOLD = 90;
 
 function getItems(userId, token, params = {}) {
   return jellyfinJson(`/Users/${userId}/Items`, {
@@ -12,6 +16,50 @@ function getItems(userId, token, params = {}) {
   });
 }
 
+function shouldPromoteContinueWatchingEpisode(item) {
+  if (item.Type !== 'Episode') return false;
+  const percent = Number(item.UserData?.PlayedPercentage);
+  if (Number.isFinite(percent)) return percent >= NEXT_EPISODE_PROGRESS_THRESHOLD;
+
+  const ticks = Number(item.UserData?.PlaybackPositionTicks || 0);
+  const runtime = Number(item.RunTimeTicks || 0);
+  return runtime > 0 && ticks / runtime >= 0.9;
+}
+
+async function buildEpisodeContext(userId, token, seriesId) {
+  const seasons = await ItemsService.getSeasons(userId, token, seriesId);
+  const episodesBySeason = {};
+
+  for (const season of seasons) {
+    episodesBySeason[season.Id] = await ItemsService.getEpisodes(userId, token, seriesId, season.Id);
+  }
+
+  return { seasons, episodesBySeason };
+}
+
+// Near-finished episodes resume into a stale, almost-watched episode rather than the
+// next one, so promote them to the next episode (or drop them once the series is caught up).
+async function resolveResumeItem(userId, token, item) {
+  if (!shouldPromoteContinueWatchingEpisode(item) || !item.SeriesId) return item;
+
+  const context = await buildEpisodeContext(userId, token, item.SeriesId);
+  const next = findNextEpisode(context, item.Id);
+  return next?.episode || null;
+}
+
+function dedupeById(items) {
+  const seen = new Set();
+  const result = [];
+
+  for (const item of items) {
+    if (!item?.Id || seen.has(item.Id)) continue;
+    seen.add(item.Id);
+    result.push(item);
+  }
+
+  return result;
+}
+
 export class LibraryService {
   static async getResumeItems(userId, token) {
     const data = await getItems(userId, token, {
@@ -21,7 +69,12 @@ export class LibraryService {
       SortOrder: 'Descending',
       Limit: 12
     });
-    return data.Items || [];
+
+    const resolved = await Promise.all(
+      (data.Items || []).map(item => resolveResumeItem(userId, token, item))
+    );
+
+    return dedupeById(resolved.filter(Boolean));
   }
 
   static async getMovies(userId, token) {
