@@ -87,13 +87,20 @@ The frontend is a hash-based single page app without a framework. Pages and comp
 
 ## Features
 
-- Home, movies, series, search, detail pages, and profile
-- custom VANTA player with HLS/playback resolution through the backend
-- trailer scroller using YouTube trailers from Jellyfin metadata
-- media requests through TMDB with admin approval/rejection
-- publisher/studio views
-- admin tools for requests and user management
-- local section loaders instead of global full-screen loading overlays
+VANTA adds app-level workflows and playback features on top of Jellyfin:
+
+- **WatchTogether**: shared watch parties with a lobby, ready state, countdown, synchronized playback, owner/admin controls, participant management, reconnect handling, and in-player notifications.
+- **WatchTogether invitations**: invite users directly inside VANTA by exact username, with persistent accept/decline invitation notifications across the app.
+- **Media requests**: search TMDB, request missing movies or series, cross-check against the Jellyfin library, and track request status.
+- **Request moderation**: admin approval/rejection flow for requested media, including local request and rejection history.
+- **Custom VANTA player**: Vite-built streaming player with custom controls, quality selection, audio/subtitle menus, episode switching, Jellyfin playback reporting, and backend-resolved HLS/playback URLs.
+- **Mobile-first player behavior**: custom fullscreen/orientation flow intended to keep VANTA controls available instead of falling back to the native iOS video player.
+- **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata.
+- **Publisher/studio hubs**: curated publisher views for studios and services such as Disney, Warner Bros., Netflix, Apple TV, Prime Video, and HBO.
+- **Admin user tools**: manage Jellyfin users from VANTA, including user details, password changes, library access, local bans, and VANTA-specific stream limits.
+- **User rules outside Jellyfin**: local ban lists, rejected-request lists, and per-user VANTA settings stored separately from Jellyfin.
+- **Profile hub**: VANTA profile area for continue watching, watch history, favorites, and user-facing account actions.
+- **Server-side Jellyfin gateway**: browser requests go through the Express backend with HTTP-only sessions, normalized media data, image/media proxying, and playback reporting.
 
 ## Admin And Runtime Data
 
