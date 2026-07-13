@@ -7,18 +7,49 @@ const LOCKED_CONTROL_SELECTOR = [
 ].join(', ');
 
 const GESTURE_SELECTOR = 'media-gesture';
+const ORIGINAL_GESTURE_ACTION_ATTRIBUTE = 'data-watch-party-original-action';
 
 export function applyWatchPartyPermissions({ root, watchParty }) {
-  if (!watchParty?.enabled || watchParty.isOwner) return;
+  if (!watchParty?.enabled) return;
+  const canControl = Boolean(watchParty.canControl ?? watchParty.isOwner);
+  const controls = root.querySelectorAll(LOCKED_CONTROL_SELECTOR);
+  const gestures = root.querySelectorAll(GESTURE_SELECTOR);
+
+  if (canControl) {
+    root.classList.remove('is-watch-party-viewer');
+
+    controls.forEach(control => {
+      control.removeAttribute('aria-disabled');
+      control.removeAttribute('disabled');
+      control.disabled = false;
+      control.inert = false;
+      control.style.pointerEvents = '';
+    });
+
+    gestures.forEach(gesture => {
+      const originalAction = gesture.getAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE);
+      if (originalAction) {
+        gesture.setAttribute('action', originalAction);
+        gesture.removeAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE);
+      }
+      gesture.style.pointerEvents = '';
+    });
+    return;
+  }
 
   root.classList.add('is-watch-party-viewer');
 
-  root.querySelectorAll(LOCKED_CONTROL_SELECTOR).forEach(control => {
+  controls.forEach(control => {
     control.setAttribute('aria-disabled', 'true');
+    control.inert = true;
     control.style.pointerEvents = 'none';
   });
 
-  root.querySelectorAll(GESTURE_SELECTOR).forEach(gesture => {
+  gestures.forEach(gesture => {
+    const action = gesture.getAttribute('action');
+    if (action && !gesture.getAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE)) {
+      gesture.setAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE, action);
+    }
     gesture.removeAttribute('action');
     gesture.style.pointerEvents = 'none';
   });

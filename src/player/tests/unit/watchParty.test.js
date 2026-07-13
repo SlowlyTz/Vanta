@@ -16,6 +16,7 @@ function createFakeRoot(controls, gestures = []) {
   return {
     classList: {
       add: (...names) => names.forEach(name => classes.add(name)),
+      remove: (...names) => names.forEach(name => classes.delete(name)),
       contains: (name) => classes.has(name)
     },
     querySelectorAll: selector => (selector === 'media-gesture' ? gestures : controls)
@@ -75,6 +76,42 @@ describe('applyWatchPartyPermissions', () => {
     applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: true } });
 
     expect(gesture.getAttribute('action')).toBe('seek:-10');
+  });
+
+  it('canControl hat Vorrang vor isOwner: ein beförderter Admin (isOwner=false, canControl=true) bleibt uneingeschränkt', () => {
+    const playControl = createFakeControl();
+    const root = createFakeRoot([playControl]);
+
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false, canControl: true } });
+
+    expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
+    expect(playControl.getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('canControl=false sperrt Controls auch dann, wenn isOwner true wäre', () => {
+    const playControl = createFakeControl();
+    const root = createFakeRoot([playControl]);
+
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: true, canControl: false } });
+
+    expect(root.classList.contains('is-watch-party-viewer')).toBe(true);
+    expect(playControl.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('hebt Viewer-Sperren wieder auf, wenn ein laufender Teilnehmer zum Admin befördert wird', () => {
+    const playControl = createFakeControl();
+    const gesture = createFakeControl();
+    gesture.setAttribute('action', 'seek:10');
+    const root = createFakeRoot([playControl], [gesture]);
+
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false, canControl: false } });
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false, canControl: true } });
+
+    expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
+    expect(playControl.getAttribute('aria-disabled')).toBeNull();
+    expect(playControl.style.pointerEvents).toBe('');
+    expect(gesture.getAttribute('action')).toBe('seek:10');
+    expect(gesture.style.pointerEvents).toBe('');
   });
 });
 

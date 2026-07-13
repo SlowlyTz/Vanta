@@ -41,6 +41,23 @@ function assertOwner(party, userId) {
   }
 }
 
+export function isPartyAdmin(party, userId) {
+  const member = party.members.get(userId);
+  return member?.role === 'owner' || member?.role === 'admin';
+}
+
+function assertPartyAdmin(party, userId) {
+  if (!isPartyAdmin(party, userId)) {
+    throw forbidden('Nur Admins können diese Aktion ausführen');
+  }
+}
+
+function assertPartyMember(party, userId) {
+  const member = party.members.get(userId);
+  if (!member) throw forbidden('Du bist kein Mitglied dieser Watch Party');
+  return member;
+}
+
 function shuffle(list) {
   const arr = [...list];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -164,7 +181,8 @@ export class WatchPartyService {
       resumeExpiresAt: null,
       finalPositionMs: 0,
       resumeFrom: null,
-      members: new Map()
+      members: new Map(),
+      bannedUserIds: new Set()
     };
 
     party.members.set(userId, {
@@ -186,6 +204,11 @@ export class WatchPartyService {
 
   static async joinParty({ partyId, userId, username, accessToken }) {
     const party = this.getPartyOrThrow(partyId);
+
+    if (party.bannedUserIds?.has(userId)) {
+      throw forbidden('Du wurdest aus dieser Watch Party ausgeschlossen.');
+    }
+
     if (party.status === 'ended') throw badRequest('Diese Watch Party wurde bereits beendet');
 
     await this.assertCanAccessItem({ userId, accessToken, itemId: party.playableItemId });
@@ -293,6 +316,54 @@ export class WatchPartyService {
 
     party.members.delete(targetUserId);
     return this.serializeParty(party, actorUserId);
+  }
+
+  static promoteMember({ partyId, actorUserId, targetUserId }) {
+    const party = this.getPartyOrThrow(partyId);
+    assertPartyAdmin(party, actorUserId);
+
+    if (targetUserId === actorUserId) {
+      throw badRequest('Du bist bereits Admin dieser Watch Party.');
+    }
+
+    const target = assertPartyMember(party, targetUserId);
+    if (target.role === 'owner' || target.role === 'admin') {
+      return this.serializeParty(party, actorUserId);
+    }
+
+    target.role = 'admin';
+    target.lastSeenAt = Date.now();
+
+    return this.serializeParty(party, actorUserId);
+  }
+
+  static banMember({ partyId, actorUserId, targetUserId }) {
+    const party = this.getPartyOrThrow(partyId);
+    assertPartyAdmin(party, actorUserId);
+
+    if (targetUserId === actorUserId) {
+      throw badRequest('Du kannst dich nicht selbst bannen.');
+    }
+
+    const target = assertPartyMember(party, targetUserId);
+    if (target.role === 'owner') {
+      throw forbidden('Der Owner kann nicht gebannt werden.');
+    }
+    if (target.role === 'admin' && party.ownerUserId !== actorUserId) {
+      throw forbidden('Nur der Owner kann Admins bannen.');
+    }
+
+    party.bannedUserIds ??= new Set();
+    party.bannedUserIds.add(targetUserId);
+    party.members.delete(targetUserId);
+
+    return {
+      party: this.serializeParty(party, actorUserId),
+      bannedUser: {
+        userId: target.userId,
+        username: target.username
+      }
+    };
   }
 
   static setConnected({ partyId, userId, connected }) {
@@ -442,7 +513,8 @@ export class WatchPartyService {
         originalPartyId,
         positionMs: snapshot.finalPositionMs
       },
-      members: new Map()
+      members: new Map(),
+      bannedUserIds: new Set()
     };
 
     party.members.set(userId, {

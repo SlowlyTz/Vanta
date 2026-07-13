@@ -51,6 +51,7 @@ const fakeController = {
   player: { currentTime: 0, paused: true, playbackRate: 1 },
   prepareInitialPlayback: vi.fn().mockResolvedValue(undefined),
   applyRemoteControl: vi.fn(),
+  updateWatchPartyAccess: vi.fn(),
   destroy: vi.fn()
 };
 
@@ -93,6 +94,10 @@ describe('WatchPartyPage', () => {
     vi.clearAllMocks();
     fakeController.prepareInitialPlayback.mockResolvedValue(undefined);
     fakeController.applyRemoteControl.mockResolvedValue(undefined);
+    fakeController.updateWatchPartyAccess.mockImplementation(() => {});
+    fakeController.player.currentTime = 0;
+    fakeController.player.paused = true;
+    fakeController.player.playbackRate = 1;
     capturedOnMessage = null;
     window.location.hash = '#/watch-party/party-1';
   });
@@ -131,6 +136,23 @@ describe('WatchPartyPage', () => {
     await flush();
 
     expect(container.querySelectorAll('.watch-party-kick-button').length).toBe(1);
+  });
+
+  it('rendert Entfernen links von Verbunden in einer gemeinsamen Aktionsgruppe', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    const kickButton = container.querySelector('.watch-party-kick-button');
+    expect(kickButton).not.toBeNull();
+    const actions = kickButton.closest('.watch-party-member-actions');
+    expect(actions).not.toBeNull();
+    const status = actions.querySelector('.watch-party-member-status');
+    expect(kickButton).not.toBeNull();
+    expect(status).not.toBeNull();
+    expect(kickButton.compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('zeigt keine Kick-Buttons für Viewer', async () => {
@@ -767,6 +789,33 @@ describe('WatchPartyPage', () => {
       const item = container.querySelector('.watch-party-notification');
       expect(item.querySelector('.watch-party-notification-icon').textContent).toBe('i');
     });
+
+    it('zeigt eine lokale Notification, wenn die Wiedergabe automatisch hart synchronisiert wird', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 0 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      fakeController.player.currentTime = 20;
+      capturedOnMessage({
+        type: 'SYNC',
+        positionMs: 1000,
+        playing: true,
+        serverTimeMs: Date.now()
+      });
+
+      const item = container.querySelector('.watch-party-notification.is-auto_sync');
+      expect(item).not.toBeNull();
+      expect(item.querySelector('.watch-party-notification-icon').textContent).toBe('↻');
+      expect(item.querySelector('.watch-party-notification-text').textContent).toBe('Wiedergabe automatisch synchronisiert.');
+      expect(fakeController.player.currentTime).toBeGreaterThanOrEqual(1);
+      expect(fakeController.player.currentTime).toBeLessThan(1.5);
+    });
   });
 
   describe('Invite per Username', () => {
@@ -893,8 +942,8 @@ describe('WatchPartyPage', () => {
         await vi.advanceTimersByTimeAsync(0);
 
         expect(WatchPartyApi.sendInvitation).toHaveBeenCalledWith('party-1', 'Bob');
-        expect(container.querySelector('.watch-party-invite-status').textContent).toBe('Einladung an Bob gesendet.');
-        expect(container.querySelector('.watch-party-invite-menu-overlay').hidden).toBe(false);
+        expect(appStore.showToast).toHaveBeenCalledWith('Einladung an Bob gesendet.', 'success');
+        expect(container.querySelector('.watch-party-invite-menu-overlay').hidden).toBe(true);
       } finally {
         vi.useRealTimers();
       }
@@ -927,6 +976,162 @@ describe('WatchPartyPage', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+  });
+
+  describe('Admin-Rollen', () => {
+    it('watchPartyConfig.canControl ist für den Owner true', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 0 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      const call = mountVantaPlayer.mock.calls.at(-1)[0];
+      expect(call.watchParty.canControl).toBe(true);
+      expect(call.watchParty.isOwner).toBe(true);
+      expect(call.watchParty.currentUserId).toBe('owner-1');
+    });
+
+    it('watchPartyConfig.canControl ist für einen beförderten Admin true', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({
+          status: 'playing',
+          positionMs: 0,
+          members: [
+            { userId: 'owner-1', username: 'Alice', role: 'owner', ready: true, connected: true },
+            { userId: 'viewer-1', username: 'Bob', role: 'admin', ready: true, connected: true }
+          ]
+        })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      const call = mountVantaPlayer.mock.calls.at(-1)[0];
+      expect(call.watchParty.canControl).toBe(true);
+    });
+
+    it('watchPartyConfig.canControl ist für einen Viewer false', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 0 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      const call = mountVantaPlayer.mock.calls.at(-1)[0];
+      expect(call.watchParty.canControl).toBe(false);
+    });
+
+    it('PARTY_UPDATED aktualisiert participants und ruft onParticipantsChange auf der Player-Config', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 0 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      const call = mountVantaPlayer.mock.calls.at(-1)[0];
+      const onParticipantsChange = vi.fn();
+      call.watchParty.onParticipantsChange = onParticipantsChange;
+
+      const updatedMembers = [
+        { userId: 'owner-1', username: 'Alice', role: 'owner', ready: true, connected: true },
+        { userId: 'viewer-1', username: 'Bob', role: 'admin', ready: true, connected: true }
+      ];
+      capturedOnMessage({
+        type: 'PARTY_UPDATED',
+        party: makeParty({ status: 'playing', positionMs: 0, members: updatedMembers })
+      });
+
+      expect(call.watchParty.participants).toEqual(updatedMembers);
+      expect(fakeController.updateWatchPartyAccess).toHaveBeenCalledWith(expect.objectContaining({
+        participants: updatedMembers,
+        canControl: true
+      }));
+      expect(onParticipantsChange).toHaveBeenCalled();
+    });
+
+    it('PARTY_UPDATED schaltet einen laufenden Viewer-Player nach Beförderung direkt für Controls frei', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 0 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      const initialCall = mountVantaPlayer.mock.calls.at(-1)[0];
+      expect(initialCall.watchParty.canControl).toBe(false);
+
+      const promotedMembers = [
+        { userId: 'owner-1', username: 'Alice', role: 'owner', ready: true, connected: true },
+        { userId: 'viewer-1', username: 'Bob', role: 'admin', ready: true, connected: true }
+      ];
+      capturedOnMessage({
+        type: 'PARTY_UPDATED',
+        party: makeParty({ status: 'playing', positionMs: 0, members: promotedMembers })
+      });
+
+      expect(fakeController.updateWatchPartyAccess).toHaveBeenCalledWith({
+        isOwner: true,
+        canControl: true,
+        participants: promotedMembers,
+        currentUserId: 'viewer-1'
+      });
+    });
+
+    it('BANNED_FROM_PARTY zerstört den Player, zeigt einen Toast und navigiert nach Hause', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 1000 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      capturedOnMessage({ type: 'BANNED_FROM_PARTY', message: 'Du wurdest aus dieser Watch Party ausgeschlossen.' });
+
+      expect(fakeController.destroy).toHaveBeenCalled();
+      expect(appStore.showToast).toHaveBeenCalledWith('Du wurdest aus dieser Watch Party ausgeschlossen.', 'error');
+      expect(window.location.hash).toBe('#/home');
+    });
+
+    it('zeigt einen Admin-Badge für beförderte Mitglieder in der Lobby', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({
+          members: [
+            { userId: 'owner-1', username: 'Alice', role: 'owner', ready: true, connected: true },
+            { userId: 'viewer-1', username: 'Bob', role: 'admin', ready: true, connected: true }
+          ]
+        })
+      });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+
+      const adminBadge = container.querySelector('.watch-party-member-badge.is-admin');
+      expect(adminBadge).not.toBeNull();
+      expect(adminBadge.textContent).toBe('Admin');
     });
   });
 });

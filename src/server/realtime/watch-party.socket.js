@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
-import { WatchPartyService, startWatchPartyCleanup, getPartyEffectivePosition } from '../services/watch-party.service.js';
+import { WatchPartyService, startWatchPartyCleanup, getPartyEffectivePosition, isPartyAdmin } from '../services/watch-party.service.js';
 
 const OWNER_DISCONNECT_GRACE_MS = 30_000;
 const SEEK_NOTIFICATION_THROTTLE_MS = 800;
@@ -30,7 +30,9 @@ function createNotification(type, { username, positionMs } = {}) {
     member_left: `${username} hat die Watch Party verlassen.`,
     owner_play: 'Der Admin hat die Wiedergabe gestartet.',
     owner_pause: 'Der Admin hat pausiert.',
-    owner_seek: `Der Admin hat zu ${formatNotificationPosition(positionMs)} gespult.`
+    owner_seek: `Der Admin hat zu ${formatNotificationPosition(positionMs)} gespult.`,
+    member_promoted: `${username} ist jetzt Admin.`,
+    member_banned: `${username} wurde aus der Watch Party gebannt.`
   };
 
   return {
@@ -262,6 +264,14 @@ export class WatchPartySocketHub {
           this.handleOwnerControl({ partyId, userId, message });
           return;
 
+        case 'ADMIN_PROMOTE_MEMBER':
+          this.handleAdminPromoteMember({ partyId, user, message });
+          return;
+
+        case 'ADMIN_BAN_MEMBER':
+          this.handleAdminBanMember({ partyId, user, message });
+          return;
+
         default:
           return;
       }
@@ -294,6 +304,49 @@ export class WatchPartySocketHub {
     } catch (error) {
       this.sendToUser(partyId, user.userId, { type: 'ERROR', message: error.message });
     }
+  }
+
+  handleAdminPromoteMember({ partyId, user, message }) {
+    const party = WatchPartyService.promoteMember({
+      partyId,
+      actorUserId: user.userId,
+      targetUserId: message.targetUserId
+    });
+
+    const promoted = party.members.find(member => member.userId === message.targetUserId);
+
+    this.broadcastParty(partyId, {
+      type: 'PARTY_UPDATED',
+      party
+    });
+
+    this.broadcastParty(partyId, createNotification('member_promoted', {
+      username: promoted?.username || 'Ein Nutzer'
+    }));
+  }
+
+  handleAdminBanMember({ partyId, user, message }) {
+    const result = WatchPartyService.banMember({
+      partyId,
+      actorUserId: user.userId,
+      targetUserId: message.targetUserId
+    });
+
+    this.sendToUser(partyId, message.targetUserId, {
+      type: 'BANNED_FROM_PARTY',
+      message: 'Du wurdest aus dieser Watch Party ausgeschlossen.'
+    });
+
+    this.closeUserConnections(partyId, message.targetUserId);
+
+    this.broadcastParty(partyId, {
+      type: 'PARTY_UPDATED',
+      party: result.party
+    });
+
+    this.broadcastParty(partyId, createNotification('member_banned', {
+      username: result.bannedUser.username
+    }));
   }
 
   scheduleCountdownCompletion(partyId, startsAtServerTimeMs, positionMs) {
@@ -359,8 +412,8 @@ export class WatchPartySocketHub {
 
   handleOwnerControl({ partyId, userId, message }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
-    if (party.ownerUserId !== userId) {
-      throw ownerError('Only the party owner can control playback');
+    if (!isPartyAdmin(party, userId)) {
+      throw ownerError('Only party admins can control playback');
     }
 
     const now = Date.now();
