@@ -265,6 +265,26 @@ describe('WatchPartyService', () => {
     await expect(joinAsViewer(created.id, 'viewer-4', 'Eve')).rejects.toMatchObject({ status: 409 });
   });
 
+  it('erlaubt neuen Mitgliedern den Join, während die Party bereits playing oder paused ist', async () => {
+    const created = await createTestParty();
+    const party = WatchPartyService.parties.get(created.id);
+
+    party.status = 'playing';
+    const joinedPlaying = await joinAsViewer(created.id, 'viewer-1', 'Bob');
+    expect(joinedPlaying.members.some(m => m.userId === 'viewer-1')).toBe(true);
+
+    party.status = 'paused';
+    const joinedPaused = await joinAsViewer(created.id, 'viewer-2', 'Carl');
+    expect(joinedPaused.members.some(m => m.userId === 'viewer-2')).toBe(true);
+  });
+
+  it('lehnt den Join ab, wenn die Party bereits beendet ist', async () => {
+    const created = await createTestParty();
+    WatchPartyService.endParty({ partyId: created.id, ownerUserId: 'owner-1' });
+
+    await expect(joinAsViewer(created.id, 'viewer-1', 'Bob')).rejects.toMatchObject({ status: 400 });
+  });
+
   it('erlaubt Rejoin eines existierenden Mitglieds, auch wenn die Party voll ist', async () => {
     const created = await createTestParty();
     await joinAsViewer(created.id, 'viewer-1', 'Bob');

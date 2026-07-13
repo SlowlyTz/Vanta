@@ -1,8 +1,10 @@
+import crypto from 'crypto';
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
 import { WatchPartyService, startWatchPartyCleanup, getPartyEffectivePosition } from '../services/watch-party.service.js';
 
 const OWNER_DISCONNECT_GRACE_MS = 30_000;
+const SEEK_NOTIFICATION_THROTTLE_MS = 800;
 
 function ownerError(message) {
   const error = new Error(message);
@@ -14,12 +16,42 @@ function isPlaybackControlAllowed(party) {
   return party.status === 'playing' || party.status === 'paused';
 }
 
+function formatNotificationPosition(positionMs) {
+  const totalSeconds = Math.max(0, Math.floor((Number(positionMs) || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function createNotification(type, { username, positionMs } = {}) {
+  const messages = {
+    member_joined: `${username} ist beigetreten.`,
+    member_rejoined: `${username} ist beigetreten.`,
+    member_left: `${username} hat die Watch Party verlassen.`,
+    owner_play: 'Der Admin hat die Wiedergabe gestartet.',
+    owner_pause: 'Der Admin hat pausiert.',
+    owner_seek: `Der Admin hat zu ${formatNotificationPosition(positionMs)} gespult.`
+  };
+
+  return {
+    type: 'NOTIFICATION',
+    notification: {
+      id: crypto.randomUUID(),
+      type,
+      icon: type === 'member_rejoined' ? 'member_joined' : type,
+      message: messages[type] || 'Watch Party aktualisiert.',
+      createdAt: Date.now()
+    }
+  };
+}
+
 export class WatchPartySocketHub {
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
     this.connectionsByParty = new Map(); // partyId -> Map<userId, Set<ws>>
     this.ownerDisconnectTimers = new Map(); // partyId -> Timeout
     this.countdownTimers = new Map(); // partyId -> Timeout
+    this.lastSeekNotificationAt = new Map(); // partyId -> timestamp
   }
 
   attach(server) {
@@ -73,8 +105,13 @@ export class WatchPartySocketHub {
       return;
     }
 
+    const member = party.members.get(user.userId);
+    const wasConnected = Boolean(member.connected);
+    const wasSeenBefore = Boolean(member.hasConnectedOnce);
+
     this.registerConnection(partyId, user.userId, ws);
     WatchPartyService.setConnected({ partyId, userId: user.userId, connected: true });
+    member.hasConnectedOnce = true;
 
     if (party.ownerUserId === user.userId) {
       this.cancelOwnerDisconnectTimer(partyId);
@@ -86,6 +123,14 @@ export class WatchPartySocketHub {
       effectivePositionMs: getPartyEffectivePosition(party),
       serverTimeMs: Date.now()
     });
+
+    if (!wasConnected) {
+      this.broadcastParty(
+        partyId,
+        createNotification(wasSeenBefore ? 'member_rejoined' : 'member_joined', { username: member.username }),
+        { skipUserId: user.userId }
+      );
+    }
 
     this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
 
@@ -112,6 +157,12 @@ export class WatchPartySocketHub {
       if (currentParty.ownerUserId === user.userId && currentParty.status !== 'ended') {
         this.scheduleOwnerDisconnectEnd(partyId, user.userId);
       }
+
+      this.broadcastParty(
+        partyId,
+        createNotification('member_left', { username: user.username }),
+        { skipUserId: user.userId }
+      );
 
       this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(currentParty) });
     });
@@ -324,6 +375,7 @@ export class WatchPartySocketHub {
       party.positionMs = Number(message.positionMs) || 0;
       party.lastServerTimeMs = now;
       this.broadcastParty(partyId, { type: 'CONTROL', action: 'play', positionMs: party.positionMs, serverTimeMs: now });
+      this.broadcastParty(partyId, createNotification('owner_play'));
       return;
     }
 
@@ -332,6 +384,7 @@ export class WatchPartySocketHub {
       party.positionMs = Number(message.positionMs) || 0;
       party.lastServerTimeMs = now;
       this.broadcastParty(partyId, { type: 'CONTROL', action: 'pause', positionMs: party.positionMs, serverTimeMs: now });
+      this.broadcastParty(partyId, createNotification('owner_pause'));
       return;
     }
 
@@ -345,6 +398,9 @@ export class WatchPartySocketHub {
         playing: party.status === 'playing',
         serverTimeMs: now
       });
+      if (this.shouldSendSeekNotification(partyId, now)) {
+        this.broadcastParty(partyId, createNotification('owner_seek', { positionMs: party.positionMs }));
+      }
       return;
     }
 
@@ -359,6 +415,13 @@ export class WatchPartySocketHub {
         serverTimeMs: now
       }, { skipUserId: userId });
     }
+  }
+
+  shouldSendSeekNotification(partyId, now) {
+    const previous = this.lastSeekNotificationAt.get(partyId) || 0;
+    if (now - previous < SEEK_NOTIFICATION_THROTTLE_MS) return false;
+    this.lastSeekNotificationAt.set(partyId, now);
+    return true;
   }
 
   registerConnection(partyId, userId, ws) {

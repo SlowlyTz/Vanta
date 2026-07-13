@@ -234,12 +234,20 @@ export async function mountVantaPlayer({
   let knownDuration = 0;
   let waitingTimer = null;
   let lastWheelSeekAt = 0;
-  let applyingRemoteControl = false;
+  let ownerEchoSuppressionDepth = 0;
+  const beginOwnerEchoSuppression = () => {
+    ownerEchoSuppressionDepth += 1;
+  };
+  const endOwnerEchoSuppression = (delay = 250) => {
+    window.setTimeout(() => {
+      ownerEchoSuppressionDepth = Math.max(0, ownerEchoSuppressionDepth - 1);
+    }, delay);
+  };
 
   const watchPartyPhase = () => watchParty?.phase || watchParty?.mode || (watchParty?.enabled ? 'playback' : null);
   const isDeferredReadyRoom = () => watchPartyPhase() === 'ready-room';
   const canEmitOwnerControl = () => (
-    watchParty?.enabled && watchParty.isOwner && watchPartyPhase() === 'playback' && !applyingRemoteControl
+    watchParty?.enabled && watchParty.isOwner && watchPartyPhase() === 'playback' && ownerEchoSuppressionDepth === 0
   );
   const forcePlaybackPhase = () => {
     if (!watchParty?.enabled) return;
@@ -638,6 +646,14 @@ export async function mountVantaPlayer({
     if (initialPlaybackPrepared) return;
     if (initialPlaybackPromise) return initialPlaybackPromise;
 
+    // Loading a fresh source can itself fire native play/pause/seeked events (e.g. the
+    // <media-player autoplay> attribute racing with our own shouldPlay bookkeeping) well
+    // outside the window applyRemoteControl() guards. Without suppression here, the watch
+    // party owner's own boot would get echoed back to the server as a manual OWNER_PLAY/
+    // OWNER_SEEK, producing phantom notifications and bogus party-state changes.
+    const suppressOwnerEcho = Boolean(watchParty?.enabled);
+    if (suppressOwnerEcho) beginOwnerEchoSuppression();
+
     initialPlaybackPromise = (async () => {
       const bootShouldPlay = !watchParty?.enabled;
       setLoading(true, 'Wiedergabequelle wird beim Server angefragt …');
@@ -662,14 +678,17 @@ export async function mountVantaPlayer({
           await switchToHls(error, { silent: isDeferredReadyRoom() });
           if (!destroyed && sourceSwitch.getCurrentPlayback()) {
             initialPlaybackPrepared = true;
+            if (suppressOwnerEcho) endOwnerEchoSuppression();
             return;
           }
         }
         if (!isDeferredReadyRoom()) showError(error.message);
       }
+      if (suppressOwnerEcho) endOwnerEchoSuppression();
       throw error;
     }
 
+    if (suppressOwnerEcho) endOwnerEchoSuppression();
     return initialPlaybackPromise;
   }
 
@@ -687,7 +706,7 @@ export async function mountVantaPlayer({
     player,
     prepareInitialPlayback,
     applyRemoteControl: async ({ action, positionMs, serverTimeMs, playing }) => {
-      applyingRemoteControl = true;
+      beginOwnerEchoSuppression();
       try {
         if (action === 'play') forcePlaybackPhase();
         const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
@@ -703,9 +722,7 @@ export async function mountVantaPlayer({
           player.pause();
         }
       } finally {
-        window.setTimeout(() => {
-          applyingRemoteControl = false;
-        }, 250);
+        endOwnerEchoSuppression();
       }
     },
     destroy: () => {

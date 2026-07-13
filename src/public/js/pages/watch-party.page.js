@@ -58,6 +58,18 @@ function getPosterUrl(item) {
   return MediaApi.getImageUrl(imageOwnerId, 'Backdrop', 1920, { tag, quality: 90 });
 }
 
+const NOTIFICATION_ICONS = {
+  member_joined: '+',
+  member_left: '-',
+  owner_play: '▶',
+  owner_pause: 'Ⅱ',
+  owner_seek: '↔'
+};
+
+function notificationIcon(type) {
+  return NOTIFICATION_ICONS[type] || 'i';
+}
+
 export default function WatchPartyPage({ partyId }) {
   const container = createElement('div', { className: 'watch-party-page' });
 
@@ -71,6 +83,7 @@ export default function WatchPartyPage({ partyId }) {
   let watchPartyConfig = null;
   let localReadyPreparing = false;
   let lastPlayStartServerTimeMs = null;
+  let lastLiveJoinKey = null;
   let destroyed = false;
   let scrollLockY = 0;
   let ending = false;
@@ -182,6 +195,12 @@ export default function WatchPartyPage({ partyId }) {
   const endedState = createElement('div', { className: 'watch-party-ended-state', hidden: true });
   const errorState = createElement('div', { className: 'watch-party-error', hidden: true });
 
+  const notificationStack = createElement('div', {
+    className: 'watch-party-notifications',
+    role: 'status',
+    'aria-live': 'polite'
+  });
+
   container.appendChild(header);
   container.appendChild(lobby);
   container.appendChild(readyOverlay);
@@ -189,6 +208,7 @@ export default function WatchPartyPage({ partyId }) {
   container.appendChild(autoplayOverlay);
   container.appendChild(endedState);
   container.appendChild(errorState);
+  container.appendChild(notificationStack);
 
   // --- Lifecycle ---
   function goHome() {
@@ -483,6 +503,27 @@ export default function WatchPartyPage({ partyId }) {
     }
   }
 
+  // --- Notifications ---
+  function showWatchPartyNotification(notification) {
+    if (!notification || typeof notification !== 'object') return;
+
+    const item = createElement('div', {
+      className: `watch-party-notification is-${notification.type || 'default'}`
+    },
+      createElement('span', {
+        className: 'watch-party-notification-icon',
+        'aria-hidden': 'true'
+      }, notificationIcon(notification.icon || notification.type)),
+      createElement('span', {
+        className: 'watch-party-notification-text'
+      }, notification.message || 'Watch Party aktualisiert.')
+    );
+
+    notificationStack.appendChild(item);
+    window.setTimeout(() => item.classList.add('is-leaving'), 4200);
+    window.setTimeout(() => item.remove(), 4800);
+  }
+
   // --- Player + sync ---
   function startOwnerHeartbeat() {
     if (ownerHeartbeatTimer) return;
@@ -531,6 +572,17 @@ export default function WatchPartyPage({ partyId }) {
 
   let blockedPlayPayload = null;
 
+  function refreshRemotePayload(payload) {
+    if (payload.action !== 'play') return payload;
+
+    const elapsedMs = Math.max(0, Date.now() - (Number(payload.serverTimeMs) || Date.now()));
+    return {
+      ...payload,
+      positionMs: Math.max(0, (Number(payload.positionMs) || 0) + elapsedMs),
+      serverTimeMs: Date.now()
+    };
+  }
+
   async function safeApplyRemoteControl(payload) {
     if (!controller) return;
     try {
@@ -545,6 +597,40 @@ export default function WatchPartyPage({ partyId }) {
         console.warn('[Watch Party Remote Control]', error);
       }
     }
+  }
+
+  async function enterLivePlayback({ positionMs, serverTimeMs, playing }) {
+    if (destroyed) return;
+
+    const startServerTimeMs = Number(serverTimeMs) || Date.now();
+    const liveJoinKey = `${startServerTimeMs}:${playing ? 'play' : 'pause'}`;
+    if (lastLiveJoinKey === liveJoinKey) return;
+    lastLiveJoinKey = liveJoinKey;
+
+    hideReadyOverlay();
+    hideCountdown();
+    showPlayerSurface();
+
+    await ensurePlayerPlayback();
+    if (destroyed) return;
+    setPlaybackPhase();
+
+    const elapsedMs = playing ? Math.max(0, Date.now() - startServerTimeMs) : 0;
+    const targetMs = Math.max(0, (Number(positionMs) || 0) + elapsedMs);
+
+    if (controller?.prepareInitialPlayback) {
+      await controller.prepareInitialPlayback({ position: targetMs / 1000 });
+    }
+    if (destroyed) return;
+
+    await safeApplyRemoteControl({
+      action: playing ? 'play' : 'pause',
+      positionMs: targetMs,
+      serverTimeMs: Date.now(),
+      playing
+    });
+
+    maybeStartOwnerHeartbeat();
   }
 
   async function handleControlPlay(payload) {
@@ -575,7 +661,7 @@ export default function WatchPartyPage({ partyId }) {
 
   autoplayActivateButton.addEventListener('click', async () => {
     if (!blockedPlayPayload) return;
-    await safeApplyRemoteControl(blockedPlayPayload);
+    await safeApplyRemoteControl(refreshRemotePayload(blockedPlayPayload));
   });
 
   function ensurePlayerMountAttached() {
@@ -608,16 +694,29 @@ export default function WatchPartyPage({ partyId }) {
     if (watchPartyConfig) watchPartyConfig.phase = 'playback';
   }
 
+  let mountInFlight = null;
+
+  function applyMountedPhase(phase) {
+    if (phase === 'ready-room') {
+      showReadyRoom();
+    } else {
+      showPlayerSurface();
+    }
+    if (watchPartyConfig) watchPartyConfig.phase = phase;
+  }
+
   async function mountPlayer({ itemId, positionMs, force = false, phase = 'playback', deferInitialLoad = false }) {
     if (destroyed) return;
 
     if (controller && !force) {
-      if (phase === 'ready-room') {
-        showReadyRoom();
-      } else {
-        showPlayerSurface();
-      }
-      if (watchPartyConfig) watchPartyConfig.phase = phase;
+      applyMountedPhase(phase);
+      return;
+    }
+
+    if (mountInFlight && !force) {
+      await mountInFlight;
+      if (destroyed) return;
+      if (controller) applyMountedPhase(phase);
       return;
     }
 
@@ -626,59 +725,67 @@ export default function WatchPartyPage({ partyId }) {
     if (phase === 'ready-room') showReadyRoom();
     setSyncStatus('preparing', 'Wird vorbereitet');
 
-    try {
-      const [item, playerModule] = await Promise.all([
-        MediaApi.getItem(itemId),
-        import(PLAYER_MODULE_URL)
-      ]);
-      if (destroyed) return;
+    mountInFlight = (async () => {
+      try {
+        const [item, playerModule] = await Promise.all([
+          MediaApi.getItem(itemId),
+          import(PLAYER_MODULE_URL)
+        ]);
+        if (destroyed) return;
 
-      const episodeContext = await loadEpisodeContext(item).catch(() => null);
-      if (destroyed) return;
+        const episodeContext = await loadEpisodeContext(item).catch(() => null);
+        if (destroyed) return;
 
-      watchPartyConfig = {
-        enabled: true,
-        phase,
-        isOwner: isOwner(),
-        disableQualityMenu: true,
-        onOwnerPlay: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
-        onOwnerPause: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
-        onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs })
-      };
-
-      controller = await playerModule.mountVantaPlayer({
-        root: playerMount,
-        itemId,
-        title: item.Name || item.SeriesName || '',
-        poster: getPosterUrl(item),
-        resumePosition: (positionMs || 0) / 1000,
-        resolvePlayback: (mode, options) => MediaApi.getPlayback(itemId, mode, options),
-        reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
-        onBack: goHome,
-        watchParty: watchPartyConfig,
-        deferInitialLoad,
-        episodeBrowser: episodeContext ? {
+        watchPartyConfig = {
           enabled: true,
-          context: episodeContext,
-          readonly: !isOwner(),
-          onSelectEpisode: episode => {
-            if (!isOwner()) return;
-            socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
-          }
-        } : null
-      });
+          phase,
+          isOwner: isOwner(),
+          disableQualityMenu: true,
+          onOwnerPlay: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
+          onOwnerPause: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
+          onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs })
+        };
 
-      if (destroyed) {
-        controller?.destroy();
-        controller = null;
-        return;
+        controller = await playerModule.mountVantaPlayer({
+          root: playerMount,
+          itemId,
+          title: item.Name || item.SeriesName || '',
+          poster: getPosterUrl(item),
+          resumePosition: (positionMs || 0) / 1000,
+          resolvePlayback: (mode, options) => MediaApi.getPlayback(itemId, mode, options),
+          reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
+          onBack: goHome,
+          watchParty: watchPartyConfig,
+          deferInitialLoad,
+          episodeBrowser: episodeContext ? {
+            enabled: true,
+            context: episodeContext,
+            readonly: !isOwner(),
+            onSelectEpisode: episode => {
+              if (!isOwner()) return;
+              socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
+            }
+          } : null
+        });
+
+        if (destroyed) {
+          controller?.destroy();
+          controller = null;
+          return;
+        }
+
+        maybeStartOwnerHeartbeat();
+        if (phase === 'ready-room') renderReadyOverlay();
+      } catch (error) {
+        console.error('[Watch Party Player Error]', error);
+        if (!destroyed) appStore.showToast('Player konnte nicht gestartet werden', 'error');
       }
+    })();
 
-      maybeStartOwnerHeartbeat();
-      if (phase === 'ready-room') renderReadyOverlay();
-    } catch (error) {
-      console.error('[Watch Party Player Error]', error);
-      if (!destroyed) appStore.showToast('Player konnte nicht gestartet werden', 'error');
+    try {
+      await mountInFlight;
+    } finally {
+      mountInFlight = null;
     }
   }
 
@@ -736,18 +843,11 @@ export default function WatchPartyPage({ partyId }) {
         renderParty();
         if (party.status === 'ready-room' || party.status === 'countdown') {
           ensurePlayerReadyRoom();
-        } else if (controller && PLAYBACK_STATUSES.has(party.status)) {
-          applySync({
+        } else if (PLAYBACK_STATUSES.has(party.status)) {
+          void enterLivePlayback({
             positionMs: message.effectivePositionMs ?? party.positionMs,
-            playing: party.status === 'playing',
-            serverTimeMs: message.serverTimeMs
-          });
-          maybeStartOwnerHeartbeat();
-        } else if (shouldShowPlayerForParty(party)) {
-          mountPlayer({
-            itemId: party.playableItemId,
-            positionMs: message.effectivePositionMs ?? party.positionMs,
-            phase: 'playback'
+            serverTimeMs: message.serverTimeMs,
+            playing: party.status === 'playing'
           });
         }
         return;
@@ -822,6 +922,10 @@ export default function WatchPartyPage({ partyId }) {
         applySync(message);
         return;
 
+      case 'NOTIFICATION':
+        showWatchPartyNotification(message.notification || {});
+        return;
+
       case 'PARTY_ENDED':
         party = message.party || party;
         showEndedState(message.message);
@@ -870,7 +974,11 @@ export default function WatchPartyPage({ partyId }) {
       if (party.status === 'ready-room' || party.status === 'countdown') {
         ensurePlayerReadyRoom();
       } else if (PLAYBACK_STATUSES.has(party.status)) {
-        mountPlayer({ itemId: party.playableItemId, positionMs: party.positionMs, phase: 'playback' });
+        void enterLivePlayback({
+          positionMs: party.positionMs,
+          serverTimeMs: party.lastServerTimeMs,
+          playing: party.status === 'playing'
+        });
       }
     } catch (error) {
       if (!destroyed) renderError(error);
