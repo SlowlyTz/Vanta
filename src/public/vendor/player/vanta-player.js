@@ -1,5 +1,5 @@
 import { $ as e, E as t, H as n, K as r, O as i, X as a, Y as o, d as s, i as c, j as l, w as u } from "./std-EJr84HPl.js";
-import { A as d, C as f, D as p, E as m, F as h, G as g, I as _, K as v, M as y, N as b, O as x, Q as S, T as C, U as w, V as T, W as E, a as D, c as O, ct as k, d as A, dt as j, et as M, f as N, h as ee, i as te, j as ne, k as re, l as ie, lt as ae, n as oe, o as P, ot as se, r as ce, rt as le, s as ue, st as de, t as fe, tt as pe, u as me, ut as he, v as ge, w as _e } from "./media-ui-D5tS2kPu.js";
+import { A as d, C as f, D as p, E as m, F as h, G as g, I as _, K as v, M as y, N as b, O as x, Q as S, T as C, U as w, V as T, W as E, a as D, c as O, ct as k, d as A, dt as j, et as M, f as N, h as ee, i as te, j as ne, k as re, l as ie, lt as ae, n as oe, o as se, ot as ce, r as le, rt as P, s as ue, st as de, t as fe, tt as pe, u as me, ut as he, v as ge, w as _e } from "./media-ui-D5tS2kPu.js";
 //#region node_modules/hls.js/dist/hls.mjs
 var F = Number.isFinite || function(e) {
 	return typeof e == "number" && isFinite(e);
@@ -6356,20 +6356,20 @@ var mo = class {
 			}
 			t.readBoolean() && (t.readBoolean(), t.readBoolean(), t.readBoolean(), N = t.readUEG());
 		}
-		let oe = b, P = x;
+		let oe = b, se = x;
 		if (S) {
 			let e = 1, t = 1;
-			y === 1 ? e = t = 2 : y == 2 && (e = 2), oe = b - e * w - e * C, P = x - t * E - t * T;
+			y === 1 ? e = t = 2 : y == 2 && (e = 2), oe = b - e * w - e * C, se = x - t * E - t * T;
 		}
-		let se = r ? [
+		let ce = r ? [
 			"A",
 			"B",
 			"C"
-		][r] : "", ce = o << 24 | s << 16 | c << 8 | l, le = 0;
-		for (let e = 0; e < 32; e++) le = (le | (ce >> e & 1) << 31 - e) >>> 0;
-		let ue = le.toString(16);
+		][r] : "", le = o << 24 | s << 16 | c << 8 | l, P = 0;
+		for (let e = 0; e < 32; e++) P = (P | (le >> e & 1) << 31 - e) >>> 0;
+		let ue = P.toString(16);
 		return a === 1 && ue === "2" && (ue = "6"), {
-			codecString: `hvc1.${se}${a}.${ue}.${i ? "H" : "L"}${g}.B0`,
+			codecString: `hvc1.${ce}${a}.${ue}.${i ? "H" : "L"}${g}.B0`,
 			params: {
 				general_tier_flag: i,
 				general_profile_idc: a,
@@ -6400,7 +6400,7 @@ var mo = class {
 				}
 			},
 			width: oe,
-			height: P,
+			height: se,
 			pixelRatio: [ee, te]
 		};
 	}
@@ -18547,7 +18547,7 @@ var wd = class {
 		this.u = new d(e, i, t), this.r = new re(e, this.u, i, t), t.delegate = new m(this.u.N.bind(this.u), t), new C(e, this.startLoading.bind(this));
 	}
 	onAttach(e) {
-		e.setAttribute("tabindex", "0"), le(e, "role", "region"), l(this.y.bind(this)), l(this.z.bind(this)), l(this.A.bind(this)), l(this.B.bind(this)), l(this.C.bind(this)), l(this.D.bind(this)), l(this.E.bind(this)), l(this.F.bind(this)), l(this.G.bind(this)), this.H(), this.I(), this.j.player = e, this.j.remote.setTarget(e), this.j.remote.setPlayer(e), u(e, "find-media-player", this.J.bind(this));
+		e.setAttribute("tabindex", "0"), P(e, "role", "region"), l(this.y.bind(this)), l(this.z.bind(this)), l(this.A.bind(this)), l(this.B.bind(this)), l(this.C.bind(this)), l(this.D.bind(this)), l(this.E.bind(this)), l(this.F.bind(this)), l(this.G.bind(this)), this.H(), this.I(), this.j.player = e, this.j.remote.setTarget(e), this.j.remote.setPlayer(e), u(e, "find-media-player", this.J.bind(this));
 	}
 	onConnect(e) {
 		ge && t(e, "data-iphone", "");
@@ -18734,7 +18734,7 @@ var wd = class {
 };
 //#endregion
 //#region node_modules/vidstack/dist/prod/define/media-captions.js
-Dd([he], $.prototype, "provider", 1), Dd([he], $.prototype, "user", 1), Dd([he], $.prototype, "orientation", 2), Dd([he], $.prototype, "qualities", 1), Dd([he], $.prototype, "audioTracks", 1), Dd([he], $.prototype, "textTracks", 1), Dd([he], $.prototype, "textRenderers", 1), Dd([he], $.prototype, "paused", 1), Dd([he], $.prototype, "muted", 1), Dd([he], $.prototype, "currentTime", 1), Dd([he], $.prototype, "volume", 1), Dd([he], $.prototype, "playsinline", 1), Dd([he], $.prototype, "playbackRate", 1), Dd([ae], $.prototype, "play", 1), Dd([ae], $.prototype, "pause", 1), Dd([ae], $.prototype, "enterFullscreen", 1), Dd([ae], $.prototype, "exitFullscreen", 1), Dd([ae], $.prototype, "enterPictureInPicture", 1), Dd([ae], $.prototype, "exitPictureInPicture", 1), Dd([ae], $.prototype, "seekToLiveEdge", 1), Dd([ae], $.prototype, "startLoading", 1), j($), j(b), j(b), j(ue), j(O), j(me), j(ie), j(D), j(A), j(ce), j(P), j(te), j(fe);
+Dd([he], $.prototype, "provider", 1), Dd([he], $.prototype, "user", 1), Dd([he], $.prototype, "orientation", 2), Dd([he], $.prototype, "qualities", 1), Dd([he], $.prototype, "audioTracks", 1), Dd([he], $.prototype, "textTracks", 1), Dd([he], $.prototype, "textRenderers", 1), Dd([he], $.prototype, "paused", 1), Dd([he], $.prototype, "muted", 1), Dd([he], $.prototype, "currentTime", 1), Dd([he], $.prototype, "volume", 1), Dd([he], $.prototype, "playsinline", 1), Dd([he], $.prototype, "playbackRate", 1), Dd([ae], $.prototype, "play", 1), Dd([ae], $.prototype, "pause", 1), Dd([ae], $.prototype, "enterFullscreen", 1), Dd([ae], $.prototype, "exitFullscreen", 1), Dd([ae], $.prototype, "enterPictureInPicture", 1), Dd([ae], $.prototype, "exitPictureInPicture", 1), Dd([ae], $.prototype, "seekToLiveEdge", 1), Dd([ae], $.prototype, "startLoading", 1), j($), j(b), j(b), j(ue), j(O), j(me), j(ie), j(D), j(A), j(le), j(se), j(te), j(fe);
 //#endregion
 //#region src/player/src/time.js
 var Od = 1e7;
@@ -19697,7 +19697,13 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 	let d = ep(e, {
 		title: n,
 		poster: r
-	}), { player: f } = d, p = [], m = Lf(e), h = !1, g = !1, _ = null, v = 0, y = !1, b = () => c?.phase || c?.mode || (c?.enabled ? "playback" : null), x = () => b() === "ready-room", S = () => c?.enabled && c.isOwner && b() === "playback" && !y, C = () => {
+	}), { player: f } = d, p = [], m = Lf(e), h = !1, g = !1, _ = null, v = 0, y = 0, b = () => {
+		y += 1;
+	}, x = (e = 250) => {
+		window.setTimeout(() => {
+			y = Math.max(0, y - 1);
+		}, e);
+	}, S = () => c?.phase || c?.mode || (c?.enabled ? "playback" : null), C = () => S() === "ready-room", w = () => c?.enabled && c.isOwner && S() === "playback" && y === 0, T = () => {
 		c?.enabled && (c.phase = "playback", c.mode = "playback");
 	};
 	c?.enabled && !c.isOwner && (f.keyShortcuts = {
@@ -19707,18 +19713,18 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 		root: e,
 		watchParty: c
 	}), Id() && e.classList.add("is-ios"), Rd() || e.classList.add("no-pip");
-	let w = e.querySelector(".vanta-player-shell"), T = e.querySelector(".vanta-player-fullscreen-button"), E = () => {
-		if (!T) return;
+	let E = e.querySelector(".vanta-player-shell"), D = e.querySelector(".vanta-player-fullscreen-button"), O = () => {
+		if (!D) return;
 		let e = Bd();
-		T.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), T.innerHTML = Qf(e ? "fullscreenExit" : "fullscreenEnter");
+		D.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), D.innerHTML = Qf(e ? "fullscreenExit" : "fullscreenEnter");
 	};
-	if (T) {
+	if (D) {
 		let e = async () => {
 			try {
-				Bd() ? await Hd() : await Vd(w);
+				Bd() ? await Hd() : await Vd(E);
 			} catch {}
 		};
-		T.addEventListener("click", e), p.push(() => T.removeEventListener("click", e));
+		D.addEventListener("click", e), p.push(() => D.removeEventListener("click", e));
 	}
 	[
 		"fullscreenchange",
@@ -19726,69 +19732,69 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 		"mozfullscreenchange",
 		"MSFullscreenChange"
 	].forEach((e) => {
-		document.addEventListener(e, E), p.push(() => document.removeEventListener(e, E));
+		document.addEventListener(e, O), p.push(() => document.removeEventListener(e, O));
 	});
-	let D = Fd({
+	let k = Fd({
 		player: f,
 		itemId: t,
 		report: o
-	}), O = Ud(), k = O, A = !1, j = Yd({
+	}), A = Ud(), j = A, M = !1, N = Yd({
 		root: e,
 		onEnter: async () => {
 			try {
 				await Xd({
 					root: e,
 					onError: () => {}
-				}), Wd() && N();
+				}), Wd() && te();
 			} catch {}
 		}
-	}), M = () => {
-		A = !0, j.show(), f.paused = !0, P.setIntendsToPlay(!1);
-	}, N = () => {
-		A = !1, j.hide(), P.setIntendsToPlay(!0), f.play().catch(() => {});
-	}, ee = () => {
-		k && (Wd() ? N() : M());
+	}), ee = () => {
+		M = !0, N.show(), f.paused = !0, P.setIntendsToPlay(!1);
 	}, te = () => {
+		M = !1, N.hide(), P.setIntendsToPlay(!0), f.play().catch(() => {});
+	}, ne = () => {
+		j && (Wd() ? te() : ee());
+	}, re = () => {
 		_ &&= (window.clearTimeout(_), null);
-	}, ne = (e, t) => {
+	}, ie = (e, t) => {
 		t && (d.loadingStatus.textContent = t), d.loading.classList.toggle("is-hidden", !e);
-	}, re = (e) => {
+	}, ae = (e) => {
 		e && (d.loadingStatus.textContent = e);
-	}, ie = (e) => {
-		e && !d.loading.classList.contains("is-hidden") || (d.inlineLoading.hidden = !e);
-	}, ae = () => {
-		d.error.hidden = !0;
 	}, oe = (e) => {
-		te(), P.clearSeekTimer(), ne(!1), ie(!1), m.setState("error"), d.errorMessage.textContent = e || "Der Medienstrom konnte nicht wiedergegeben werden.", d.error.hidden = !1;
+		e && !d.loading.classList.contains("is-hidden") || (d.inlineLoading.hidden = !e);
+	}, se = () => {
+		d.error.hidden = !0;
+	}, le = (e) => {
+		re(), P.clearSeekTimer(), ie(!1), oe(!1), m.setState("error"), d.errorMessage.textContent = e || "Der Medienstrom konnte nicht wiedergegeben werden.", d.error.hidden = !1;
 	}, P = ff({
 		player: f,
-		reporter: D,
+		reporter: k,
 		ui: m,
 		callbacks: {
-			setLoading: ne,
-			setLoadingStatus: re,
-			setInlineLoading: ie,
-			showError: oe,
-			hideError: ae
+			setLoading: ie,
+			setLoadingStatus: ae,
+			setInlineLoading: oe,
+			showError: le,
+			hideError: se
 		},
 		onBeforeSourceChange: () => {
 			zd().catch(() => {});
 		},
-		shouldPreventPlayback: () => A
+		shouldPreventPlayback: () => M
 	});
-	O && (e.classList.add("is-smartphone"), window.addEventListener("orientationchange", ee), p.push(() => window.removeEventListener("orientationchange", ee)), (async () => {
+	A && (e.classList.add("is-smartphone"), window.addEventListener("orientationchange", ne), p.push(() => window.removeEventListener("orientationchange", ne)), (async () => {
 		try {
 			await Xd({
 				root: e,
 				onError: () => {}
-			}), Wd() || M();
+			}), Wd() || ee();
 		} catch {
-			M();
+			ee();
 		}
 	})());
-	let ce = e.querySelector(".vanta-player-controls-right"), le = e.querySelector(".vanta-player-shell"), ue = c?.disableQualityMenu ? { update: () => {} } : Cf({
-		buttonContainer: ce,
-		menuContainer: le,
+	let ue = e.querySelector(".vanta-player-controls-right"), de = e.querySelector(".vanta-player-shell"), fe = c?.disableQualityMenu ? { update: () => {} } : Cf({
+		buttonContainer: ue,
+		menuContainer: de,
 		onSelect: async (e) => {
 			if (P.getCurrentPlayback()) try {
 				let t = await a("auto", { qualityProfile: e });
@@ -19797,42 +19803,42 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 					shouldPlay: P.getIntendsToPlay(),
 					label: "Qualität wird gewechselt …"
 				}), h)) return;
-				pe(t);
+				he(t);
 			} catch (e) {
-				h || oe(e.message);
+				h || le(e.message);
 			}
 		}
-	}), de = Pf({
-		buttonContainer: ce,
-		menuContainer: le,
+	}), pe = Pf({
+		buttonContainer: ue,
+		menuContainer: de,
 		player: f,
-		reporter: D
-	}), fe = l?.enabled ? qf({
-		buttonContainer: ce,
-		menuContainer: le,
+		reporter: k
+	}), me = l?.enabled ? qf({
+		buttonContainer: ue,
+		menuContainer: de,
 		context: l.context,
 		readonly: !!l.readonly,
 		onSelectEpisode: l.onSelectEpisode
-	}) : null, pe = (e, t = {}) => {
-		ue.update(e.quality.profiles, e.quality.current), de.update(e, { preserveSelection: t.preserveSubtitleSelection !== !1 });
-	}, me = (e, t, n, r) => {
+	}) : null, he = (e, t = {}) => {
+		fe.update(e.quality.profiles, e.quality.current), pe.update(e, { preserveSelection: t.preserveSubtitleSelection !== !1 });
+	}, ge = (e, t, n, r) => {
 		e.addEventListener(t, n, r), p.push(() => e.removeEventListener(t, n, r));
-	}, he = async (e) => {
+	}, _e = async (e) => {
 		if (!(P.isSwitching() || h)) {
 			if (P.getCurrentPlayback()?.delivery !== "hls") {
-				await ge(e, { silent: x() });
+				await F(e, { silent: C() });
 				return;
 			}
-			oe(e?.message);
+			le(e?.message);
 		}
-	}, ge = async (e, { silent: t = !1 } = {}) => {
+	}, F = async (e, { silent: t = !1 } = {}) => {
 		if (g || h) {
-			t || oe(e?.message);
+			t || le(e?.message);
 			return;
 		}
 		g = !0;
 		let n = P.captureState();
-		ne(!0, "HLS-Fallback wird beim Server angefragt …");
+		ie(!0, "HLS-Fallback wird beim Server angefragt …");
 		try {
 			let e = await a("hls");
 			if (h) return;
@@ -19840,18 +19846,18 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 				position: n.position,
 				shouldPlay: t ? !1 : n.shouldPlay,
 				label: "Stream wird gewechselt …"
-			}), pe(e);
+			}), he(e);
 		} catch (e) {
 			if (h) return;
-			t || oe(e.message);
+			t || le(e.message);
 		}
-	}, _e = () => {
-		P.isSwitching() || h || (te(), m.setState("buffering"), ie(!0), _ = window.setTimeout(() => {
-			_ = null, he(/* @__PURE__ */ Error("Der Medienstrom antwortet nicht rechtzeitig."));
+	}, ve = () => {
+		P.isSwitching() || h || (re(), m.setState("buffering"), oe(!0), _ = window.setTimeout(() => {
+			_ = null, _e(/* @__PURE__ */ Error("Der Medienstrom antwortet nicht rechtzeitig."));
 		}, 25e3));
 	};
-	me(f, "provider-change", (e) => {
-		se(e.detail) && (e.detail.library = Cd, e.detail.config = {
+	ge(f, "provider-change", (e) => {
+		ce(e.detail) && (e.detail.library = Cd, e.detail.config = {
 			enableWorker: !0,
 			backBufferLength: 30,
 			manifestLoadingTimeOut: 3e4,
@@ -19860,91 +19866,91 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 			fragLoadingMaxRetry: 2,
 			fragLoadingRetryDelay: 1e3,
 			fragLoadingMaxRetryTimeout: 1e4
-		}, P.isSwitching() && re("HLS-Wiedergabe wird initialisiert …"));
-	}), me(f, "error", (e) => {
+		}, P.isSwitching() && ae("HLS-Wiedergabe wird initialisiert …"));
+	}), ge(f, "error", (e) => {
 		if (P.isSwitching() || h) return;
 		let t = e.detail || {}, n = t.message || "Wiedergabefehler";
-		(t.code >= 2 && t.code <= 4 || /not supported|decode|network|media_err/i.test(n)) && he(Error(n));
-	}), me(f, "duration-change", (e) => {
+		(t.code >= 2 && t.code <= 4 || /not supported|decode|network|media_err/i.test(n)) && _e(Error(n));
+	}), ge(f, "duration-change", (e) => {
 		Number(e.detail);
-	}), me(f, "play", () => {
+	}), ge(f, "play", () => {
 		P.isSwitching() || P.setIntendsToPlay(!0);
-	}), me(f, "pause", () => {
-		P.isSwitching() || (P.setIntendsToPlay(!1), te(), P.clearSeekTimer(), ie(!1), m.setState("ready-paused"));
-	}), me(f, "waiting", () => {
-		P.isSwitching() || _e();
-	}), me(f, "seeking", () => {
-		P.isSwitching() || (m.setState("seeking"), ie(!0), P.startSeekTimer());
-	}), me(f, "playing", () => {
-		te(), P.clearSeekTimer(), P.isSwitching() || (P.setAutoplayBlocked(!1), ne(!1), ie(!1), P.syncPlayingState());
-	}), me(f, "seeked", () => {
-		P.clearSeekTimer(), !P.isSwitching() && !h && (ie(!1), P.syncPlayingState());
-	}), me(f, "play", () => {
-		S() && c.onOwnerPlay?.(Math.round(f.currentTime * 1e3));
-	}), me(f, "pause", () => {
-		S() && c.onOwnerPause?.(Math.round(f.currentTime * 1e3));
-	}), me(f, "seeked", () => {
-		S() && c.onOwnerSeek?.(Math.round(f.currentTime * 1e3));
-	}), me(f, "ended", () => {
-		zd().catch(() => {}), D.stop({ ended: !0 });
-	}), me(f, "wheel", (e) => {
+	}), ge(f, "pause", () => {
+		P.isSwitching() || (P.setIntendsToPlay(!1), re(), P.clearSeekTimer(), oe(!1), m.setState("ready-paused"));
+	}), ge(f, "waiting", () => {
+		P.isSwitching() || ve();
+	}), ge(f, "seeking", () => {
+		P.isSwitching() || (m.setState("seeking"), oe(!0), P.startSeekTimer());
+	}), ge(f, "playing", () => {
+		re(), P.clearSeekTimer(), P.isSwitching() || (P.setAutoplayBlocked(!1), ie(!1), oe(!1), P.syncPlayingState());
+	}), ge(f, "seeked", () => {
+		P.clearSeekTimer(), !P.isSwitching() && !h && (oe(!1), P.syncPlayingState());
+	}), ge(f, "play", () => {
+		w() && c.onOwnerPlay?.(Math.round(f.currentTime * 1e3));
+	}), ge(f, "pause", () => {
+		w() && c.onOwnerPause?.(Math.round(f.currentTime * 1e3));
+	}), ge(f, "seeked", () => {
+		w() && c.onOwnerSeek?.(Math.round(f.currentTime * 1e3));
+	}), ge(f, "ended", () => {
+		zd().catch(() => {}), k.stop({ ended: !0 });
+	}), ge(f, "wheel", (e) => {
 		if (c?.enabled && !c.isOwner || !Ld() || Math.abs(e.deltaY) < 4) return;
 		let t = performance.now();
 		t - v < Yf || (v = t, e.preventDefault(), nf(f, e.deltaY > 0 ? 10 : -10, { endEpsilon: .25 }));
-	}, { passive: !1 }), me(d.backButton, "click", s), me(d.errorBackButton, "click", s), me(d.retryButton, "click", async () => {
-		ae(), g = !1;
-		let e = Math.max(D.getPosition(), P.getLastRequestedPosition());
+	}, { passive: !1 }), ge(d.backButton, "click", s), ge(d.errorBackButton, "click", s), ge(d.retryButton, "click", async () => {
+		se(), g = !1;
+		let e = Math.max(k.getPosition(), P.getLastRequestedPosition());
 		try {
 			let t = await a(P.getCurrentPlayback()?.delivery === "hls" ? "hls" : "auto");
 			await P.switchTo(t, {
 				position: e,
 				shouldPlay: !0,
 				label: "Stream wird neu geladen …"
-			}), pe(t);
+			}), he(t);
 		} catch (e) {
-			h || oe(e.message);
+			h || le(e.message);
 		}
 	});
-	let F = !1, ve = null;
-	async function ye({ position: e = i } = {}) {
-		if (!F) {
-			if (ve) return ve;
-			ve = (async () => {
-				let t = !c?.enabled;
-				ne(!0, "Wiedergabequelle wird beim Server angefragt …");
-				let n = await a("auto");
-				h || (await P.loadPlayback(n, {
-					position: e,
-					shouldPlay: t,
-					isBoot: !0
-				}), pe(n, { preserveSubtitleSelection: !1 }), F = !0);
-			})();
-			try {
-				await ve;
-			} catch (e) {
-				if (ve = null, !h) {
-					if (P.getCurrentPlayback()?.delivery !== "hls" && (await ge(e, { silent: x() }), !h && P.getCurrentPlayback())) {
-						F = !0;
-						return;
-					}
-					x() || oe(e.message);
+	let ye = !1, I = null;
+	async function L({ position: e = i } = {}) {
+		if (ye) return;
+		if (I) return I;
+		let t = !!c?.enabled;
+		t && b(), I = (async () => {
+			let t = !c?.enabled;
+			ie(!0, "Wiedergabequelle wird beim Server angefragt …");
+			let n = await a("auto");
+			h || (await P.loadPlayback(n, {
+				position: e,
+				shouldPlay: t,
+				isBoot: !0
+			}), he(n, { preserveSubtitleSelection: !1 }), ye = !0);
+		})();
+		try {
+			await I;
+		} catch (e) {
+			if (I = null, !h) {
+				if (P.getCurrentPlayback()?.delivery !== "hls" && (await F(e, { silent: C() }), !h && P.getCurrentPlayback())) {
+					ye = !0, t && x();
+					return;
 				}
-				throw e;
+				C() || le(e.message);
 			}
-			return ve;
+			throw t && x(), e;
 		}
+		return t && x(), I;
 	}
-	if (u) ne(!1);
+	if (u) ie(!1);
 	else try {
-		await ye({ position: i });
+		await L({ position: i });
 	} catch {}
 	return {
 		player: f,
-		prepareInitialPlayback: ye,
+		prepareInitialPlayback: L,
 		applyRemoteControl: async ({ action: e, positionMs: t, serverTimeMs: n, playing: r }) => {
-			y = !0;
+			b();
 			try {
-				e === "play" && C();
+				e === "play" && T();
 				let { targetSeconds: i, shouldSeek: a, shouldPlay: o, shouldPause: s } = Vf({
 					action: e,
 					positionMs: t,
@@ -19954,17 +19960,15 @@ async function tp({ root: e, itemId: t, title: n, poster: r, resumePosition: i =
 				});
 				a && (f.currentTime = i), o ? (P.setIntendsToPlay(!0), await P.startCurrentPlayback()) : s && f.pause();
 			} finally {
-				window.setTimeout(() => {
-					y = !1;
-				}, 250);
+				x();
 			}
 		},
 		destroy: () => {
 			if (h) return;
-			h = !0, k = !1, A = !1, te(), P.clearSeekTimer();
-			let t = D.stop({ keepalive: !0 }), n = zd().catch(() => {});
-			j.destroy(), D.destroy(), de.destroy(), fe?.destroy(), m.destroy(), p.splice(0).forEach((e) => e()), f.destroy?.(), e.innerHTML = "", Promise.all([
-				O ? Zd().catch(() => {}) : Promise.resolve(),
+			h = !0, j = !1, M = !1, re(), P.clearSeekTimer();
+			let t = k.stop({ keepalive: !0 }), n = zd().catch(() => {});
+			N.destroy(), k.destroy(), pe.destroy(), me?.destroy(), m.destroy(), p.splice(0).forEach((e) => e()), f.destroy?.(), e.innerHTML = "", Promise.all([
+				A ? Zd().catch(() => {}) : Promise.resolve(),
 				n,
 				t?.catch(() => {})
 			]).catch(() => {});

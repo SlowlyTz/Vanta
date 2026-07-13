@@ -532,8 +532,8 @@ describe('WatchPartyPage', () => {
     expect(waitingStatus.textContent).toBe('Verbindet …');
   });
 
-  it('zeigt bei blockiertem Autoplay ein lokales Popup und nutzt beim Klick denselben Payload', async () => {
-    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+  it('zeigt beim Late Join in eine laufende Party bei blockiertem Autoplay ein lokales Popup und aktualisiert beim Klick die Zielposition', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
     WatchPartyApi.join.mockResolvedValue({
       party: makeParty({ status: 'playing', positionMs: 5000 })
     });
@@ -544,6 +544,35 @@ describe('WatchPartyPage', () => {
     await flush();
     await flush();
 
+    const autoplayOverlay = container.querySelector('.watch-party-autoplay-overlay');
+    expect(autoplayOverlay.hidden).toBe(false);
+
+    const blockedPayload = fakeController.applyRemoteControl.mock.calls[0][0];
+    expect(blockedPayload).toMatchObject({ action: 'play', playing: true });
+
+    fakeController.applyRemoteControl.mockResolvedValueOnce();
+    container.querySelector('.watch-party-autoplay-button').click();
+    await flush();
+
+    const retryPayload = fakeController.applyRemoteControl.mock.calls.at(-1)[0];
+    expect(retryPayload.action).toBe('play');
+    expect(retryPayload.positionMs).toBeGreaterThanOrEqual(blockedPayload.positionMs);
+    expect(retryPayload.serverTimeMs).toBeGreaterThanOrEqual(blockedPayload.serverTimeMs);
+    expect(autoplayOverlay.hidden).toBe(true);
+  });
+
+  it('zeigt bei blockiertem Autoplay während einer späteren CONTROL-play Nachricht ein lokales Popup und synchronisiert beim Klick auf die aktuelle Position', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({
+      party: makeParty({ status: 'paused', positionMs: 5000 })
+    });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    fakeController.applyRemoteControl.mockRejectedValueOnce(new Error('NotAllowedError'));
     const serverTimeMs = Date.now();
     capturedOnMessage({ type: 'CONTROL', action: 'play', positionMs: 5000, serverTimeMs });
     await flush();
@@ -555,9 +584,186 @@ describe('WatchPartyPage', () => {
     container.querySelector('.watch-party-autoplay-button').click();
     await flush();
 
-    expect(fakeController.applyRemoteControl).toHaveBeenLastCalledWith(
-      expect.objectContaining({ action: 'play', positionMs: 5000, serverTimeMs })
-    );
+    const retryPayload = fakeController.applyRemoteControl.mock.calls.at(-1)[0];
+    expect(retryPayload.action).toBe('play');
+    expect(retryPayload.positionMs).toBeGreaterThanOrEqual(5000);
+    expect(retryPayload.serverTimeMs).toBeGreaterThanOrEqual(serverTimeMs);
     expect(autoplayOverlay.hidden).toBe(true);
+  });
+
+  describe('Late Join in laufendes Playback', () => {
+    it('nutzt effectivePositionMs aus PARTY_STATE, zeigt kein Ready-Overlay und sendet kein PLAYER_READY', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'lobby' }) });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      expect(mountVantaPlayer).not.toHaveBeenCalled();
+
+      const serverTimeMs = Date.now();
+      capturedOnMessage({
+        type: 'PARTY_STATE',
+        party: makeParty({ status: 'playing', positionMs: 100_000 }),
+        effectivePositionMs: 130_000,
+        serverTimeMs
+      });
+      await flush();
+      await flush();
+
+      expect(mountVantaPlayer).toHaveBeenCalledWith(expect.objectContaining({ resumePosition: 100 }));
+
+      const prepareCall = fakeController.prepareInitialPlayback.mock.calls.at(-1)[0];
+      expect(prepareCall.position).toBeGreaterThanOrEqual(130);
+      expect(prepareCall.position).toBeLessThan(130.5);
+
+      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
+      expect(container.querySelector('.watch-party-lobby').hidden).toBe(true);
+      expect(fakeSocket.sendJson).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'PLAYER_READY' }));
+    });
+
+    it('landet bei Late Join in einer pausierten Party direkt pausiert ohne Countdown', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'paused', positionMs: 42_000 })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(true);
+      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
+      expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'pause', playing: false })
+      );
+    });
+
+    it('mountet den Player nur einmal, wenn init() und eine sofort folgende PARTY_STATE beide enterLivePlayback auslösen (Race-Regression)', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      const joinLastServerTimeMs = Date.now();
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 5000, lastServerTimeMs: joinLastServerTimeMs })
+      });
+
+      let resolveGetItem;
+      MediaApi.getItem.mockReturnValue(new Promise(resolve => { resolveGetItem = resolve; }));
+
+      WatchPartyPage({ partyId: 'party-1' });
+
+      await vi.waitFor(() => expect(MediaApi.getItem).toHaveBeenCalled());
+      expect(capturedOnMessage).toBeTruthy();
+
+      // Fire a second PLAYBACK_STATUSES PARTY_STATE while the first mount's
+      // MediaApi.getItem() call is still pending — the exact race window a real
+      // socket message can land in before init()'s own mount resolves.
+      capturedOnMessage({
+        type: 'PARTY_STATE',
+        party: makeParty({ status: 'playing', positionMs: 5000 }),
+        effectivePositionMs: 5000,
+        serverTimeMs: joinLastServerTimeMs + 1
+      });
+      await Promise.resolve();
+
+      resolveGetItem({ Id: 'movie-1', Name: 'Test Movie' });
+      await flush();
+      await flush();
+
+      expect(mountVantaPlayer).toHaveBeenCalledTimes(1);
+    });
+
+    it('wendet bei einer erneuten PARTY_STATE mit geändertem Status wieder aktiv play/pause an, statt nur zu synchronisieren', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'paused', positionMs: 5000 }) });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+      await flush();
+
+      expect(fakeController.applyRemoteControl).toHaveBeenLastCalledWith(
+        expect.objectContaining({ action: 'pause', playing: false })
+      );
+
+      const serverTimeMs = Date.now() + 1000;
+      capturedOnMessage({
+        type: 'PARTY_STATE',
+        party: makeParty({ status: 'playing', positionMs: 6000 }),
+        effectivePositionMs: 6000,
+        serverTimeMs
+      });
+      await flush();
+      await flush();
+
+      expect(fakeController.applyRemoteControl).toHaveBeenLastCalledWith(
+        expect.objectContaining({ action: 'play', playing: true })
+      );
+    });
+  });
+
+  describe('Watch Party Notifications', () => {
+    it('rendert eine eingehende NOTIFICATION mit passender Klasse und Text', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+
+      capturedOnMessage({
+        type: 'NOTIFICATION',
+        notification: { id: '1', type: 'member_joined', icon: 'member_joined', message: 'Bob ist beigetreten.', createdAt: Date.now() }
+      });
+
+      const item = container.querySelector('.watch-party-notification');
+      expect(item).not.toBeNull();
+      expect(item.classList.contains('is-member_joined')).toBe(true);
+      expect(item.querySelector('.watch-party-notification-text').textContent).toBe('Bob ist beigetreten.');
+    });
+
+    it('markiert die Notification nach dem Timer als leaving und entfernt sie danach', async () => {
+      vi.useFakeTimers();
+      try {
+        authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+        WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+        const container = WatchPartyPage({ partyId: 'party-1' });
+        await vi.advanceTimersByTimeAsync(50);
+
+        capturedOnMessage({
+          type: 'NOTIFICATION',
+          notification: { id: '1', type: 'owner_pause', message: 'Der Admin hat pausiert.', createdAt: Date.now() }
+        });
+
+        const item = container.querySelector('.watch-party-notification');
+        expect(item).not.toBeNull();
+
+        await vi.advanceTimersByTimeAsync(4200);
+        expect(item.classList.contains('is-leaving')).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(600);
+        expect(container.querySelector('.watch-party-notification')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('crasht nicht bei unbekanntem Notification-Typ', async () => {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await flush();
+
+      expect(() => capturedOnMessage({
+        type: 'NOTIFICATION',
+        notification: { id: '1', type: 'something_unknown', message: 'Unbekannt', createdAt: Date.now() }
+      })).not.toThrow();
+
+      const item = container.querySelector('.watch-party-notification');
+      expect(item.querySelector('.watch-party-notification-icon').textContent).toBe('i');
+    });
   });
 });
