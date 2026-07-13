@@ -18,7 +18,8 @@ import './player.css';
 import { createJellyfinReporter } from './jellyfinReporter.js';
 import {
   isIOSLike, supportsFinePointer, isPictureInPictureSupported,
-  isFullscreen, enterFullscreen, exitFullscreen, exitPictureInPicture } from './platform.js';
+  isFullscreen, enterFullscreen, exitFullscreen, exitPictureInPicture,
+  enforceInlineVideoPlayback, enterInlineFullscreen, exitInlineFullscreen, isInlineFullscreen } from './platform.js';
 import {
   isSmartphone,
   isLandscape,
@@ -225,8 +226,14 @@ export async function mountVantaPlayer({
 }) {
   await customElements.whenDefined('media-player');
 
+  const iosLike = isIOSLike();
   const dom = createPlayerMarkup(root, { title, poster });
   const { player } = dom;
+  if (iosLike) {
+    const iosKeyShortcuts = { ...player.keyShortcuts };
+    delete iosKeyShortcuts.toggleFullscreen;
+    player.keyShortcuts = iosKeyShortcuts;
+  }
   const disposers = [];
   const ui = createPlayerUi(root);
 
@@ -255,7 +262,9 @@ export async function mountVantaPlayer({
     watchParty?.enabled && canControlWatchParty() && watchPartyPhase() === 'playback' && ownerEchoSuppressionDepth === 0
   );
   const fullKeyShortcuts = { ...player.keyShortcuts };
-  const viewerKeyShortcuts = { toggleMuted: 'm', toggleFullscreen: 'f' };
+  const viewerKeyShortcuts = iosLike
+    ? { toggleMuted: 'm' }
+    : { toggleMuted: 'm', toggleFullscreen: 'f' };
   const refreshWatchPartyControlAccess = () => {
     if (!watchParty?.enabled) return;
     player.keyShortcuts = canControlWatchParty() ? fullKeyShortcuts : viewerKeyShortcuts;
@@ -272,14 +281,22 @@ export async function mountVantaPlayer({
   }
   refreshWatchPartyControlAccess();
 
-  if (isIOSLike()) root.classList.add('is-ios');
+  const syncInlinePlayback = () => {
+    if (!iosLike) return;
+    enforceInlineVideoPlayback(root);
+  };
+
+  if (iosLike) {
+    root.classList.add('is-ios', 'supports-ios-inline-fullscreen');
+    syncInlinePlayback();
+  }
   if (!isPictureInPictureSupported()) root.classList.add('no-pip');
 
   const shell = root.querySelector('.vanta-player-shell');
   const fullscreenButton = root.querySelector('.vanta-player-fullscreen-button');
   const updateFullscreenIcon = () => {
     if (!fullscreenButton) return;
-    const inFullscreen = isFullscreen();
+    const inFullscreen = iosLike ? isInlineFullscreen(root) : isFullscreen();
     fullscreenButton.setAttribute('aria-label', inFullscreen ? 'Vollbild beenden' : 'Vollbild');
     fullscreenButton.innerHTML = svgIcon(inFullscreen ? 'fullscreenExit' : 'fullscreenEnter');
   };
@@ -287,7 +304,11 @@ export async function mountVantaPlayer({
   if (fullscreenButton) {
     const handleFullscreenClick = async () => {
       try {
-        if (isFullscreen()) {
+        if (iosLike) {
+          if (isInlineFullscreen(root)) exitInlineFullscreen(root);
+          else enterInlineFullscreen(root);
+          updateFullscreenIcon();
+        } else if (isFullscreen()) {
           await exitFullscreen();
         } else {
           await enterFullscreen(shell);
@@ -320,6 +341,7 @@ export async function mountVantaPlayer({
     root,
     onEnter: async () => {
       try {
+        if (iosLike) enterInlineFullscreen(root);
         await enterSmartphoneFullscreen({ root, onError: () => {} });
         orientationLocked = true;
         if (isLandscape()) {
@@ -341,6 +363,10 @@ export async function mountVantaPlayer({
   const hideOrientationGate = () => {
     gateActive = false;
     orientationGate.hide();
+    if (iosLike) {
+      enterInlineFullscreen(root);
+      updateFullscreenIcon();
+    }
     sourceSwitch.setIntendsToPlay(true);
     player.play().catch(() => {});
   };
@@ -407,6 +433,10 @@ export async function mountVantaPlayer({
 
   if (isPhone) {
     root.classList.add('is-smartphone');
+    if (iosLike) {
+      enterInlineFullscreen(root);
+      updateFullscreenIcon();
+    }
     window.addEventListener('orientationchange', handleOrientationChange);
     disposers.push(() => window.removeEventListener('orientationchange', handleOrientationChange));
 
@@ -543,6 +573,8 @@ export async function mountVantaPlayer({
   };
 
   listen(player, 'provider-change', event => {
+    syncInlinePlayback();
+    window.setTimeout(syncInlinePlayback, 0);
     if (isHLSProvider(event.detail)) {
       event.detail.library = Hls;
       event.detail.config = {
@@ -558,6 +590,8 @@ export async function mountVantaPlayer({
       if (sourceSwitch.isSwitching()) setLoadingStatus('HLS-Wiedergabe wird initialisiert …');
     }
   });
+  listen(player, 'can-play', syncInlinePlayback);
+  listen(player, 'loaded-metadata', syncInlinePlayback);
 
   listen(player, 'error', event => {
     if (sourceSwitch.isSwitching() || destroyed) return;
@@ -766,6 +800,7 @@ export async function mountVantaPlayer({
       const pipPromise = exitPictureInPicture().catch(() => {});
 
       orientationGate.destroy();
+      exitInlineFullscreen(root);
       reporter.destroy();
       subtitleMenu.destroy();
       participantsMenu?.destroy();

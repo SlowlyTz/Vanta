@@ -5,6 +5,29 @@ export function isIOSLike() {
     (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
+export function enforceInlineVideoPlayback(root = document) {
+  root.querySelectorAll?.('video').forEach(video => {
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.playsInline = true;
+    video.webkitPlaysInline = true;
+  });
+}
+
+export function enterInlineFullscreen(element) {
+  element?.classList?.add('is-ios-inline-fullscreen');
+  element?.setAttribute?.('data-inline-fullscreen', 'true');
+}
+
+export function exitInlineFullscreen(element) {
+  element?.classList?.remove('is-ios-inline-fullscreen');
+  element?.removeAttribute?.('data-inline-fullscreen');
+}
+
+export function isInlineFullscreen(element) {
+  return Boolean(element?.classList?.contains('is-ios-inline-fullscreen'));
+}
+
 export function supportsFinePointer() {
   return window.matchMedia?.('(pointer: fine)').matches ?? false;
 }

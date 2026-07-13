@@ -490,12 +490,27 @@
   display: none !important;
 }
 
-.vanta-player-root.is-ios .vanta-player-fullscreen-button {
+.vanta-player-root.no-pip .vanta-player-pip-button {
   display: none !important;
 }
 
-.vanta-player-root.no-pip .vanta-player-pip-button {
-  display: none !important;
+.vanta-player-root.is-ios-inline-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 100svh;
+  z-index: 99999;
+  background: #000;
+  overflow: hidden;
+}
+
+.vanta-player-root.is-ios-inline-fullscreen .vanta-player-shell,
+.vanta-player-root.is-ios-inline-fullscreen .vanta-media-player {
+  width: 100%;
+  height: 100%;
 }
 
 .vanta-player-pip-button {

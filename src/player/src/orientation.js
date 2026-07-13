@@ -11,8 +11,12 @@ export function isSmartphone() {
 }
 
 export function isLandscape() {
-  const angle = Number(screen.orientation?.angle || window.orientation || 0);
-  return Math.abs(angle) === 90;
+  const rawAngle = screen.orientation?.angle ?? window.orientation;
+  const angle = Number(rawAngle);
+  if (Number.isFinite(angle) && Math.abs(angle) > 0) {
+    return Math.abs(angle) === 90;
+  }
+  return window.innerWidth > window.innerHeight;
 }
 
 export async function requestFullscreen(element) {
@@ -29,7 +33,7 @@ export async function requestFullscreen(element) {
   }
 
   const video = element.querySelector('video');
-  if (video?.webkitEnterFullscreen) {
+  if (!isIOSLike() && video?.webkitEnterFullscreen) {
     video.webkitEnterFullscreen();
     return;
   }
@@ -82,8 +86,8 @@ export function createOrientationGate({ root, onEnter }) {
       <div class="vanta-player-orientation-gate-inner">
         <div class="vanta-player-orientation-icon" aria-hidden="true">⟳</div>
         <strong>Querformat erforderlich</strong>
-        <p>Drehe dein Gerät oder tippe hier, um im Vollbild fortzufahren.</p>
-        <button type="button" class="vanta-player-orientation-button">Vollbild starten</button>
+        <p>Drehe dein Gerät oder tippe hier, um im Player fortzufahren.</p>
+        <button type="button" class="vanta-player-orientation-button">Player fortsetzen</button>
       </div>`;
 
     button = gate.querySelector('.vanta-player-orientation-button');
@@ -113,10 +117,12 @@ export function createOrientationGate({ root, onEnter }) {
 }
 
 export async function enterSmartphoneFullscreen({ root, onError }) {
-  try {
-    await requestFullscreen(root);
-  } catch (fullscreenError) {
-    onError?.(fullscreenError);
+  if (!isIOSLike()) {
+    try {
+      await requestFullscreen(root);
+    } catch (fullscreenError) {
+      onError?.(fullscreenError);
+    }
   }
 
   try {
