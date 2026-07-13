@@ -725,6 +725,184 @@
   font-weight: 700;
 }
 
+/* Watch Party participants menu */
+.vanta-player-participants-count {
+  min-width: 14px;
+  text-align: center;
+}
+
+.vanta-player-participants-menu {
+  width: min(360px, calc(100vw - 24px));
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 10px;
+}
+
+.vanta-player-participants-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 30px;
+  padding: 0 4px 8px;
+  color: rgb(255 255 255 / 0.62);
+  font: 700 0.72rem Outfit, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vanta-player-participants-list {
+  display: grid;
+  gap: 6px;
+}
+
+.vanta-player-participant-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.vanta-player-participant-avatar {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.13);
+  color: #fff;
+  font: 750 0.84rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-participant-details {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.vanta-player-participant-topline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vanta-player-participant-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.vanta-player-participant-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 650 0.9rem Outfit, system-ui, sans-serif;
+  color: #fff;
+}
+
+.vanta-player-participant-role {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+  color: rgb(255 255 255 / 0.78);
+  font: 700 0.62rem Outfit, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vanta-player-participant-status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: rgb(255 255 255 / 0.54);
+  font: 650 0.72rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-participant-status.is-connected {
+  color: #4ade80;
+}
+
+.vanta-player-participant-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.vanta-player-participant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.vanta-player-participant-action {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font: 700 0.74rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.vanta-player-participant-action:hover {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.vanta-player-participant-action.is-danger {
+  background: rgb(248 113 113 / 0.14);
+  color: #ff8a8a;
+}
+
+.vanta-player-participant-action.is-danger:hover {
+  background: rgb(248 113 113 / 0.24);
+}
+
+@media (width <= 480px) {
+  .vanta-player-participants-menu {
+    width: min(340px, calc(100vw - 16px));
+    max-width: min(340px, calc(100vw - 16px));
+    padding: 8px;
+  }
+
+  .vanta-player-participant-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    padding: 9px;
+  }
+
+  .vanta-player-participant-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .vanta-player-participant-topline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .vanta-player-participant-action {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 118px;
+  }
+}
+
 /* Smartphone orientation gate */
 .vanta-player-orientation-gate {
   position: absolute;

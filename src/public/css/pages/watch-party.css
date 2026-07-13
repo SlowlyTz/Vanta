@@ -282,6 +282,19 @@
   letter-spacing: 0;
 }
 
+.watch-party-member-badge.is-admin {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+}
+
+.watch-party-member-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
 .watch-party-member-status {
   flex: 0 0 auto;
   display: inline-flex;
