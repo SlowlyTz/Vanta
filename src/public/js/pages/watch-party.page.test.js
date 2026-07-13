@@ -819,7 +819,7 @@ describe('WatchPartyPage', () => {
       }
     });
 
-    it('trimmt die Eingabe und zeigt bei exaktem Treffer genau einen klickbaren User', async () => {
+    it('trimmt die Eingabe und zeigt bei exaktem Treffer genau eine Result-Row', async () => {
       vi.useFakeTimers();
       try {
         authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
@@ -837,9 +837,11 @@ describe('WatchPartyPage', () => {
         await vi.advanceTimersByTimeAsync(300);
 
         expect(WatchPartyApi.resolveInviteUser).toHaveBeenCalledWith('party-1', 'Bob');
-        const resultButtons = container.querySelectorAll('.watch-party-invite-result-user');
-        expect(resultButtons.length).toBe(1);
-        expect(resultButtons[0].textContent).toBe('Bob');
+        const resultRows = container.querySelectorAll('.watch-party-invite-result-row');
+        expect(resultRows.length).toBe(1);
+        expect(resultRows[0].textContent).toContain('Bob');
+        expect(resultRows[0].textContent).toContain('Gefunden');
+        expect(container.querySelector('.watch-party-invite-send').disabled).toBe(false);
       } finally {
         vi.useRealTimers();
       }
@@ -863,13 +865,14 @@ describe('WatchPartyPage', () => {
         await vi.advanceTimersByTimeAsync(300);
 
         expect(container.querySelector('.watch-party-invite-result').textContent).toBe('Kein exakter Treffer');
-        expect(container.querySelector('.watch-party-invite-result-user')).toBeNull();
+        expect(container.querySelector('.watch-party-invite-result-row')).toBeNull();
+        expect(container.querySelector('.watch-party-invite-send').disabled).toBe(true);
       } finally {
         vi.useRealTimers();
       }
     });
 
-    it('sendet die Einladung beim Klick auf den gefundenen User und zeigt Erfolgs-Feedback', async () => {
+    it('sendet die Einladung über den Senden-Button und zeigt Erfolgs-Feedback', async () => {
       vi.useFakeTimers();
       try {
         authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
@@ -886,7 +889,7 @@ describe('WatchPartyPage', () => {
         input.dispatchEvent(new Event('input'));
         await vi.advanceTimersByTimeAsync(300);
 
-        container.querySelector('.watch-party-invite-result-user').click();
+        container.querySelector('.watch-party-invite-send').click();
         await vi.advanceTimersByTimeAsync(0);
 
         expect(WatchPartyApi.sendInvitation).toHaveBeenCalledWith('party-1', 'Bob');
@@ -914,13 +917,13 @@ describe('WatchPartyPage', () => {
         input.dispatchEvent(new Event('input'));
         await vi.advanceTimersByTimeAsync(300);
 
-        const resultButton = container.querySelector('.watch-party-invite-result-user');
-        resultButton.click();
+        const sendButton = container.querySelector('.watch-party-invite-send');
+        sendButton.click();
         await vi.advanceTimersByTimeAsync(0);
 
         expect(container.querySelector('.watch-party-invite-status').textContent).toBe('Diese Watch Party ist voll.');
         expect(container.querySelector('.watch-party-invite-status').classList.contains('is-error')).toBe(true);
-        expect(resultButton.disabled).toBe(false);
+        expect(sendButton.disabled).toBe(false);
       } finally {
         vi.useRealTimers();
       }
