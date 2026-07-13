@@ -1,4 +1,6 @@
 import { router } from './router.js';
+import { initAppRealtime } from './realtime/app-realtime.js';
+import { mountWatchPartyInvitationOverlay } from './components/watch-party/WatchPartyInvitationOverlay.js';
 
 // Define routing mappings using dynamic ES modules imports
 router.add('#/login', () => import('./pages/login.page.js'), { guestOnly: true });
@@ -23,5 +25,7 @@ router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js')
 
 // Initialise client router on page load
 document.addEventListener('DOMContentLoaded', () => {
+  mountWatchPartyInvitationOverlay();
+  initAppRealtime();
   router.init();
 });

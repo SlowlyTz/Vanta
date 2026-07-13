@@ -12,6 +12,7 @@ import mediaRoutes from './routes/media/index.js';
 import requestsRoutes from './routes/requests.routes.js';
 import adminRoutes from './routes/admin/index.js';
 import watchPartyRoutes from './routes/watch-party.routes.js';
+import watchPartyInvitationsRoutes from './routes/watch-party-invitations.routes.js';
 import pageRoutes from './routes/page.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -44,6 +45,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/requests', requestsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/watch-parties', watchPartyRoutes);
+app.use('/api/watch-party-invitations', watchPartyInvitationsRoutes);
 app.use('/', pageRoutes);
 
 // Error Middleware

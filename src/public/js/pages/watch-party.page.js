@@ -87,6 +87,9 @@ export default function WatchPartyPage({ partyId }) {
   let destroyed = false;
   let scrollLockY = 0;
   let ending = false;
+  let selectedInviteUser = null;
+  let sendingInvitation = false;
+  let inviteResolveTimer = null;
 
   const isOwner = () => Boolean(party && currentUser && party.ownerUserId === currentUser.id);
 
@@ -129,7 +132,13 @@ export default function WatchPartyPage({ partyId }) {
     type: 'button',
     onClick: () => handleCopyInvite()
   }, 'Link kopieren');
-  const inviteRow = createElement('div', { className: 'watch-party-invite' }, inviteInput, copyButton);
+  const inviteUserButton = createElement('button', {
+    className: 'watch-party-invite-user',
+    type: 'button',
+    hidden: true,
+    onClick: () => openInviteUserMenu()
+  }, 'User einladen');
+  const inviteRow = createElement('div', { className: 'watch-party-invite' }, inviteInput, copyButton, inviteUserButton);
 
   const membersList = createElement('ul', { className: 'watch-party-members' });
 
@@ -201,8 +210,35 @@ export default function WatchPartyPage({ partyId }) {
     'aria-live': 'polite'
   });
 
+  const inviteUsernameInput = createElement('input', {
+    className: 'watch-party-invite-username-input',
+    type: 'text',
+    placeholder: 'Exakter Username',
+    'aria-label': 'Username',
+    onInput: () => handleInviteUsernameInput()
+  });
+  const inviteResult = createElement('div', { className: 'watch-party-invite-result' });
+  const inviteStatus = createElement('div', { className: 'watch-party-invite-status' });
+  const inviteMenuCloseButton = createElement('button', {
+    type: 'button',
+    className: 'watch-party-invite-menu-close',
+    'aria-label': 'Schließen',
+    onClick: () => closeInviteUserMenu()
+  }, '×');
+  const inviteMenuPanel = createElement('div', { className: 'watch-party-invite-menu-panel' },
+    createElement('div', { className: 'watch-party-invite-menu-header' },
+      createElement('h3', { className: 'watch-party-invite-menu-title' }, 'User einladen'),
+      inviteMenuCloseButton
+    ),
+    inviteUsernameInput,
+    inviteResult,
+    inviteStatus
+  );
+  const inviteUserOverlay = createElement('div', { className: 'watch-party-invite-menu-overlay', hidden: true }, inviteMenuPanel);
+
   container.appendChild(header);
   container.appendChild(lobby);
+  container.appendChild(inviteUserOverlay);
   container.appendChild(readyOverlay);
   container.appendChild(countdownOverlay);
   container.appendChild(autoplayOverlay);
@@ -222,6 +258,7 @@ export default function WatchPartyPage({ partyId }) {
     window.removeEventListener('hashchange', handleHashChange);
     if (ownerHeartbeatTimer) window.clearInterval(ownerHeartbeatTimer);
     if (countdownTimer) window.clearInterval(countdownTimer);
+    if (inviteResolveTimer) window.clearTimeout(inviteResolveTimer);
     socket?.close();
     try {
       controller?.destroy();
@@ -301,6 +338,7 @@ export default function WatchPartyPage({ partyId }) {
     startButton.hidden = !owner;
     endButton.hidden = !owner || party.status === 'ended';
     startHint.hidden = !owner;
+    inviteUserButton.hidden = !owner || party.status === 'ended';
 
     if (owner) {
       const stillInLobby = party.status === 'lobby';
@@ -466,6 +504,75 @@ export default function WatchPartyPage({ partyId }) {
       appStore.showToast('Link kopiert', 'success');
     } catch {
       inviteInput.select();
+    }
+  }
+
+  // --- Invite by username ---
+  function openInviteUserMenu() {
+    inviteUserOverlay.hidden = false;
+    inviteUsernameInput.value = '';
+    inviteResult.innerHTML = '';
+    inviteStatus.textContent = '';
+    selectedInviteUser = null;
+    inviteUsernameInput.focus();
+  }
+
+  function closeInviteUserMenu() {
+    inviteUserOverlay.hidden = true;
+    if (inviteResolveTimer) window.clearTimeout(inviteResolveTimer);
+  }
+
+  function handleInviteUsernameInput() {
+    if (inviteResolveTimer) window.clearTimeout(inviteResolveTimer);
+    inviteResolveTimer = window.setTimeout(() => resolveInviteUsername(), 250);
+  }
+
+  async function resolveInviteUsername() {
+    const username = inviteUsernameInput.value.trim();
+    inviteResult.innerHTML = '';
+    inviteStatus.textContent = '';
+    selectedInviteUser = null;
+
+    if (!username) return;
+
+    try {
+      const { user } = await WatchPartyApi.resolveInviteUser(partyId, username);
+      if (!user) {
+        inviteResult.textContent = 'Kein exakter Treffer';
+        return;
+      }
+
+      selectedInviteUser = user;
+      inviteResult.appendChild(createElement('button', {
+        type: 'button',
+        className: 'watch-party-invite-result-user',
+        onClick: () => sendSelectedInvitation()
+      }, user.username));
+    } catch {
+      inviteResult.textContent = 'Suche fehlgeschlagen';
+    }
+  }
+
+  function renderInviteSendState() {
+    const resultButton = inviteResult.querySelector('.watch-party-invite-result-user');
+    if (resultButton) resultButton.disabled = sendingInvitation;
+  }
+
+  async function sendSelectedInvitation() {
+    if (!selectedInviteUser || sendingInvitation) return;
+    sendingInvitation = true;
+    renderInviteSendState();
+
+    try {
+      await WatchPartyApi.sendInvitation(partyId, selectedInviteUser.username);
+      inviteStatus.textContent = `Einladung an ${selectedInviteUser.username} gesendet.`;
+      inviteStatus.classList.remove('is-error');
+    } catch (error) {
+      inviteStatus.textContent = error.message || 'Einladung konnte nicht gesendet werden.';
+      inviteStatus.classList.add('is-error');
+    } finally {
+      sendingInvitation = false;
+      renderInviteSendState();
     }
   }
 
