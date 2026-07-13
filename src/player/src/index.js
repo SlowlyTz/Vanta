@@ -33,6 +33,7 @@ import { createSubtitleMenu } from './subtitles.js';
 import { createPlayerUi } from './ui/playerUi.js';
 import { applyWatchPartyPermissions, computeRemoteControlTarget } from './watchParty.js';
 import { createEpisodeBrowser } from './episodes.js';
+import { createWatchPartyParticipantsMenu } from './watchPartyParticipants.js';
 
 const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 const WHEEL_SEEK_DEBOUNCE_MS = 320;
@@ -246,19 +247,30 @@ export async function mountVantaPlayer({
 
   const watchPartyPhase = () => watchParty?.phase || watchParty?.mode || (watchParty?.enabled ? 'playback' : null);
   const isDeferredReadyRoom = () => watchPartyPhase() === 'ready-room';
+  const canControlWatchParty = () => {
+    if (!watchParty?.enabled) return true;
+    return Boolean(watchParty.canControl ?? watchParty.isOwner);
+  };
   const canEmitOwnerControl = () => (
-    watchParty?.enabled && watchParty.isOwner && watchPartyPhase() === 'playback' && ownerEchoSuppressionDepth === 0
+    watchParty?.enabled && canControlWatchParty() && watchPartyPhase() === 'playback' && ownerEchoSuppressionDepth === 0
   );
+  const fullKeyShortcuts = { ...player.keyShortcuts };
+  const viewerKeyShortcuts = { toggleMuted: 'm', toggleFullscreen: 'f' };
+  const refreshWatchPartyControlAccess = () => {
+    if (!watchParty?.enabled) return;
+    player.keyShortcuts = canControlWatchParty() ? fullKeyShortcuts : viewerKeyShortcuts;
+    applyWatchPartyPermissions({ root, watchParty });
+  };
   const forcePlaybackPhase = () => {
     if (!watchParty?.enabled) return;
     watchParty.phase = 'playback';
     watchParty.mode = 'playback';
   };
 
-  if (watchParty?.enabled && !watchParty.isOwner) {
-    player.keyShortcuts = { toggleMuted: 'm', toggleFullscreen: 'f' };
+  if (watchParty?.enabled) {
+    watchParty.onParticipantsChange = refreshWatchPartyControlAccess;
   }
-  applyWatchPartyPermissions({ root, watchParty });
+  refreshWatchPartyControlAccess();
 
   if (isIOSLike()) root.classList.add('is-ios');
   if (!isPictureInPictureSupported()) root.classList.add('no-pip');
@@ -445,6 +457,14 @@ export async function mountVantaPlayer({
     reporter
   });
 
+  const participantsMenu = watchParty?.enabled
+    ? createWatchPartyParticipantsMenu({
+        buttonContainer: menuButtonContainer,
+        menuContainer: menuOverlayContainer,
+        watchParty
+      })
+    : null;
+
   const episodeBrowserMenu = episodeBrowser?.enabled
     ? createEpisodeBrowser({
         buttonContainer: menuButtonContainer,
@@ -512,7 +532,7 @@ export async function mountVantaPlayer({
   };
 
   const handleWheel = event => {
-    if (watchParty?.enabled && !watchParty.isOwner) return;
+    if (watchParty?.enabled && !canControlWatchParty()) return;
     if (!supportsFinePointer() || Math.abs(event.deltaY) < 4) return;
     const now = performance.now();
     if (now - lastWheelSeekAt < WHEEL_SEEK_DEBOUNCE_MS) return;
@@ -705,6 +725,12 @@ export async function mountVantaPlayer({
   return {
     player,
     prepareInitialPlayback,
+    updateWatchPartyAccess: nextState => {
+      if (!watchParty?.enabled) return;
+      Object.assign(watchParty, nextState || {});
+      refreshWatchPartyControlAccess();
+      participantsMenu?.update?.();
+    },
     applyRemoteControl: async ({ action, positionMs, serverTimeMs, playing }) => {
       beginOwnerEchoSuppression();
       try {
@@ -742,6 +768,7 @@ export async function mountVantaPlayer({
       orientationGate.destroy();
       reporter.destroy();
       subtitleMenu.destroy();
+      participantsMenu?.destroy();
       episodeBrowserMenu?.destroy();
       ui.destroy();
       disposers.splice(0).forEach(dispose => dispose());

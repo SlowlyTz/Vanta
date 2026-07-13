@@ -8,6 +8,7 @@ import { loadEpisodeContext } from '../utils/episodeContext.js';
 
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 const OWNER_SYNC_INTERVAL_MS = 5000;
+const AUTO_SYNC_NOTIFICATION_COOLDOWN_MS = 15_000;
 
 const PLAYER_ROOM_STATUSES = new Set(['ready-room', 'countdown', 'playing', 'paused']);
 const PLAYBACK_STATUSES = new Set(['playing', 'paused']);
@@ -63,7 +64,10 @@ const NOTIFICATION_ICONS = {
   member_left: '-',
   owner_play: '▶',
   owner_pause: 'Ⅱ',
-  owner_seek: '↔'
+  owner_seek: '↔',
+  auto_sync: '↻',
+  member_promoted: '★',
+  member_banned: '!'
 };
 
 function notificationIcon(type) {
@@ -84,6 +88,7 @@ export default function WatchPartyPage({ partyId }) {
   let localReadyPreparing = false;
   let lastPlayStartServerTimeMs = null;
   let lastLiveJoinKey = null;
+  let lastAutoSyncNotificationAt = 0;
   let destroyed = false;
   let scrollLockY = 0;
   let ending = false;
@@ -92,6 +97,15 @@ export default function WatchPartyPage({ partyId }) {
   let inviteResolveTimer = null;
 
   const isOwner = () => Boolean(party && currentUser && party.ownerUserId === currentUser.id);
+
+  function currentMember() {
+    return party?.members?.find(member => member.userId === currentUser?.id) || null;
+  }
+
+  function isPartyAdmin() {
+    const role = currentMember()?.role;
+    return role === 'owner' || role === 'admin';
+  }
 
   // --- DOM ---
   const backButton = createElement('button', {
@@ -351,22 +365,10 @@ export default function WatchPartyPage({ partyId }) {
     party.members.forEach(member => {
       const isSelf = member.userId === currentUser?.id;
 
-      const row = createElement('li', { className: 'watch-party-member' },
-        createElement('span', { className: 'watch-party-member-avatar' }, memberInitial(member.username)),
-        createElement('span', { className: 'watch-party-member-name' },
-          `${member.username}${isSelf ? ' (Du)' : ''}`,
-          member.role === 'owner' ? createElement('span', { className: 'watch-party-member-badge' }, 'Owner') : null
-        ),
-        createElement('span', {
-          className: `watch-party-member-status ${member.connected ? 'is-connected' : 'is-waiting'}`
-        },
-          createElement('span', { className: 'watch-party-member-status-dot', 'aria-hidden': 'true' }),
-          createElement('span', {}, member.connected ? 'Verbunden' : 'Verbindet …')
-        )
-      );
+      const trailing = createElement('span', { className: 'watch-party-member-actions' });
 
       if (isOwner() && !isSelf) {
-        row.appendChild(createElement('button', {
+        trailing.appendChild(createElement('button', {
           className: 'watch-party-kick-button',
           type: 'button',
           'aria-label': `${member.username} entfernen`,
@@ -374,8 +376,30 @@ export default function WatchPartyPage({ partyId }) {
         }, 'Entfernen'));
       }
 
+      trailing.appendChild(createElement('span', {
+        className: `watch-party-member-status ${member.connected ? 'is-connected' : 'is-waiting'}`
+      },
+        createElement('span', { className: 'watch-party-member-status-dot', 'aria-hidden': 'true' }),
+        createElement('span', {}, member.connected ? 'Verbunden' : 'Verbindet …')
+      ));
+
+      const row = createElement('li', { className: 'watch-party-member' },
+        createElement('span', { className: 'watch-party-member-avatar' }, memberInitial(member.username)),
+        createElement('span', { className: 'watch-party-member-name' },
+          `${member.username}${isSelf ? ' (Du)' : ''}`,
+          renderMemberRoleBadge(member)
+        ),
+        trailing
+      );
+
       membersList.appendChild(row);
     });
+  }
+
+  function renderMemberRoleBadge(member) {
+    if (member.role === 'owner') return createElement('span', { className: 'watch-party-member-badge' }, 'Owner');
+    if (member.role === 'admin') return createElement('span', { className: 'watch-party-member-badge is-admin' }, 'Admin');
+    return null;
   }
 
   function renderActions() {
@@ -450,6 +474,24 @@ export default function WatchPartyPage({ partyId }) {
     renderMediaSummary();
     renderMembers();
     renderActions();
+    syncWatchPartyConfig();
+  }
+
+  function syncWatchPartyConfig() {
+    if (!watchPartyConfig || !party) return;
+
+    const canControl = isPartyAdmin();
+    watchPartyConfig.isOwner = canControl;
+    watchPartyConfig.canControl = canControl;
+    watchPartyConfig.participants = party.members;
+    watchPartyConfig.currentUserId = currentUser?.id;
+    controller?.updateWatchPartyAccess?.({
+      isOwner: canControl,
+      canControl,
+      participants: party.members,
+      currentUserId: currentUser?.id
+    });
+    watchPartyConfig.onParticipantsChange?.();
   }
 
   function renderError(error) {
@@ -560,6 +602,7 @@ export default function WatchPartyPage({ partyId }) {
     inviteStatus.textContent = '';
     inviteStatus.classList.remove('is-error');
     selectedInviteUser = null;
+    sendingInvitation = false;
     renderInviteSelection();
     inviteUserOverlay.setAttribute('tabindex', '-1');
     inviteUserOverlay.focus();
@@ -618,13 +661,13 @@ export default function WatchPartyPage({ partyId }) {
     renderInviteSelection();
 
     try {
-      await WatchPartyApi.sendInvitation(partyId, selectedInviteUser.username);
-      inviteStatus.textContent = `Einladung an ${selectedInviteUser.username} gesendet.`;
-      inviteStatus.classList.remove('is-error');
+      const invitedUsername = selectedInviteUser.username;
+      await WatchPartyApi.sendInvitation(partyId, invitedUsername);
+      closeInviteUserMenu();
+      appStore.showToast(`Einladung an ${invitedUsername} gesendet.`, 'success');
     } catch (error) {
       inviteStatus.textContent = error.message || 'Einladung konnte nicht gesendet werden.';
       inviteStatus.classList.add('is-error');
-    } finally {
       sendingInvitation = false;
       renderInviteSelection();
     }
@@ -689,7 +732,7 @@ export default function WatchPartyPage({ partyId }) {
   function startOwnerHeartbeat() {
     if (ownerHeartbeatTimer) return;
     ownerHeartbeatTimer = window.setInterval(() => {
-      if (!isOwner() || !controller?.player) return;
+      if (!isPartyAdmin() || !controller?.player) return;
       socket?.sendJson({
         type: 'OWNER_SYNC',
         positionMs: Math.round(controller.player.currentTime * 1000),
@@ -699,7 +742,7 @@ export default function WatchPartyPage({ partyId }) {
   }
 
   function shouldRunOwnerHeartbeat() {
-    return isOwner() && Boolean(controller?.player) && ['playing', 'paused'].includes(party?.status);
+    return isPartyAdmin() && Boolean(controller?.player) && ['playing', 'paused'].includes(party?.status);
   }
 
   function maybeStartOwnerHeartbeat() {
@@ -716,6 +759,15 @@ export default function WatchPartyPage({ partyId }) {
     if (Math.abs(drift) > 2.5) {
       controller.player.currentTime = Math.max(0, targetSeconds);
       setSyncStatus('preparing', 'Synchronisiert …');
+      const now = Date.now();
+      if (now - lastAutoSyncNotificationAt > AUTO_SYNC_NOTIFICATION_COOLDOWN_MS) {
+        lastAutoSyncNotificationAt = now;
+        showWatchPartyNotification({
+          type: 'auto_sync',
+          icon: 'auto_sync',
+          message: 'Wiedergabe automatisch synchronisiert.'
+        });
+      }
       return;
     }
 
@@ -900,11 +952,16 @@ export default function WatchPartyPage({ partyId }) {
         watchPartyConfig = {
           enabled: true,
           phase,
-          isOwner: isOwner(),
+          isOwner: isPartyAdmin(), // Übergangskompatibilität für ältere Player-Gates
+          canControl: isPartyAdmin(),
+          currentUserId: currentUser?.id,
+          participants: party.members,
           disableQualityMenu: true,
           onOwnerPlay: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
           onOwnerPause: ownerPositionMs => socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
-          onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs })
+          onOwnerSeek: ownerPositionMs => socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs }),
+          onPromoteMember: targetUserId => socket?.sendJson({ type: 'ADMIN_PROMOTE_MEMBER', targetUserId }),
+          onBanMember: targetUserId => socket?.sendJson({ type: 'ADMIN_BAN_MEMBER', targetUserId })
         };
 
         controller = await playerModule.mountVantaPlayer({
@@ -1099,6 +1156,16 @@ export default function WatchPartyPage({ partyId }) {
           console.warn('[Watch Party Kicked Cleanup]', error);
         }
         appStore.showToast('Du wurdest aus der Watch Party entfernt.', 'error');
+        window.location.hash = '#/home';
+        return;
+
+      case 'BANNED_FROM_PARTY':
+        try {
+          controller?.destroy();
+        } catch (error) {
+          console.warn('[Watch Party Banned Cleanup]', error);
+        }
+        appStore.showToast(message.message || 'Du wurdest aus der Watch Party ausgeschlossen.', 'error');
         window.location.hash = '#/home';
         return;
 
