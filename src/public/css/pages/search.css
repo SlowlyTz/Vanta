@@ -16,10 +16,6 @@
   margin: var(--spacing-xl) auto 0 auto;
 }
 
-.search-page .mobile-search-input-wrapper {
-  display: none;
-}
-
 .search-input-field {
   width: 100%;
   background: var(--bg-secondary);
@@ -58,9 +54,6 @@
 }
 
 @media (max-width: 768px) {
-  .search-page .mobile-search-input-wrapper {
-    display: block;
-  }
   .search-input-wrapper {
     margin-top: var(--spacing-md);
   }
