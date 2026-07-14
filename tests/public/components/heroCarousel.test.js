@@ -76,4 +76,11 @@ describe('HeroCarousel', () => {
     infoBtn.click();
     expect(window.location.hash).toBe('#/item/item-1');
   });
+
+  it('does not render slide position dots', () => {
+    const el = HeroCarousel({ items: [makeItem(), makeItem({ Id: 'item-2' })] });
+
+    expect(el.querySelector('.hero-carousel-dots')).toBeNull();
+    expect(el.querySelector('.hero-carousel-dot')).toBeNull();
+  });
 });
