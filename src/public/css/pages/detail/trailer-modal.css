@@ -1,0 +1,66 @@
+.detail-trailer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(18px, 4vw, 48px);
+  background: rgba(0, 0, 0, 0.76);
+  backdrop-filter: blur(20px) saturate(115%);
+  -webkit-backdrop-filter: blur(20px) saturate(115%);
+}
+
+.detail-trailer-modal {
+  position: relative;
+  width: min(980px, 100%);
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: var(--abyss-radius-dialog);
+  background: rgba(var(--abyss-glass-tint), 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    0 34px 92px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.detail-trailer-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.09);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.detail-trailer-title {
+  padding-right: 48px;
+  margin-bottom: 18px;
+  color: var(--text-primary);
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  font-weight: 740;
+}
+
+.detail-trailer-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #000;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
+}
+
+.detail-trailer-player,
+.detail-trailer-player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}

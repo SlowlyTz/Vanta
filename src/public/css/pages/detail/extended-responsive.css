@@ -1,0 +1,67 @@
+@media (max-width: 768px) {
+  .detail-hero-backdrop {
+    height: auto;
+    min-height: 0;
+  }
+  .detail-content {
+    padding: 28px var(--spacing-md) 16px;
+    gap: 18px;
+  }
+  .detail-hero-main {
+    gap: 18px;
+  }
+  .detail-info {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .detail-title {
+    font-size: 2rem;
+    text-align: left;
+  }
+  .detail-original-title,
+  .detail-episode-title {
+    text-align: left;
+  }
+  .detail-metadata,
+  .detail-genres,
+  .detail-actions {
+    justify-content: flex-start;
+  }
+  .detail-metadata {
+    gap: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .detail-overview {
+    font-size: 0.98rem;
+    line-height: 1.5;
+    text-align: left;
+  }
+  .cast-title {
+    font-size: 1.15rem;
+  }
+  .cast-card {
+    flex-basis: 96px;
+    width: 96px;
+  }
+  .cast-avatar {
+    width: 70px;
+    height: 70px;
+  }
+  .episodes-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .detail-trailer-backdrop {
+    padding: 16px;
+  }
+
+  .detail-trailer-modal {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .detail-trailer-frame {
+    border-radius: 12px;
+  }
+}

@@ -1,0 +1,120 @@
+.watch-party-lobby {
+  width: min(720px, 100%);
+  margin: 42px auto 0;
+}
+
+.watch-party-lobby-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.watch-party-session,
+.watch-party-invite-section,
+.watch-party-members-section,
+.watch-party-lobby-footer {
+  padding: 22px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.watch-party-session {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.watch-party-lobby-footer {
+  padding-bottom: 0;
+}
+
+.watch-party-session-kicker,
+.watch-party-section-label {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.watch-party-media-summary {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.watch-party-media-title {
+  font-size: 1.45rem;
+  line-height: 1.15;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.watch-party-media-subtitle {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.watch-party-lobby-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.watch-party-start-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.watch-party-start-hint:empty {
+  display: none;
+}
+
+.watch-party-start-button {
+  flex: 0 0 auto;
+  min-width: 128px;
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  background: rgb(var(--abyss-accent));
+  color: #111;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.watch-party-start-button[hidden] {
+  display: none;
+}
+
+.watch-party-start-button:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.watch-party-error,
+.watch-party-ended-state {
+  width: min(480px, 100%);
+  margin: 60px auto 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.watch-party-error h2,
+.watch-party-ended-state h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.watch-party-error p,
+.watch-party-ended-state p {
+  margin: 0;
+  color: var(--text-secondary);
+}

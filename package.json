@@ -10,7 +10,9 @@
     "player:build": "vite build --config src/player/vite.config.js",
     "player:watch": "vite build --watch --config src/player/vite.config.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint:size": "node scripts/check-file-size.mjs",
+    "lint:dead-code": "node scripts/check-dead-code.mjs"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",

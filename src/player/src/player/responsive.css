@@ -1,0 +1,161 @@
+/* Platform-specific hiding */
+.vanta-player-root.is-ios .vanta-player-mute-button,
+.vanta-player-root.is-ios .vanta-player-volume-slider {
+  display: none !important;
+}
+
+.vanta-player-root.no-pip .vanta-player-pip-button {
+  display: none !important;
+}
+
+.vanta-player-root.is-ios-inline-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 100svh;
+  z-index: 99999;
+  background: #000;
+  overflow: hidden;
+}
+
+.vanta-player-root.is-ios-inline-fullscreen .vanta-player-shell,
+.vanta-player-root.is-ios-inline-fullscreen .vanta-media-player {
+  width: 100%;
+  height: 100%;
+}
+
+
+/* Desktop: keep a prominent play affordance when autoplay is blocked or paused. */
+@media (pointer: fine) and (min-width: 769px) {
+  .vanta-player-root:not([data-ui-state="ready-paused"]) .vanta-player-center-controls {
+    display: none;
+  }
+}
+
+/* Tablets and small desktops */
+@media (max-width: 900px) {
+  .vanta-player-volume-slider {
+    width: 86px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .vanta-player-gesture {
+    width: 28%;
+  }
+
+  .vanta-player-center-controls {
+    gap: 18px;
+  }
+
+  .vanta-player-center-play {
+    --media-button-size: 64px;
+    --media-button-icon-size: 30px;
+  }
+
+  .vanta-player-center-skip {
+    --media-button-size: 50px;
+    --media-button-icon-size: 24px;
+  }
+
+  .vanta-player-bottom-controls {
+    padding-top: 48px;
+  }
+
+  .vanta-player-timeline-row {
+    gap: 10px;
+  }
+
+  .vanta-player-controls-row {
+    min-height: 48px;
+  }
+
+  .vanta-player-title {
+    font-size: 0.95rem;
+    max-width: 55vw;
+    padding-top: 8px;
+  }
+
+  .vanta-player-back span {
+    display: none;
+  }
+
+  .vanta-player-back {
+    width: 42px;
+    padding: 0;
+  }
+
+  .vanta-player-menu-button > span {
+    display: none;
+  }
+
+  .vanta-player-menu-button {
+    padding: 0;
+    min-width: 40px;
+    min-height: 44px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .vanta-player-center-controls {
+    gap: 12px;
+  }
+
+  .vanta-player-center-play {
+    --media-button-size: 56px;
+    --media-button-icon-size: 26px;
+  }
+
+  .vanta-player-center-skip {
+    --media-button-size: 44px;
+    --media-button-icon-size: 22px;
+  }
+
+  .vanta-media-player {
+    --media-button-size: 40px;
+    --media-button-icon-size: 20px;
+  }
+
+  .vanta-player-time-slider {
+    --media-slider-height: 44px;
+  }
+
+  .vanta-player-volume-slider {
+    width: 72px;
+  }
+
+  .vanta-player-time {
+    font-size: 0.78rem;
+  }
+}
+
+/* Very small viewports: prevent overflow */
+@media (max-width: 360px) {
+  .vanta-player-controls-row {
+    gap: 6px;
+  }
+
+  .vanta-player-controls-left,
+  .vanta-player-controls-right {
+    gap: 0;
+  }
+
+  .vanta-player-volume-slider {
+    width: 56px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .vanta-player-loading,
+  .vanta-player-inline-loading,
+  .vanta-player-controls-layer,
+  .vanta-player-next-episode-confirm::before {
+    transition: none;
+  }
+}

@@ -1,0 +1,240 @@
+/* Loading overlay */
+.vanta-player-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.vanta-player-loading.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.vanta-player-loading-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #050505 center / cover no-repeat;
+}
+
+.vanta-player-loading-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.68);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.vanta-player-loading-inner {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  width: min(560px, calc(100vw - 40px));
+}
+
+.vanta-player-spinner {
+  width: 52px;
+  height: 52px;
+  border: 4px solid rgb(255 255 255 / 0.15);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vanta-player-spin 0.9s linear infinite;
+}
+
+.vanta-player-loading-label {
+  margin-top: 2px;
+  color: #fff;
+  font: 650 0.96rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-loading-log {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  min-height: 1.4em;
+  color: rgb(255 255 255 / 0.62);
+  font: 500 0.78rem ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.vanta-player-loading-log > [aria-hidden="true"] {
+  color: rgb(255 255 255 / 0.38);
+}
+
+.vanta-player-loading-status {
+  overflow-wrap: anywhere;
+}
+
+/* Inline loading spinner */
+.vanta-player-inline-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 23;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+.vanta-player-inline-loading:not([hidden]) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.vanta-player-inline-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgb(255 255 255 / 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vanta-player-spin 0.9s linear infinite;
+}
+
+/* Error overlay */
+.vanta-player-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 40;
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid rgb(255 85 85 / 0.5);
+  border-radius: var(--abyss-radius-dialog);
+  padding: 24px;
+  background: rgba(var(--abyss-glass-tint), 0.88);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.vanta-player-error[hidden] {
+  display: none;
+}
+
+.vanta-player-error strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ff6262;
+  font-size: 1.2rem;
+}
+
+.vanta-player-error p {
+  color: rgb(255 255 255 / 0.75);
+  line-height: 1.45;
+}
+
+.vanta-player-error > div {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.vanta-player-error button {
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 18px;
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.vanta-player-error button:hover,
+.vanta-player-error button:focus-visible {
+  background: rgb(255 255 255 / 0.2);
+  transform: translateY(-1px);
+}
+
+.vanta-player-retry {
+  background: #fff !important;
+  color: #111 !important;
+}
+
+
+/* Smartphone orientation gate */
+.vanta-player-orientation-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-content: center;
+  background: rgb(0 0 0 / 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  text-align: center;
+  color: #fff;
+}
+
+.vanta-player-orientation-gate[hidden] {
+  display: none;
+}
+
+.vanta-player-orientation-gate-inner {
+  display: grid;
+  gap: 12px;
+  width: min(320px, calc(100vw - 48px));
+}
+
+.vanta-player-orientation-icon {
+  font-size: 3rem;
+  line-height: 1;
+  animation: vanta-player-rotate-phone 1.6s ease-in-out infinite;
+}
+
+.vanta-player-orientation-gate strong {
+  font: 650 1.2rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-orientation-gate p {
+  margin: 0;
+  color: rgb(255 255 255 / 0.75);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.vanta-player-orientation-button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 24px;
+  color: #111;
+  background: #fff;
+  font: 650 0.95rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.vanta-player-orientation-button:hover,
+.vanta-player-orientation-button:focus-visible {
+  transform: scale(1.03);
+  background: #f0f0f0;
+}
+
+@keyframes vanta-player-rotate-phone {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+
+@keyframes vanta-player-spin {
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,107 @@
+.vanta-player-root,
+.vanta-player-shell,
+.vanta-media-player {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.vanta-player-root {
+  background: #000;
+  color: #fff;
+}
+
+.vanta-player-shell {
+  overflow: hidden;
+  background: #000;
+}
+
+.is-watch-party-viewer .vanta-player-center-play,
+.is-watch-party-viewer .vanta-player-center-skip,
+.is-watch-party-viewer .vanta-player-play-button,
+.is-watch-party-viewer .vanta-player-skip-button,
+.is-watch-party-viewer .vanta-player-time-slider {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.vanta-media-player {
+  --video-border-radius: 0;
+  --video-border: 0;
+  --video-bg: #000;
+  --video-brand: #fff;
+  --media-font-family: Outfit, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --media-controls-color: #fff;
+  --media-button-color: #fff;
+  --media-button-size: 44px;
+  --media-button-icon-size: 22px;
+  --media-button-border-radius: 50%;
+  --media-button-hover-bg: rgb(255 255 255 / 0.14);
+  --media-button-hover-transform: scale(1.05);
+  --media-button-hover-transition: transform 160ms ease, background 160ms ease;
+  --media-fullscreen-button-size: 44px;
+  --media-focus-ring: 0 0 0 2px #fff, 0 0 0 4px rgb(255 255 255 / 0.35);
+
+  --media-slider-width: 100%;
+  --media-slider-height: 40px;
+  --media-slider-track-width: 100%;
+  --media-slider-track-height: 5px;
+  --media-slider-track-bg: rgb(255 255 255 / 0.22);
+  --media-slider-track-fill-bg: #fff;
+  --media-slider-track-progress-bg: rgb(255 255 255 / 0.35);
+  --media-slider-thumb-bg: #fff;
+  --media-slider-thumb-size: 14px;
+  --media-slider-thumb-border: none;
+  --media-slider-thumb-border-radius: 50%;
+  --media-slider-focused-thumb-shadow: 0 0 0 4px rgb(255 255 255 / 0.35);
+
+  --media-time-color: rgb(255 255 255 / 0.9);
+  --media-time-font-size: 0.84rem;
+  --media-time-font-weight: 560;
+
+  display: block;
+  border: 0;
+  background: #000;
+}
+
+.vanta-media-player media-outlet,
+.vanta-media-player media-outlet video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.vanta-player-captions {
+  --media-captions-padding: 2%;
+  --media-cue-font-size: 1.05rem;
+  --media-cue-line-height: 1.25;
+  --media-cue-bg: rgb(0 0 0 / 0.72);
+  --media-cue-color: #fff;
+  --media-cue-border-radius: 4px;
+  --cue-text-shadow: 0 1px 2px rgb(0 0 0 / 0.75);
+  z-index: 12;
+}
+
+.vanta-media-player [data-media-button] {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.vanta-media-player [data-media-button] > svg {
+  display: none;
+  fill: currentColor;
+  pointer-events: none;
+}
+
+.vanta-media-player [data-media-button][data-focus] {
+  box-shadow: var(--media-focus-ring);
+  outline: none;
+}
+

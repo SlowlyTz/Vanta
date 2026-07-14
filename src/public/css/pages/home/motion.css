@@ -1,0 +1,29 @@
+/* ---------------------------------
+   HOME SECTION MOTION
+   --------------------------------- */
+@keyframes home-section-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-section > * {
+  animation: home-section-fade-up 0.5s var(--abyss-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-section > * {
+    animation: none;
+  }
+
+  .hero-slide-backdrop,
+  .hero-slide-content,
+  .hero-carousel-dot {
+    transition: none;
+  }
+}

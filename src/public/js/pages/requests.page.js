@@ -1,50 +1,18 @@
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
-import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 import { PageHeading } from '../components/pageHeading.js';
-
-const STATUS_MAP = {
-  pending: { label: 'ausstehend', cls: 'pending' },
-  approved: { label: 'genehmigt', cls: 'approved' },
-  imported: { label: 'genehmigt', cls: 'approved' },
-  rejected: { label: 'abgelehnt', cls: 'rejected' }
-};
-
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
-const REQUEST_SEARCH_STATE_KEY = 'vanta.requests.searchState';
-
-function loadRequestSearchState() {
-  try {
-    const raw = sessionStorage.getItem(REQUEST_SEARCH_STATE_KEY);
-    return raw ? JSON.parse(raw) : { query: '', results: [] };
-  } catch {
-    return { query: '', results: [] };
-  }
-}
-
-function saveRequestSearchState(query, results = []) {
-  try {
-    sessionStorage.setItem(REQUEST_SEARCH_STATE_KEY, JSON.stringify({ query, results }));
-  } catch {
-    // Ignore unavailable storage; search still works without restoration.
-  }
-}
-
-function clearRequestSearchState() {
-  try {
-    sessionStorage.removeItem(REQUEST_SEARCH_STATE_KEY);
-  } catch {
-    // Ignore unavailable storage.
-  }
-}
+import { STATUS_MAP, loadRequestSearchState, getTmdbImageUrl } from './requests/helpers.js';
+import { bindSearch } from './requests/search.js';
 
 export default function RequestsPage(params = {}) {
-  let debounceTimeout = null;
-  let myRequests = [];
-  let searchResults = [];
-  let searchRunId = 0;
+  const ctx = {
+    debounceTimeout: null,
+    myRequests: [],
+    searchResults: [],
+    searchRunId: 0
+  };
   const restoredSearchState = loadRequestSearchState();
 
   const activeView = params.view === 'list' ? 'list' : 'new';
@@ -72,23 +40,23 @@ export default function RequestsPage(params = {}) {
     }, 'Meine Anfragen')
   );
 
-  const newRequestSearchInput = createElement('input', {
+  ctx.newRequestSearchInput = createElement('input', {
     type: 'text',
     className: 'search-input-field',
     placeholder: 'Film oder Serie suchen...',
     onInput: (e) => {
       const query = e.target.value.trim();
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => performSearch(query), 450);
+      if (ctx.debounceTimeout) clearTimeout(ctx.debounceTimeout);
+      ctx.debounceTimeout = setTimeout(() => ctx.performSearch(query), 450);
     },
     autocomplete: 'off'
   });
-  const newRequestSearchWrapper = createElement('div', { className: 'search-input-wrapper' }, newRequestSearchInput);
-  const newRequestResultsGrid = createElement('div', { className: 'requests-grid' });
-  const newRequestLoading = createElement('div', { className: 'requests-search-loading hidden' },
+  const newRequestSearchWrapper = createElement('div', { className: 'search-input-wrapper' }, ctx.newRequestSearchInput);
+  ctx.newRequestResultsGrid = createElement('div', { className: 'requests-grid' });
+  ctx.newRequestLoading = createElement('div', { className: 'requests-search-loading hidden' },
     createSectionLoader({ label: 'Suche läuft...', compact: true })
   );
-  const newRequestStatus = createElement('div', { className: 'search-empty-state' },
+  ctx.newRequestStatus = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Medien anfragen'),
     createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.')
   );
@@ -96,9 +64,9 @@ export default function RequestsPage(params = {}) {
     className: `requests-new-view${activeView === 'new' ? '' : ' hidden'}`
   },
     newRequestSearchWrapper,
-    newRequestLoading,
-    newRequestResultsGrid,
-    newRequestStatus
+    ctx.newRequestLoading,
+    ctx.newRequestResultsGrid,
+    ctx.newRequestStatus
   );
 
   const myRequestsSearchInput = createElement('input', {
@@ -107,8 +75,8 @@ export default function RequestsPage(params = {}) {
     placeholder: 'Eigene Anfragen durchsuchen...',
     onInput: (e) => {
       const query = e.target.value.trim();
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => renderMyRequests(query), 250);
+      if (ctx.debounceTimeout) clearTimeout(ctx.debounceTimeout);
+      ctx.debounceTimeout = setTimeout(() => renderMyRequests(query), 250);
     },
     autocomplete: 'off'
   });
@@ -134,124 +102,7 @@ export default function RequestsPage(params = {}) {
   container.appendChild(newRequestView);
   container.appendChild(myRequestsView);
 
-  const performSearch = async (query) => {
-    const runId = ++searchRunId;
-    newRequestResultsGrid.innerHTML = '';
-    searchResults = [];
-
-    if (!query) {
-      clearRequestSearchState();
-      newRequestLoading.classList.add('hidden');
-      setSectionBusy(newRequestResultsGrid, false);
-      newRequestStatus.innerHTML = '';
-      newRequestStatus.appendChild(createElement('h3', {}, 'Medien anfragen'));
-      newRequestStatus.appendChild(createElement('p', {}, 'Suche nach Filmen oder Serien und frage sie an.'));
-      newRequestStatus.classList.remove('hidden');
-      return;
-    }
-
-    newRequestStatus.classList.add('hidden');
-    newRequestLoading.classList.remove('hidden');
-    setSectionBusy(newRequestResultsGrid, true);
-
-    try {
-      const data = await RequestsApi.search(query);
-      if (runId !== searchRunId) return;
-
-      searchResults = data || [];
-      saveRequestSearchState(query, searchResults);
-      newRequestResultsGrid.innerHTML = '';
-      newRequestLoading.classList.add('hidden');
-
-      if (searchResults.length === 0) {
-        newRequestStatus.innerHTML = '';
-        newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
-        newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${query}".`));
-        newRequestStatus.classList.remove('hidden');
-      } else {
-        searchResults.forEach(item => {
-          newRequestResultsGrid.appendChild(createSearchResultCard(item));
-        });
-      }
-    } catch (error) {
-      if (runId !== searchRunId) return;
-      if (error.isAuthError) {
-        newRequestLoading.classList.add('hidden');
-        return;
-      }
-
-      console.error('[Requests Search Error]', error);
-      appStore.showToast('Suche fehlgeschlagen', 'error');
-    } finally {
-      if (runId === searchRunId) {
-        newRequestLoading.classList.add('hidden');
-        setSectionBusy(newRequestResultsGrid, false);
-      }
-    }
-  };
-
-  const getTmdbImageUrl = (path, size = 'w500') => {
-    if (!path) return null;
-    return `https://image.tmdb.org/t/p/${size}${path}`;
-  };
-
-  const createSearchResultCard = (item) => {
-    const isMovie = item.media_type === 'movie';
-    const title = item.title || item.name || 'Unbekannt';
-    const posterUrl = getTmdbImageUrl(item.poster_path);
-    const year = (item.release_date || item.first_air_date || '').substring(0, 4);
-    const typeLabel = isMovie ? 'Film' : 'Serie';
-    const overview = item.overview || 'Keine Beschreibung.';
-    const tmdbId = item.id;
-    const tmdbType = item.media_type;
-
-    const isDisabled = item.banned || item.exists || item.requested;
-
-    const card = createElement('div', {
-      className: `request-card request-card-clickable${isDisabled ? ' request-card-disabled' : ''}`,
-      'data-tmdb-id': tmdbId,
-      onClick: () => {
-        if (isDisabled) return;
-        window.location.hash = `#/request-detail/${tmdbType}/${tmdbId}`;
-      }
-    });
-
-    const poster = createElement('img', {
-      className: 'request-card-poster',
-      src: posterUrl || createPosterPlaceholder(title),
-      alt: title,
-      loading: 'lazy',
-      onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.src = createPosterPlaceholder(title); }
-    });
-
-    const info = createElement('div', { className: 'request-card-info' },
-      createElement('div', { className: 'request-card-meta' },
-        createElement('span', { className: 'request-card-type' }, typeLabel),
-        year ? createElement('span', { className: 'request-card-year' }, year) : null
-      ),
-      createElement('h3', { className: 'request-card-title' }, title),
-      createElement('p', { className: 'request-card-overview' }, overview.length > 150 ? overview.substring(0, 150) + '...' : overview)
-    );
-
-    const statusBadge = createElement('div', { className: 'request-card-status-row' });
-
-    if (item.banned) {
-      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-error' }, 'Gebannt'));
-    } else if (item.exists) {
-      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-available' }, 'In Mediathek verfügbar'));
-    } else if (item.requested) {
-      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-requested' }, 'Bereits angefragt'));
-    }
-
-    if (statusBadge.children.length > 0) {
-      info.appendChild(statusBadge);
-    }
-
-    card.appendChild(poster);
-    card.appendChild(info);
-
-    return card;
-  };
+  bindSearch(ctx);
 
   const loadMyRequests = async () => {
     myRequestsStatus.classList.add('hidden');
@@ -260,11 +111,11 @@ export default function RequestsPage(params = {}) {
     myRequestsList.appendChild(createSectionLoader({ label: 'Anfragen werden geladen', compact: true }));
 
     try {
-      myRequests = await RequestsApi.getMyRequests();
-      if (!Array.isArray(myRequests)) myRequests = [];
+      ctx.myRequests = await RequestsApi.getMyRequests();
+      if (!Array.isArray(ctx.myRequests)) ctx.myRequests = [];
     } catch (error) {
       console.warn('[My Requests Load Error]', error);
-      myRequests = [];
+      ctx.myRequests = [];
     } finally {
       setSectionBusy(myRequestsList, false);
       renderMyRequests();
@@ -273,8 +124,8 @@ export default function RequestsPage(params = {}) {
 
   const renderMyRequests = (query = '') => {
     const filtered = query
-      ? myRequests.filter(req => (req.title || '').toLowerCase().includes(query.toLowerCase()))
-      : myRequests;
+      ? ctx.myRequests.filter(req => (req.title || '').toLowerCase().includes(query.toLowerCase()))
+      : ctx.myRequests;
 
     myRequestsList.innerHTML = '';
 
@@ -326,20 +177,20 @@ export default function RequestsPage(params = {}) {
 
   if (activeView === 'new') {
     const shouldRestoreSearch = Boolean(restoredSearchState.query);
-    newRequestSearchInput.value = shouldRestoreSearch ? restoredSearchState.query : '';
-    searchResults = Array.isArray(restoredSearchState.results) ? restoredSearchState.results : [];
+    ctx.newRequestSearchInput.value = shouldRestoreSearch ? restoredSearchState.query : '';
+    ctx.searchResults = Array.isArray(restoredSearchState.results) ? restoredSearchState.results : [];
 
-    if (shouldRestoreSearch && searchResults.length > 0) {
-      searchResults.forEach(item => {
-        newRequestResultsGrid.appendChild(createSearchResultCard(item));
+    if (shouldRestoreSearch && ctx.searchResults.length > 0) {
+      ctx.searchResults.forEach(item => {
+        ctx.newRequestResultsGrid.appendChild(ctx.createSearchResultCard(item));
       });
-      newRequestStatus.classList.add('hidden');
+      ctx.newRequestStatus.classList.add('hidden');
     } else if (shouldRestoreSearch) {
-      newRequestStatus.innerHTML = '';
-      newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
-      newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${restoredSearchState.query}".`));
+      ctx.newRequestStatus.innerHTML = '';
+      ctx.newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
+      ctx.newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${restoredSearchState.query}".`));
     } else {
-      setTimeout(() => newRequestSearchInput.focus(), 100);
+      setTimeout(() => ctx.newRequestSearchInput.focus(), 100);
     }
   }
 

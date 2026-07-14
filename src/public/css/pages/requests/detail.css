@@ -1,0 +1,153 @@
+/* ---------------------------------
+   5. REQUEST DETAIL PAGE
+   Hero (backdrop/poster/title/actions) is provided by the shared
+   .detail-page layout in detail.css. Only the request-specific status
+   badges and the cast/seasons sections below the hero live here.
+   --------------------------------- */
+.request-detail-page .detail-content {
+  min-height: 0;
+  padding-bottom: clamp(12px, 2vw, 20px);
+}
+
+.request-detail-page .detail-hero-backdrop::after {
+  background:
+    linear-gradient(to right, rgba(4, 4, 6, 0.98) 0%, rgba(4, 4, 6, 0.76) 40%, rgba(4, 4, 6, 0.24) 100%),
+    linear-gradient(to top, var(--bg-primary) 0%, rgba(4, 4, 6, 0.52) 14%, rgba(4, 4, 6, 0.08) 72%, rgba(4, 4, 6, 0) 100%);
+}
+
+.request-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.request-detail-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.badge-available {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.badge-banned {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.badge-requested {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.request-detail-seasons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--spacing-sm);
+  font-size: 0.85rem;
+}
+
+.request-detail-season {
+  color: #ef4444;
+}
+
+.request-detail-season.season-available {
+  color: #22c55e;
+}
+
+.request-detail-section-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+.request-detail-cast {
+  margin-bottom: var(--spacing-xxl);
+}
+
+.request-detail-cast-grid {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-sm);
+  scrollbar-width: thin;
+}
+
+.request-detail-cast-item {
+  flex: 0 0 auto;
+  width: 100px;
+  text-align: center;
+}
+
+.request-detail-cast-item img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-tertiary);
+}
+
+.request-detail-cast-name {
+  font-size: 0.85rem;
+  margin-top: var(--spacing-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.request-detail-cast-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.request-detail-seasons-section {
+  margin-bottom: var(--spacing-xxl);
+}
+
+.request-detail-seasons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.request-detail-season-card {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+  transition: all var(--transition-fast);
+}
+
+.request-detail-season-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.request-detail-season-card img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.request-detail-season-name {
+  margin-top: var(--spacing-sm);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.request-detail-season-episodes {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+

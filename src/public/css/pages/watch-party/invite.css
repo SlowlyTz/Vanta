@@ -1,0 +1,210 @@
+.watch-party-invite {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.watch-party-invite-input,
+.watch-party-invite-copy,
+.watch-party-invite-user {
+  min-height: 42px;
+  font-size: 0.86rem;
+}
+
+.watch-party-invite-input {
+  min-width: 0;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+}
+
+.watch-party-invite-copy {
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-weight: 750;
+}
+
+.watch-party-invite-copy:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.watch-party-invite-user {
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  font-weight: 750;
+}
+
+.watch-party-invite-user:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.watch-party-invite-user[hidden] {
+  display: none;
+}
+
+.watch-party-invite-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100050;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.56);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.watch-party-invite-menu-overlay[hidden] {
+  display: none;
+}
+
+.watch-party-invite-menu-panel {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 12px;
+  background: rgb(19, 20, 24);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+  color: #fff;
+}
+
+.watch-party-invite-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.watch-party-invite-menu-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.watch-party-invite-menu-close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.watch-party-invite-menu-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.watch-party-invite-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.watch-party-invite-username-input {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.055);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.watch-party-invite-username-input:focus {
+  border-color: rgba(var(--abyss-accent), 0.7);
+  outline: none;
+}
+
+.watch-party-invite-result {
+  min-height: 20px;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.watch-party-invite-result:empty {
+  display: none;
+}
+
+.watch-party-invite-result-row {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.watch-party-invite-result-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-weight: 750;
+}
+
+.watch-party-invite-result-meta {
+  flex: 0 0 auto;
+  color: #4ade80;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.watch-party-invite-menu-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.watch-party-invite-status {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.watch-party-invite-status:empty {
+  display: block;
+}
+
+.watch-party-invite-status.is-error {
+  color: #ff8080;
+}
+
+.watch-party-invite-send {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  background: rgb(var(--abyss-accent));
+  color: #111;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.watch-party-invite-send:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: default;
+}

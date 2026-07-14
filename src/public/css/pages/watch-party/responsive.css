@@ -1,0 +1,75 @@
+@media (max-width: 620px) {
+  .watch-party-page {
+    padding: 20px 16px 48px;
+  }
+
+  .watch-party-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .watch-party-end-button {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .watch-party-lobby {
+    margin-top: 30px;
+  }
+
+  .watch-party-invite {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .watch-party-invite-input {
+    grid-column: 1 / -1;
+  }
+
+  .watch-party-member {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .watch-party-member-name {
+    flex-basis: calc(100% - 42px);
+  }
+
+  .watch-party-member-status {
+    margin-left: 42px;
+  }
+
+  .watch-party-kick-button {
+    margin-left: 42px;
+  }
+
+  .watch-party-lobby-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .watch-party-start-button {
+    width: 100%;
+  }
+
+  .watch-party-invite-menu-overlay {
+    align-items: end;
+    place-items: end center;
+  }
+
+  .watch-party-invite-menu-panel {
+    width: 100%;
+  }
+
+  .watch-party-invite-menu-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .watch-party-invite-send {
+    width: 100%;
+  }
+
+  .watch-party-notifications {
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    width: auto;
+  }
+}

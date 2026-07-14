@@ -1,0 +1,113 @@
+.watch-party-ready-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  pointer-events: auto;
+}
+
+.watch-party-ready-overlay[hidden] {
+  display: none;
+}
+
+.watch-party-ready-panel {
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 12px;
+  background: rgb(18, 19, 23);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.48);
+}
+
+.watch-party-ready-title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.14rem;
+  font-weight: 800;
+}
+
+.watch-party-ready-subtitle,
+.watch-party-ready-status {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.watch-party-ready-members {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.watch-party-ready-member {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.watch-party-ready-member-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.watch-party-ready-member-state {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.watch-party-ready-member.is-ready .watch-party-ready-member-state {
+  color: #4ade80;
+}
+
+.watch-party-ready-member.is-preparing .watch-party-ready-member-state,
+.watch-party-ready-member.is-idle .watch-party-ready-member-state {
+  color: #facc15;
+}
+
+.watch-party-ready-member.is-error .watch-party-ready-member-state {
+  color: #ff8080;
+}
+
+.watch-party-ready-button {
+  align-self: center;
+  min-width: 168px;
+  min-height: 42px;
+  padding: 0 22px;
+  border: 0;
+  background: rgb(var(--abyss-accent));
+  color: #111;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.watch-party-ready-button:disabled {
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.62);
+  cursor: default;
+}

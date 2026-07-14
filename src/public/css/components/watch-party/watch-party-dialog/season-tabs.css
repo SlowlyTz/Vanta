@@ -1,0 +1,33 @@
+/* Season tabs (episode picker) */
+
+.watch-party-season-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.watch-party-season-tabs[hidden] {
+  display: none;
+}
+
+.watch-party-season-tab {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.watch-party-season-tab.active {
+  background: rgb(var(--abyss-accent));
+  color: #121212;
+  border-color: transparent;
+}
+

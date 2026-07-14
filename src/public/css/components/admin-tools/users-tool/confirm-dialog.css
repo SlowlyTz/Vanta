@@ -1,0 +1,97 @@
+/* Ban / delete confirmation dialog */
+.admin-user-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 4, 6, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.admin-user-dialog {
+  position: relative;
+  width: min(420px, 100%);
+  background: rgba(var(--abyss-glass-tint), 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--abyss-radius-dialog);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.admin-user-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.admin-user-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-user-dialog-content h3 {
+  font-size: 1.1rem;
+  font-weight: 720;
+  margin: 0;
+  padding-right: 24px;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-dialog-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.admin-user-dialog-textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: inherit;
+}
+
+.admin-user-dialog-error {
+  color: var(--error-color);
+  font-size: 0.85rem;
+}
+
+.admin-user-dialog-error.hidden {
+  display: none;
+}
+
+.admin-user-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.admin-user-dialog-danger {
+  background: var(--error-color);
+}
+
+@media (max-width: 480px) {
+  .admin-user-row-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .admin-user-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-user-dialog-actions button {
+    width: 100%;
+  }
+}

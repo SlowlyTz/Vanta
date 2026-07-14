@@ -1,0 +1,72 @@
+/* ---------------------------------
+   1. WORKSPACE / TABS
+   --------------------------------- */
+.requests-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: clamp(16px, 4vw, 56px);
+}
+
+.requests-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(420px, 100%);
+  margin: 0 auto 22px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--abyss-radius);
+  background: rgba(var(--abyss-glass-tint), 0.5);
+}
+
+.requests-tab {
+  min-height: 42px;
+  border-radius: calc(var(--abyss-radius) - 4px);
+  color: var(--text-secondary);
+  font-weight: 650;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.requests-tab:hover {
+  color: var(--text-primary);
+}
+
+.requests-tab.active {
+  color: rgb(var(--abyss-accent));
+  background: rgba(var(--abyss-accent), 0.12);
+}
+
+.requests-new-view,
+.requests-list-view {
+  max-width: 100%;
+}
+
+.requests-new-view .search-input-wrapper,
+.requests-list-view .search-input-wrapper,
+.requests-search-loading,
+.requests-grid,
+.my-requests-grid,
+.requests-new-view .search-empty-state,
+.requests-list-view .search-empty-state {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+}
+
+.requests-new-view .search-input-wrapper,
+.requests-list-view .search-input-wrapper {
+  margin-bottom: 0;
+}
+
+.requests-new-view .search-input-field,
+.requests-list-view .search-input-field {
+  min-height: 54px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.requests-search-loading {
+  margin-top: 18px;
+}
+
