@@ -1,0 +1,58 @@
+.settings-logout-section {
+  padding-top: 22px;
+}
+
+.settings-logout-button {
+  width: 100%;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-radius: var(--abyss-radius);
+  color: var(--error-color);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.105);
+  padding: 0 20px;
+  font-size: 1.02rem;
+  font-weight: 720;
+  text-align: left;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.settings-logout-button:hover {
+  background: rgba(255, 77, 77, 0.085);
+  border-color: rgba(255, 77, 77, 0.28);
+  color: var(--error-color);
+}
+
+.settings-logout-button:active {
+  transform: scale(0.99);
+}
+
+.settings-logout-button .settings-logout-icon {
+  color: var(--error-color);
+}
+
+.settings-logout-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-status {
+  min-height: 18px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.settings-status.success {
+  color: var(--success-color);
+}
+
+.settings-status.error {
+  color: var(--error-color);
+}

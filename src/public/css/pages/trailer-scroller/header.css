@@ -1,0 +1,173 @@
+html.trailer-scroller-active,
+body.trailer-scroller-active {
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+body.trailer-scroller-active {
+  position: fixed;
+  inset: 0;
+}
+
+html.trailer-scroller-active #app {
+  height: 100%;
+  overflow: hidden !important;
+}
+
+.trailer-scroller-page {
+  --scroller-navbar-gap: 10px;
+  --scroller-page-offset: calc(92px + var(--scroller-navbar-gap));
+  --scroller-accent: rgb(var(--abyss-accent));
+  --scroller-accent-cyan: rgb(var(--abyss-accent));
+  --scroller-border: rgba(255, 255, 255, 0.1);
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: calc(100vh - var(--scroller-page-offset));
+  height: calc(100dvh - var(--scroller-page-offset));
+  min-height: 0;
+  flex-direction: column;
+  margin-top: var(--scroller-navbar-gap);
+  overflow: hidden;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% 6%, rgba(var(--abyss-accent), 0.1), transparent 34%),
+    radial-gradient(circle at 86% 88%, rgba(var(--abyss-accent), 0.06), transparent 31%),
+    linear-gradient(155deg, rgb(11, 11, 17), rgb(5, 5, 8) 62%, rgb(8, 8, 12));
+  isolation: isolate;
+  overscroll-behavior: none;
+}
+
+.trailer-scroller-page::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(180deg, black, transparent 82%);
+}
+
+.trailer-scroller-header {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  min-height: 64px;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding: 10px clamp(18px, 3vw, 44px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+  background: rgba(7, 7, 11, 0.72);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+.trailer-scroller-heading {
+  min-width: 0;
+}
+
+.trailer-scroller-eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--scroller-accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.trailer-scroller-title {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trailer-scroller-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.trailer-hint-key {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.7rem;
+}
+
+.trailer-scroller-navigation {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.trailer-nav-button {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.045);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.trailer-nav-button:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: rgba(var(--abyss-accent), 0.46);
+  background: rgba(var(--abyss-accent), 0.13);
+  transform: translateY(-1px);
+}
+
+.trailer-nav-button:disabled {
+  cursor: default;
+  opacity: 0.28;
+}
+
+.trailer-ui-icon,
+.trailer-action-icon,
+.trailer-feed-state-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.trailer-ui-icon svg,
+.trailer-action-icon svg,
+.trailer-feed-state-icon svg {
+  display: block;
+}

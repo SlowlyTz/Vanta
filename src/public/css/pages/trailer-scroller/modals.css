@@ -1,0 +1,187 @@
+.trailer-share-backdrop,
+.trailer-intro-backdrop {
+  position: fixed;
+  z-index: 2100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(20px) saturate(118%);
+  -webkit-backdrop-filter: blur(20px) saturate(118%);
+  animation: trailer-modal-in 220ms ease;
+}
+
+@keyframes trailer-modal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.trailer-share-content,
+.trailer-intro-content {
+  position: relative;
+  width: min(460px, calc(100vw - 40px));
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.016) 55%),
+    rgba(13, 13, 20, 0.97);
+  box-shadow:
+    0 36px 100px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.trailer-share-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.065);
+  font-size: 1.25rem;
+}
+
+.trailer-share-title {
+  padding-right: 38px;
+  color: var(--text-primary);
+  font-size: 1.35rem;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+}
+
+.trailer-share-text {
+  margin-top: 6px;
+  margin-bottom: 18px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.trailer-share-url {
+  width: 100%;
+  height: 48px;
+  min-width: 0;
+  padding: 0 14px;
+  border: 1px solid rgba(var(--abyss-accent), 0.26);
+  border-radius: var(--abyss-radius);
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.34);
+  font: inherit;
+}
+
+.trailer-share-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.trailer-share-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid rgba(var(--abyss-accent), 0.26);
+  border-radius: var(--abyss-radius);
+  color: var(--text-primary);
+  background: rgba(var(--abyss-accent), 0.12);
+  font-size: 0.88rem;
+  font-weight: 620;
+}
+
+.trailer-intro-content {
+  width: min(560px, calc(100vw - 40px));
+  text-align: left;
+}
+
+.trailer-intro-eyebrow {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--scroller-accent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.trailer-intro-title {
+  color: var(--text-primary);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.trailer-intro-text {
+  max-width: 46ch;
+  margin-top: 14px;
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.trailer-intro-features {
+  display: grid;
+  gap: 0;
+  margin-top: 26px;
+  list-style: none;
+}
+
+.trailer-intro-features li {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.trailer-intro-feature-number {
+  color: var(--scroller-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.trailer-intro-features strong,
+.trailer-intro-features small {
+  display: block;
+}
+
+.trailer-intro-features strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.trailer-intro-features small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.77rem;
+  line-height: 1.4;
+}
+
+.trailer-intro-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 24px;
+  border-radius: var(--abyss-radius);
+  font-weight: 640;
+}
+
+.trailer-nav-button:focus-visible,
+.trailer-action:focus-visible,
+.trailer-overview-toggle:focus-visible,
+.trailer-player-skip:focus-visible,
+.trailer-feed-state-action:focus-visible,
+.trailer-share-close:focus-visible,
+.trailer-share-button:focus-visible,
+.trailer-intro-button:focus-visible {
+  outline: 2px solid var(--scroller-accent-cyan);
+  outline-offset: 3px;
+}

@@ -1,0 +1,136 @@
+/* ---------------------------------
+   7. RESPONSIVE
+   --------------------------------- */
+@media (max-width: 767px) {
+  .requests-page {
+    padding-inline: 16px;
+    padding-top: 34px;
+  }
+
+  .requests-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-top: 14px;
+  }
+
+  .request-card {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: stretch;
+    min-height: 126px;
+    border-radius: var(--abyss-radius);
+  }
+
+  .request-card-poster {
+    width: 76px;
+    height: 100%;
+    min-height: 126px;
+    grid-row: 1 / -1;
+  }
+
+  .request-card-info {
+    padding: 11px 12px;
+    gap: 5px;
+    justify-content: center;
+  }
+
+  .request-card-meta {
+    gap: 6px;
+  }
+
+  .request-card-type {
+    padding: 2px 7px;
+    font-size: 0.66rem;
+  }
+
+  .request-card-year {
+    font-size: 0.76rem;
+  }
+
+  .request-card-title {
+    font-size: 0.92rem;
+    line-height: 1.18;
+  }
+
+  .request-card-overview {
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+
+  .request-result-badge {
+    min-height: 24px;
+    padding: 3px 8px;
+    font-size: 0.68rem;
+  }
+
+  .my-requests-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .my-request-card {
+    display: flex;
+    min-height: 0;
+  }
+
+  .my-request-card .request-card-poster {
+    width: 100%;
+    min-height: 0;
+  }
+
+  .my-request-card .request-card-info {
+    padding: 10px;
+    min-height: 104px;
+  }
+
+  .my-request-card .request-card-title {
+    font-size: 0.82rem;
+  }
+
+  .my-request-card .request-card-type,
+  .my-request-card .request-card-year {
+    font-size: 0.7rem;
+  }
+
+  .request-detail-cast-grid {
+    gap: var(--spacing-sm);
+  }
+
+  .request-detail-cast-item {
+    width: 80px;
+  }
+
+  .request-detail-cast-item img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .request-detail-seasons-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .request-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .request-item-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 374px) {
+  .request-card {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+
+  .request-card-poster {
+    width: 68px;
+  }
+
+  .request-card-info {
+    padding-inline: 10px;
+  }
+}

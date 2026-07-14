@@ -1,0 +1,21 @@
+@media (max-width: 768px) {
+  .settings-modal-backdrop {
+    align-items: flex-start;
+    padding: 74px 12px 18px;
+  }
+  .settings-dialog {
+    width: min(100%, 440px);
+    max-height: calc(100vh - 92px);
+    border-radius: var(--abyss-radius-dialog);
+  }
+  .settings-dialog-header {
+    padding: 14px 14px 10px;
+  }
+  .settings-panel {
+    padding: 8px 16px 18px;
+  }
+  .settings-options-spacer {
+    min-height: 68px;
+  }
+}
+

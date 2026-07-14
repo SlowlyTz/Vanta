@@ -1,0 +1,34 @@
+.vanta-player-pip-button {
+  --media-button-size: 44px;
+  --media-button-icon-size: 22px;
+}
+
+.vanta-player-fullscreen-button {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.vanta-player-fullscreen-button svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  pointer-events: none;
+}
+
+.vanta-player-fullscreen-button:hover,
+.vanta-player-fullscreen-button:focus-visible {
+  background: rgb(255 255 255 / 0.14);
+  transform: scale(1.05);
+}
+

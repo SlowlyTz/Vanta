@@ -1,0 +1,137 @@
+.admin-users-view {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-users-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-users-list-view[hidden],
+.admin-users-detail-slot[hidden] {
+  display: none;
+}
+
+.admin-users-search {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-user-row {
+  border: 1px solid rgba(255, 255, 255, 0.105);
+  border-radius: var(--abyss-radius);
+  background: rgba(255, 255, 255, 0.045);
+  overflow: hidden;
+}
+
+.admin-user-row-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  min-width: 0;
+}
+
+.admin-user-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+.admin-user-row-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-user-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.admin-user-badge-admin {
+  color: hsl(45, 90%, 65%);
+  background: hsla(45, 90%, 65%, 0.12);
+}
+
+.admin-user-badge-banned {
+  color: var(--error-color);
+  background: var(--error-bg);
+}
+
+.admin-user-badge-disabled {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-user-stream-info {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.admin-user-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.admin-user-action-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 640;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.admin-user-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-user-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-user-action-danger {
+  color: var(--error-color);
+  border-color: hsla(0, 85%, 60%, 0.3);
+}
+
+.admin-user-action-danger:hover:not(:disabled) {
+  background: var(--error-bg);
+}

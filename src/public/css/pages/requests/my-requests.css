@@ -1,0 +1,54 @@
+/* ---------------------------------
+   3. MY REQUESTS GRID
+   --------------------------------- */
+.my-requests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) 0;
+}
+
+.my-request-card {
+  flex-direction: column;
+  cursor: pointer;
+  min-height: 100%;
+}
+
+.my-request-card .my-request-poster-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  overflow: hidden;
+}
+
+.my-request-card .request-card-poster {
+  width: 100%;
+  min-height: auto;
+  height: 100%;
+  transition: transform var(--transition-smooth);
+}
+
+.my-request-card:hover .request-card-poster {
+  transform: scale(1.04);
+}
+
+.my-request-card .request-card-info {
+  padding: var(--spacing-sm);
+  gap: 4px;
+  min-height: 116px;
+}
+
+.my-request-card .request-card-title {
+  font-size: 0.92rem;
+  -webkit-line-clamp: 2;
+}
+
+.my-request-card .request-card-year {
+  font-size: 0.75rem;
+}
+
+.my-request-card .request-status {
+  align-self: flex-start;
+  margin-top: auto;
+}
+

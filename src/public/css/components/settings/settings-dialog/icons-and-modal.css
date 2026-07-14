@@ -1,0 +1,102 @@
+.settings-header-icon,
+.settings-profile-icon,
+.settings-row-icon,
+.settings-chevron,
+.settings-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.settings-header-icon svg,
+.settings-profile-icon svg,
+.settings-row-icon svg,
+.settings-chevron svg,
+.settings-check svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.settings-header-button:focus-visible,
+.settings-option:focus-visible,
+.settings-choice:focus-visible,
+.settings-logout-button:focus-visible {
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline-offset: 3px;
+}
+
+html.settings-modal-open,
+body.settings-modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.settings-modal-backdrop,
+.settings-dialog,
+.settings-panel,
+.admin-tool-view,
+.admin-users-view {
+  overscroll-behavior: contain;
+}
+
+.settings-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(24px) saturate(118%);
+  -webkit-backdrop-filter: blur(24px) saturate(118%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 180ms ease;
+  z-index: 1500;
+}
+
+.settings-modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.settings-dialog {
+  position: relative;
+  width: min(620px, calc(100vw - 36px));
+  max-height: min(760px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(var(--abyss-glass-tint), 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--abyss-radius-dialog);
+  box-shadow: 0 36px 96px rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(30px) saturate(128%);
+  -webkit-backdrop-filter: blur(30px) saturate(128%);
+  transform: translateY(12px) scale(0.985);
+  transition: transform 180ms ease;
+}
+
+.settings-dialog:focus {
+  outline: none;
+}
+
+.settings-dialog::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 22% 16%, rgba(255, 255, 255, 0.08), transparent 26%);
+  pointer-events: none;
+}
+
+.settings-dialog > * {
+  position: relative;
+  z-index: 1;
+}
+
+.settings-modal-backdrop.open .settings-dialog {
+  transform: translateY(0) scale(1);
+}

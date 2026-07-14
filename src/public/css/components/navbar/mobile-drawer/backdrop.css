@@ -1,0 +1,22 @@
+.mobile-nav-open {
+  overflow: hidden;
+}
+
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.64);
+  backdrop-filter: blur(14px) saturate(84%);
+  -webkit-backdrop-filter: blur(14px) saturate(84%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 260ms ease, visibility 260ms ease, backdrop-filter 260ms ease;
+  z-index: 1700;
+}
+
+body.mobile-nav-open .mobile-nav-backdrop {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
