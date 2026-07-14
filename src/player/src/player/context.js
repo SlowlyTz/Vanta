@@ -49,7 +49,6 @@ export async function createPlayerContext(options) {
     destroyed: false,
     fallbackAttempted: false,
     knownDuration: 0,
-    waitingTimer: null,
     lastWheelSeekAt: 0,
     ownerEchoSuppressionDepth: 0
   };
