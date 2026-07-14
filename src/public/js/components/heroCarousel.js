@@ -99,39 +99,6 @@ export function HeroCarousel({ items = [] }) {
   const gradientOverlay = createElement('div', { className: 'hero-carousel-gradient' });
   container.insertBefore(gradientOverlay, container.children[1]);
 
-  const dotsContainer = createElement('div', { className: 'hero-carousel-dots' });
-  slidesData.forEach((_, i) => {
-    const dot = createElement('button', {
-      className: 'hero-carousel-dot',
-      onClick: () => goToSlide(i)
-    });
-    dotsContainer.appendChild(dot);
-  });
-  container.appendChild(dotsContainer);
-
-  const updateDots = () => {
-    const dots = dotsContainer.querySelectorAll('.hero-carousel-dot');
-    const count = dots.length;
-    dots.forEach((dot, i) => {
-      const distance = Math.min(
-        Math.abs(i - currentIndex),
-        count - Math.abs(i - currentIndex)
-      );
-      dot.classList.remove('active', 'dot-near', 'dot-far', 'dot-hidden');
-      if (distance === 0) {
-        dot.classList.add('active');
-      } else if (distance === 1) {
-        dot.classList.add('dot-near');
-      } else if (distance === 2) {
-        dot.classList.add('dot-far');
-      } else {
-        dot.classList.add('dot-hidden');
-      }
-    });
-  };
-
-  updateDots();
-
   const deactivateSlide = (slide) => {
     slide.backdrop.style.opacity = '0';
     slide.content.style.opacity = '0';
@@ -153,7 +120,6 @@ export function HeroCarousel({ items = [] }) {
     currentIndex = index;
     activateSlide(slidesData[currentIndex]);
 
-    updateDots();
     resetAutoTimer();
   };
 

@@ -26,9 +26,11 @@ export function once(target, eventName, timeoutMs, rejectEvents = []) {
       cleanups.push(() => target.removeEventListener(name, onFailure));
     });
 
-    timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error(`Playback timed out while waiting for ${eventName}`));
-    }, timeoutMs);
+    if (Number.isFinite(timeoutMs)) {
+      timeout = window.setTimeout(() => {
+        cleanup();
+        reject(new Error(`Playback timed out while waiting for ${eventName}`));
+      }, timeoutMs);
+    }
   });
 }
