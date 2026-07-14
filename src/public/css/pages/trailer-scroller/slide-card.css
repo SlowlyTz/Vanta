@@ -1,0 +1,104 @@
+.trailer-scroller-track {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trailer-scroller-track::-webkit-scrollbar {
+  display: none;
+}
+
+.trailer-slide {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 2vh, 22px) clamp(18px, 3vw, 44px);
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.trailer-card {
+  display: grid;
+  width: min(1180px, 100%);
+  height: min(680px, calc(100% - 4px));
+  min-height: 0;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.75fr);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--scroller-border);
+  border-radius: 26px;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.012) 46%),
+    rgba(12, 12, 18, 0.94);
+  box-shadow:
+    0 36px 96px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.trailer-video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: #000;
+  box-shadow: 18px 0 54px rgba(0, 0, 0, 0.2);
+}
+
+.trailer-youtube-player,
+.trailer-youtube-player iframe,
+.trailer-video-container > iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.trailer-video-thumb {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 260ms ease, visibility 260ms ease;
+}
+
+.trailer-video-container::after {
+  position: absolute;
+  z-index: 3;
+  inset: auto 0 0;
+  height: 34%;
+  content: '';
+  opacity: 0.5;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.42), transparent);
+  transition: opacity 220ms ease;
+}
+
+.trailer-slide.is-player-ready .trailer-video-thumb {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.trailer-slide.is-player-ready .trailer-video-container::after {
+  opacity: 0;
+}
+

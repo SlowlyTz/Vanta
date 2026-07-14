@@ -1,0 +1,161 @@
+.trailer-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.trailer-action {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 54px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--abyss-radius);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.035);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.trailer-action:hover {
+  color: var(--text-primary);
+  border-color: rgba(var(--abyss-accent), 0.33);
+  background: rgba(var(--abyss-accent), 0.1);
+  transform: translateY(-1px);
+}
+
+.trailer-action-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.trailer-action-label {
+  overflow: hidden;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trailer-action-like.is-favorite {
+  color: hsl(349, 90%, 68%);
+  border-color: rgba(255, 86, 121, 0.3);
+  background: rgba(255, 69, 108, 0.1);
+}
+
+.trailer-action-like.is-favorite .trailer-action-icon svg {
+  fill: currentColor;
+}
+
+.trailer-feed-state {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+}
+
+.trailer-feed-state-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--abyss-radius);
+  color: var(--scroller-accent);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.trailer-feed-state-title {
+  color: var(--text-primary);
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-weight: 620;
+  letter-spacing: -0.025em;
+}
+
+.trailer-feed-state-text {
+  max-width: 460px;
+  margin-top: 9px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.trailer-feed-state-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.trailer-loading-preview {
+  display: grid;
+  width: min(680px, 86vw);
+  grid-template-columns: minmax(0, 1.45fr) minmax(180px, 0.55fr);
+  margin-bottom: 28px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.trailer-loading-video {
+  aspect-ratio: 16 / 9;
+  background:
+    linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.07) 42%, transparent 64%),
+    rgba(255, 255, 255, 0.045);
+  background-size: 220% 100%;
+  animation: trailer-loading-sheen 1.6s linear infinite;
+}
+
+.trailer-loading-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  padding: 24px;
+}
+
+.trailer-loading-lines span {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.trailer-loading-lines span:first-child {
+  width: 45%;
+}
+
+.trailer-loading-lines span:nth-child(2) {
+  width: 92%;
+  height: 17px;
+}
+
+.trailer-loading-lines span:last-child {
+  width: 70%;
+}
+
+@keyframes trailer-loading-sheen {
+  to { background-position: -220% 0; }
+}

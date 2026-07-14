@@ -1,0 +1,57 @@
+.admin-user-library-mode,
+.admin-user-library-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-user-library-mode {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-user-library-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.admin-user-library-grid.hidden {
+  display: none;
+}
+
+.admin-user-choice-btn,
+.admin-user-library-toggle {
+  min-height: 44px;
+  border-radius: var(--abyss-radius);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-primary);
+  font-weight: 680;
+  font-size: 0.88rem;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.admin-user-choice-btn:hover,
+.admin-user-library-toggle:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.admin-user-choice-btn:focus-visible,
+.admin-user-library-toggle:focus-visible {
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline-offset: 2px;
+}
+
+.admin-user-choice-btn.active,
+.admin-user-library-toggle.active {
+  border-color: rgba(var(--abyss-accent), 0.5);
+  background: rgba(var(--abyss-accent), 0.16);
+  color: #ffffff;
+}
+
+@media (max-width: 520px) {
+  .admin-user-library-mode {
+    grid-template-columns: 1fr;
+  }
+}

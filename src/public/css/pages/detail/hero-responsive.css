@@ -1,0 +1,70 @@
+@media (max-width: 992px) {
+  .detail-page {
+    --detail-hero-height: 0px;
+  }
+
+  .detail-hero-backdrop {
+    height: auto;
+    min-height: 0;
+    background-position: center top;
+  }
+
+  .detail-content {
+    padding: 42px var(--spacing-md) 20px;
+    gap: var(--spacing-lg);
+  }
+
+  .detail-hero-main {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: var(--spacing-lg);
+  }
+
+  .detail-poster {
+    width: min(54vw, 210px);
+    margin: 0 auto;
+    justify-self: center;
+  }
+
+  .detail-info {
+    align-items: center;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .detail-title {
+    font-size: 2.2rem;
+    text-align: center;
+  }
+
+  .detail-original-title {
+    font-size: 1rem;
+  }
+
+  .detail-episode-title {
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  .detail-metadata, .detail-genres, .detail-actions {
+    justify-content: center;
+  }
+
+  .detail-overview {
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .detail-content {
+    padding-top: 30px;
+  }
+
+  .detail-poster {
+    width: min(62vw, 190px);
+  }
+
+  .detail-title {
+    font-size: 1.9rem;
+  }
+}

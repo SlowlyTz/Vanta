@@ -1,0 +1,115 @@
+@media (hover: hover) and (pointer: fine) {
+  .hero-carousel-dot:hover:not(.active) {
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-hero {
+    height: 74svh;
+    height: 74vh;
+    min-height: 560px;
+    max-height: none;
+    margin-top: 0;
+  }
+  .home-hero-backdrop {
+    background-position: center top;
+  }
+  .home-hero-backdrop::after {
+    background:
+      linear-gradient(to right, rgba(4, 4, 6, 0.98) 0%, rgba(4, 4, 6, 0.78) 58%, rgba(4, 4, 6, 0.3) 100%),
+      linear-gradient(to top, var(--bg-primary) 0%, rgba(4, 4, 6, 0.72) 36%, rgba(4, 4, 6, 0.12) 100%);
+  }
+  .hero-carousel .home-hero-backdrop::after {
+    display: none;
+  }
+  .hero-carousel-gradient {
+    background:
+      linear-gradient(to right, rgba(4, 4, 6, 0.98) 0%, rgba(4, 4, 6, 0.78) 58%, rgba(4, 4, 6, 0.3) 100%),
+      linear-gradient(to top, var(--bg-primary) 0%, rgba(4, 4, 6, 0.72) 36%, rgba(4, 4, 6, 0.12) 100%);
+  }
+  .home-hero-content {
+    left: 18px;
+    right: 18px;
+    bottom: 120px;
+    width: auto;
+    max-width: none;
+    gap: 12px;
+  }
+  .home-hero-title {
+    font-size: 2.15rem;
+    letter-spacing: 0;
+    line-height: 1.08;
+  }
+  .home-hero-logo {
+    width: min(78vw, 340px);
+    max-height: 110px;
+  }
+  .home-hero-metadata {
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.9rem;
+  }
+  .home-hero-desc {
+    font-size: 0.95rem;
+    line-height: 1.45;
+    -webkit-line-clamp: 3;
+  }
+  .hero-carousel-dots {
+    bottom: 16px;
+  }
+  .home-hero-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+.hero-slide-content:not(.active) {
+  display: none;
+}
+
+.home-hero + .content-section {
+  position: relative;
+  z-index: 4;
+  margin-top: clamp(-132px, -15vh, -84px);
+  padding-top: 0;
+}
+
+@media (max-width: 768px) {
+  .home-hero + .content-section {
+    margin-top: -86px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape), (max-height: 500px) and (orientation: landscape) {
+    .home-hero {
+        height: 92vh;
+        height: 92svh;
+        min-height: 260px;
+        max-height: 420px;
+    }
+    .home-hero-content {
+        bottom: 14px;
+        left: 16px;
+        right: 16px;
+        gap: 8px;
+        max-width: 62%;
+    }
+    .home-hero-title {
+        font-size: 1.5rem;
+    }
+    .home-hero-desc {
+        -webkit-line-clamp: 2;
+        font-size: 0.85rem;
+    }
+    .hero-carousel-dots {
+        bottom: 8px;
+        padding: 5px 8px;
+    }
+}
+
+.home-hero::before {
+  content: '';
+  display: none;
+}
+

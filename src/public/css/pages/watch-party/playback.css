@@ -1,0 +1,113 @@
+.watch-party-autoplay-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  text-align: center;
+  color: #fff;
+  pointer-events: auto;
+}
+
+.watch-party-autoplay-overlay[hidden] {
+  display: none;
+}
+
+.watch-party-autoplay-overlay p {
+  margin: 0;
+  max-width: 360px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.watch-party-autoplay-button {
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  background: rgb(var(--abyss-accent));
+  color: #111;
+  font-size: 0.9rem;
+  font-weight: 800;
+  pointer-events: auto;
+}
+
+.watch-party-notifications {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 100002;
+  width: min(340px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.watch-party-notification {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgb(18, 19, 23);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  animation: watch-party-notification-in 180ms ease-out both;
+  pointer-events: none;
+}
+
+.watch-party-notification.is-leaving {
+  animation: watch-party-notification-out 220ms ease-in both;
+}
+
+.watch-party-notification-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(var(--abyss-accent), 0.16);
+  color: rgb(var(--abyss-accent));
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.watch-party-notification-text {
+  min-width: 0;
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+
+@keyframes watch-party-notification-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes watch-party-notification-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}

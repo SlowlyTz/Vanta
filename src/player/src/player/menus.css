@@ -1,0 +1,128 @@
+/* Menu buttons (quality, audio, subtitles) */
+.vanta-player-menu-button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0 10px;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.vanta-player-menu-button > svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.vanta-player-menu-button > span {
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 0.82rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-menu-button:hover,
+.vanta-player-menu-button:focus-visible {
+  background: rgb(255 255 255 / 0.14);
+  transform: scale(1.05);
+}
+
+.vanta-player-menu {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 64px);
+  z-index: 30;
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 32px));
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: var(--abyss-radius-dialog);
+  padding: 8px;
+  background: rgba(var(--abyss-glass-tint), 0.88);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.5);
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+
+@media (max-width: 480px) {
+  .vanta-player-menu {
+    right: max(8px, env(safe-area-inset-right));
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 56px);
+    min-width: 160px;
+  }
+}
+
+.vanta-player-menu[hidden] {
+  display: none;
+}
+
+.vanta-player-menu-item {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-radius: var(--abyss-radius);
+  padding: 8px 12px;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: 500 0.9rem Outfit, system-ui, sans-serif;
+  transition: background 140ms ease;
+}
+
+.vanta-player-menu-item:hover,
+.vanta-player-menu-item:focus-visible {
+  background: rgb(255 255 255 / 0.12);
+  outline: none;
+}
+
+.vanta-player-menu-item.is-selected {
+  background: rgb(255 255 255 / 0.18);
+  font-weight: 600;
+}
+
+.vanta-player-menu-empty {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  color: rgb(255 255 255 / 0.62);
+  font: 500 0.9rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-menu-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.vanta-player-menu-item-check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-content: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+  font-size: 0.75rem;
+  font-weight: 700;
+}

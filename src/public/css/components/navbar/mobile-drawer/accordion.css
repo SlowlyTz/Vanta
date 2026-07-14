@@ -1,0 +1,104 @@
+.mobile-drawer-accordion-trigger {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.mobile-drawer-accordion-link {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mobile-drawer-accordion-toggle {
+  flex: 0 0 auto;
+  width: 46px;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  appearance: none;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.mobile-drawer-accordion-toggle:hover,
+.mobile-drawer-accordion-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.88);
+  outline: none;
+}
+
+.mobile-drawer-chevron {
+  display: inline-flex;
+  transition: transform 180ms ease;
+}
+
+.mobile-drawer-accordion.is-open .mobile-drawer-chevron {
+  transform: rotate(90deg);
+}
+
+.mobile-drawer-submenu {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 4px 0 0;
+  list-style: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    max-height 240ms cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.mobile-drawer-submenu[hidden] {
+  display: none;
+}
+
+.mobile-drawer-accordion.is-open .mobile-drawer-submenu {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mobile-drawer-submenu-item {
+  list-style: none;
+}
+
+.mobile-drawer-submenu-link {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 50px;
+  border-radius: 9px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.86rem;
+  font-weight: 520;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.mobile-drawer-submenu-link:hover,
+.mobile-drawer-submenu-link.active {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.mobile-drawer-submenu-empty {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 50px;
+  color: rgba(255, 255, 255, 0.36);
+  font-size: 0.84rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer-submenu,
+  .mobile-drawer-chevron {
+    transition: none;
+  }
+}

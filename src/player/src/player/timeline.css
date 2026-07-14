@@ -1,0 +1,50 @@
+.vanta-player-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 40px;
+}
+
+.vanta-player-time-slider {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vanta-player-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-player-time-separator {
+  opacity: 0.6;
+}
+
+.vanta-player-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.vanta-player-controls-left,
+.vanta-player-controls-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.vanta-player-volume-slider {
+  width: 100px;
+  margin-left: -2px;
+}
+
+/* Vidstack button focus */
+.vanta-media-player [data-media-button][data-focus] {
+  z-index: 1;
+}
