@@ -1,3 +1,11 @@
+:root {
+  /* Fixed-navbar bottom edge (top offset + height) plus breathing room.
+     Pages that render prominent content behind the transparent spotlight
+     navbar (e.g. detail hero) should pad against this instead of a magic
+     number, so it stays correct if the navbar's own geometry changes. */
+  --spotlight-navbar-clearance: calc(max(14px, env(safe-area-inset-top)) + 44px + 24px);
+}
+
 .navbar.navbar-spotlight {
   position: fixed;
   top: max(14px, env(safe-area-inset-top));
@@ -161,6 +169,10 @@
 }
 
 @media (max-width: 520px) {
+  :root {
+    --spotlight-navbar-clearance: calc(max(10px, env(safe-area-inset-top)) + 40px + 20px);
+  }
+
   .navbar.navbar-spotlight {
     top: max(10px, env(safe-area-inset-top));
     height: 40px;

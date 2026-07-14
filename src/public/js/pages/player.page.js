@@ -16,7 +16,7 @@ export default function PlayerPage({ id }) {
   let scrollLockY = 0;
 
   const handleTouchMove = event => {
-    if (event.target.closest('media-player, button, .vanta-player-menu, .vanta-player-error')) return;
+    if (event.target.closest('media-player, button, .vanta-player-menu')) return;
     event.preventDefault();
   };
 

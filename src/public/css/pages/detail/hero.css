@@ -43,7 +43,7 @@
   width: min(100%, 1480px);
   max-width: 100%;
   margin: 0 auto;
-  padding: clamp(78px, 9vh, 116px) clamp(20px, 5vw, 64px) clamp(16px, 2.5vw, 28px);
+  padding: clamp(var(--spotlight-navbar-clearance), 9vh, 116px) clamp(20px, 5vw, 64px) clamp(16px, 2.5vw, 28px);
   display: flex;
   flex-direction: column;
   gap: clamp(20px, 2.5vw, 32px);

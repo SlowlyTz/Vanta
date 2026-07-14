@@ -110,7 +110,6 @@ export function createPlayerController(context) {
       context.destroyed = true;
       context.phoneOrientationActive = false;
       context.gateActive = false;
-      context.clearWaitingTimer();
       context.sourceSwitch.clearSeekTimer();
 
       // Start final reporting before tearing down reporter state so keepalive can flush.

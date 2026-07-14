@@ -10,7 +10,7 @@
   }
 
   .detail-content {
-    padding: 42px var(--spacing-md) 20px;
+    padding: var(--spotlight-navbar-clearance) var(--spacing-md) 20px;
     gap: var(--spacing-lg);
   }
 
@@ -57,7 +57,7 @@
 
 @media (max-width: 600px) {
   .detail-content {
-    padding-top: 30px;
+    padding-top: var(--spotlight-navbar-clearance);
   }
 
   .detail-poster {

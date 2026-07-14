@@ -65,12 +65,6 @@ export function bindReporterAndOrientation(context) {
     }
   };
 
-  context.clearWaitingTimer = () => {
-    if (!context.waitingTimer) return;
-    window.clearTimeout(context.waitingTimer);
-    context.waitingTimer = null;
-  };
-
   context.setLoading = (visible, status) => {
     if (status) dom.loadingStatus.textContent = status;
     dom.loading.classList.toggle('is-hidden', !visible);
@@ -85,18 +79,13 @@ export function bindReporterAndOrientation(context) {
     dom.inlineLoading.hidden = !visible;
   };
 
-  context.hideError = () => {
-    dom.error.hidden = true;
-  };
+  context.hideError = () => {};
 
-  context.showError = message => {
-    context.clearWaitingTimer();
+  context.showError = () => {
     context.sourceSwitch.clearSeekTimer();
-    context.setLoading(false);
     context.setInlineLoading(false);
-    context.ui.setState('error');
-    dom.errorMessage.textContent = message || 'Der Medienstrom konnte nicht wiedergegeben werden.';
-    dom.error.hidden = false;
+    context.ui.setState('buffering');
+    context.setLoading(true, 'Stream wird geladen …');
   };
 
   return context;

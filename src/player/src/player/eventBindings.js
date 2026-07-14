@@ -40,15 +40,10 @@ export function bindPlayerEvents(context) {
     }
   };
 
-  const startWaitingTimeout = () => {
+  const enterBufferingState = () => {
     if (context.sourceSwitch.isSwitching() || context.destroyed) return;
-    context.clearWaitingTimer();
     context.ui.setState('buffering');
     context.setInlineLoading(true);
-    context.waitingTimer = window.setTimeout(() => {
-      context.waitingTimer = null;
-      handlePlaybackFailure(new Error('Der Medienstrom antwortet nicht rechtzeitig.'));
-    }, 25_000);
   };
 
   const handleWheel = event => {
@@ -86,7 +81,7 @@ export function bindPlayerEvents(context) {
   listen(player, 'error', event => {
     if (context.sourceSwitch.isSwitching() || context.destroyed) return;
     const detail = event.detail || {};
-    const message = detail.message || 'Wiedergabefehler';
+    const message = detail.message || 'Medienfehler';
     const isFatalCode = detail.code >= 2 && detail.code <= 4;
     if (isFatalCode || /not supported|decode|network|media_err/i.test(message)) {
       handlePlaybackFailure(new Error(message));
@@ -107,7 +102,6 @@ export function bindPlayerEvents(context) {
   listen(player, 'pause', () => {
     if (!context.sourceSwitch.isSwitching()) {
       context.sourceSwitch.setIntendsToPlay(false);
-      context.clearWaitingTimer();
       context.sourceSwitch.clearSeekTimer();
       context.setInlineLoading(false);
       context.ui.setState('ready-paused');
@@ -115,7 +109,7 @@ export function bindPlayerEvents(context) {
   });
 
   listen(player, 'waiting', () => {
-    if (!context.sourceSwitch.isSwitching()) startWaitingTimeout();
+    if (!context.sourceSwitch.isSwitching()) enterBufferingState();
   });
 
   listen(player, 'seeking', () => {
@@ -127,7 +121,6 @@ export function bindPlayerEvents(context) {
   });
 
   listen(player, 'playing', () => {
-    context.clearWaitingTimer();
     context.sourceSwitch.clearSeekTimer();
     if (!context.sourceSwitch.isSwitching()) {
       context.sourceSwitch.setAutoplayBlocked(false);
@@ -169,21 +162,6 @@ export function bindPlayerEvents(context) {
   });
   listen(player, 'wheel', handleWheel, { passive: false });
   listen(dom.backButton, 'click', onBack);
-  listen(dom.errorBackButton, 'click', onBack);
-
-  listen(dom.retryButton, 'click', async () => {
-    context.hideError();
-    context.fallbackAttempted = false;
-    const position = Math.max(context.reporter.getPosition(), context.sourceSwitch.getLastRequestedPosition());
-    try {
-      const mode = context.sourceSwitch.getCurrentPlayback()?.delivery === 'hls' ? 'hls' : 'auto';
-      const playback = await context.resolvePlayback(mode);
-      await context.sourceSwitch.switchTo(playback, { position, shouldPlay: true, label: 'Stream wird neu geladen …' });
-      context.updateMenus(playback);
-    } catch (error) {
-      if (!context.destroyed) context.showError(error.message);
-    }
-  });
 
   context.switchToHls = switchToHls;
 

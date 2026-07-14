@@ -127,15 +127,6 @@ export function createPlayerMarkup(root, { title, poster }) {
       <div class="vanta-player-inline-loading" role="status" aria-live="polite" hidden>
         <div class="vanta-player-inline-spinner" aria-hidden="true"></div>
       </div>
-
-      <div class="vanta-player-error" role="alert" hidden>
-        <strong>Wiedergabefehler</strong>
-        <p></p>
-        <div>
-          <button class="vanta-player-retry" type="button">Erneut versuchen</button>
-          <button class="vanta-player-error-back" type="button">Zurück</button>
-        </div>
-      </div>
     </div>`;
 
   const player = root.querySelector('media-player');
@@ -168,10 +159,6 @@ export function createPlayerMarkup(root, { title, poster }) {
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),
     loadingStatus: root.querySelector('.vanta-player-loading-status'),
-    inlineLoading: root.querySelector('.vanta-player-inline-loading'),
-    error: root.querySelector('.vanta-player-error'),
-    errorMessage: root.querySelector('.vanta-player-error p'),
-    retryButton: root.querySelector('.vanta-player-retry'),
-    errorBackButton: root.querySelector('.vanta-player-error-back')
+    inlineLoading: root.querySelector('.vanta-player-inline-loading')
   };
 }

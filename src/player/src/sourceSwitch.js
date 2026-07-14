@@ -4,8 +4,6 @@ import { applyPlaybackState, syncPlayingState } from './sourceSwitch/loadingStat
 import { waitForDurationOrSeekable, clearSeekTimer, startSeekTimer, performSeek } from './sourceSwitch/seekRestore.js';
 import { createSwitchTo } from './sourceSwitch/rollback.js';
 
-const LOAD_TIMEOUT_MS = 25_000;
-
 const playbackSource = playback => ({
   src: playback.url,
   type: playback.delivery === 'hls'
@@ -57,7 +55,7 @@ export function createSourceSwitch(options) {
     state.player.src = playbackSource(playback);
 
     try {
-      await once(state.player, 'can-play', LOAD_TIMEOUT_MS, ['error']);
+      await once(state.player, 'can-play', undefined, ['error']);
       if (!state.isCurrentLoad(version)) return;
       state.setLoadingStatus('Medienquelle ist bereit. Laufzeit wird geprüft …');
       state.restoreState(nextState);

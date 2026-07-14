@@ -1,9 +1,3 @@
-@media (hover: hover) and (pointer: fine) {
-  .hero-carousel-dot:hover:not(.active) {
-    opacity: 0.8;
-  }
-}
-
 @media (max-width: 768px) {
   .home-hero {
     height: 74svh;
@@ -31,7 +25,7 @@
   .home-hero-content {
     left: 18px;
     right: 18px;
-    bottom: 120px;
+    bottom: var(--hero-content-bottom);
     width: auto;
     max-width: none;
     gap: 12px;
@@ -55,9 +49,6 @@
     line-height: 1.45;
     -webkit-line-clamp: 3;
   }
-  .hero-carousel-dots {
-    bottom: 16px;
-  }
   .home-hero-actions {
     flex-wrap: wrap;
     gap: 10px;
@@ -71,17 +62,22 @@
 .home-hero + .content-section {
   position: relative;
   z-index: 4;
-  margin-top: clamp(-132px, -15vh, -84px);
+  margin-top: calc(-1 * var(--hero-overlap));
   padding-top: 0;
 }
 
 @media (max-width: 768px) {
-  .home-hero + .content-section {
-    margin-top: -86px;
+  :root {
+    --hero-overlap: 94px;
+    --hero-content-bottom: clamp(112px, 20svh, 150px);
   }
 }
 
 @media (max-width: 900px) and (orientation: landscape), (max-height: 500px) and (orientation: landscape) {
+    :root {
+        --hero-overlap: 40px;
+        --hero-content-bottom: 72px;
+    }
     .home-hero {
         height: 92vh;
         height: 92svh;
@@ -89,7 +85,7 @@
         max-height: 420px;
     }
     .home-hero-content {
-        bottom: 14px;
+        bottom: var(--hero-content-bottom);
         left: 16px;
         right: 16px;
         gap: 8px;
@@ -102,14 +98,9 @@
         -webkit-line-clamp: 2;
         font-size: 0.85rem;
     }
-    .hero-carousel-dots {
-        bottom: 8px;
-        padding: 5px 8px;
-    }
 }
 
 .home-hero::before {
   content: '';
   display: none;
 }
-

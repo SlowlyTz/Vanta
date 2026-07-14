@@ -40,7 +40,6 @@
 
 .vanta-player-root[data-ui-state="booting"] .vanta-player-controls-layer,
 .vanta-player-root[data-ui-state="switching-source"] .vanta-player-controls-layer,
-.vanta-player-root[data-ui-state="error"] .vanta-player-controls-layer,
 .vanta-player-root[data-ui-state="ready-playing-idle"] .vanta-player-controls-layer {
   opacity: 0;
   pointer-events: none;
@@ -153,4 +152,3 @@
 .vanta-player-bottom-controls > * {
   pointer-events: auto;
 }
-
