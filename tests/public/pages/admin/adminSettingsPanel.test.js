@@ -21,18 +21,71 @@ function statusOf({ configured = false, enabled = false, maskedUrl = null } = {}
   return { configured, enabled, maskedUrl };
 }
 
+// Der Webhook-Abschnitt startet eingeklappt; erst das Aufklappen zeigt das
+// Formular und holt den Status nach.
+function expandWebhook(panel) {
+  panel.element.querySelector('.admin-settings-section-toggle').click();
+}
+
 describe('createAdminSettingsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     AdminSettingsApi.getDiscordWebhook.mockResolvedValue(statusOf());
   });
 
-  it('shows a loading state as soon as it opens, then the fetched status', async () => {
+  it('starts with the webhook section collapsed and fetches nothing until it is expanded', async () => {
+    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
+    panel.open();
+    await flush();
+
+    const section = panel.element.querySelector('.admin-settings-section');
+    const bodyWrap = panel.element.querySelector('.admin-settings-section-body-wrap');
+    const toggle = panel.element.querySelector('.admin-settings-section-toggle');
+
+    // Eingeklappt wird ueber die Klasse gesteuert, nicht ueber [hidden] —
+    // display: none liesse sich nicht animieren. `inert` haelt den Inhalt
+    // solange aus Fokus und Screenreadern heraus.
+    expect(section.classList.contains('expanded')).toBe(false);
+    expect(bodyWrap.hasAttribute('inert')).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    // Der Endpunkt haengt hinter requireFreshAdmin — wer den Webhook nicht
+    // ansehen will, soll dafuer keinen Jellyfin-Roundtrip ausloesen.
+    expect(AdminSettingsApi.getDiscordWebhook).not.toHaveBeenCalled();
+
+    expandWebhook(panel);
+    await flush();
+
+    expect(section.classList.contains('expanded')).toBe(true);
+    expect(bodyWrap.hasAttribute('inert')).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(AdminSettingsApi.getDiscordWebhook).toHaveBeenCalledTimes(1);
+  });
+
+  it('collapses again on a second click without refetching', async () => {
+    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
+    panel.open();
+    expandWebhook(panel);
+    await flush();
+
+    const section = panel.element.querySelector('.admin-settings-section');
+
+    expandWebhook(panel);
+    expect(section.classList.contains('expanded')).toBe(false);
+    expect(panel.element.querySelector('.admin-settings-section-body-wrap').hasAttribute('inert')).toBe(true);
+
+    expandWebhook(panel);
+    await flush();
+    expect(section.classList.contains('expanded')).toBe(true);
+    expect(AdminSettingsApi.getDiscordWebhook).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a loading state as soon as the section is expanded, then the fetched status', async () => {
     let resolveGet;
     AdminSettingsApi.getDiscordWebhook.mockReturnValue(new Promise(resolve => { resolveGet = resolve; }));
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
 
     expect(panel.element.querySelector('.admin-settings-webhook-status').textContent).toBe('Lädt…');
 
@@ -50,6 +103,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const urlInput = panel.element.querySelector('.admin-settings-input');
@@ -63,6 +117,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const urlInput = panel.element.querySelector('.admin-settings-input');
@@ -84,6 +139,7 @@ describe('createAdminSettingsPanel', () => {
   it('the save button stays disabled while the URL field is empty', async () => {
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const saveButton = Array.from(panel.element.querySelectorAll('.admin-settings-action'))
@@ -102,6 +158,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     // Leftover, unsaved text in the URL field must not leak into the toggle's PUT.
@@ -128,6 +185,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const toggle = panel.element.querySelector('.admin-settings-toggle-input');
@@ -145,6 +203,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const urlInput = panel.element.querySelector('.admin-settings-input');
@@ -165,6 +224,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const testButton = Array.from(panel.element.querySelectorAll('.admin-settings-action'))
@@ -180,6 +240,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const testButton = Array.from(panel.element.querySelectorAll('.admin-settings-action'))
@@ -198,6 +259,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const urlInput = panel.element.querySelector('.admin-settings-input');
@@ -222,6 +284,7 @@ describe('createAdminSettingsPanel', () => {
 
     const panel = createAdminSettingsPanel({ onClose: vi.fn() });
     panel.open();
+    expandWebhook(panel);
     await flush();
 
     const removeButton = Array.from(panel.element.querySelectorAll('.admin-settings-action'))
@@ -237,6 +300,7 @@ describe('createAdminSettingsPanel', () => {
     const onClose = vi.fn();
     const panel = createAdminSettingsPanel({ onClose });
     panel.open();
+    expandWebhook(panel);
     expect(panel.isOpen()).toBe(true);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -244,6 +308,7 @@ describe('createAdminSettingsPanel', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
 
     panel.open();
+    expandWebhook(panel);
     panel.element.dispatchEvent(new Event('click'));
     expect(panel.isOpen()).toBe(false);
     expect(onClose).toHaveBeenCalledTimes(2);

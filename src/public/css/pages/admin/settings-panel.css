@@ -102,11 +102,98 @@
 .admin-settings-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
   border-radius: var(--abyss-radius);
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+
+/* Aufklappbare Kopfzeile. Der Abschnitt startet eingeklappt; erst ein Klick
+   zeigt den Rumpf und holt den Status nach. */
+.admin-settings-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  width: 100%;
+  padding: var(--spacing-lg);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.admin-settings-section-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-settings-section-toggle:focus-visible {
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline-offset: -2px;
+}
+
+.admin-settings-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-settings-section-chevron {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform var(--transition-fast);
+}
+
+.admin-settings-section.expanded .admin-settings-section-chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-settings-section-body-wrap,
+  .admin-settings-section-body,
+  .admin-settings-section-chevron {
+    transition: none;
+  }
+}
+
+/* Sanftes Auf- und Zuklappen. Der Wrapper ist ein Grid, dessen einzige Zeile
+   von 0fr auf 1fr faehrt: das animiert die tatsaechliche Inhaltshoehe, ohne
+   sie in JS messen zu muessen. Bewusst kein max-height wie im Drawer-Accordion
+   (components/navbar/mobile-drawer/accordion.css) — der Rumpf waechst hier je
+   nach Status- und Fehlermeldung, und eine geratene Maximalhoehe wuerde beim
+   Zuklappen springen. Timing und Kurve sind von dort uebernommen, damit sich
+   beide Accordions gleich anfuehlen. */
+.admin-settings-section-body-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 240ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.admin-settings-section.expanded .admin-settings-section-body-wrap {
+  grid-template-rows: 1fr;
+}
+
+.admin-settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+  /* Beides noetig, damit die Zeile auf 0 zusammenfahren kann und der Inhalt
+     dabei sauber abgeschnitten statt gestaucht wird. */
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.admin-settings-section.expanded .admin-settings-section-body {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .admin-settings-section-title {

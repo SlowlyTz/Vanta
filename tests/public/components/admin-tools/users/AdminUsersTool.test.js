@@ -48,6 +48,12 @@ async function flush() {
   }
 }
 
+// Die Detailansicht liegt seit dem Umbau als Modal an document.body, nicht
+// mehr als Slot im Tool-Element.
+function detailModal() {
+  return document.querySelector('.admin-user-dialog-detail');
+}
+
 describe('AdminUsersTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -174,7 +180,7 @@ describe('AdminUsersTool', () => {
     expect(status.textContent).toContain('Netzwerkfehler');
   });
 
-  it('clicking Bearbeiten replaces the list with a full-width detail view, hiding search and the list', async () => {
+  it('clicking Bearbeiten opens the detail view in a modal and leaves the list standing', async () => {
     AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
     const tool = createAdminUsersTool();
@@ -182,47 +188,55 @@ describe('AdminUsersTool', () => {
     await flush();
 
     const listView = tool.element.querySelector('.admin-users-list-view');
-    const detailSlot = tool.element.querySelector('.admin-users-detail-slot');
     expect(listView.hidden).toBe(false);
-    expect(detailSlot.hidden).toBe(true);
+    expect(detailModal()).toBeNull();
 
     tool.element.querySelector('.admin-user-action-btn').click();
 
-    expect(listView.hidden).toBe(true);
-    expect(detailSlot.hidden).toBe(false);
-    expect(detailSlot.querySelector('.admin-user-detail-view')).toBeTruthy();
-    expect(detailSlot.querySelector('.admin-user-detail-name').textContent).toBe('alice');
+    const modal = detailModal();
+    expect(modal).toBeTruthy();
+    expect(modal.querySelector('.admin-user-detail-view')).toBeTruthy();
+    expect(modal.querySelector('.admin-user-detail-name').textContent).toBe('alice');
+
+    // Die Liste verschwindet nicht mehr hinter der Detailansicht.
+    expect(listView.hidden).toBe(false);
+    expect(tool.element.querySelectorAll('.admin-user-row')).toHaveLength(1);
   });
 
-  it('registers a single shared back control instead of rendering its own back button', async () => {
+  it('closing the detail modal removes it and reloads the list', async () => {
     AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-    const setBackControl = vi.fn();
     const tool = createAdminUsersTool();
-    tool.registerBackControl(setBackControl);
+    await tool.load();
+    await flush();
+    expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(1);
+
+    tool.element.querySelector('.admin-user-action-btn').click();
+    expect(detailModal()).toBeTruthy();
+
+    detailModal().querySelector('.admin-user-dialog-close').click();
+    await flush();
+
+    expect(detailModal()).toBeNull();
+    // Neu geladen, damit im Hintergrund geänderte Namen/Badges/Limits stimmen.
+    expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(2);
+  });
+
+  it('the tool renders no back control of its own — the modal closes itself', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
+
+    const tool = createAdminUsersTool();
     await tool.load();
     await flush();
 
-    // No back button lives inside the tool's own element; the caller (the
-    // admin page) owns any back affordance.
+    expect(tool.registerBackControl).toBeUndefined();
     expect(tool.element.querySelector('.admin-view-back-button')).toBeNull();
-    expect(setBackControl).toHaveBeenCalledWith(null);
 
     tool.element.querySelector('.admin-user-action-btn').click();
-
-    expect(setBackControl).toHaveBeenLastCalledWith(expect.any(Function));
-
-    const detailBackHandler = setBackControl.mock.calls.at(-1)[0];
-    detailBackHandler();
-
-    const listView = tool.element.querySelector('.admin-users-list-view');
-    const detailSlot = tool.element.querySelector('.admin-users-detail-slot');
-    expect(listView.hidden).toBe(false);
-    expect(detailSlot.hidden).toBe(true);
-    expect(setBackControl).toHaveBeenLastCalledWith(null);
+    expect(detailModal().querySelector('.admin-user-dialog-close')).toBeTruthy();
   });
 
-  it('selectUser opens the detail view for a user from the last loaded list', async () => {
+  it('selectUser opens the detail modal for a user from the last loaded list', async () => {
     AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser({ id: 'u1', name: 'alice' })] });
 
     const tool = createAdminUsersTool();
@@ -232,8 +246,7 @@ describe('AdminUsersTool', () => {
     const handled = tool.selectUser('u1');
 
     expect(handled).toBe(true);
-    expect(tool.element.querySelector('.admin-users-detail-slot').hidden).toBe(false);
-    expect(tool.element.querySelector('.admin-user-detail-name').textContent).toBe('alice');
+    expect(detailModal().querySelector('.admin-user-detail-name').textContent).toBe('alice');
   });
 
   it('selectUser returns false for a user id that is not in the loaded list', async () => {
@@ -246,7 +259,7 @@ describe('AdminUsersTool', () => {
     expect(tool.selectUser('missing')).toBe(false);
   });
 
-  it('after saving a field in the detail view, the detail record is refreshed and stays on the detail view', async () => {
+  it('after saving a field, the detail modal stays open and shows the refreshed record', async () => {
     AdminUsersApi.listUsers
       .mockResolvedValueOnce({ users: [makeUser({ maxConcurrentStreams: 1 })] })
       .mockResolvedValueOnce({ users: [makeUser({ maxConcurrentStreams: 2 })] });
@@ -258,20 +271,21 @@ describe('AdminUsersTool', () => {
 
     tool.element.querySelector('.admin-user-action-btn').click();
 
-    const detailSlot = tool.element.querySelector('.admin-users-detail-slot');
-    const input = detailSlot.querySelector('.admin-user-stream-input');
+    const input = detailModal().querySelector('.admin-user-stream-input');
     input.value = '2';
-    detailSlot.querySelector('.admin-user-save-all').click();
+    detailModal().querySelector('.admin-user-save-all').click();
     await flush();
 
     expect(AdminUsersApi.setStreamLimit).toHaveBeenCalledWith('u1', 2);
     expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(2);
-    expect(detailSlot.hidden).toBe(false);
-    expect(tool.element.querySelector('.admin-users-list-view').hidden).toBe(true);
-    expect(detailSlot.querySelector('.admin-user-stream-info').textContent).toBe('0/2 Streams');
+
+    // Das Modal wird durch eines mit frischen Daten ersetzt — dieses Ersetzen
+    // darf kein weiteres Neuladen auslösen (sonst close -> load -> showDetail).
+    expect(document.querySelectorAll('.admin-user-dialog-detail')).toHaveLength(1);
+    expect(detailModal().querySelector('.admin-user-stream-info').textContent).toBe('0/2 Streams');
   });
 
-  it('falls back to the list when the selected user disappears after a reload (e.g. deleted)', async () => {
+  it('closes the detail modal when the open user disappears after a reload (e.g. deleted)', async () => {
     AdminUsersApi.listUsers
       .mockResolvedValueOnce({ users: [makeUser({ id: 'u1' })] })
       .mockResolvedValueOnce({ users: [] });
@@ -282,17 +296,18 @@ describe('AdminUsersTool', () => {
 
     tool.element.querySelector('.admin-user-action-btn').click();
 
-    const detailSlot = tool.element.querySelector('.admin-users-detail-slot');
-    const deleteBtn = Array.from(detailSlot.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Löschen');
+    const deleteBtn = Array.from(detailModal().querySelectorAll('.admin-user-action-btn'))
+      .find(b => b.textContent === 'Löschen');
     deleteBtn.click();
 
-    const dialog = document.querySelector('.admin-user-dialog-overlay');
-    dialog.querySelector('input[type="text"]').value = 'alice';
-    Array.from(dialog.querySelectorAll('button')).find(b => b.textContent === 'Endgültig löschen').click();
+    const confirmDialog = Array.from(document.querySelectorAll('.admin-user-dialog-overlay'))
+      .find(el => !el.classList.contains('admin-user-dialog-detail'));
+    confirmDialog.querySelector('input[type="text"]').value = 'alice';
+    Array.from(confirmDialog.querySelectorAll('button')).find(b => b.textContent === 'Endgültig löschen').click();
     await flush();
 
+    expect(detailModal()).toBeNull();
     expect(tool.element.querySelector('.admin-users-list-view').hidden).toBe(false);
-    expect(detailSlot.hidden).toBe(true);
   });
 
   it('shows a global success toast (not a local admin-user-toast) after a successful save', async () => {
@@ -304,14 +319,13 @@ describe('AdminUsersTool', () => {
     await flush();
 
     tool.element.querySelector('.admin-user-action-btn').click();
-    const detailSlot = tool.element.querySelector('.admin-users-detail-slot');
-    const input = detailSlot.querySelector('.admin-user-stream-input');
+    const input = detailModal().querySelector('.admin-user-stream-input');
     input.value = '2';
-    detailSlot.querySelector('.admin-user-save-all').click();
+    detailModal().querySelector('.admin-user-save-all').click();
     await flush();
 
     expect(appStore.showToast).toHaveBeenCalledWith('Änderungen gespeichert', 'success');
-    expect(tool.element.querySelector('.admin-user-toast')).toBeNull();
+    expect(document.querySelector('.admin-user-toast')).toBeNull();
   });
 
   it('shows a global error toast when a save fails', async () => {
@@ -323,10 +337,9 @@ describe('AdminUsersTool', () => {
     await flush();
 
     tool.element.querySelector('.admin-user-action-btn').click();
-    const detailSlot = tool.element.querySelector('.admin-users-detail-slot');
-    const nameInput = detailSlot.querySelector('.admin-user-field-row input[type="text"]');
+    const nameInput = detailModal().querySelector('.admin-user-field-row input[type="text"]');
     nameInput.value = 'bob';
-    detailSlot.querySelector('.admin-user-save-all').click();
+    detailModal().querySelector('.admin-user-save-all').click();
     await flush();
 
     expect(appStore.showToast).toHaveBeenCalledWith('Nutzer konnte nicht umbenannt werden', 'error');

@@ -28,6 +28,21 @@
   box-sizing: border-box;
 }
 
+/* Die Nutzer-Detailansicht im Modal: breiter (das Bibliotheksraster braucht
+   Platz) und intern scrollend, damit sie bei wenig Hoehe nicht aus dem
+   Viewport waechst. Bewusst eine Ebene unter den Bestaetigungsdialogen, die
+   aus ihr heraus geoeffnet werden — sonst haengt die Reihenfolge daran, in
+   welcher Reihenfolge die Overlays im DOM landen. */
+.admin-user-dialog-overlay.admin-user-dialog-detail {
+  z-index: 4900;
+}
+
+.admin-user-dialog-overlay.admin-user-dialog-detail .admin-user-dialog {
+  width: min(760px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
 .admin-user-dialog-close {
   position: absolute;
   top: 12px;

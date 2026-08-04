@@ -49,30 +49,11 @@ export default function AdminPage() {
   return container;
 }
 
-// Baut eine Bereichsansicht (Anfragen/Nutzer). Tools mit registerBackControl
-// (aktuell nur die Nutzerverwaltung) bekommen einen eigenen Zurück-Button,
-// der nur auf Mobil sichtbar ist (Ansichtswechsel Liste <-> Detail, siehe
-// plan.md A5) — auf der Admin-Seite gibt es keinen geteilten Zurück-Button
-// mehr wie früher im Einstellungen-Dialog.
+// Baut eine Bereichsansicht (Anfragen/Nutzer). Einen Zurück-Button braucht
+// hier kein Tool mehr: die Nutzer-Detailansicht öffnet als Modal und schließt
+// sich selbst, die Liste bleibt dahinter stehen.
 function buildSectionPanel(tool) {
-  const children = [tool.element];
-
-  if (typeof tool.registerBackControl === 'function') {
-    const backButton = createElement('button', {
-      className: 'admin-section-back-button hidden',
-      type: 'button'
-    }, '← Zurück zur Liste');
-
-    tool.registerBackControl((onClickOrNull) => {
-      backButton.classList.toggle('hidden', !onClickOrNull);
-      backButton.onclick = onClickOrNull || null;
-    });
-
-    children.unshift(backButton);
-  }
-
-  const panel = createElement('div', { className: 'admin-section-panel' }, ...children);
-  return panel;
+  return createElement('div', { className: 'admin-section-panel' }, tool.element);
 }
 
 function buildAdminLayout() {
