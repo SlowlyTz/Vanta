@@ -6,6 +6,7 @@ import { appStore } from '../../../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../../loader.js';
 import { createAdminUserRow } from './adminUserRow.js';
 import { createAdminUserDetailView } from './adminUserDetailView.js';
+import { openAdminModal } from '../adminModal.js';
 
 // Baut eine Signatur aus allen in der Zeile sichtbaren Feldern. renderList()
 // vergleicht sie mit der zuletzt gerenderten, um bei unverändertem Ergebnis
@@ -23,7 +24,8 @@ export function createAdminUsersTool() {
   let currentAdminId = null;
   let searchTerm = '';
   let lastRenderedSignature = null;
-  let setBackControl = () => {};
+  let openDetailModal = null;
+  let replacingDetail = false;
 
   const statusEl = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
   const listEl = createElement('div', { className: 'admin-users-list' });
@@ -32,12 +34,9 @@ export function createAdminUsersTool() {
     statusEl,
     listEl
   );
-  const detailSlot = createElement('div', { className: 'admin-users-detail-slot' });
-  detailSlot.hidden = true;
 
   const element = createElement('div', { className: 'admin-users-view' },
-    listView,
-    detailSlot
+    listView
   );
 
   const notify = (message, type = 'info') => {
@@ -86,25 +85,34 @@ export function createAdminUsersTool() {
     renderList();
   };
 
-  const showList = () => {
-    detailSlot.hidden = true;
-    detailSlot.innerHTML = '';
-    listView.hidden = false;
-    setBackControl(null);
-    renderList();
-  };
-
+  // Die Detailansicht öffnet als Modal über der Seite; die Liste bleibt
+  // dahinter stehen. Schließt der Nutzer das Modal, wird neu geladen, damit
+  // dort geänderte Namen, Badges und Stream-Limits sofort stimmen.
+  //
+  // Nach dem Speichern ersetzt load({ keepSelectedUserId }) das Modal durch
+  // eines mit frischen Daten. Dieses Ersetzen darf das Neuladen NICHT erneut
+  // auslösen — sonst schaukelt sich close -> load -> showDetail -> close auf.
   const showDetail = (user) => {
-    listView.hidden = true;
-    detailSlot.hidden = false;
-    detailSlot.innerHTML = '';
-    detailSlot.appendChild(createAdminUserDetailView(user, {
+    if (openDetailModal) {
+      replacingDetail = true;
+      openDetailModal.close();
+      replacingDetail = false;
+    }
+
+    const detailView = createAdminUserDetailView(user, {
       libraries,
       currentAdminId,
       onReload: () => load({ keepSelectedUserId: user.id }),
       notify
-    }));
-    setBackControl(showList);
+    });
+
+    openDetailModal = openAdminModal(detailView, {
+      variant: 'admin-user-dialog-detail',
+      onClose: () => {
+        openDetailModal = null;
+        if (!replacingDetail) load();
+      }
+    });
   };
 
   // Öffnet die Detailansicht für einen bestimmten Nutzer, z.B. aus einem
@@ -135,14 +143,20 @@ export function createAdminUsersTool() {
       currentAdminId = currentUser?.user?.id || currentAdminId;
       lastRenderedSignature = null;
 
+      renderList();
+
       const updatedSelectedUser = keepSelectedUserId
         ? users.find(u => u.id === keepSelectedUserId)
         : null;
 
       if (updatedSelectedUser) {
         showDetail(updatedSelectedUser);
-      } else {
-        showList();
+      } else if (keepSelectedUserId && openDetailModal) {
+        // Der offene Nutzer existiert nicht mehr (z.B. gerade gelöscht) —
+        // das Modal muss weg, sonst steht dort ein toter Datensatz.
+        replacingDetail = true;
+        openDetailModal.close();
+        replacingDetail = false;
       }
     } catch (error) {
       console.error('[Admin Users Tool Load Error]', error);
@@ -162,7 +176,6 @@ export function createAdminUsersTool() {
     element,
     load: () => load(),
     setFilter,
-    selectUser,
-    registerBackControl: (fn) => { setBackControl = fn; }
+    selectUser
   };
 }

@@ -12,6 +12,8 @@ export function createAdminSettingsPanel({ onClose }) {
   let isOpenState = false;
   let busy = false;
   let currentEnabled = false;
+  let webhookLoaded = false;
+  let webhookExpanded = false;
 
   const setMessage = (text, type = '') => {
     messageEl.textContent = text || '';
@@ -145,11 +147,10 @@ export function createAdminSettingsPanel({ onClose }) {
     }
   }, 'Entfernen');
 
-  const webhookSection = createElement('section', { className: 'admin-settings-section' },
-    createElement('h3', { className: 'admin-settings-section-title' }, 'Discord-Webhook'),
-    createElement('p', { className: 'admin-settings-section-description' },
-      'Meldet jede neue Medienanfrage als Nachricht an einen Discord-Kanal.'
-    ),
+  const webhookBody = createElement('div', {
+    className: 'admin-settings-section-body',
+    id: 'admin-settings-webhook-body'
+  },
     statusText,
     createElement('div', { className: 'admin-settings-field' },
       createElement('label', { className: 'admin-settings-label', for: 'admin-settings-webhook-url' },
@@ -171,6 +172,40 @@ export function createAdminSettingsPanel({ onClose }) {
       removeButton
     ),
     messageEl
+  );
+
+  // Der Rumpf steckt in einem Wrapper, dessen grid-template-rows von 0fr auf
+  // 1fr animiert wird. `hidden` (display: none) liesse sich nicht animieren,
+  // und eine feste max-height wuerde bei wachsendem Inhalt (Fehlermeldungen,
+  // Statuszeile) springen. Im eingeklappten Zustand haelt `inert` den Inhalt
+  // aus Tastatur-Fokus und Screenreadern heraus, weil er weiterhin im
+  // Layout-Baum haengt.
+  const webhookBodyWrap = createElement('div', {
+    className: 'admin-settings-section-body-wrap'
+  }, webhookBody);
+  webhookBodyWrap.toggleAttribute('inert', true);
+
+  const webhookChevron = createElement('span', { className: 'admin-settings-section-chevron' }, '⌄');
+
+  const webhookToggle = createElement('button', {
+    className: 'admin-settings-section-toggle',
+    type: 'button',
+    'aria-expanded': 'false',
+    'aria-controls': 'admin-settings-webhook-body',
+    onClick: () => setWebhookExpanded(!webhookExpanded)
+  },
+    createElement('span', { className: 'admin-settings-section-heading' },
+      createElement('h3', { className: 'admin-settings-section-title' }, 'Discord-Webhook'),
+      createElement('p', { className: 'admin-settings-section-description' },
+        'Meldet jede neue Medienanfrage als Nachricht an einen Discord-Kanal.'
+      )
+    ),
+    webhookChevron
+  );
+
+  const webhookSection = createElement('section', { className: 'admin-settings-section' },
+    webhookToggle,
+    webhookBodyWrap
   );
 
   const sectionsContainer = createElement('div', { className: 'admin-settings-sections' },
@@ -223,6 +258,22 @@ export function createAdminSettingsPanel({ onClose }) {
     }
   };
 
+  // Der Status wird erst beim erstmaligen Aufklappen geholt, nicht schon beim
+  // Öffnen des Panels. Der Endpunkt hängt hinter requireFreshAdmin, das bei
+  // jedem Request Jellyfin befragt — wer den Webhook gar nicht ansehen will,
+  // soll dafür keinen Roundtrip bezahlen.
+  function setWebhookExpanded(expanded) {
+    webhookExpanded = expanded;
+    webhookToggle.setAttribute('aria-expanded', String(expanded));
+    webhookSection.classList.toggle('expanded', expanded);
+    webhookBodyWrap.toggleAttribute('inert', !expanded);
+
+    if (expanded && !webhookLoaded) {
+      webhookLoaded = true;
+      load();
+    }
+  }
+
   const open = () => {
     if (isOpenState) return;
     isOpenState = true;
@@ -232,7 +283,6 @@ export function createAdminSettingsPanel({ onClose }) {
     element.setAttribute('aria-hidden', 'false');
     document.addEventListener('keydown', handleKeydown);
     window.requestAnimationFrame(() => panel.focus());
-    load();
   };
 
   const close = () => {

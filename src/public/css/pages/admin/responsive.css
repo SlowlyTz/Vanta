@@ -1,16 +1,10 @@
 /* ---------------------------------
    ADMIN PAGE — Responsive
-   Ab 900px: seitliche Bereichsnavigation, Nutzer-Detailansicht als zweite
-   Spalte neben der Liste (siehe users-tool/list-view.css). Darunter: Tabs
-   statt Sidebar, Detailansicht als Vollbild-Wechsel mit eigenem
-   Zurück-Button (.admin-section-back-button).
+   Ab 900px: seitliche Bereichsnavigation. Darunter: Tabs statt Sidebar.
+   Die Nutzer-Detailansicht ist in beiden Fällen ein Modal (siehe
+   users-tool/confirm-dialog.css), braucht also keinen Ansichtswechsel und
+   keinen eigenen Zurück-Button mehr.
    --------------------------------- */
-@media (min-width: 900px) {
-  .admin-section-back-button {
-    display: none !important;
-  }
-}
-
 @media (max-width: 899px) {
   .admin-page-body {
     flex-direction: column;

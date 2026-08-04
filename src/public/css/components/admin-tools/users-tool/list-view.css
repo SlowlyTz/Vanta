@@ -12,8 +12,7 @@
   container-type: inline-size;
 }
 
-.admin-users-list-view[hidden],
-.admin-users-detail-slot[hidden] {
+.admin-users-list-view[hidden] {
   display: none;
 }
 
@@ -124,34 +123,6 @@
   flex-wrap: nowrap;
   gap: 6px;
   justify-self: end;
-}
-
-/* Detailansicht als zweite Spalte neben der Liste, solange die Breite
-   reicht (plan.md A5). Der Umbau bleibt rein visuell: AdminUsersTool blendet
-   die Detailansicht funktional weiterhin über [hidden] ein/aus.
-
-   Ohne Auswahl nimmt die Liste die volle Breite ein, statt neben einem leeren
-   Platzhalter zu stehen. Erst wenn ein Nutzer gewählt ist, teilt sich die
-   Ansicht. Fällt :has() aus, bleibt es bei der einspaltigen Liste mit der
-   Detailansicht darunter — nutzbar, nur ohne Split. */
-@media (min-width: 900px) {
-  .admin-users-view {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: var(--spacing-lg);
-  }
-
-  .admin-users-view:has(.admin-users-detail-slot:not([hidden])) {
-    grid-template-columns: minmax(380px, 0.85fr) minmax(0, 1.15fr);
-  }
-
-  /* Die Liste bleibt im Split sichtbar, obwohl das Tool sie funktional
-     per [hidden] ausblendet. */
-  .admin-users-list-view[hidden] {
-    display: flex;
-    flex-direction: column;
-  }
 }
 
 .admin-user-action-btn {

@@ -1,44 +1,7 @@
 import { createElement } from '../../../utils/dom.js';
+import { openAdminModal } from '../adminModal.js';
 
-function openDialog(contentEl) {
-  let closed = false;
-
-  const overlay = createElement('div', { className: 'admin-user-dialog-overlay' });
-
-  const close = () => {
-    if (closed) return;
-    closed = true;
-    document.removeEventListener('keydown', handleKeydown);
-    overlay.remove();
-  };
-
-  const handleKeydown = (event) => {
-    if (event.key === 'Escape') close();
-  };
-
-  const closeBtn = createElement('button', {
-    className: 'admin-user-dialog-close',
-    type: 'button',
-    'aria-label': 'Schließen',
-    onClick: close
-  }, '×');
-
-  const card = createElement('div', {
-    className: 'admin-user-dialog',
-    role: 'dialog',
-    'aria-modal': 'true'
-  }, closeBtn, contentEl);
-
-  overlay.appendChild(card);
-  overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) close();
-  });
-
-  document.addEventListener('keydown', handleKeydown);
-  document.body.appendChild(overlay);
-
-  return { close };
-}
+const openDialog = (contentEl) => openAdminModal(contentEl);
 
 export function openBanDialog({ user, onConfirm }) {
   let dialog;
