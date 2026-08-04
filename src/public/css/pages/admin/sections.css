@@ -1,0 +1,91 @@
+/* ---------------------------------
+   ADMIN NAV — Bereichsnavigation (Anfragen / Nutzer)
+   --------------------------------- */
+.admin-nav {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 220px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--abyss-radius);
+  color: var(--text-secondary);
+  font-weight: 640;
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-nav-item:hover {
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-primary);
+}
+
+.admin-nav-item.active {
+  background: rgba(var(--abyss-accent), 0.14);
+  color: var(--text-primary);
+}
+
+.admin-nav-item:focus-visible {
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline-offset: 2px;
+}
+
+.admin-nav-item-main {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.admin-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-nav-badge {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(var(--abyss-accent));
+  color: var(--bg-primary);
+  font-size: 0.72rem;
+  font-weight: 740;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.admin-nav-badge.hidden {
+  display: none;
+}
+
+/* ---------------------------------
+   ADMIN SECTION PANEL — Inhalt des aktiven Bereichs
+   --------------------------------- */
+.admin-section-panel[hidden] {
+  display: none;
+}
+
+.admin-section-back-button {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
+  font-weight: 640;
+  padding: var(--spacing-sm) 0;
+}
+
+.admin-section-back-button:hover {
+  color: var(--text-primary);
+}
+
+.admin-section-back-button.hidden {
+  display: none;
+}

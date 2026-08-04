@@ -91,7 +91,18 @@ describe('AdminUsersTool', () => {
     expect(row.querySelector('.admin-user-stream-info').textContent).toBe('2/3 Streams');
   });
 
-  it('filters the visible rows by the search input', async () => {
+  it('no longer renders its own search input — the filter term comes from the outside via setFilter', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({ users: [] });
+
+    const tool = createAdminUsersTool();
+    await tool.load();
+    await flush();
+
+    expect(tool.element.querySelector('.admin-users-search')).toBeNull();
+    expect(typeof tool.setFilter).toBe('function');
+  });
+
+  it('filters the visible rows via setFilter', async () => {
     AdminUsersApi.listUsers.mockResolvedValue({
       users: [makeUser({ id: 'u1', name: 'alice' }), makeUser({ id: 'u2', name: 'bob' })]
     });
@@ -100,12 +111,44 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    const searchInput = tool.element.querySelector('.admin-users-search');
-    searchInput.value = 'ali';
-    searchInput.dispatchEvent(new Event('input'));
+    tool.setFilter('ali');
 
     const names = Array.from(tool.element.querySelectorAll('.admin-user-row-name')).map(el => el.textContent);
     expect(names).toEqual(['alice']);
+  });
+
+  it('clears the filter and shows every user again', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({
+      users: [makeUser({ id: 'u1', name: 'alice' }), makeUser({ id: 'u2', name: 'bob' })]
+    });
+
+    const tool = createAdminUsersTool();
+    await tool.load();
+    await flush();
+
+    tool.setFilter('ali');
+    expect(tool.element.querySelectorAll('.admin-user-row')).toHaveLength(1);
+
+    tool.setFilter('');
+    expect(tool.element.querySelectorAll('.admin-user-row')).toHaveLength(2);
+  });
+
+  it('does not rebuild the list when setFilter yields the exact same result as before', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({
+      users: [makeUser({ id: 'u1', name: 'alice' }), makeUser({ id: 'u2', name: 'bob' })]
+    });
+
+    const tool = createAdminUsersTool();
+    await tool.load();
+    await flush();
+
+    tool.setFilter('ali');
+    const rowBefore = tool.element.querySelector('.admin-user-row');
+
+    tool.setFilter('ali');
+    const rowAfter = tool.element.querySelector('.admin-user-row');
+
+    expect(rowAfter).toBe(rowBefore);
   });
 
   it('shows an empty state and no crash when the user list is empty', async () => {
@@ -160,7 +203,8 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    // No back button lives inside the tool's own element; it is owned by AdminToolsPanel.
+    // No back button lives inside the tool's own element; the caller (the
+    // admin page) owns any back affordance.
     expect(tool.element.querySelector('.admin-view-back-button')).toBeNull();
     expect(setBackControl).toHaveBeenCalledWith(null);
 
@@ -176,6 +220,30 @@ describe('AdminUsersTool', () => {
     expect(listView.hidden).toBe(false);
     expect(detailSlot.hidden).toBe(true);
     expect(setBackControl).toHaveBeenLastCalledWith(null);
+  });
+
+  it('selectUser opens the detail view for a user from the last loaded list', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser({ id: 'u1', name: 'alice' })] });
+
+    const tool = createAdminUsersTool();
+    await tool.load();
+    await flush();
+
+    const handled = tool.selectUser('u1');
+
+    expect(handled).toBe(true);
+    expect(tool.element.querySelector('.admin-users-detail-slot').hidden).toBe(false);
+    expect(tool.element.querySelector('.admin-user-detail-name').textContent).toBe('alice');
+  });
+
+  it('selectUser returns false for a user id that is not in the loaded list', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({ users: [] });
+
+    const tool = createAdminUsersTool();
+    await tool.load();
+    await flush();
+
+    expect(tool.selectUser('missing')).toBe(false);
   });
 
   it('after saving a field in the detail view, the detail record is refreshed and stays on the detail view', async () => {

@@ -1,4 +1,9 @@
-/* Ban / delete confirmation dialog */
+/* Ban / delete confirmation dialog. Läuft jetzt direkt auf der Admin-Seite
+   (nicht mehr im Einstellungen-Modal), muss also nur über deren eigenen
+   Overlays liegen: Navbar (1900) und das Admin-Einstellungen-Panel (1500).
+   War früher auf "Modal über Modal" ausgelegt und lag mit 10000 zufällig auf
+   derselben Ebene wie Toasts (siehe components/toast.css) — dadurch konnte
+   ein Toast von diesem Overlay verdeckt werden. Jetzt bewusst darunter. */
 .admin-user-dialog-overlay {
   position: fixed;
   inset: 0;
@@ -8,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 5000;
   padding: 20px;
   box-sizing: border-box;
 }

@@ -106,7 +106,12 @@ class RequestsService {
       now
     );
 
-    return normalizeRequest({ id: result.lastInsertRowid, ...getRequestById.get(result.lastInsertRowid) });
+    const request = normalizeRequest({ id: result.lastInsertRowid, ...getRequestById.get(result.lastInsertRowid) });
+
+    // `details` sind die bereits geladenen TMDB-Daten (Jahr, Overview, ...), die nicht in der
+    // requests-Tabelle liegen. An den Aufrufer durchgereicht, statt sie später erneut zu laden
+    // (siehe discord-webhook.service.js, wird von requests.routes.js dafür genutzt).
+    return { request, media: details };
   }
 
   static async exists(tmdbId, tmdbType) {

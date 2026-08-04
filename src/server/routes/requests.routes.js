@@ -3,6 +3,7 @@ import { requireAuth, requireFreshAdmin } from '../middleware/auth.middleware.js
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { RequestsService } from '../services/requests.service.js';
 import { TmdbService } from '../services/tmdb.service.js';
+import { sendRequestCreated } from '../services/discord-webhook.service.js';
 
 const router = express.Router();
 
@@ -67,8 +68,14 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   if (!tmdbId || !tmdbType) return res.status(400).json({ error: 'tmdbId and tmdbType required' });
 
   const { userId, username } = req.session;
-  const result = await RequestsService.create(userId, username, parseInt(tmdbId), tmdbType, note);
-  res.status(201).json(result);
+  const { request, media } = await RequestsService.create(userId, username, parseInt(tmdbId), tmdbType, note);
+  res.status(201).json(request);
+
+  // Fire-and-forget: Der Nutzer wartet nie auf Discord, ein toter Webhook darf die
+  // Anfragefunktion nie blockieren. Nur bei neuen Anfragen, nicht bei Approve/Reject.
+  sendRequestCreated(request, media).catch((error) => {
+    console.error('[Discord Webhook] Trigger fehlgeschlagen:', error.message);
+  });
 }));
 
 // Get user's requests
@@ -80,6 +87,13 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 // Get all open requests (admin only)
 router.get('/admin/open', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
   const requests = await RequestsService.getOpen();
+  res.json(requests);
+}));
+
+// Get every request regardless of status (admin only). Must stay registered before
+// GET /:id, otherwise the param route swallows this path.
+router.get('/admin/all', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
+  const requests = await RequestsService.getAll();
   res.json(requests);
 }));
 

@@ -24,8 +24,11 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     createChevronIcon()
   );
 
-  const { adminPanel, adminOption, loadAdminVisibility, checkAdminAndOpenAdmin, goBack: goBackInAdminTools } = createAdminToolsPanel({
-    onOpen: () => setSettingsView('admin')
+  const { adminOption, loadAdminVisibility } = createAdminToolsPanel({
+    onOpen: () => {
+      setSettingsOpen(false);
+      window.location.hash = '#/admin';
+    }
   });
 
   const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
@@ -68,13 +71,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     className: 'settings-header-button invisible',
     type: 'button',
     'aria-label': 'Zurück',
-    onClick: () => {
-      // Inside the admin area, step back one level at a time (e.g. user
-      // detail -> user list -> tool grid) before falling back to the root
-      // settings view. This is the single back control for the whole dialog.
-      if (settingsView === 'admin' && goBackInAdminTools()) return;
-      setSettingsView('root');
-    }
+    onClick: () => setSettingsView('root')
   }, createBackIcon());
 
   const closeButton = createElement('button', {
@@ -98,8 +95,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
       closeButton
     ),
     rootPanel,
-    passwordPanel,
-    adminPanel
+    passwordPanel
   );
 
   const settingsBackdrop = createElement('div', {
@@ -142,17 +138,12 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
 
   const setSettingsView = (view) => {
     settingsView = view;
-    settingsTitle.textContent = settingsView === 'password'
-      ? 'Passwort'
-      : settingsView === 'admin'
-        ? 'Admin tools'
-        : 'Einstellungen';
+    settingsTitle.textContent = settingsView === 'password' ? 'Passwort' : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
     settingsDialog.dataset.view = settingsView;
     rootPanel.hidden = settingsView !== 'root';
     passwordPanel.hidden = settingsView !== 'password';
-    adminPanel.hidden = settingsView !== 'admin';
 
     if (settingsView !== 'password') {
       setPasswordStatus('');
@@ -198,7 +189,6 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     loadAdminVisibility,
     setSettingsView,
     setSettingsOpen,
-    isOpen: () => settingsOpen,
-    checkAdminAndOpenAdmin
+    isOpen: () => settingsOpen
   };
 }
