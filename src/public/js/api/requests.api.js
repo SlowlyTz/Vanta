@@ -31,6 +31,10 @@ class RequestsApiClient {
     return request('/api/requests/admin/open');
   }
 
+  static async getAllRequests() {
+    return request('/api/requests/admin/all');
+  }
+
   static async approveRequest(id) {
     return request(`/api/requests/${id}/approve`, {
       method: 'POST'

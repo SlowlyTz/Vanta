@@ -1,0 +1,38 @@
+/* ---------------------------------
+   ADMIN PAGE — Responsive
+   Ab 900px: seitliche Bereichsnavigation, Nutzer-Detailansicht als zweite
+   Spalte neben der Liste (siehe users-tool/list-view.css). Darunter: Tabs
+   statt Sidebar, Detailansicht als Vollbild-Wechsel mit eigenem
+   Zurück-Button (.admin-section-back-button).
+   --------------------------------- */
+@media (min-width: 900px) {
+  .admin-section-back-button {
+    display: none !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .admin-page-body {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    width: 100%;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+  }
+
+  .admin-nav-item {
+    flex: 1 1 auto;
+    justify-content: center;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-page-header-row {
+    flex-wrap: wrap;
+  }
+}

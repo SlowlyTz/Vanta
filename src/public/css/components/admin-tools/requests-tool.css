@@ -8,6 +8,36 @@
   display: none !important;
 }
 
+/* Tabs "Offen" / "Alle" */
+.admin-requests-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: var(--spacing-sm);
+}
+
+.admin-requests-tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-weight: 640;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-requests-tab:hover {
+  color: var(--text-primary);
+}
+
+.admin-requests-tab.active {
+  background: rgba(var(--abyss-accent), 0.14);
+  color: var(--text-primary);
+}
+
+.admin-requests-tab:focus-visible {
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline-offset: 2px;
+}
+
 .admin-requests-list {
   display: flex;
   flex-direction: column;
@@ -30,4 +60,80 @@
 .admin-requests-empty.hidden,
 .admin-requests-status.hidden {
   display: none;
+}
+
+/* Anfragenzeile: Poster-Thumbnail, Titel, Nutzer/Typ/Datum, Aktionen */
+.admin-request-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: border-color var(--transition-fast);
+}
+
+.admin-request-item:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-request-item-poster {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 69px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-request-item-poster-empty {
+  display: block;
+}
+
+.admin-request-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-request-item-title {
+  font-weight: 640;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-request-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.admin-request-item-type {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 0.72rem;
+}
+
+.admin-request-item-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 640px) {
+  .admin-request-item {
+    align-items: flex-start;
+  }
+
+  .admin-request-item-actions {
+    flex-direction: column;
+  }
 }
