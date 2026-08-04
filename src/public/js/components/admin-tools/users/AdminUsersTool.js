@@ -7,28 +7,28 @@ import { createSectionLoader, setSectionBusy } from '../../loader.js';
 import { createAdminUserRow } from './adminUserRow.js';
 import { createAdminUserDetailView } from './adminUserDetailView.js';
 
+// Baut eine Signatur aus allen in der Zeile sichtbaren Feldern. renderList()
+// vergleicht sie mit der zuletzt gerenderten, um bei unverändertem Ergebnis
+// (z.B. derselbe Suchbegriff erneut) das komplette Neuaufbauen der Liste zu
+// überspringen, statt bei jedem Tastendruck `innerHTML = ''` zu machen.
+function buildListSignature(list) {
+  return list
+    .map(u => `${u.id}|${u.name}|${u.isAdmin}|${u.isBanned}|${u.isDisabled}|${u.activeStreams}|${u.maxConcurrentStreams}`)
+    .join(',');
+}
+
 export function createAdminUsersTool() {
   let users = [];
   let libraries = [];
   let currentAdminId = null;
   let searchTerm = '';
+  let lastRenderedSignature = null;
   let setBackControl = () => {};
-
-  const searchInput = createElement('input', {
-    className: 'settings-input admin-users-search',
-    type: 'text',
-    placeholder: 'Nutzer suchen...',
-    onInput: (e) => {
-      searchTerm = e.target.value;
-      renderList();
-    }
-  });
 
   const statusEl = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
   const listEl = createElement('div', { className: 'admin-users-list' });
 
   const listView = createElement('div', { className: 'admin-users-list-view' },
-    searchInput,
     statusEl,
     listEl
   );
@@ -44,12 +44,19 @@ export function createAdminUsersTool() {
     appStore.showToast(message, type);
   };
 
-  const renderList = () => {
-    listEl.innerHTML = '';
+  const getFiltered = () => {
     const term = searchTerm.trim().toLowerCase();
-    const filtered = term
-      ? users.filter(u => u.name.toLowerCase().includes(term))
-      : users;
+    return term ? users.filter(u => u.name.toLowerCase().includes(term)) : users;
+  };
+
+  const renderList = () => {
+    const filtered = getFiltered();
+    const signature = buildListSignature(filtered);
+
+    if (signature === lastRenderedSignature) return;
+    lastRenderedSignature = signature;
+
+    listEl.innerHTML = '';
 
     if (filtered.length === 0) {
       listEl.appendChild(
@@ -69,6 +76,14 @@ export function createAdminUsersTool() {
       });
       listEl.appendChild(row);
     });
+  };
+
+  // Der Filterbegriff kommt von der globalen Suchleiste der Admin-Seite
+  // (adminHeader.js), die Eingaben bereits selbst entprellt. setFilter muss
+  // deshalb nicht erneut entprellen — nur das Ergebnis diffen (renderList).
+  const setFilter = (term = '') => {
+    searchTerm = term || '';
+    renderList();
   };
 
   const showList = () => {
@@ -92,6 +107,16 @@ export function createAdminUsersTool() {
     setBackControl(showList);
   };
 
+  // Öffnet die Detailansicht für einen bestimmten Nutzer, z.B. aus einem
+  // Treffer der globalen Suche heraus. Gibt zurück, ob der Nutzer (noch)
+  // in der zuletzt geladenen Liste existiert.
+  const selectUser = (userId) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return false;
+    showDetail(user);
+    return true;
+  };
+
   const load = async ({ keepSelectedUserId = null } = {}) => {
     statusEl.classList.add('hidden');
     setSectionBusy(listEl, true);
@@ -108,6 +133,7 @@ export function createAdminUsersTool() {
       users = usersRes?.users || [];
       libraries = librariesRes?.libraries || [];
       currentAdminId = currentUser?.user?.id || currentAdminId;
+      lastRenderedSignature = null;
 
       const updatedSelectedUser = keepSelectedUserId
         ? users.find(u => u.id === keepSelectedUserId)
@@ -135,6 +161,8 @@ export function createAdminUsersTool() {
     icon: createUsersManagementIcon(),
     element,
     load: () => load(),
+    setFilter,
+    selectUser,
     registerBackControl: (fn) => { setBackControl = fn; }
   };
 }
