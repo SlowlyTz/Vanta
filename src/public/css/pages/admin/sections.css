@@ -6,7 +6,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
-  width: 220px;
+  /* Breit genug für "Nutzerverwaltung" samt Icon und Badge — schmaler
+     kürzt das Label per Ellipse ab. */
+  width: 248px;
 }
 
 .admin-nav-item {
@@ -14,7 +16,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-md);
   border-radius: var(--abyss-radius);
   color: var(--text-secondary);
   font-weight: 640;

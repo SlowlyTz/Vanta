@@ -9,6 +9,7 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .admin-users-list-view[hidden],
@@ -32,10 +33,11 @@
 
 /* Feste Spalten für Name/Badges, Streams und Aktionen statt des früheren
    flex-wrap mit flex: 1 1 160px — auf der breiten Admin-Seite quetscht sich
-   dadurch nichts mehr zusammen. */
+   dadurch nichts mehr zusammen. Die Namensspalte darf auf 0 schrumpfen und
+   kürzt per Ellipse; die Aktionen bleiben dadurch immer einzeilig. */
 .admin-user-row-summary {
   display: grid;
-  grid-template-columns: minmax(180px, 1.6fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 16px;
   padding: 14px 20px;
@@ -44,7 +46,6 @@
 
 .admin-user-row-main {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -54,12 +55,14 @@
   font-weight: 700;
   color: var(--text-primary);
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-user-badges {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
   gap: 6px;
 }
 
@@ -95,40 +98,59 @@
   justify-self: end;
 }
 
+/* Wird die Liste schmal — im Split neben der Detailansicht oder auf dem
+   Handy — rutschen Name und Badges auf eine eigene Zeile, darunter Streams
+   und Aktionen. Hängt an der Spaltenbreite statt am Viewport, damit beide
+   Fälle von derselben Regel abgedeckt sind. */
+@container (max-width: 620px) {
+  .admin-user-row-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 16px;
+  }
+
+  .admin-user-row-main {
+    grid-column: 1 / -1;
+  }
+
+  .admin-user-stream-info {
+    justify-self: start;
+  }
+}
+
+/* Niemals umbrechen — gestapelte Buttons haben die Zeilen vorher auf die
+   dreifache Höhe aufgeblasen. Lieber kürzt der Name. */
 .admin-user-row-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   justify-self: end;
 }
 
 /* Detailansicht als zweite Spalte neben der Liste, solange die Breite
    reicht (plan.md A5). Der Umbau bleibt rein visuell: AdminUsersTool blendet
-   die Detailansicht funktional weiterhin über [hidden] ein/aus, hier wird
-   das für breite Viewports überschrieben. Ohne Auswahl bleibt detailSlot
-   leer (:empty) und zeigt stattdessen einen Platzhaltertext. */
+   die Detailansicht funktional weiterhin über [hidden] ein/aus.
+
+   Ohne Auswahl nimmt die Liste die volle Breite ein, statt neben einem leeren
+   Platzhalter zu stehen. Erst wenn ein Nutzer gewählt ist, teilt sich die
+   Ansicht. Fällt :has() aus, bleibt es bei der einspaltigen Liste mit der
+   Detailansicht darunter — nutzbar, nur ohne Split. */
 @media (min-width: 900px) {
   .admin-users-view {
     display: grid;
-    grid-template-columns: minmax(280px, 420px) 1fr;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: var(--spacing-lg);
   }
 
-  .admin-users-list-view[hidden],
-  .admin-users-detail-slot[hidden] {
-    display: flex;
-    flex-direction: column;
+  .admin-users-view:has(.admin-users-detail-slot:not([hidden])) {
+    grid-template-columns: minmax(380px, 0.85fr) minmax(0, 1.15fr);
   }
 
-  .admin-users-detail-slot:empty::before {
-    content: 'Wähle einen Nutzer aus der Liste, um Details zu bearbeiten.';
-    display: block;
-    padding: var(--spacing-xl);
-    color: var(--text-secondary);
-    text-align: center;
-    border: 1px dashed rgba(255, 255, 255, 0.12);
-    border-radius: var(--abyss-radius);
+  /* Die Liste bleibt im Split sichtbar, obwohl das Tool sie funktional
+     per [hidden] ausblendet. */
+  .admin-users-list-view[hidden] {
+    display: flex;
+    flex-direction: column;
   }
 }
 
