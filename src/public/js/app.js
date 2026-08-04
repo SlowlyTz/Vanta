@@ -17,6 +17,7 @@ router.add('#/requests', () => import('./pages/requests.page.js'), { requiresAut
 router.add('#/requests/new', () => import('./pages/requests.page.js'), { requiresAuth: true, defaultParams: { view: 'new' } });
 router.add('#/requests/mine', () => import('./pages/requests.page.js'), { requiresAuth: true, defaultParams: { view: 'list' } });
 router.add('#/request-detail/:type/:id', () => import('./pages/request-detail.page.js'), { requiresAuth: true });
+router.add('#/admin', () => import('./pages/admin.page.js'), { requiresAuth: true });
 router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth: true });
 router.add('#/profile', () => import('./pages/profile.page.js'), { requiresAuth: true });
 router.add('#/favorites', () => import('./pages/profile.page.js'), { requiresAuth: true, defaultParams: { initialTab: 'favorites' } });

@@ -1,1102 +1,411 @@
-# Refactor-Plan: Tests bündeln, Module splitten und Dead Code entfernen
+# Implementierungsplan: Admin-Verwaltung als eigene Seite + Discord-Webhook für Anfragen
 
 ## Ziel
 
-Dieser Refactor ist rein strukturell. Die App darf danach weder visuell noch funktional anders wirken. Alle Tests werden nach `tests/` verschoben, große Dateien über 300 Zeilen werden modularisiert, `player.css` wird in Player-CSS-Module aufgeteilt, und echter Dead Code in HTML/CSS/JS wird entfernt.
+Die Admin-Verwaltung bekommt eine neue, luftigere Oberfläche als eigene Seite statt als verschachtelte
+Ansicht im Einstellungen-Modal. Dazu kommen eine globale Suchleiste, ein Einstellungen-Bereich für die
+Admin-Konfiguration und ein Discord-Webhook, der jede neue Medienanfrage als Embed an einen Discord-Kanal
+meldet.
 
-Wichtig: Dead Code darf nur entfernt werden, wenn er nachweisbar nicht mehr produktiv aufgerufen wird. Testdateien allein zählen nicht als produktive Nutzung. Wenn ein Test nur noch Dead Code schützt, wird der Test zusammen mit dem Dead Code gelöscht.
+Drei Teilziele:
 
-## Harte Regeln
+1. **Entzerrung**: Der Admin-Bereich wird zur Route `#/admin` mit voller Seitenbreite. Nutzerliste und
+   Anfragenliste bekommen echten Platz statt der heutigen ~548 px im Modal.
+2. **Suche + Einstellungen**: Oben auf der Admin-Seite eine globale Suchleiste, die gleichzeitig über
+   Nutzer und Anfragen sucht. Rechts daneben ein Zahnrad-Icon, das ein Admin-Einstellungen-Panel öffnet.
+3. **Discord-Webhook**: Im Einstellungen-Panel lässt sich eine Discord-Webhook-URL hinterlegen. Stellt ein
+   Nutzer eine Anfrage, geht ein Embed an diesen Webhook: was angefragt wurde und von wem.
 
-- Keine Feature-Änderungen.
-- Keine visuellen Änderungen.
-- Keine API-, Route-, WebSocket- oder Player-Verhaltensänderungen.
-- Keine CSS-Klassen umbenennen, außer die Klasse ist Teil von entferntem Dead Code.
-- Moves mit `git mv` ausführen, damit Historie nachvollziehbar bleibt.
-- Nach jedem Schritt gezielte Tests ausführen.
-- Generated Assets unter `src/public/vendor/player/` nur durch `npm run player:build` aktualisieren.
-- Dead-Code-Entfernung immer mit Suchbelegen absichern.
+## Ausgangslage (recherchiert)
 
-## Zielstruktur
+Diese Punkte sind der Grund für den Zuschnitt des Plans und sollten vor der Umsetzung bekannt sein:
 
-```txt
-tests/
-  server/
-  public/
-  player/
+- **Es gibt heute keine Admin-Seite.** Der komplette Admin-Bereich ist eine Panel-Ansicht im
+  Einstellungen-Modal, gemountet in `src/public/js/components/navbar/settingsDialog.js:102`.
+- **Ursache des „Gequetschten"**: `.settings-dialog` ist auf `width: min(620px, calc(100vw - 36px))` und
+  `max-height: min(760px, calc(100vh - 48px))` begrenzt
+  (`src/public/css/components/settings/settings-dialog/icons-and-modal.css:66-81`). Abzüglich Padding
+  bleiben ~548 px nutzbare Breite für Nutzerzeilen mit Name + 3 Badges + Stream-Zähler + 3 Buttons, die
+  dadurch permanent umbrechen (`users-tool/list-view.css:38-45`).
+- **Navigation ist heute 3–4 Ebenen tief** in einem Modal: Einstellungen-Root → Tool-Grid → Tool-Ansicht →
+  (bei Nutzern) Detailansicht, alles über einen einzigen geteilten Zurück-Button
+  (`settingsDialog.js:67-78` → `AdminToolsPanel.js:70-84`).
+- **Die Tabelle `app_settings (key, value, updated_at)` existiert bereits** in
+  `src/server/db/database.js:123-129` und wird **nirgendwo im Code verwendet**. Sie ist der fertige
+  Ablageort für die Webhook-Konfiguration — kein Schema-Change, keine Migration nötig.
+- **Es gibt kein Migrationssystem.** Alle Tabellen werden per `CREATE TABLE IF NOT EXISTS` angelegt. Eine
+  neue Spalte auf einer bestehenden `db/requests.db` würde stillschweigend nicht angelegt. Der Plan kommt
+  deshalb ohne Schema-Änderung aus.
+- **Discord/Webhook gibt es im Repo nirgends** — kein Treffer für `discord|webhook`. Es existiert
+  überhaupt keine Outbound-Notification-Schicht und kein HTTP-Client; ausgehende Requests laufen über
+  natives `fetch` (TMDB, Jellyfin).
+- **`AdminRequestsTool.js` und `adminRequestItem.js` sind ungetestet.** Ebenso gibt es keine Tests für
+  `requests.routes.js` und `requests.service.js`. Die Nutzerverwaltung ist dagegen gut abgedeckt.
+- **Die Anfragen-Ansicht zeigt heute nur `status = 'pending'`** (`requests.service.js:133 getOpen`). Es
+  gibt serverseitig keinen Endpunkt, der alle Anfragen liefert.
+- **`db/requests.db-wal` (3,9 MB) und `db/requests.db-shm`** sind Altlasten eines früheren
+  better-sqlite3-Setups; sql.js nutzt kein WAL. Nicht Teil dieses Plans, nur zur Kenntnis.
 
-src/player/src/player.css
-src/player/src/player/
-  base.css
-  layout.css
-  controls.css
-  timeline.css
-  menus.css
-  episodes.css
-  watch-party.css
-  next-episode.css
-  overlays.css
-  responsive.css
-```
+## Getroffene Entscheidungen
 
-## Aktueller Befund
+| Thema | Entscheidung |
+|---|---|
+| Layout | Eigene Route `#/admin` mit voller Seitenbreite |
+| Einstiegspunkt | **Unverändert**: Hamburger → Einstellungen → „Admin tools". Die Kachel schließt jetzt den Dialog und navigiert zu `#/admin` |
+| Suchleiste | Global über Nutzer **und** Anfragen, Ergebnisse gruppiert |
+| Bereiche | Anfragen + Nutzer (kein Dashboard, keine Sperrlisten-Sektion) |
+| Anfragen-Ansicht | Tabs „Offen" / „Alle" — braucht einen neuen Server-Endpunkt |
+| Webhook-Auslöser | **Nur** bei neuer Anfrage. Nicht bei Genehmigen/Ablehnen |
+| Embed | Reich: Poster als Thumbnail, Titel, Nutzer, Typ, Jahr, Status, TMDB-Link, Zeitstempel |
+| Webhook-Absicherung | Testen-Button, URL maskiert zurückgeben, Ein/Aus-Schalter |
 
-Aktuelle Vitest-Includes:
+## Arbeitsannahmen
 
-```js
-include: [
-  'src/player/tests/unit/**/*.test.js',
-  'src/server/**/*.test.js',
-  'src/public/js/**/*.test.js'
-]
-```
+- Der Einstiegspfad bleibt bewusst gleich: kein neuer Navbar-Eintrag. Die bestehende Kachel
+  „Admin tools" im Einstellungen-Dialog verhält sich künftig wie die „Profil"-Option
+  (`settingsDialog.js:32-35`): Dialog schließen, dann `window.location.hash = '#/admin'`.
+- Die serverseitige Nutzer- und Anfragen-Logik bleibt funktional unverändert. Neu sind nur die
+  Settings-Endpunkte, ein Endpunkt für alle Anfragen und der Webhook-Versand.
+- Der Webhook-Versand ist **fire-and-forget**: Schlägt er fehl, wird geloggt, aber die Anfrage des Nutzers
+  gilt trotzdem als erfolgreich. Ein toter Webhook darf die Anfragefunktion nie blockieren.
+- Keine browserbasierten Visual-Checks automatisieren. Verifikation über Unit-/Route-Tests plus manuelle
+  Sichtprüfung durch den Nutzer.
+- Neue Dateien bleiben unter ~300 Zeilen, passend zur Struktur aus dem vorangegangenen Refactor.
+- Neue CSS-Dateien brauchen ein manuelles `<link>` in `src/public/index.html` — es gibt keinen Bundler für
+  die App-Shell, nur `@import`-Barrels innerhalb von CSS.
 
-Große Dateien über 300 Zeilen:
+## Relevante Dateien
 
-```txt
-src/player/src/player.css                         1258
-src/public/js/pages/watch-party.page.js           1226
-src/public/js/pages/watch-party.page.test.js      1212
-src/public/css/pages/trailer-scroller.css         1016
-src/public/js/pages/trailer-scroller.page.js       957
-src/player/src/index.js                            865
-src/public/css/pages/watch-party.css               863
-src/public/css/pages/requests.css                  764
-src/server/realtime/watch-party.socket.test.js     708
-src/public/css/pages/detail.css                    627
-src/server/services/watch-party.service.js         606
-src/server/realtime/watch-party.socket.js          528
-src/server/services/watch-party.service.test.js    484
-src/player/tests/unit/sourceSwitch.test.js         469
-src/public/css/components/navbar/mobile-drawer.css 463
-src/public/css/pages/home.css                      401
-src/server/services/home-sections.service.js       400
-src/public/css/components/admin-tools/users-tool.css 397
-src/public/js/components/watch-party/createWatchPartyDialog.js 386
-src/public/css/components/settings/settings-dialog.css 384
-src/player/tests/unit/jellyfinReporter.test.js     377
-src/player/src/sourceSwitch.js                     364
-src/server/services/jellyfin/trailers.service.test.js 351
-src/public/js/pages/requests.page.js               351
-src/public/css/components/watch-party/watch-party-dialog.css 337
-src/server/services/playback.service.js            328
-src/public/css/components/navbar/navbar.css        316
-src/public/js/components/admin-tools/users/adminUserDetailView.js 304
-src/public/css/components/footer.css               302
-```
+**Bestehend, wird geändert**
 
-## Bestätigter Dead Code
+- `src/public/js/app.js` — neue Route `#/admin`
+- `src/public/js/components/navbar/settingsDialog.js` — Admin-Panel entfernen, Kachel navigiert
+- `src/public/js/components/admin-tools/AdminToolsPanel.js` — auf reine Sichtbarkeits-/Navigationslogik reduzieren
+- `src/public/js/components/admin-tools/AdminToolRegistry.js` — Registry für die neue Seite
+- `src/public/js/components/admin-tools/users/AdminUsersTool.js` — eigene Suche entfällt, Filter kommt von außen
+- `src/public/js/components/admin-tools/requests/AdminRequestsTool.js` — Tabs, Filter von außen
+- `src/public/js/components/admin-tools/requests/adminRequestItem.js` — reicheres Layout
+- `src/public/js/components/admin-tools/users/adminUserRow.js` — Layout für breite Ansicht
+- `src/public/js/api/requests.api.js` — `getAllRequests`
+- `src/public/index.html` — `<link>` für neue CSS-Dateien
+- `src/server/routes/admin/index.js` — `/settings` mounten
+- `src/server/routes/requests.routes.js` — Endpunkt für alle Anfragen, Webhook-Aufruf nach `create`
+- `src/server/services/requests.service.js` — `getAll`
+- `src/public/css/components/admin-tools/**` — Redesign
+- `src/public/css/pages/requests/admin.css` — toter Anteil (`.requests-admin-toggle`, `.requests-section*`, `.requests-list`) entfernen
 
-Diese Kandidaten wurden per `rg` geprüft und sind produktiv nicht mehr angebunden:
+**Neu**
 
-### 1. Mobile Settings im Drawer
+- `src/public/js/pages/admin.page.js` — Seiten-Einstieg, Admin-Guard, Layout
+- `src/public/js/pages/admin/adminHeader.js` — Suchleiste + Zahnrad
+- `src/public/js/pages/admin/adminSearch.js` — Suchlogik über beide Bereiche
+- `src/public/js/pages/admin/adminSettingsPanel.js` — Webhook-Einstellungen
+- `src/public/js/api/admin-settings.api.js`
+- `src/public/css/pages/admin/*.css` — Layout, Header, Sektionen, Responsive
+- `src/server/routes/admin/settings.routes.js`
+- `src/server/services/app-settings.service.js` — Wrapper um `app_settings`
+- `src/server/services/discord-webhook.service.js` — Embed bauen + senden
 
-Dead:
+---
 
-```txt
-src/public/js/components/navbar/mobileSettings.js
-```
+## Teil A — Admin-Verwaltung als eigene Seite
 
-Grund:
+### A1. Route und Zugriffsschutz
 
-- `createMobileSettings()` wird in produktivem Code nicht mehr importiert.
-- Settings werden inzwischen über `settingsDialog.js` als eigenes Overlay geöffnet.
+- In `src/public/js/app.js` nach den Requests-Routen ergänzen:
+  `router.add('#/admin', () => import('./pages/admin.page.js'), { requiresAuth: true })`.
+- Der Router kennt heute nur `requiresAuth` und `guestOnly`, keine Rollenprüfung (`router.js:159-172`).
+  Der Admin-Check gehört deshalb in die Seite selbst: `admin.page.js` ruft `AuthApi.getCurrentUser()`,
+  und bei `user.isAdmin !== true` wird sofort auf `#/home` umgeleitet und ein Toast „Kein Zugriff" gezeigt.
+- Die Seite rendert währenddessen einen Ladezustand, damit für den Bruchteil einer Sekunde keine
+  Admin-Struktur für Nicht-Admins sichtbar ist.
+- Der eigentliche Schutz bleibt serverseitig: alle Endpunkte hängen an `requireAuth, requireFreshAdmin`
+  (`src/server/middleware/auth.middleware.js:26-41`). Der Client-Check ist reine UX.
 
-Beleg-Suche:
+### A2. Einstieg aus dem Einstellungen-Dialog
 
-```bash
-rg -n "from './mobileSettings|from \"./mobileSettings|createMobileSettings" src --glob '!**/*.test.js' --glob '!src/public/vendor/**'
-```
+- `AdminToolsPanel.js` verliert seine Panel- und Tool-Grid-Verantwortung und behält nur:
+  - `adminOption` (die Kachel „Admin tools" mit Icon)
+  - `loadAdminVisibility()` (blendet die Kachel für Nicht-Admins aus)
+  - `checkAdminAndOpenAdmin()` — prüft weiterhin per `AuthApi.getCurrentUser()` und ruft dann `onOpen`
+- In `settingsDialog.js` wird `onOpen` von `setSettingsView('admin')` auf das Muster der Profil-Option
+  umgestellt: `setSettingsOpen(false)` und `window.location.hash = '#/admin'`.
+- Entfallen damit in `settingsDialog.js`: der `adminPanel` im Dialog-Baum (Zeile 102), der `'admin'`-Zweig
+  in `setSettingsView` (Zeilen 147-155) und die Sonderbehandlung im Zurück-Button (Zeile 75). Der
+  Zurück-Button vereinfacht sich zu `setSettingsView('root')`.
+- Prüfen, ob `checkAdminAndOpenAdmin` noch von außen gebraucht wird — es wird aktuell aus
+  `settingsDialog.js` nach oben durchgereicht (Zeile 202). Falls kein Aufrufer existiert, entfernen.
 
-Erwarteter aktueller Treffer:
+### A3. Seitenlayout
 
-```txt
-src/public/js/components/navbar/mobileSettings.js:9:export function createMobileSettings(...)
-```
-
-Zu entfernende CSS-Regeln in `src/public/css/components/navbar/mobile-drawer.css`:
-
-```txt
-.mobile-settings-panel[hidden]
-.mobile-settings-panel
-.mobile-settings-back-button
-.mobile-settings-back-button:hover
-.mobile-settings-back-button:active
-.mobile-settings-header
-.mobile-settings-panel .settings-*
-```
-
-Nicht entfernen:
-
-```txt
-.navbar-mobile-settings-item
-.navbar-mobile-settings
-```
-
-Diese Klassen gehören weiterhin zum Button "Einstellungen" im Drawer.
-
-### 2. Alte Hover-Dropdowns der Navbar
-
-Dead:
-
-```txt
-src/public/js/components/navbar/dropdownMenus.js
-src/public/js/components/navbar/dropdownMenus.test.js
-```
-
-Wahrscheinlich ebenfalls dead, nach finaler Prüfung zu entfernen:
+Zielstruktur der Seite (volle Seitenbreite, unter der Navbar):
 
 ```txt
-navLinks.js: menuId-Felder für movies/series/publishers
-navbar.css: .dropdown-menu Legacy-Block
+┌──────────────────────────────────────────────────────────┐
+│ Admin-Verwaltung                                          │
+│ ┌──────────────────────────────────┐  ┌───┐               │
+│ │ 🔍 Nutzer oder Anfragen suchen…  │  │ ⚙ │               │
+│ └──────────────────────────────────┘  └───┘               │
+├──────────────┬───────────────────────────────────────────┤
+│ Anfragen  ●3 │                                            │
+│ Nutzer       │   (Inhalt des aktiven Bereichs)            │
+│              │                                            │
+└──────────────┴───────────────────────────────────────────┘
 ```
 
-Grund:
-
-- `loadDropdowns()` wird produktiv nicht importiert.
-- Die Topbar rendert aktuell `createTopTabs()` ohne Hover-Dropdowns.
-- Die einzigen Treffer sind Test, `navLinks.js`-Metadaten und ein CSS-Kommentar, der die Regeln explizit als Legacy beschreibt.
-
-Beleg-Suche:
-
-```bash
-rg -n "loadDropdowns|dropdownMenus" src/public/js --glob '!**/*.test.js' --glob '!src/public/vendor/**'
-```
-
-Erwarteter aktueller Treffer:
-
-```txt
-src/public/js/components/navbar/dropdownMenus.js:54:export function loadDropdowns(navbarElement)
-```
-
-Vor Entfernen zusätzlich prüfen:
-
-```bash
-rg -n "movies-dropdown-menu|series-dropdown-menu|publishers-dropdown-menu|dropdown-menu" src --glob '!**/*.test.js' --glob '!src/public/vendor/**'
-```
-
-Wenn nur `navLinks.js` und `navbar.css` treffen, können die `menuId`-Felder und der `.dropdown-menu`-CSS-Block entfernt werden.
-
-## Phase 1: Dead-Code-Audit als Pflichtschritt
-
-### Task 1: Dead-Code-Audit dokumentieren
-
-**Beschreibung:** Vor dem großen Refactor wird ein Audit ausgeführt und im Commit/PR kurz dokumentiert. Ziel ist, echten Dead Code von nur schwer auffindbarem dynamischem Code zu trennen.
-
-**Befehle:**
-
-```bash
-rg -n "createMobileSettings|mobile-settings-panel|mobile-settings-back-button|mobile-settings-header" src --glob '!src/public/vendor/**'
-rg -n "loadDropdowns|dropdownMenus|dropdown-menu|movies-dropdown-menu|series-dropdown-menu|publishers-dropdown-menu" src --glob '!src/public/vendor/**'
-rg -n "document\\.querySelector|querySelectorAll|getElementById|dataset\\.|classList\\." src/public/js src/player/src --glob '!src/public/vendor/**'
-```
-
-**Akzeptanzkriterien:**
-
-- Für jeden entfernten JS-Export gibt es keinen produktiven Import mehr.
-- Für jede entfernte CSS-Klasse gibt es kein produktives HTML/JS mehr, das diese Klasse erzeugt oder selektiert.
-- Wenn ein Treffer nur in Tests vorkommt, wird entschieden: Test migrieren, wenn Feature lebt; Test löschen, wenn Feature dead ist.
-
-**Snippet für einen lokalen Dead-Code-Check:**
-
-```js
-// scripts/check-dead-code-candidates.mjs
-import { execFileSync } from 'node:child_process';
-
-const candidates = [
-  'createMobileSettings',
-  'mobile-settings-panel',
-  'mobile-settings-back-button',
-  'loadDropdowns',
-  'movies-dropdown-menu',
-  'series-dropdown-menu',
-  'publishers-dropdown-menu'
-];
-
-for (const candidate of candidates) {
-  const output = execFileSync('rg', [
-    '-n',
-    candidate,
-    'src',
-    '--glob',
-    '!src/public/vendor/**'
-  ], { encoding: 'utf8' });
-
-  console.log(`\n${candidate}\n${output}`);
-}
-```
-
-Hinweis: Dieses Script soll nur berichten, nicht automatisch löschen.
-
-### Task 2: Bestätigten Dead Code entfernen
-
-**Beschreibung:** Entferne den bestätigten Dead Code in kleinen, überprüfbaren Patches.
-
-**Zu entfernen:**
-
-```txt
-src/public/js/components/navbar/mobileSettings.js
-src/public/js/components/navbar/dropdownMenus.js
-src/public/js/components/navbar/dropdownMenus.test.js
-```
-
-**CSS-Bereinigung:**
-
-Aus `src/public/css/components/navbar/mobile-drawer.css` entfernen:
-
-```css
-.mobile-settings-panel[hidden] { ... }
-.mobile-settings-panel { ... }
-.mobile-settings-back-button { ... }
-.mobile-settings-back-button:hover { ... }
-.mobile-settings-back-button:active { ... }
-
-@media (...) {
-  .mobile-settings-panel[hidden] { ... }
-  .mobile-settings-panel { ... }
-  .mobile-settings-header { ... }
-  .mobile-settings-panel .settings-panel { ... }
-  .mobile-settings-panel .settings-panel-root { ... }
-  .mobile-settings-panel .settings-profile { ... }
-  .mobile-settings-panel .settings-profile-avatar { ... }
-  .mobile-settings-panel .settings-profile-icon svg { ... }
-  .mobile-settings-panel .settings-profile-name { ... }
-  .mobile-settings-panel .settings-profile-subtitle { ... }
-  .mobile-settings-panel .settings-overview-grid { ... }
-  .mobile-settings-panel .settings-stat { ... }
-  .mobile-settings-panel .settings-stat-label { ... }
-  .mobile-settings-panel .settings-stat-value { ... }
-  .mobile-settings-panel .settings-option,
-  .mobile-settings-panel .settings-choice,
-  .mobile-settings-panel .settings-logout-button { ... }
-  .mobile-settings-panel .settings-option-main { ... }
-}
-```
-
-Aus `src/public/css/components/navbar/navbar.css` entfernen, wenn keine produktiven Treffer bleiben:
-
-```css
-/* Legacy genre/publisher hover dropdowns ... */
-.dropdown-menu { ... }
-.navbar-item.dropdown:hover .dropdown-menu { ... }
-```
-
-Aus `src/public/js/components/navbar/navLinks.js` entfernen, wenn `dropdownMenus.js` gelöscht ist:
-
-```js
-// vorher
-{ key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie', menuId: 'movies-dropdown-menu' }
-
-// nachher
-{ key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie' }
-```
-
-**Akzeptanzkriterien:**
-
-- `mobileSettings.js` existiert nicht mehr.
-- `dropdownMenus.js` und zugehöriger Test existieren nicht mehr.
-- Keine `.mobile-settings-*` Regeln bleiben übrig, außer `navbar-mobile-settings-*`.
-- Keine `dropdown-menu`-Legacy-Regeln bleiben übrig, wenn sie nicht produktiv gebraucht werden.
-- Navbar-Tests bleiben grün.
-
-**Verifikation:**
-
-```bash
-rg -n "createMobileSettings|mobile-settings-panel|mobile-settings-back-button|mobile-settings-header" src --glob '!src/public/vendor/**'
-rg -n "loadDropdowns|dropdownMenus|dropdown-menu|movies-dropdown-menu|series-dropdown-menu|publishers-dropdown-menu" src --glob '!src/public/vendor/**'
-npm test -- src/public/js/components/navbar/Navbar.test.js src/public/js/components/navbar/settingsDialog.test.js
-```
-
-## Phase 2: Tests zentral nach `tests/` verschieben
-
-### Task 3: Vitest final auf `tests/**/*.test.js` umstellen
-
-**Beschreibung:** Die Testkonfiguration wird auf den neuen zentralen Testordner vorbereitet. Während der Migration darf kurzzeitig dual geladen werden. Der finale Zustand lädt nur noch `tests/**/*.test.js`.
-
-**Finaler `vitest.config.js`:**
-
-```js
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    include: ['tests/**/*.test.js'],
-    exclude: ['node_modules', 'src/public/vendor']
-  }
-});
-```
-
-**Akzeptanzkriterien:**
-
-- `npm test` lädt nur Tests aus `tests/`.
-- `src/public/vendor` bleibt ausgeschlossen.
-- Keine Testdatei bleibt unter `src/`.
-
-### Task 4: Tests mit `git mv` migrieren
-
-**Mapping:**
-
-```txt
-src/server/**/*.test.js          -> tests/server/**/*.test.js
-src/public/js/**/*.test.js       -> tests/public/**/*.test.js
-src/player/tests/unit/*.test.js  -> tests/player/unit/*.test.js
-```
-
-**Beispiele:**
-
-```bash
-mkdir -p tests/server tests/public tests/player/unit
-git mv src/server/realtime/watch-party.socket.test.js tests/server/realtime/watch-party.socket.test.js
-git mv src/public/js/pages/home.page.test.js tests/public/pages/home.page.test.js
-git mv src/player/tests/unit/time.test.js tests/player/unit/time.test.js
-```
-
-**Import-Snippets:**
-
-```js
-// public vorher
-import HomePage from './home.page.js';
-
-// public nachher
-import HomePage from '../../../src/public/js/pages/home.page.js';
-```
-
-```js
-// player vorher
-import { formatTime } from '../../src/time.js';
-
-// player nachher
-import { formatTime } from '../../../src/player/src/time.js';
-```
-
-```js
-// server vorher
-import authRoutes from './auth.routes.js';
-
-// server nachher, Beispiel für tests/server/routes/auth.routes.test.js
-import authRoutes from '../../../src/server/routes/auth.routes.js';
-```
-
-**Akzeptanzkriterien:**
-
-- `rg --files -g '*test.js' src` liefert keine Treffer.
-- `rg --files -g '*test.js' tests` enthält alle lebenden Tests.
-- Tests für entfernten Dead Code werden nicht migriert.
-
-**Verifikation:**
-
-```bash
-rg --files -g '*test.js' src
-rg --files -g '*test.js' tests
-npm test -- tests/player/unit/time.test.js tests/public/pages/home.page.test.js tests/server/routes/auth.routes.test.js
-```
-
-### Task 5: Große Testdateien splitten
-
-**Beschreibung:** Testdateien über 300 Zeilen werden nach Szenarien gesplittet. Gemeinsames Setup wandert in Helper-Dateien unter `tests/*/helpers/`.
-
-**Priorität:**
-
-```txt
-tests/public/pages/watch-party.page.test.js
-tests/server/realtime/watch-party.socket.test.js
-tests/server/services/watch-party.service.test.js
-tests/player/unit/sourceSwitch.test.js
-tests/player/unit/jellyfinReporter.test.js
-tests/server/services/jellyfin/trailers.service.test.js
-```
-
-**Zielbeispiel:**
-
-```txt
-tests/public/pages/watch-party/
-  lobby.test.js
-  ready-room.test.js
-  player-sync.test.js
-  invitations.test.js
-  participant-admin.test.js
-  helpers.js
-```
-
-**Helper-Snippet:**
-
-```js
-// tests/public/pages/watch-party/helpers.js
-import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-
-export function mountWatchPartyPage(params = { partyId: 'party-1' }) {
-  document.body.innerHTML = '';
-  const element = WatchPartyPage(params);
-  document.body.appendChild(element);
-  return element;
-}
-```
-
-**Akzeptanzkriterien:**
-
-- Keine Testdatei über 300 Zeilen.
-- Keine Testlogik wird entfernt, außer sie testet bestätigten Dead Code.
-- Test-Helper bleiben ebenfalls unter 300 Zeilen.
-
-**Verifikation:**
-
-```bash
-find tests -type f -name '*.test.js' -print0 | xargs -0 wc -l | sort -nr | head -40
-npm test
-```
-
-## Phase 3: `player.css` modularisieren
-
-### Task 6: Player-CSS in Module splitten
-
-**Beschreibung:** `src/player/src/player.css` bleibt als Import-Einstieg bestehen. Der Inhalt wird in `src/player/src/player/*.css` verschoben. Reihenfolge muss der aktuellen Cascade entsprechen.
-
-**Zielstruktur:**
-
-```txt
-src/player/src/player.css
-src/player/src/player/
-  base.css
-  layout.css
-  controls.css
-  timeline.css
-  menus.css
-  episodes.css
-  watch-party.css
-  next-episode.css
-  overlays.css
-  responsive.css
-```
-
-**Import-Einstieg:**
-
-```css
-@import "./player/base.css";
-@import "./player/layout.css";
-@import "./player/controls.css";
-@import "./player/timeline.css";
-@import "./player/menus.css";
-@import "./player/episodes.css";
-@import "./player/watch-party.css";
-@import "./player/next-episode.css";
-@import "./player/overlays.css";
-@import "./player/responsive.css";
-```
-
-**Komplexer Split-Ansatz:**
-
-```css
-/* src/player/src/player/next-episode.css */
-.vanta-player-next-episode { ... }
-.vanta-player-next-episode[hidden] { ... }
-.vanta-player-next-episode-media { ... }
-.vanta-player-next-episode-confirm { ... }
-.vanta-player-next-episode-confirm::before { ... }
-```
-
-```css
-/* src/player/src/player/episodes.css */
-.vanta-player-episodes-panel { ... }
-.vanta-player-episode-season { ... }
-.vanta-player-episode-row { ... }
-.vanta-player-episode-row.is-current { ... }
-```
-
-**Akzeptanzkriterien:**
-
-- `src/player/src/player.css` enthält nur Imports.
-- Alle neuen CSS-Dateien bleiben unter 300 Zeilen.
-- Keine Selektoren werden geändert.
-- Build erzeugt weiterhin `vanta-player.css`.
-
-**Verifikation:**
-
-```bash
-npm run player:build
-find src/player/src/player -type f -name '*.css' -print0 | xargs -0 wc -l | sort -nr
-```
-
-## Phase 4: Produktive CSS-Dateien über 300 Zeilen splitten
-
-### Task 7: Public-CSS modularisieren und Dead CSS entfernen
-
-**Beschreibung:** Alle produktiven CSS-Dateien über 300 Zeilen werden in kleinere Module aufgeteilt. CSS, dessen HTML/JS-Erzeugung entfernt wurde, wird gelöscht statt verschoben.
-
-**Priorität:**
-
-```txt
-src/public/css/pages/trailer-scroller.css
-src/public/css/pages/watch-party.css
-src/public/css/pages/requests.css
-src/public/css/pages/detail.css
-src/public/css/components/navbar/mobile-drawer.css
-src/public/css/pages/home.css
-src/public/css/components/admin-tools/users-tool.css
-src/public/css/components/settings/settings-dialog.css
-src/public/css/components/watch-party/watch-party-dialog.css
-src/public/css/components/navbar/navbar.css
-src/public/css/components/footer.css
-```
-
-**Muster:**
-
-```txt
-src/public/css/pages/watch-party.css
-src/public/css/pages/watch-party/
-  layout.css
-  lobby.css
-  invite.css
-  members.css
-  ready-room.css
-  countdown.css
-  player.css
-  responsive.css
-```
-
-```css
-/* src/public/css/pages/watch-party.css */
-@import "./watch-party/layout.css";
-@import "./watch-party/lobby.css";
-@import "./watch-party/invite.css";
-@import "./watch-party/members.css";
-@import "./watch-party/ready-room.css";
-@import "./watch-party/countdown.css";
-@import "./watch-party/player.css";
-@import "./watch-party/responsive.css";
-```
-
-**Dead-CSS-Regel:**
-
-Vor dem Verschieben eines Blocks prüfen:
-
-```bash
-rg -n "class-name-ohne-punkt" src/public/js src/player/src src/server --glob '!src/public/vendor/**'
-```
-
-Wenn kein produktiver Treffer existiert und die Klasse nicht serverseitig als HTML-String erzeugt wird, Block löschen.
-
-**Akzeptanzkriterien:**
-
-- Keine produktive CSS-Datei über 300 Zeilen.
-- Bestätigter Dead CSS ist gelöscht, nicht nur verschoben.
-- Import-Reihenfolge erhält die Cascade.
-
-**Verifikation:**
-
-```bash
-find src/public/css src/player/src -type f -name '*.css' -not -path '*/vendor/*' -print0 | xargs -0 wc -l | sort -nr | head -40
-npm test -- tests/public
-npm run player:build
-```
-
-## Phase 5: Player-JS splitten
-
-### Task 8: `src/player/src/index.js` in Orchestrator und Module splitten
-
-**Beschreibung:** `index.js` soll unter 300 Zeilen bleiben. `mountVantaPlayer()` bleibt die öffentliche API. Verhalten, Return-Werte und Events bleiben identisch.
-
-**Zielstruktur:**
-
-```txt
-src/player/src/index.js
-src/player/src/player/
-  context.js
-  bootstrap.js
-  controls.js
-  events.js
-  lifecycle.js
-  playbackState.js
-  watchPartyIntegration.js
-  episodeIntegration.js
-```
-
-**Orchestrator-Snippet:**
-
-```js
-import './player.css';
-import { createPlayerContext } from './player/context.js';
-import { initializePlayer } from './player/bootstrap.js';
-import { bindControls } from './player/controls.js';
-import { bindPlayerEvents } from './player/events.js';
-import { bindWatchPartyIntegration } from './player/watchPartyIntegration.js';
-import { bindEpisodeIntegration } from './player/episodeIntegration.js';
-import { createPlayerController } from './player/lifecycle.js';
-
-export async function mountVantaPlayer(options) {
-  const context = createPlayerContext(options);
-
-  try {
-    await initializePlayer(context);
-    bindControls(context);
-    bindPlayerEvents(context);
-    bindWatchPartyIntegration(context);
-    bindEpisodeIntegration(context);
-    return createPlayerController(context);
-  } catch (error) {
-    context.destroy();
-    throw error;
-  }
-}
-```
-
-**Context-Snippet:**
-
-```js
-export function createPlayerContext(options) {
-  const disposers = [];
-
-  return {
-    ...options,
-    disposers,
-    addDisposer(disposer) {
-      disposers.push(disposer);
-      return disposer;
-    },
-    destroy() {
-      while (disposers.length) {
-        const dispose = disposers.pop();
-        try {
-          dispose?.();
-        } catch (error) {
-          console.warn('[Player Cleanup]', error);
-        }
-      }
-    }
-  };
-}
-```
-
-**Akzeptanzkriterien:**
-
-- `mountVantaPlayer(options)` bleibt kompatibel.
-- Player-Tests bleiben grün.
-- `index.js` und neue Module sind unter 300 Zeilen.
-- Kein DOM-Markup und keine CSS-Klasse ändert sich.
-
-**Verifikation:**
-
-```bash
-npm test -- tests/player
-npm run player:build
-```
-
-### Task 9: `sourceSwitch.js` splitten
-
-**Beschreibung:** `sourceSwitch.js` enthält State Capture, Seek Restore, Rollback und Loading-Status. Diese Teile werden in Module extrahiert.
-
-**Zielstruktur:**
-
-```txt
-src/player/src/sourceSwitch.js
-src/player/src/sourceSwitch/
-  state.js
-  seekRestore.js
-  rollback.js
-  loadingStatus.js
-```
-
-**Snippet:**
-
-```js
-// src/player/src/sourceSwitch/state.js
-export function capturePlaybackState({ player, reporter, lastRequestedPosition }) {
-  return {
-    paused: player.paused,
-    muted: player.muted,
-    volume: player.volume,
-    position: Math.max(reporter.getPosition(), lastRequestedPosition)
-  };
-}
-```
-
-**Akzeptanzkriterien:**
-
-- Öffentliche Factory/API von `sourceSwitch.js` bleibt gleich.
-- Keine zyklischen Imports.
-- Source-Switch-Tests bleiben grün.
-
-**Verifikation:**
-
-```bash
-npm test -- tests/player/unit/sourceSwitch
-npm run player:build
-```
-
-## Phase 6: Public-Frontend-JS splitten
-
-### Task 10: `watch-party.page.js` modularisieren
-
-**Beschreibung:** Die WatchTogether-Seite wird in Shell, State, Socket-Handling, Lobby, Invite, Ready Room und Player-Mount aufgeteilt.
-
-**Zielstruktur:**
-
-```txt
-src/public/js/pages/watch-party.page.js
-src/public/js/pages/watch-party/
-  context.js
-  shell.js
-  lobbyView.js
-  readyRoom.js
-  countdown.js
-  inviteModal.js
-  memberList.js
-  notifications.js
-  playerMount.js
-  socketHandlers.js
-  sync.js
-```
-
-**Entry-Snippet:**
-
-```js
-import { createWatchPartyContext } from './watch-party/context.js';
-import { renderWatchPartyShell } from './watch-party/shell.js';
-import { attachWatchPartySocketHandlers } from './watch-party/socketHandlers.js';
-import { loadInitialParty } from './watch-party/sync.js';
-
-export default function WatchPartyPage({ partyId }) {
-  const context = createWatchPartyContext({ partyId });
-  renderWatchPartyShell(context);
-  attachWatchPartySocketHandlers(context);
-  loadInitialParty(context);
-  return context.container;
-}
-```
-
-**Akzeptanzkriterien:**
-
-- Default Export bleibt gleich.
-- WatchTogether Lobby, Ready Room, Rejoin, Notifications, Invite, Player-Sync und Admin-Funktionen bleiben gleich.
-- Alle Module unter 300 Zeilen.
-
-**Verifikation:**
-
-```bash
-npm test -- tests/public/pages/watch-party
-```
-
-### Task 11: Weitere Public-Dateien über 300 Zeilen splitten
-
-**Priorität:**
-
-```txt
-src/public/js/pages/trailer-scroller.page.js
-src/public/js/components/watch-party/createWatchPartyDialog.js
-src/public/js/pages/requests.page.js
-src/public/js/components/admin-tools/users/adminUserDetailView.js
-```
-
-**Zielbeispiele:**
-
-```txt
-src/public/js/pages/trailer-scroller/
-  controls.js
-  slideRenderer.js
-  playback.js
-  gestures.js
-  hashState.js
-```
-
-```txt
-src/public/js/components/watch-party/createWatchPartyDialog/
-  shell.js
-  search.js
-  suggestions.js
-  validation.js
-```
-
-**Akzeptanzkriterien:**
-
-- Öffentliche Exporte bleiben kompatibel.
-- Keine UI-Texte oder Klassen ändern sich.
-- Dead Code innerhalb dieser Dateien wird gelöscht, wenn keine produktiven Aufrufe existieren.
-
-**Verifikation:**
-
-```bash
-npm test -- tests/public/pages/trailer-scroller.page.test.js tests/public/components/watch-party tests/public/pages/requests.page.test.js
-```
-
-## Phase 7: Server-JS splitten
-
-### Task 12: WatchParty Service und Socket modularisieren
-
-**Beschreibung:** Die zentralen WatchParty-Dateien werden entlang von Verantwortlichkeiten gesplittet. Die bisherigen Importpfade bleiben durch Re-Exports stabil.
-
-**Service-Zielstruktur:**
-
-```txt
-src/server/services/watch-party.service.js
-src/server/services/watch-party/
-  WatchPartyService.js
-  store.js
-  permissions.js
-  lifecycle.js
-  members.js
-  playback.js
-  episodes.js
-  snapshots.js
-  publicApi.js
-```
-
-**Socket-Zielstruktur:**
-
-```txt
-src/server/realtime/watch-party.socket.js
-src/server/realtime/watch-party/
-  WatchPartySocketHub.js
-  messageHandlers.js
-  notifications.js
-  countdowns.js
-  broadcasts.js
-  connectionRegistry.js
-```
-
-**Re-Export-Snippet:**
-
-```js
-// src/server/services/watch-party.service.js
-export { WatchPartyService } from './watch-party/WatchPartyService.js';
-export {
-  getPartyEffectivePosition,
-  isPartyAdmin,
-  startWatchPartyCleanup
-} from './watch-party/publicApi.js';
-```
-
-**Akzeptanzkriterien:**
-
-- Bestehende Imports funktionieren weiter.
-- WebSocket Message Types bleiben unverändert.
-- Error Messages bleiben unverändert, soweit Tests darauf prüfen.
-- Alle neuen Module unter 300 Zeilen.
-
-**Verifikation:**
-
-```bash
-npm test -- tests/server/services/watch-party tests/server/realtime/watch-party
-```
-
-### Task 13: Weitere Server-Dateien über 300 Zeilen splitten
-
-**Priorität:**
-
-```txt
-src/server/services/home-sections.service.js
-src/server/services/playback.service.js
-```
-
-**Muster:**
-
-```txt
-src/server/services/home-sections.service.js
-src/server/services/home-sections/
-  cache.js
-  groups.js
-  loaders.js
-  normalizers.js
-```
-
-```txt
-src/server/services/playback.service.js
-src/server/services/playback/
-  streamSelection.js
-  qualityProfiles.js
-  validation.js
-  reporting.js
-```
-
-**Akzeptanzkriterien:**
-
-- Public Exports bleiben stabil.
-- Keine Route-Antworten ändern sich.
-- Tests bleiben grün.
-
-**Verifikation:**
-
-```bash
-npm test -- tests/server/services/home-sections.service.test.js tests/server/services/playback.service.test.js
-```
-
-## Phase 8: Größen- und Dead-Code-Gates
-
-### Task 14: Größenprüfung hinzufügen
-
-**Beschreibung:** Ergänze ein Script, das `.js`, `.css` und `.html` unter `src` und `tests` prüft. Dateien über 300 Zeilen führen zu Exit Code 1. `src/public/vendor` wird ignoriert.
-
-**Dateien:**
-
-```txt
-scripts/check-file-size.mjs
-package.json
-```
-
-**Snippet:**
-
-```js
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
-
-const MAX_LINES = 300;
-const ROOTS = ['src', 'tests'];
-const EXTENSIONS = new Set(['.js', '.css', '.html']);
-const IGNORED = ['src/public/vendor', 'node_modules'];
-
-async function walk(dir, files = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (IGNORED.some(prefix => full.startsWith(prefix))) continue;
-    if (entry.isDirectory()) await walk(full, files);
-    else if (EXTENSIONS.has(path.extname(entry.name))) files.push(full);
-  }
-  return files;
-}
-
-const oversized = [];
-
-for (const root of ROOTS) {
-  for (const file of await walk(root)) {
-    const lines = (await readFile(file, 'utf8')).split('\n').length;
-    if (lines > MAX_LINES) oversized.push({ file, lines });
-  }
-}
-
-if (oversized.length > 0) {
-  console.error('Files over 300 lines:');
-  for (const { file, lines } of oversized) console.error(`${lines} ${file}`);
-  process.exit(1);
-}
-```
-
-`package.json`:
+- Bereichswechsel über eine seitliche Navigation (Desktop) bzw. Tab-Leiste (Mobil). Kein Tool-Grid mehr,
+  kein Aufklappen — beide Bereiche sind einen Klick entfernt.
+- Der aktive Bereich wird im Hash mitgeführt (`#/admin` → Anfragen als Standard). Ob Unterrouten wie
+  `#/admin/users` sinnvoll sind, siehe „Offene Punkte".
+- Die Nutzer-Detailansicht wird nicht mehr als Vollbildwechsel gerendert, sondern als zweite Spalte bzw.
+  Detail-Panel neben der Liste, solange die Breite reicht. Auf Mobil bleibt es der bisherige
+  Ansichtswechsel mit Zurück-Steuerung.
+- Der Badge an „Anfragen" zeigt die Anzahl offener Anfragen.
+
+### A4. Anfragen-Bereich
+
+- Tabs **Offen** (Standard) und **Alle**.
+  - „Offen" nutzt weiterhin `GET /api/requests/admin/open`.
+  - „Alle" nutzt einen neuen Endpunkt (siehe A6) und zeigt zusätzlich ein Status-Badge je Zeile
+    (pending / approved / imported / rejected) mit den Labels aus
+    `src/public/js/pages/requests/helpers.js`.
+- Zeilenlayout in `adminRequestItem.js` wird von der heutigen Textzeile
+  (`username — tmdb_type — status`) auf eine echte Zeile mit Poster-Thumbnail, Titel, Nutzer, Typ und
+  Anfragedatum umgestellt. `poster_path` liegt bereits in der `requests`-Tabelle.
+- Genehmigen/Ablehnen bekommen Toast-Feedback über `appStore.showToast`. Heute werden Fehler nur
+  `console.error`-t und es gibt gar keine Erfolgsmeldung (`AdminRequestsTool.js:39-43`).
+- Beim Ablehnen sichtbar machen, dass der Titel dadurch auf die Sperrliste kommt und nicht erneut
+  angefragt werden kann (`requests.service.js:201-217`) — das ist heute unsichtbar und überraschend.
+
+### A5. Nutzer-Bereich
+
+- Inhaltlich unverändert: Liste, Umbenennen, Passwort, Bibliothekszugriff, Stream-Limit, Sperren, Löschen.
+- Die tool-eigene Suche in `AdminUsersTool.js:17-25` entfällt; der Filterbegriff kommt künftig von der
+  globalen Suchleiste über eine `setFilter(term)`-Methode.
+- `renderList()` baut heute bei jedem Tastendruck die komplette Liste per `innerHTML = ''` neu auf. Beim
+  Umbau auf die globale Suche wird das entzerrt: Eingabe entprellen (ca. 150 ms) und nur bei geändertem
+  Ergebnis neu rendern.
+- Die Zeile wird für die neue Breite neu gesetzt: feste Spalten für Name, Badges, Streams und Aktionen
+  statt `flex-wrap` mit `flex: 1 1 160px`.
+- Die Bestätigungsdialoge aus `adminUserDialogs.js` (Sperren, Löschen) bleiben, brauchen aber neue
+  z-index-Werte: Der heutige Wert `10000` war auf „Modal über Modal" ausgelegt und muss gegen die
+  Navbar/Overlays der Seite geprüft werden.
+
+### A6. Serverseitig für „Alle Anfragen"
+
+- `requests.service.js`: `getAll()` analog zu `getOpen()` (`:133`), ohne `WHERE status = 'pending'`,
+  sortiert nach `created_at DESC`.
+- `requests.routes.js`: `GET /api/requests/admin/all` mit `requireAuth, requireFreshAdmin` — direkt neben
+  dem bestehenden `/admin/open` (`:81`). Wichtig: **vor** der Route `GET /:id` (`:99`) registrieren, sonst
+  greift der Parameter-Match.
+- `requests.api.js` im Client bekommt `getAllRequests()`.
+
+### A7. Aufräumen
+
+- `src/public/css/pages/requests/admin.css`: `.requests-admin-toggle`, `.requests-section`,
+  `.requests-section-title`, `.requests-list` haben null JS-Referenzen — Reste einer entfernten
+  In-Page-Admin-Sektion. Entfernen. Der genutzte Teil (`.request-item*`, `.request-admin-actions`,
+  `.request-approve`, `.request-reject`) wandert in die neue Admin-Seiten-CSS und wird dort ersetzt.
+- Der Kommentar `6. ADMIN STYLES (keep untouched)` in derselben Datei ist damit hinfällig.
+- `admin-tools.css` verliert das Kachel-Grid (`repeat(auto-fill, minmax(180px, 1fr))`, Zeilen 2-6), da es
+  kein Tool-Grid mehr gibt.
+
+---
+
+## Teil B — Suchleiste und Einstellungen-Icon
+
+### B1. Kopfzeile
+
+- `adminHeader.js` rendert die Suchleiste und rechts daneben einen Icon-Button „Einstellungen" (Zahnrad).
+  Für das Icon ein `createSettingsGearIcon()` in `src/public/js/components/navbar/icons.js` ergänzen,
+  passend zu den vorhandenen Icon-Factories.
+- Der Button braucht `aria-label="Admin-Einstellungen"` und einen sichtbaren Fokusring — die
+  bestehenden Icon-Buttons im Repo sind das Vorbild.
+- Die Suchleiste bekommt `type="search"`, ein Lupen-Icon und einen Leeren-Button.
+
+### B2. Suchverhalten
+
+- Leeres Suchfeld: der aktive Bereich zeigt seinen normalen Inhalt.
+- Gefülltes Suchfeld: eine gruppierte Ergebnisansicht ersetzt den Bereichsinhalt:
+  - **Nutzer** — Treffer auf dem Nutzernamen (wie heute: `toLowerCase().includes`)
+  - **Anfragen** — Treffer auf Titel **und** anfragendem Nutzernamen
+- Beide Datenquellen liegen ohnehin vollständig im Client vor; die Suche bleibt also clientseitig, es
+  braucht keine Server-Query.
+- Damit die Anfragen-Suche auch abgeschlossene Anfragen findet, wird für die Suche die „Alle"-Liste
+  herangezogen, nicht nur die offenen.
+- Eingabe entprellen (~150 ms). Ergebniszahlen je Gruppe anzeigen. Klick auf einen Treffer springt in den
+  jeweiligen Bereich und selektiert den Eintrag.
+- Leerzustand: „Keine Treffer für …".
+
+### B3. Einstellungen-Panel
+
+- Öffnet als Panel/Overlay auf der Admin-Seite, nicht als weitere Route.
+- Inhalt in dieser Ausbaustufe: ausschließlich der Abschnitt „Discord-Webhook" (Teil C). Das Panel wird so
+  strukturiert, dass weitere Abschnitte später ohne Umbau danebenpassen.
+- Schließen per Zahnrad erneut, Klick auf den Hintergrund und `Escape`.
+
+---
+
+## Teil C — Discord-Webhook für neue Anfragen
+
+### C1. Ablage der Konfiguration
+
+- Neuer Service `src/server/services/app-settings.service.js` als schmaler Wrapper um die bereits
+  bestehende, bislang leere Tabelle `app_settings`:
+  - `get(key)` → `value` oder `null`
+  - `set(key, value)` → Upsert mit `updated_at` als ISO-String
+  - `remove(key)`
+- Genutzte Schlüssel:
+  - `discord_webhook_url` — die vollständige URL
+  - `discord_webhook_enabled` — `'true'` / `'false'`
+- Kein Schema-Change nötig. **Achtung**: `database.js` schreibt bei jedem Write die komplette DB-Datei neu
+  (`persist()`, `:19-21`). Für zwei Settings-Writes ist das unkritisch, aber der Settings-Service darf
+  nicht in Schleifen schreiben.
+- Der Service wird als Factory mit optionalem DB-Handle exportiert, passend zum Muster von
+  `createUserBanService` / `createUserSettingsService` — sonst sind die Tests nicht isolierbar.
+
+### C2. Endpunkte
+
+Neue Datei `src/server/routes/admin/settings.routes.js`, in `src/server/routes/admin/index.js` per
+`router.use('/settings', settingsRoutes)` gemountet. Alle Routen hinter
+`router.use(requireAuth, requireFreshAdmin)`, genau wie `users.routes.js:11`.
+
+| Methode | Pfad | Zweck |
+|---|---|---|
+| GET | `/api/admin/settings/discord-webhook` | Status lesen |
+| PUT | `/api/admin/settings/discord-webhook` | URL und/oder Schalter setzen |
+| DELETE | `/api/admin/settings/discord-webhook` | Konfiguration entfernen |
+| POST | `/api/admin/settings/discord-webhook/test` | Test-Embed senden |
+
+**GET liefert die URL nie im Klartext**, sondern:
 
 ```json
-{
-  "scripts": {
-    "lint:size": "node scripts/check-file-size.mjs"
-  }
-}
+{ "configured": true, "enabled": true, "maskedUrl": "https://discord.com/api/webhooks/1234…f9c2" }
 ```
 
-### Task 15: Dead-Code-Prüfung als Report-Script hinzufügen
+Maskierung: Schema + Host + Pfadanfang sichtbar, Token-Anteil bis auf die letzten 4 Zeichen durch `…`
+ersetzt. Die Maskierung passiert **serverseitig** — die volle URL verlässt den Server nach dem Speichern
+nie wieder.
 
-**Beschreibung:** Ergänze ein Report-Script für bekannte Dead-Code-Kandidaten. Es soll nicht automatisch löschen, aber verhindern, dass entfernte Legacy-Begriffe wieder auftauchen.
+**PUT** akzeptiert `{ url?, enabled? }`. Ohne `url` wird nur der Schalter geändert, sodass sich der
+Versand pausieren lässt, ohne die URL neu eingeben zu müssen.
 
-**Snippet:**
+**POST /test** sendet ein Beispiel-Embed („Testnachricht von Vanta") an die gespeicherte URL — oder, wenn
+im Body eine URL mitgeschickt wird, an diese, damit sich eine URL vor dem Speichern prüfen lässt. Antwort
+enthält Erfolg bzw. den HTTP-Status von Discord, damit der Admin eine falsche URL sofort erkennt.
+Siehe dazu den Punkt zur URL-Validierung unter „Offene Punkte" — der ist vor der Umsetzung zu klären.
 
-```js
-import { execFileSync } from 'node:child_process';
+### C3. Webhook-Service
 
-const forbiddenPatterns = [
-  'createMobileSettings',
-  'mobile-settings-panel',
-  'mobile-settings-back-button',
-  'mobile-settings-header',
-  'loadDropdowns',
-  'movies-dropdown-menu',
-  'series-dropdown-menu',
-  'publishers-dropdown-menu'
-];
+Neue Datei `src/server/services/discord-webhook.service.js`:
 
-let failed = false;
+- `buildRequestEmbed(request, media)` — baut das Embed-Objekt, rein und ohne Netzwerk, damit direkt testbar.
+- `sendRequestCreated(request)` — liest Konfiguration, prüft `enabled`, baut das Embed und sendet.
+  Kein `throw` nach außen; Fehler nur `console.error`.
+- Versand per nativem `fetch` (`POST`, `Content-Type: application/json`), mit `AbortSignal.timeout` von
+  ca. 5 s, damit ein hängender Webhook nichts blockiert.
+- Kein Retry in dieser Ausbaustufe.
 
-for (const pattern of forbiddenPatterns) {
-  try {
-    const output = execFileSync('rg', [
-      '-n',
-      pattern,
-      'src',
-      '--glob',
-      '!src/public/vendor/**'
-    ], { encoding: 'utf8' });
+**Embed-Aufbau**
 
-    if (output.trim()) {
-      failed = true;
-      console.error(`Forbidden legacy pattern found: ${pattern}`);
-      console.error(output);
-    }
-  } catch (error) {
-    if (error.status !== 1) throw error;
-  }
-}
+| Feld | Quelle |
+|---|---|
+| `title` | `request.title` |
+| `url` | `https://www.themoviedb.org/{movie\|tv}/{tmdb_id}` |
+| `description` | `overview` aus `tmdb_media`, gekürzt auf ~300 Zeichen |
+| `thumbnail.url` | `https://image.tmdb.org/t/p/w342{poster_path}` (nur wenn vorhanden) |
+| Feld „Angefragt von" | `request.username` |
+| Feld „Typ" | `Film` / `Serie`, abgeleitet aus `tmdb_type` |
+| Feld „Jahr" | `release_date` bzw. `first_air_date` aus `tmdb_media` |
+| Feld „Status" | `Offen` |
+| `color` | fester Akzentwert |
+| `timestamp` | `request.created_at` als ISO-String |
 
-if (failed) process.exit(1);
-```
+**Wichtig**: Das Jahr steht **nicht** in der `requests`-Tabelle. `release_date` / `first_air_date` /
+`overview` liegen in `tmdb_media` (`database.js:90-103`). Der Embed-Builder braucht also entweder einen
+Join über `tmdb_id` + `tmdb_type` oder eine zusätzliche Abfrage. Da `RequestsService.create` die
+TMDB-Details ohnehin schon geladen hat (`requests.service.js:67-70`), ist der einfachste Weg, diese Daten
+an den Aufrufer durchzureichen.
 
-**Akzeptanzkriterien:**
+Alle Textfelder werden vor dem Senden gekappt (Discord-Limits: Titel 256, Description 4096, Feldwert 1024
+Zeichen). Ein außergewöhnlich langer Titel darf den Versand nicht mit HTTP 400 scheitern lassen.
 
-- `npm run lint:size` ist grün.
-- Dead-Code-Report ist grün.
-- Falls ein Begriff bewusst weiter existiert, wird er aus der Forbidden-Liste entfernt und im Plan/Commit begründet.
+### C4. Auslösepunkt
 
-## Checkpoints
+- Der Aufruf gehört in den Handler `POST /api/requests/` in `requests.routes.js:65`, **nach** dem
+  erfolgreichen `RequestsService.create(...)` und **nach** dem Senden der HTTP-Antwort an den Nutzer.
+- Bewusst nicht in `requests.service.js`: der Service bleibt frei von ausgehendem HTTP und damit ohne
+  Netzwerk-Mocks testbar.
+- Der Aufruf wird nicht `await`-et bzw. nur mit `.catch()` versehen — der Nutzer wartet nie auf Discord.
+- Nur bei neuer Anfrage. Genehmigen und Ablehnen lösen bewusst **keinen** Webhook aus.
 
-### Checkpoint A: Dead Code entfernt
+---
 
-```bash
-rg -n "createMobileSettings|mobile-settings-panel|mobile-settings-back-button|mobile-settings-header" src --glob '!src/public/vendor/**'
-rg -n "loadDropdowns|dropdownMenus|dropdown-menu|movies-dropdown-menu|series-dropdown-menu|publishers-dropdown-menu" src --glob '!src/public/vendor/**'
-npm test -- src/public/js/components/navbar/Navbar.test.js src/public/js/components/navbar/settingsDialog.test.js
-```
+## Tests
 
-### Checkpoint B: Tests migriert
+**Neu, serverseitig**
 
-```bash
-rg --files -g '*test.js' src
-rg --files -g '*test.js' tests
-npm test
-```
+- `tests/server/services/app-settings.service.test.js` — get/set/remove, Upsert-Verhalten, Isolation über
+  ein temporäres DB-Handle
+- `tests/server/services/discord-webhook.service.test.js` — Embed-Aufbau für Film und Serie, fehlendes
+  Poster, fehlendes Jahr, Kürzung überlanger Felder; `fetch` gemockt: Versand unterbleibt bei
+  `enabled=false` und bei fehlender URL, Fehler propagiert nicht nach außen
+- `tests/server/routes/admin/settings.routes.test.js` — Admin-Gate greift, GET liefert maskiert und nie die
+  volle URL, PUT ohne `url` ändert nur den Schalter, DELETE räumt auf, Test-Endpunkt meldet Discord-Fehler
+  durch
+- `tests/server/routes/requests.routes.test.js` — bislang komplett fehlend. Mindestens: `/admin/all` ist
+  admin-gated, Reihenfolge gegenüber `GET /:id` stimmt, und `POST /` löst genau einen Webhook-Aufruf aus
+  bzw. bleibt bei Webhook-Fehler erfolgreich
 
-### Checkpoint C: Player refactored
+**Neu, clientseitig**
 
-```bash
-npm test -- tests/player
-npm run player:build
-```
+- `tests/public/pages/admin.page.test.js` — Nicht-Admin wird umgeleitet, Bereichswechsel, Ladezustand
+- `tests/public/pages/admin/adminSearch.test.js` — gruppierte Treffer über Nutzer und Anfragen, Leerzustand,
+  Zurücksetzen
+- `tests/public/pages/admin/adminSettingsPanel.test.js` — Speichern, Schalter, Testen-Button, maskierte
+  Anzeige
+- `tests/public/components/admin-tools/requests/AdminRequestsTool.test.js` — die heute ungetestete Hälfte:
+  Tabs, Statusbadges, Toast bei Genehmigen/Ablehnen, Fehlerzustand
 
-### Checkpoint D: Public frontend refactored
+**Anzupassen**
 
-```bash
-npm test -- tests/public
-```
+- `tests/public/components/navbar/settingsDialog.test.js` — die Admin-Ansicht im Dialog gibt es nicht mehr;
+  stattdessen prüfen, dass die Kachel den Dialog schließt und auf `#/admin` navigiert
+- `tests/public/components/admin-tools/AdminToolsPanel.test.js` — Panel ist auf Sichtbarkeit und
+  Navigation reduziert
+- `tests/public/components/admin-tools/users/AdminUsersTool.test.js` — Suche kommt von außen über
+  `setFilter`
 
-### Checkpoint E: Server refactored
+---
 
-```bash
-npm test -- tests/server
-```
+## Offene Punkte
 
-### Checkpoint F: Gesamtprüfung
+1. **URL-Validierung des Webhooks (vor der Umsetzung zu entscheiden).** Aktuell nicht eingeplant, weil
+   nicht ausgewählt. Damit kann ein Admin den Server dazu bringen, ein POST an eine beliebige URL zu
+   schicken — auch an interne Adressen im selben Netz, etwa den Jellyfin-Server. Der Endpunkt ist zwar
+   durch `requireFreshAdmin` geschützt, trotzdem ist eine Einschränkung auf
+   `https://discord.com/api/webhooks/…` bzw. `discordapp.com` billig umzusetzen und schließt das
+   vollständig. **Empfehlung: aufnehmen.**
+2. **Unterrouten für die Bereiche.** `#/admin/users` und `#/admin/requests` würden Deep-Links und den
+   Browser-Zurück-Button korrekt bedienen, kosten aber zwei zusätzliche Routen-Einträge. Alternative:
+   ein einziger `#/admin` mit internem Zustand.
+3. **Verhalten des Browser-Zurück-Buttons** aus der Nutzer-Detailansicht heraus — abhängig von Punkt 2.
+4. **Ort der Anfragen-Sperrliste.** Beim Ablehnen landet ein Titel in `db/banned.json` und kann nie wieder
+   angefragt werden. Es gibt keine Oberfläche, das rückgängig zu machen. Bewusst nicht Teil dieses Plans,
+   aber ein guter Kandidat für den nächsten Schritt.
+5. **`requireFreshAdmin` fragt bei jedem Request Jellyfin.** Die Admin-Seite feuert beim Laden mehrere
+   Requests parallel (Nutzer, Bibliotheken, Anfragen, Einstellungen) — das sind ebenso viele zusätzliche
+   Jellyfin-Roundtrips. Falls das spürbar wird, ist ein kurzlebiger Cache in der Middleware der Hebel.
 
-```bash
-npm test
-npm run player:build
-npm run lint:size
-git diff --check
-```
+## Reihenfolge der Umsetzung
 
-## Risiken und Gegenmaßnahmen
-
-| Risiko | Auswirkung | Gegenmaßnahme |
-| --- | --- | --- |
-| Dead Code wird zu aggressiv gelöscht | Feature bricht unbemerkt | Vor Löschung produktive `rg`-Belege, danach gezielte Tests |
-| CSS-Cascade ändert sich durch Imports | Visuelle Regression | CSS-Blöcke in exakt gleicher Reihenfolge importieren |
-| Test-Migration bricht relative Imports | Viele rote Tests | Domänenweise mit kleinen Test-Slices migrieren |
-| WatchParty-Refactor verändert Sync-Timing | Hohe Regression | Socket/Service erst nach Test-Migration refactoren |
-| Player-Refactor bricht Build-Asset | Player lädt nicht | Nach Player-Phase immer `npm run player:build` |
-| Größenregel blockiert sinnvolle Entry-Dateien | Refactor wird unnötig künstlich | Entry-Dateien klein halten; Ausnahmen nur begründet |
-
-## Reihenfolge für den implementierenden Agenten
-
-1. Dead-Code-Audit ausführen und bestätigte Kandidaten entfernen.
-2. Navbar-Tests nach Dead-Code-Entfernung laufen lassen.
-3. Tests nach `tests/` migrieren und Vitest final umstellen.
-4. Große Testdateien splitten.
-5. `player.css` in Module splitten.
-6. Weitere produktive CSS-Dateien splitten und Dead CSS entfernen.
-7. `src/player/src/index.js` und `sourceSwitch.js` modularisieren.
-8. Große Public-JS-Dateien modularisieren.
-9. Große Server-JS-Dateien modularisieren.
-10. Größen- und Dead-Code-Report-Scripts ergänzen.
-11. Gesamtprüfung ausführen.
+1. Serverseite Anfragen: `getAll` + `GET /api/requests/admin/all` + Tests
+2. Serverseite Einstellungen: `app-settings.service.js` + `settings.routes.js` + Tests
+3. Serverseite Webhook: `discord-webhook.service.js` + Auslöser in `requests.routes.js` + Tests
+4. Route `#/admin`, Seitengerüst, Admin-Guard, Umstellung des Einstellungen-Dialogs
+5. Nutzer- und Anfragen-Bereich in die neue Seite überführen, Detailansicht als Spalte
+6. Kopfzeile mit Suchleiste und globaler Suche
+7. Einstellungen-Panel mit Webhook-Formular, Schalter und Testen-Button
+8. CSS-Redesign und Responsive-Feinschliff, toten CSS-Anteil entfernen
+9. Bestehende Tests anpassen, kompletter Durchlauf `npm test`
+10. Manuelle Sichtprüfung durch den Nutzer
