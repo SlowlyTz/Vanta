@@ -15,9 +15,19 @@ import { jellyfinJson } from '../../../../../src/server/services/jellyfin/client
 import { LibraryService } from '../../../../../src/server/services/jellyfin/library.service.js';
 import { createBaseItem } from './helpers.js';
 
+function createItems(count, prefix = 'id') {
+  return Array.from({ length: count }, (_, i) =>
+    createBaseItem({
+      Id: `${prefix}-${i}`,
+      RemoteTrailers: [{ Url: `https://youtu.be/dQw4w9WgX${String(i).padStart(3, '0')}` }]
+    })
+  );
+}
+
 describe('TrailersService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    TrailersService.clearCatalogCache();
   });
 
   describe('loadAllTrailerItems', () => {
@@ -38,74 +48,24 @@ describe('TrailersService', () => {
     });
   });
 
-  describe('getTrailerQueue', () => {
-    it('loads and shuffles a new queue when none exists', async () => {
-      const items = Array.from({ length: 10 }, (_, i) =>
-        createBaseItem({
-          Id: `id-${i}`,
-          RemoteTrailers: [{ Url: `https://youtu.be/dQw4w9WgX${String(i).padStart(3, '0')}` }]
-        })
-      );
-      LibraryService.getAllMoviesAndSeries.mockResolvedValue(items);
-
-      const req = { session: {} };
-      const queue = await TrailersService.getTrailerQueue(req, 'user', 'token');
-
-      expect(queue).toHaveLength(10);
-      expect(req.session.trailerQueue).toBe(queue);
-    });
-
-    it('returns existing queue without hitting Jellyfin', async () => {
-      const req = { session: { trailerQueue: [{ itemId: 'cached' }] } };
-
-      const queue = await TrailersService.getTrailerQueue(req, 'user', 'token');
-
-      expect(queue).toHaveLength(1);
-      expect(LibraryService.getAllMoviesAndSeries).not.toHaveBeenCalled();
-    });
-
-    it('regenerates the queue when refresh is true', async () => {
-      const req = { session: { trailerQueue: [{ itemId: 'cached' }] } };
-      const items = [createBaseItem({ Id: 'new', RemoteTrailers: [{ Url: 'https://youtu.be/dQw4w9WgX99' }] })];
-      LibraryService.getAllMoviesAndSeries.mockResolvedValue(items);
-
-      const queue = await TrailersService.getTrailerQueue(req, 'user', 'token', true);
-
-      expect(queue).toHaveLength(1);
-      expect(queue[0].itemId).toBe('new');
-      expect(req.session.trailerQueue[0].itemId).toBe('new');
-    });
-  });
-
   describe('getTrailerPage', () => {
-    it('paginates the queue and returns cursor info', async () => {
-      const items = Array.from({ length: 5 }, (_, i) =>
-        createBaseItem({
-          Id: `id-${i}`,
-          RemoteTrailers: [{ Url: `https://youtu.be/dQw4w9WgX${String(i).padStart(3, '0')}` }]
-        })
-      );
-      LibraryService.getAllMoviesAndSeries.mockResolvedValue(items);
+    it('paginates the feed and returns cursor info', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(5));
 
       const req = { session: {} };
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', 0, 2);
+      const result = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 2 });
 
       expect(result.items).toHaveLength(2);
       expect(result.nextCursor).toBe('2');
       expect(result.hasMore).toBe(true);
+      expect(result.feedId).toEqual(expect.any(String));
     });
 
-    it('indicates no more items at the end of the queue', async () => {
-      const items = Array.from({ length: 3 }, (_, i) =>
-        createBaseItem({
-          Id: `id-${i}`,
-          RemoteTrailers: [{ Url: `https://youtu.be/dQw4w9WgX${String(i).padStart(3, '0')}` }]
-        })
-      );
-      LibraryService.getAllMoviesAndSeries.mockResolvedValue(items);
+    it('indicates no more items at the end of the feed', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(3));
 
       const req = { session: {} };
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', 1, 2);
+      const result = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 1, limit: 2 });
 
       expect(result.items).toHaveLength(2);
       expect(result.nextCursor).toBeNull();
@@ -113,44 +73,114 @@ describe('TrailersService', () => {
     });
 
     it('clamps limit between 1 and 20', async () => {
-      const items = [createBaseItem({ Id: '1', RemoteTrailers: [{ Url: 'https://youtu.be/dQw4w9WgXcQ' }] })];
-      LibraryService.getAllMoviesAndSeries.mockResolvedValue(items);
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(1));
 
       const req = { session: {} };
-      const low = await TrailersService.getTrailerPage(req, 'user', 'token', 0, 0);
-      const high = await TrailersService.getTrailerPage(req, 'user', 'token', 0, 100);
+      const low = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 0 });
+      const high = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 100 });
 
       expect(low.items).toHaveLength(1);
       expect(high.items).toHaveLength(1);
     });
 
-    it('moves a target trailer to the start of the queue', async () => {
-      const req = {
-        session: {
-          trailerQueue: [
-            { id: 'first:youtube-001', itemId: 'first' },
-            { id: 'target:youtube-002', itemId: 'target' },
-            { id: 'last:youtube-003', itemId: 'last' }
-          ]
-        }
-      };
+    it('creates a brand new feed when no feed id is sent', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(40));
 
-      const result = await TrailersService.getTrailerPage(
-        req,
-        'user',
-        'token',
-        0,
-        2,
-        false,
-        'target:youtube-002'
+      const req = { session: {} };
+      const first = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 20 });
+      const second = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 20 });
+
+      expect(second.feedId).not.toBe(first.feedId);
+      // 40 shuffled ids landing in the same order twice is effectively impossible.
+      expect(second.items.map((item) => item.id)).not.toEqual(first.items.map((item) => item.id));
+    });
+
+    it('keeps the same order while the feed id matches', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(6));
+
+      const req = { session: {} };
+      const first = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 3 });
+      const again = await TrailersService.getTrailerPage(req, 'user', 'token', {
+        feedId: first.feedId,
+        cursor: 0,
+        limit: 3
+      });
+
+      expect(again.feedId).toBe(first.feedId);
+      expect(again.items.map((item) => item.id)).toEqual(first.items.map((item) => item.id));
+    });
+
+    it('starts a new feed when the feed id is unknown to the session', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(6));
+
+      const req = { session: {} };
+      const result = await TrailersService.getTrailerPage(req, 'user', 'token', {
+        feedId: 'stale-feed-id',
+        limit: 3
+      });
+
+      expect(result.feedId).not.toBe('stale-feed-id');
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('enters the feed at the target trailer without reordering it', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(10));
+
+      const req = { session: {} };
+      const feed = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 10 });
+      const order = req.session.trailerFeed.order;
+      const target = order[6];
+
+      const result = await TrailersService.getTrailerPage(req, 'user', 'token', {
+        feedId: feed.feedId,
+        limit: 3,
+        target
+      });
+
+      expect(result.items.map((item) => item.id)).toEqual(order.slice(6, 9));
+      expect(req.session.trailerFeed.order).toEqual(order);
+    });
+
+    it('skips ids that vanished from the catalog instead of returning a short page', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(6));
+
+      const req = { session: {} };
+      const feed = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 6 });
+      const order = [...req.session.trailerFeed.order];
+
+      TrailersService.clearCatalogCache();
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(
+        createItems(6).filter((item) => !order.slice(0, 2).some((id) => id.startsWith(`${item.Id}:`)))
       );
 
-      expect(result.items.map((item) => item.id)).toEqual(['target:youtube-002', 'first:youtube-001']);
-      expect(req.session.trailerQueue.map((item) => item.id)).toEqual([
-        'target:youtube-002',
-        'first:youtube-001',
-        'last:youtube-003'
-      ]);
+      const result = await TrailersService.getTrailerPage(req, 'user', 'token', {
+        feedId: feed.feedId,
+        cursor: 0,
+        limit: 3
+      });
+
+      expect(result.items).toHaveLength(3);
+      expect(result.items.map((item) => item.id)).toEqual(order.slice(2, 5));
+    });
+
+    it('serves the catalog from cache within the TTL', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(4));
+
+      const req = { session: {} };
+      const first = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 2 });
+      await TrailersService.getTrailerPage(req, 'user', 'token', { feedId: first.feedId, cursor: 2, limit: 2 });
+
+      expect(LibraryService.getAllMoviesAndSeries).toHaveBeenCalledTimes(1);
+    });
+
+    it('stores only the id order in the session, not the trailer objects', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(3));
+
+      const req = { session: {} };
+      await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 3 });
+
+      expect(req.session.trailerQueue).toBeUndefined();
+      expect(req.session.trailerFeed.order.every((id) => typeof id === 'string')).toBe(true);
     });
   });
 

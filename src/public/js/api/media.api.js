@@ -118,15 +118,16 @@ export const MediaApi = {
     });
   },
 
-  getTrailers(cursor = null, limit = 8, refresh = false, target = null) {
+  getTrailers({ feedId = null, cursor = null, limit = 8, target = null } = {}) {
     const params = new URLSearchParams();
+    // Omitting feedId is how the client asks for a brand new random feed.
+    if (feedId) {
+      params.set('feedId', feedId);
+    }
     if (cursor !== null && cursor !== undefined) {
       params.set('cursor', String(cursor));
     }
     params.set('limit', String(limit));
-    if (refresh) {
-      params.set('refresh', '1');
-    }
     if (target) {
       params.set('target', target);
     }

@@ -1,5 +1,6 @@
 import { createIntroModal } from './intro.js';
 import { appStore } from '../../store/app.store.js';
+import { getFeedId } from './feedSession.js';
 
 function waitForConnected(ctx) {
   if (ctx.container.isConnected) return Promise.resolve();
@@ -32,7 +33,9 @@ export function bindInit(ctx) {
       ctx.state = { ...ctx.state, introOpen: false };
     }
 
-    if (initialTrailerData) {
+    // Only worth rendering ahead of the request when we are re-entering a running feed. On a real
+    // page load the server shuffles anew and this slide would be thrown away again right after.
+    if (initialTrailerData && getFeedId()) {
       ctx.state = {
         ...ctx.state,
         trailers: [initialTrailerData],

@@ -28,29 +28,38 @@ describe('MediaApi', () => {
       expect(options.method).toBeUndefined();
     });
 
-    it('includes cursor, limit and refresh flag', async () => {
+    it('includes feed id, cursor and limit', async () => {
       fetch.mockReturnValue(createJsonResponse({ items: [], hasMore: false }));
 
-      await MediaApi.getTrailers('10', 12, true);
+      await MediaApi.getTrailers({ feedId: 'feed-1', cursor: '10', limit: 12 });
 
       const [url] = fetch.mock.calls[0];
-      expect(url).toBe('/api/media/trailers?cursor=10&limit=12&refresh=1');
+      expect(url).toBe('/api/media/trailers?feedId=feed-1&cursor=10&limit=12');
+    });
+
+    it('omits the feed id so the server shuffles a new feed', async () => {
+      fetch.mockReturnValue(createJsonResponse({ items: [], hasMore: false }));
+
+      await MediaApi.getTrailers({ feedId: null, cursor: null });
+
+      const [url] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/trailers?limit=8');
     });
 
     it('includes target trailer id', async () => {
       fetch.mockReturnValue(createJsonResponse({ items: [], hasMore: false }));
 
-      await MediaApi.getTrailers(null, 8, false, 'item-1:youtube-id');
+      await MediaApi.getTrailers({ target: 'item-1:youtube-id' });
 
       const [url] = fetch.mock.calls[0];
       expect(url).toBe('/api/media/trailers?limit=8&target=item-1%3Ayoutube-id');
     });
 
     it('returns parsed response', async () => {
-      const body = { items: [{ id: 't1' }], nextCursor: '1', hasMore: true };
+      const body = { feedId: 'feed-1', items: [{ id: 't1' }], nextCursor: '1', hasMore: true };
       fetch.mockReturnValue(createJsonResponse(body));
 
-      const result = await MediaApi.getTrailers(null, 4);
+      const result = await MediaApi.getTrailers({ limit: 4 });
 
       expect(result).toEqual(body);
     });

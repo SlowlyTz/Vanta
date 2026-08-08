@@ -2,6 +2,11 @@ const YOUTUBE_IFRAME_API_URL = 'https://www.youtube.com/iframe_api';
 const YOUTUBE_IFRAME_ALLOW = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
 const YOUTUBE_REFERRER_POLICY = 'strict-origin-when-cross-origin';
 
+// YouTube reports neither onReady nor onError when an embed dies silently. Without an upper
+// bound the returned promise would never settle and every later caller would await the same
+// dead promise, which used to freeze the whole feed until a page reload.
+export const PLAYER_READY_TIMEOUT_MS = 12000;
+
 let apiLoadPromise = null;
 
 export function loadYouTubeIframeApi() {
@@ -98,6 +103,15 @@ function configureYouTubeIframe(player) {
   }
 }
 
+function destroyPlayer(player) {
+  if (!player || typeof player.destroy !== 'function') return;
+  try {
+    player.destroy();
+  } catch {
+    // ignore
+  }
+}
+
 export class YouTubePlayerManager {
   constructor() {
     this.players = new Map();
@@ -105,73 +119,110 @@ export class YouTubePlayerManager {
     this.destroyed = new Set();
   }
 
-  async createPlayer(containerId, videoId, { autoplay = 0, muted = false, onReady, onError } = {}) {
+  createPlayer(containerId, videoId, { autoplay = 0, muted = false, onReady, onError } = {}) {
     this.destroyed.delete(containerId);
 
-    if (this.players.has(containerId)) {
-      return this.players.get(containerId);
-    }
+    const readyPlayer = this.players.get(containerId);
+    if (readyPlayer) return Promise.resolve(readyPlayer);
 
-    if (this.pending.has(containerId)) {
-      return this.pending.get(containerId);
-    }
+    const runningAttempt = this.pending.get(containerId);
+    if (runningAttempt) return runningAttempt.promise;
 
+    // The attempt has to be registered synchronously. Registering it after the first await let
+    // two overlapping sync runs build two iframes with the same id; the detached one never
+    // reported back.
+    const attempt = { settled: false, timer: null, player: null, resolve: null, promise: null };
+    attempt.promise = new Promise((resolve) => {
+      attempt.resolve = resolve;
+    });
+    this.pending.set(containerId, attempt);
+
+    this._startPlayer(containerId, videoId, { autoplay, muted, onReady, onError }, attempt);
+
+    return attempt.promise;
+  }
+
+  async _startPlayer(containerId, videoId, { autoplay, muted, onReady, onError }, attempt) {
     const target = document.getElementById(containerId);
     if (!target || !target.isConnected) {
-      return null;
+      this._settleAttempt(containerId, null);
+      return;
     }
 
     const iframeId = `${containerId}-iframe`;
     const iframe = createYouTubeIframe(iframeId, videoId, { autoplay, muted });
     target.replaceChildren(iframe);
 
-    const YT = await loadYouTubeIframeApi();
-    if (this.destroyed.has(containerId) || !target.isConnected) {
+    let YT;
+    try {
+      YT = await loadYouTubeIframeApi();
+    } catch (error) {
       iframe.remove();
-      return null;
+      this._settleAttempt(containerId, null);
+      if (onError) onError(error);
+      return;
     }
 
-    const promise = new Promise((resolve) => {
-      const player = new YT.Player(iframeId, {
-        host: 'https://www.youtube.com',
-        events: {
-          onReady: (event) => {
-            if (this.destroyed.has(containerId)) {
-              try {
-                player.destroy();
-              } catch {
-                // ignore
-              }
-              this.pending.delete(containerId);
-              resolve(null);
-              return;
-            }
-            configureYouTubeIframe(player);
-            this.players.set(containerId, player);
-            this.pending.delete(containerId);
-            if (onReady) onReady(event);
-            resolve(player);
-          },
-          onError: (event) => {
-            this.pending.delete(containerId);
-            if (onError) onError(event);
-            resolve(player);
-          },
-          onStateChange: (event) => {
-            if (event.data !== YT.PlayerState.ENDED) return;
-            try {
-              event.target.seekTo(0, true);
-              event.target.playVideo();
-            } catch {
-              // ignore
-            }
+    if (this.destroyed.has(containerId) || !target.isConnected) {
+      iframe.remove();
+      this._settleAttempt(containerId, null);
+      return;
+    }
+
+    attempt.timer = setTimeout(() => {
+      if (attempt.settled) return;
+      destroyPlayer(attempt.player);
+      target.replaceChildren();
+      this._settleAttempt(containerId, null);
+      if (onError) onError(new Error(`YouTube player timed out for ${videoId}`));
+    }, PLAYER_READY_TIMEOUT_MS);
+
+    attempt.player = new YT.Player(iframeId, {
+      host: 'https://www.youtube.com',
+      events: {
+        onReady: (event) => {
+          // Already given up on (timeout) or torn down meanwhile: the iframe this player is
+          // bound to is gone, so registering it would hand syncPlayers a dead player.
+          if (attempt.settled || this.destroyed.has(containerId)) {
+            destroyPlayer(attempt.player);
+            this._settleAttempt(containerId, null);
+            return;
+          }
+          configureYouTubeIframe(attempt.player);
+          this.players.set(containerId, attempt.player);
+          this._settleAttempt(containerId, attempt.player);
+          if (onReady) onReady(event);
+        },
+        onError: (event) => {
+          if (attempt.settled) return;
+          // Leaving the attempt in `pending` would make the failure permanent — dropping it
+          // lets the next sync run retry this slide.
+          this._settleAttempt(containerId, null);
+          if (onError) onError(event);
+        },
+        onStateChange: (event) => {
+          if (event.data !== YT.PlayerState.ENDED) return;
+          try {
+            event.target.seekTo(0, true);
+            event.target.playVideo();
+          } catch {
+            // ignore
           }
         }
-      });
+      }
     });
+  }
 
-    this.pending.set(containerId, promise);
-    return promise;
+  _settleAttempt(containerId, value) {
+    const attempt = this.pending.get(containerId);
+    if (!attempt) return;
+
+    this.pending.delete(containerId);
+    if (attempt.timer) clearTimeout(attempt.timer);
+    if (attempt.settled) return;
+
+    attempt.settled = true;
+    attempt.resolve(value);
   }
 
   play(containerId) {
@@ -209,16 +260,20 @@ export class YouTubePlayerManager {
 
   destroy(containerId) {
     this.destroyed.add(containerId);
+
     const player = this.players.get(containerId);
     if (player) {
-      try {
-        player.destroy();
-      } catch {
-        // ignore
-      }
+      destroyPlayer(player);
       this.players.delete(containerId);
     }
-    this.pending.delete(containerId);
+
+    const attempt = this.pending.get(containerId);
+    if (attempt) {
+      destroyPlayer(attempt.player);
+      // Settling instead of just dropping the entry — otherwise whoever awaits this attempt
+      // never comes back.
+      this._settleAttempt(containerId, null);
+    }
   }
 
   destroyAll() {
