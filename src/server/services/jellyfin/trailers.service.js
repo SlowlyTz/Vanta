@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { jellyfinJson } from './client.js';
 import { LibraryService } from './library.service.js';
 
@@ -121,19 +122,13 @@ function shuffleArray(array) {
   return result;
 }
 
-const SESSION_QUEUE_KEY = 'trailerQueue';
+const SESSION_FEED_KEY = 'trailerFeed';
+const CATALOG_TTL_MS = 10 * 60 * 1000;
 
-function prioritizeTrailer(queue, targetTrailerId) {
-  if (!targetTrailerId) return queue;
-
-  const index = queue.findIndex((trailer) => trailer.id === targetTrailerId);
-  if (index <= 0) return queue;
-
-  const result = [...queue];
-  const [target] = result.splice(index, 1);
-  result.unshift(target);
-  return result;
-}
+// Keyed by userId, holding the in-flight promise so parallel requests share one Jellyfin
+// roundtrip. The shuffle happens per feed, not per catalog fetch, so caching here does not make
+// the feed repeat itself.
+const catalogCache = new Map();
 
 export class TrailersService {
   static async loadAllTrailerItems(userId, token, limit = 10000) {
@@ -143,43 +138,86 @@ export class TrailersService {
       .filter((trailer) => trailer !== null);
   }
 
-  static async getTrailerQueue(req, userId, token, refresh = false) {
-    const existingQueue = req.session?.[SESSION_QUEUE_KEY];
-
-    if (!refresh && Array.isArray(existingQueue) && existingQueue.length > 0) {
-      return existingQueue;
-    }
-
-    const trailers = await this.loadAllTrailerItems(userId, token);
-    const shuffled = shuffleArray(trailers);
-
-    if (req.session) {
-      req.session[SESSION_QUEUE_KEY] = shuffled;
-    }
-
-    return shuffled;
+  static clearCatalogCache() {
+    catalogCache.clear();
   }
 
-  static async getTrailerPage(req, userId, token, cursor, limit, refresh = false, targetTrailerId = null) {
-    let queue = await this.getTrailerQueue(req, userId, token, refresh);
+  static async getCatalog(userId, token) {
+    const cacheKey = String(userId);
+    const cached = catalogCache.get(cacheKey);
 
-    if (targetTrailerId) {
-      queue = prioritizeTrailer(queue, targetTrailerId);
-      if (req.session) {
-        req.session[SESSION_QUEUE_KEY] = queue;
-      }
+    if (cached && Date.now() - cached.timestamp < CATALOG_TTL_MS) {
+      return cached.promise;
     }
 
-    const startIndex = Math.max(0, parseInt(cursor, 10) || 0);
+    const promise = this.loadAllTrailerItems(userId, token)
+      .then((list) => ({
+        list,
+        byId: new Map(list.map((trailer) => [trailer.id, trailer]))
+      }))
+      .catch((error) => {
+        catalogCache.delete(cacheKey);
+        throw error;
+      });
+
+    catalogCache.set(cacheKey, { timestamp: Date.now(), promise });
+    return promise;
+  }
+
+  static async getTrailerFeed(req, userId, token, feedId) {
+    const catalog = await this.getCatalog(userId, token);
+    const existingFeed = req.session?.[SESSION_FEED_KEY];
+
+    if (feedId && existingFeed?.id === feedId && Array.isArray(existingFeed.order)) {
+      return { catalog, feed: existingFeed };
+    }
+
+    // No feed id, or one this session does not know: a full page load asked for a brand new
+    // random order.
+    const feed = {
+      id: randomUUID(),
+      order: shuffleArray(catalog.list).map((trailer) => trailer.id)
+    };
+
+    if (req.session) {
+      req.session[SESSION_FEED_KEY] = feed;
+    }
+
+    return { catalog, feed };
+  }
+
+  static async getTrailerPage(req, userId, token, { feedId = null, cursor = null, limit = null, target = null } = {}) {
+    const { catalog, feed } = await this.getTrailerFeed(req, userId, token, feedId);
+    const { order } = feed;
+
     const clampedLimit = Math.max(1, Math.min(20, parseInt(limit, 10) || 8));
 
-    const items = queue.slice(startIndex, startIndex + clampedLimit);
-    const nextCursor = startIndex + items.length;
-    const hasMore = nextCursor < queue.length;
+    let startIndex;
+    if (cursor === null || cursor === undefined || cursor === '') {
+      // A share link or a return from the detail page enters the feed where that trailer
+      // already sits, instead of reordering the feed around it.
+      const targetIndex = target ? order.indexOf(target) : -1;
+      startIndex = targetIndex > 0 ? targetIndex : 0;
+    } else {
+      startIndex = Math.max(0, parseInt(cursor, 10) || 0);
+    }
+
+    // The catalog can change while a feed is alive, so ids may no longer resolve. Skipping past
+    // them here keeps the client from receiving an empty page and dead-ending its navigation.
+    const items = [];
+    let scanIndex = startIndex;
+    while (items.length < clampedLimit && scanIndex < order.length) {
+      const trailer = catalog.byId.get(order[scanIndex]);
+      if (trailer) items.push(trailer);
+      scanIndex += 1;
+    }
+
+    const hasMore = scanIndex < order.length;
 
     return {
+      feedId: feed.id,
       items,
-      nextCursor: hasMore ? String(nextCursor) : null,
+      nextCursor: hasMore ? String(scanIndex) : null,
       hasMore
     };
   }

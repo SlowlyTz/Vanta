@@ -15,6 +15,7 @@ vi.mock('../../../../src/server/services/jellyfin/client.js', () => ({
 
 import { LibraryService } from '../../../../src/server/services/jellyfin/library.service.js';
 import { jellyfinJson } from '../../../../src/server/services/jellyfin/client.js';
+import { TrailersService } from '../../../../src/server/services/jellyfin/trailers.service.js';
 
 function createBaseItem(overrides = {}) {
   return {
@@ -30,34 +31,40 @@ function createBaseItem(overrides = {}) {
   };
 }
 
-function createApp() {
+// One session object shared by every request, the way express-session behaves for a single
+// browser. Without it the feed id could never survive from one request to the next.
+function createApp(session = {}) {
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => {
-    req.session = {
+    req.session = Object.assign(session, {
       userId: 'test-user',
       accessToken: 'test-token'
-    };
+    });
     next();
   });
   app.use('/', trailerRoutes);
   return app;
 }
 
+function createLibrary(count) {
+  return Array.from({ length: count }, (_, i) =>
+    createBaseItem({
+      Id: `id-${i}`,
+      RemoteTrailers: [{ Url: `https://youtu.be/dQw4w9WgX${String(i).padStart(3, '0')}` }]
+    })
+  );
+}
+
 describe('Trailer Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    TrailersService.clearCatalogCache();
   });
 
   describe('GET /trailers', () => {
-    it('returns paginated trailers and stores the queue in session', async () => {
-      const items = Array.from({ length: 5 }, (_, i) =>
-        createBaseItem({
-          Id: `id-${i}`,
-          RemoteTrailers: [{ Url: `https://youtu.be/dQw4w9WgX${String(i).padStart(3, '0')}` }]
-        })
-      );
-      LibraryService.getAllMoviesAndSeries.mockResolvedValue(items);
+    it('returns paginated trailers together with a feed id', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createLibrary(5));
 
       const app = createApp();
       const res = await request(app).get('/trailers?limit=2');
@@ -66,29 +73,30 @@ describe('Trailer Routes', () => {
       expect(res.body.items).toHaveLength(2);
       expect(res.body.hasMore).toBe(true);
       expect(res.body.nextCursor).toBe('2');
+      expect(res.body.feedId).toEqual(expect.any(String));
     });
 
-    it('refreshes the queue when refresh=1 is provided', async () => {
-      const initialItems = [createBaseItem({
-        Id: 'cached',
-        RemoteTrailers: [{ Url: 'https://youtu.be/dQw4w9WgXc0' }]
-      })];
-      const refreshedItems = [createBaseItem({
-        Id: 'new',
-        RemoteTrailers: [{ Url: 'https://youtu.be/dQw4w9WgX99' }]
-      })];
-
-      LibraryService.getAllMoviesAndSeries
-        .mockResolvedValueOnce(initialItems)
-        .mockResolvedValueOnce(refreshedItems);
+    it('keeps the order while the client sends the feed id back', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createLibrary(20));
 
       const app = createApp();
+      const first = await request(app).get('/trailers?limit=20');
+      const again = await request(app).get(`/trailers?limit=20&feedId=${first.body.feedId}&cursor=0`);
 
-      const first = await request(app).get('/trailers?limit=1');
-      expect(first.body.items[0].itemId).toBe('cached');
+      expect(again.body.feedId).toBe(first.body.feedId);
+      expect(again.body.items.map((item) => item.id)).toEqual(first.body.items.map((item) => item.id));
+    });
 
-      const refreshed = await request(app).get('/trailers?limit=1&refresh=1');
-      expect(refreshed.body.items[0].itemId).toBe('new');
+    it('shuffles a new feed when the client sends no feed id', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createLibrary(40));
+
+      const app = createApp();
+      const first = await request(app).get('/trailers?limit=20');
+      const reloaded = await request(app).get('/trailers?limit=20');
+
+      expect(reloaded.body.feedId).not.toBe(first.body.feedId);
+      expect(reloaded.body.items.map((item) => item.id))
+        .not.toEqual(first.body.items.map((item) => item.id));
     });
   });
 

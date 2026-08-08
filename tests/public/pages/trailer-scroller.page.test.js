@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MediaApi } from '../../../src/public/js/api/media.api.js';
 import TrailerScrollerPage from '../../../src/public/js/pages/trailer-scroller.page.js';
 import { INTRO_SEEN_KEY } from '../../../src/public/js/pages/trailer-scroller.state.js';
+import { clearFeedId } from '../../../src/public/js/pages/trailer-scroller/feedSession.js';
 
 const playerMocks = vi.hoisted(() => ({
   createPlayer: vi.fn(),
@@ -87,6 +88,9 @@ describe('TrailerScrollerPage', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    // The feed id lives in module state on purpose (it must survive SPA remounts but die on a
+    // page load), so each test has to start from a fresh page load.
+    clearFeedId();
     vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -115,6 +119,7 @@ describe('TrailerScrollerPage', () => {
 
   it('keeps VANTA actions outside the native YouTube video surface', async () => {
     MediaApi.getTrailers.mockResolvedValue({
+      feedId: 'feed-1',
       items: [makeTrailer()],
       nextCursor: null,
       hasMore: false
@@ -144,8 +149,42 @@ describe('TrailerScrollerPage', () => {
     expect(page.textContent).toContain('Erneut versuchen');
   });
 
+  it('still loads the active player when a neighbouring player never reports back', async () => {
+    MediaApi.getTrailers.mockResolvedValue({
+      feedId: 'feed-1',
+      items: [
+        makeTrailer(),
+        makeTrailer({ id: 'trailer-2', itemId: 'item-2', youtubeVideoId: 'youtube-2' }),
+        makeTrailer({ id: 'trailer-3', itemId: 'item-3', youtubeVideoId: 'youtube-3' })
+      ],
+      nextCursor: null,
+      hasMore: false
+    });
+
+    playerMocks.createPlayer.mockImplementation((containerId, videoId, options) => {
+      if (videoId === 'youtube-1') return new Promise(() => {});
+      options.onReady?.();
+      return Promise.resolve({ containerId, videoId });
+    });
+
+    const page = await mountScroller();
+    playerMocks.createPlayer.mockClear();
+
+    page.querySelector('.trailer-nav-next').click();
+    await vi.runAllTimersAsync();
+
+    // The dead player sits at index 0, in front of the now active slide. Before the fix the
+    // serial sync loop awaited it and the feed stopped loading anything at all.
+    expect(playerMocks.createPlayer).toHaveBeenCalledWith(
+      expect.any(String),
+      'youtube-2',
+      expect.objectContaining({ autoplay: 1 })
+    );
+  });
+
   it('scrolls the requested slide into view when the header navigation is used', async () => {
     MediaApi.getTrailers.mockResolvedValue({
+      feedId: 'feed-1',
       items: [makeTrailer(), makeTrailer({ id: 'trailer-2', itemId: 'item-2', title: 'The Batman' })],
       nextCursor: null,
       hasMore: false

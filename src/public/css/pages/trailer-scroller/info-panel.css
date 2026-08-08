@@ -69,6 +69,10 @@
   display: inline-flex;
 }
 
+.trailer-player-retry + .trailer-player-skip {
+  margin-left: 6px;
+}
+
 .trailer-info-meta {
   display: flex;
   flex-wrap: wrap;

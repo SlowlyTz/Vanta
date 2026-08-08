@@ -166,6 +166,11 @@ export function bindSlideRenderer(ctx) {
       createElement('span', { className: 'trailer-player-status-dot', 'aria-hidden': 'true' }),
       createElement('span', { className: 'trailer-player-status-text' }, 'YouTube-Player wird vorbereitet'),
       createElement('button', {
+        className: 'trailer-player-skip trailer-player-retry',
+        type: 'button',
+        onClick: () => ctx.retryPlayer(index)
+      }, 'Erneut versuchen'),
+      createElement('button', {
         className: 'trailer-player-skip',
         type: 'button',
         onClick: () => ctx.navigateRelative(1)

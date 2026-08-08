@@ -7,18 +7,15 @@ const router = express.Router();
 
 router.get('/trailers', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
-  const { cursor, limit, refresh, target } = req.query;
+  const { feedId, cursor, limit, target } = req.query;
 
   try {
-    const result = await TrailersService.getTrailerPage(
-      req,
-      userId,
-      accessToken,
-      cursor,
+    const result = await TrailersService.getTrailerPage(req, userId, accessToken, {
+      feedId: typeof feedId === 'string' ? feedId : null,
+      cursor: typeof cursor === 'string' ? cursor : null,
       limit,
-      refresh === '1' || refresh === 'true',
-      typeof target === 'string' ? target : null
-    );
+      target: typeof target === 'string' ? target : null
+    });
     return res.json(result);
   } catch (error) {
     console.error('[Media Trailers Error]', error.message);
