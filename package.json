@@ -10,6 +10,7 @@
     "refresh": "node scripts/refresh-catalog.js",
     "player:build": "vite build --config src/player/vite.config.js",
     "player:watch": "vite build --watch --config src/player/vite.config.js",
+    "intro:build": "vite build --config src/intro/vite.config.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -22,6 +23,7 @@
     "hls.js": "^1.6.16",
     "morgan": "^1.10.0",
     "sql.js": "^1.14.1",
+    "three": "^0.186.0",
     "vidstack": "^0.6.15",
     "ws": "^8.21.0"
   },
