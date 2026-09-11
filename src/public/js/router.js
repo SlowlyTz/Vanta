@@ -4,7 +4,26 @@ import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
 import { Navbar } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
 
-class Router {
+// Focuses the page's [data-autofocus] element once it is attached to the document.
+// Pages cannot do this themselves: their factory runs while the element is still
+// detached, so a focus() call there is a silent no-op.
+export function focusAutofocusTarget(pageElement) {
+  if (!pageElement) return null;
+
+  for (const target of pageElement.querySelectorAll('[data-autofocus]')) {
+    if (target.hidden || target.closest('[hidden], .hidden')) continue;
+    try {
+      target.focus({ preventScroll: true });
+    } catch {
+      // ignore
+    }
+    return target;
+  }
+
+  return null;
+}
+
+export class Router {
   constructor() {
     this.routes = [];
     this.appContainer = document.getElementById('app');
@@ -102,7 +121,10 @@ class Router {
     if (!useShell) {
       this.unmountShell();
       this.appContainer.innerHTML = '';
-      if (pageElement) this.appContainer.appendChild(pageElement);
+      if (pageElement) {
+        this.appContainer.appendChild(pageElement);
+        focusAutofocusTarget(pageElement);
+      }
       return;
     }
 
@@ -124,6 +146,7 @@ class Router {
     if (pageElement) {
       pageElement.classList.add('route-view-enter');
       this.main.appendChild(pageElement);
+      focusAutofocusTarget(pageElement);
 
       requestAnimationFrame(() => {
         pageElement.classList.add('route-view-enter-active');
