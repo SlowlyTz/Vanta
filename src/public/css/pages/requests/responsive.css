@@ -63,6 +63,13 @@
     font-size: 0.68rem;
   }
 
+  /* The card is a two-column grid here with the poster spanning every row,
+     so the badge stays inside .request-card-info and adds no grid row. */
+  .request-card-status-row {
+    gap: 6px;
+    margin-top: 4px;
+  }
+
   .my-requests-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
@@ -105,8 +112,16 @@
     height: 80px;
   }
 
-  .request-detail-seasons-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .request-scope-season-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-scope-actions {
+    gap: var(--spacing-sm);
+  }
+
+  .request-scope-actions .request-scope-submit {
+    width: 100%;
   }
 }
 

@@ -1,4 +1,5 @@
 import initSqlJs from 'sql.js';
+import { migrateRequestsTable } from './migrations.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -111,6 +112,9 @@ db.exec(`
     poster_path TEXT,
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'imported', 'rejected')),
     seasons JSON,
+    request_scope TEXT NOT NULL DEFAULT 'all' CHECK(request_scope IN ('all', 'season', 'episode')),
+    season_number INTEGER,
+    episode_number INTEGER,
     note TEXT DEFAULT '',
     user_id INTEGER,
     username TEXT,
@@ -119,6 +123,12 @@ db.exec(`
     FOREIGN KEY (tmdb_id) REFERENCES tmdb_media(tmdb_id)
   );
 `);
+
+// Must run before any prepared statement is executed: db.prepare() is lazy, so a
+// statement naming one of the new columns only fails once it is stepped.
+if (migrateRequestsTable(sqlite).length > 0) {
+  persist();
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS app_settings (

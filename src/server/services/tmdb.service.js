@@ -7,10 +7,25 @@ const TMDB_REQUEST_TIMEOUT_MS = Number(process.env.TMDB_REQUEST_TIMEOUT_MS || 25
 
 const cacheMovie = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, release_date, media_type, score, vote_count, cached_at) VALUES (?, 'movie', ?, ?, ?, ?, ?, 'movie', ?, ?, ?)`);
 const cacheTv = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, first_air_date, media_type, score, vote_count, cached_at) VALUES (?, 'tv', ?, ?, ?, ?, ?, 'tv', ?, ?, ?)`);
-const getCached = db.prepare('SELECT * FROM tmdb_media WHERE tmdb_id = ?');
+const getCached = db.prepare('SELECT * FROM tmdb_media WHERE tmdb_id = ? AND tmdb_type = ?');
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 const memoryCache = new Map();
+const MEMORY_CACHE_MAX_ENTRIES = 500;
+
+// The request detail page asks for details and a cross-check at the same time,
+// and a multi-season submit fires one POST per season. Without this, every one
+// of those concurrent calls misses the cache and hits TMDB again.
+const inFlight = new Map();
+
+function dedupe(key, run) {
+  const pending = inFlight.get(key);
+  if (pending) return pending;
+
+  const promise = run().finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
 
 function getMemoryCache(key, ttlMs) {
   const entry = memoryCache.get(key);
@@ -23,10 +38,16 @@ function getMemoryCache(key, ttlMs) {
 }
 
 function setMemoryCache(key, data) {
+  // Entries are only evicted on an expired read, so bound the map: detail objects
+  // are far larger than the trailer stubs this cache originally held.
+  if (!memoryCache.has(key) && memoryCache.size >= MEMORY_CACHE_MAX_ENTRIES) {
+    memoryCache.delete(memoryCache.keys().next().value);
+  }
   memoryCache.set(key, { data, timestamp: Date.now() });
 }
 
 const TRAILER_CACHE_TTL = 24 * 60 * 60 * 1000;
+const DETAIL_CACHE_TTL = 60 * 60 * 1000;
 
 function findTmdbYouTubeTrailer(videos = []) {
   const preferred = videos
@@ -152,7 +173,7 @@ class TmdbService {
 
   static async getMovieDetails(movieId) {
     // Check cache
-    const cached = getCached.get(movieId);
+    const cached = getCached.get(movieId, 'movie');
     if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
       const trailer = await getYouTubeTrailer('movie', movieId);
       return { ...cached, id: cached.tmdb_id, media_type: 'movie', trailer };
@@ -176,27 +197,63 @@ class TmdbService {
     };
   }
 
+  // Deliberately not served from the tmdb_media row: it holds neither seasons nor cast, and its
+  // primary key has no type discriminator, so a movie cached under the same id would answer here.
   static async getTvDetails(tvId) {
-    const cached = getCached.get(tvId);
-    if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
-      const trailer = await getYouTubeTrailer('tv', tvId);
-      return { ...cached, id: cached.tmdb_id, media_type: 'tv', trailer };
+    const cacheKey = `tmdb_tv_details_${tvId}`;
+    const cached = getMemoryCache(cacheKey, DETAIL_CACHE_TTL);
+    if (cached) return { ...cached };
+
+    return dedupe(cacheKey, () => this.#fetchTvDetails(tvId, cacheKey));
+  }
+
+  static async #fetchTvDetails(tvId, cacheKey) {
+    const row = getCached.get(tvId, 'tv');
+
+    try {
+      const [details, credits, trailer] = await Promise.all([
+        fetchTmdbJson(`/tv/${tvId}`, { language: 'de-DE' }),
+        fetchTmdbJson(`/tv/${tvId}/credits`, { language: 'de-DE' }),
+        getYouTubeTrailer('tv', tvId)
+      ]);
+
+      // TmdbService.search already wrote a fresh row for anything just searched;
+      // rewriting it would re-serialise the whole database for nothing.
+      if (!row || Date.now() - row.cached_at >= CACHE_TTL) {
+        cacheTv.run(tvId, details.name, details.overview, details.poster_path, details.backdrop_path, details.first_air_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
+      }
+
+      const result = {
+        ...details,
+        media_type: 'tv',
+        seasons: details.seasons || [],
+        cast: credits.cast?.slice(0, 10) || [],
+        trailer
+      };
+
+      setMemoryCache(cacheKey, result);
+      return { ...result };
+    } catch (error) {
+      // The row holds no seasons, so it cannot serve a full detail request — but
+      // degrading to it beats a 500 when TMDB is slow or down.
+      if (!row) throw error;
+      console.error(`[TmdbService] TV details for ${tvId} unavailable, serving the cached row:`, error.message);
+      return { ...row, id: row.tmdb_id, media_type: 'tv', seasons: [], cast: [], trailer: null };
     }
+  }
 
-    const [details, credits, trailer] = await Promise.all([
-      fetchTmdbJson(`/tv/${tvId}`, { language: 'de-DE' }),
-      fetchTmdbJson(`/tv/${tvId}/credits`, { language: 'de-DE' }),
-      getYouTubeTrailer('tv', tvId)
-    ]);
+  static async getSeasonDetails(tvId, seasonNumber) {
+    const cacheKey = `tmdb_season_details_${tvId}_${seasonNumber}`;
+    const cached = getMemoryCache(cacheKey, DETAIL_CACHE_TTL);
+    if (cached) return { ...cached };
 
-    cacheTv.run(tvId, details.name, details.overview, details.poster_path, details.backdrop_path, details.first_air_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
+    return dedupe(cacheKey, async () => {
+      const season = await fetchTmdbJson(`/tv/${tvId}/season/${seasonNumber}`, { language: 'de-DE' });
+      const result = { ...season, episodes: season.episodes || [] };
 
-    return {
-      ...details,
-      media_type: 'tv',
-      cast: credits.cast?.slice(0, 10) || [],
-      trailer
-    };
+      setMemoryCache(cacheKey, result);
+      return { ...result };
+    });
   }
 
   static async getTrending(timeWindow = 'week', limit = 20) {

@@ -47,8 +47,23 @@ describe('discord-webhook.service', () => {
         { name: 'Angefragt von', value: 'alice', inline: true },
         { name: 'Typ', value: 'Film', inline: true },
         { name: 'Jahr', value: '2010', inline: true },
+        { name: 'Umfang', value: 'Ganzer Film', inline: true },
         { name: 'Status', value: 'Offen', inline: true }
       ]);
+    });
+
+    it('labels the scope of a whole series, a season and a single episode', () => {
+      const series = buildRequestEmbed(makeRequest({ tmdb_type: 'tv', request_scope: 'all' }), {});
+      const season = buildRequestEmbed(
+        makeRequest({ tmdb_type: 'tv', request_scope: 'season', season_number: 2 }), {}
+      );
+      const episode = buildRequestEmbed(
+        makeRequest({ tmdb_type: 'tv', request_scope: 'episode', season_number: 2, episode_number: 7 }), {}
+      );
+
+      expect(series.fields).toContainEqual({ name: 'Umfang', value: 'Komplette Serie', inline: true });
+      expect(season.fields).toContainEqual({ name: 'Umfang', value: 'Staffel 2', inline: true });
+      expect(episode.fields).toContainEqual({ name: 'Umfang', value: 'S02E07', inline: true });
     });
 
     it('builds an embed for a series using first_air_date and the "Serie" label', () => {

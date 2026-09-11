@@ -4,6 +4,8 @@ export const COMMON_ITEM_FIELDS = [
   'Overview',
   'Genres',
   'ProviderIds',
+  'PremiereDate',
+  'ProductionYear',
   'ImageTags',
   'BackdropImageTags',
   'ParentBackdropItemId',
