@@ -1,6 +1,7 @@
 import { createElement } from '../../utils/dom.js';
 import { createSettingsGearIcon } from '../../components/navbar/icons.js';
 import { AdminSettingsApi } from '../../api/admin-settings.api.js';
+import { createAdminCatalogSection } from './adminCatalogSection.js';
 
 const WEBHOOK_PLACEHOLDER = 'https://discord.com/api/webhooks/…';
 
@@ -217,8 +218,11 @@ export function createAdminSettingsPanel() {
     webhookBodyWrap
   );
 
+  const catalogSection = createAdminCatalogSection();
+
   const sectionsContainer = createElement('div', { className: 'admin-settings-sections' },
-    webhookSection
+    webhookSection,
+    catalogSection.element
   );
 
   const element = createElement('section', {
@@ -257,6 +261,7 @@ export function createAdminSettingsPanel() {
 
   return {
     ...ADMIN_SETTINGS_TOOL,
-    element
+    element,
+    destroy: () => catalogSection.destroy()
   };
 }

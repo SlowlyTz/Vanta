@@ -30,5 +30,25 @@ export const AdminSettingsApi = {
       method: 'POST',
       body
     });
+  },
+
+  getCatalogStatus() {
+    return request('/api/admin/catalog');
+  },
+
+  updateCatalogSettings({ updateIntervalMinutes, fullSyncTime } = {}) {
+    const body = {};
+    if (updateIntervalMinutes !== undefined) body.updateIntervalMinutes = updateIntervalMinutes;
+    if (fullSyncTime !== undefined) body.fullSyncTime = fullSyncTime;
+
+    return request('/api/admin/catalog/settings', { method: 'PUT', body });
+  },
+
+  runCatalogUpdate() {
+    return request('/api/admin/catalog/sync/update', { method: 'POST', body: {} });
+  },
+
+  runCatalogFullSync() {
+    return request('/api/admin/catalog/sync/full', { method: 'POST', body: {} });
   }
 };

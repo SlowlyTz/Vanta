@@ -291,3 +291,24 @@
     gap: var(--spacing-lg);
   }
 }
+
+/* Katalog-Sektion */
+.admin-catalog-line {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.admin-catalog-running {
+  color: var(--accent-color);
+}
+
+.admin-catalog-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--spacing-md);
+}
+
+.admin-catalog-input {
+  max-width: 160px;
+}
