@@ -4,6 +4,28 @@ const MIN_RETAIN_RATIO = 0.5;
 
 export const normalizeText = (value) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
 
+// Two lines per run: what changed, and what the library holds now. Shared by
+// the server log and the `npm run refresh` command.
+export const formatRunSummary = (record) => {
+  const label = record.type === 'full' ? 'Vollabgleich' : 'Update';
+  if (record.error) return [`[Catalog] ${label} fehlgeschlagen: ${record.error}`];
+
+  const changes = [];
+  if (record.added) changes.push(`${record.added} neu`);
+  if (record.updated) changes.push(`${record.updated} aktualisiert`);
+  if (record.removed) changes.push(`${record.removed} entfernt`);
+
+  const { movies = 0, series = 0, episodes = null } = record.library || {};
+  const episodesText = episodes === null ? 'Folgen unbekannt' : `${episodes} Folgen`;
+
+  return [
+    changes.length
+      ? `[Catalog] ${label}: ${changes.join(', ')} (${record.durationMs} ms)`
+      : `[Catalog] ${label}: keine Änderungen (${record.durationMs} ms)`,
+    `[Catalog] Bibliothek: ${movies} Filme, ${series} Serien, ${episodesText}`
+  ];
+};
+
 const toRow = (item, syncedAt) => ({
   id: item.Id,
   type: item.Type,
@@ -67,22 +89,9 @@ export function createCatalogSync({ db, source, now = Date.now, log = console })
     };
   };
 
-  // Two lines per run: what changed, and what the library holds now. This is
-  // what the console (and pm2 logs) show after each scheduled run.
+  // What the console (and pm2 logs) show after each scheduled run.
   const logSummary = (record) => {
-    const changes = [];
-    if (record.added) changes.push(`${record.added} neu`);
-    if (record.updated) changes.push(`${record.updated} aktualisiert`);
-    if (record.removed) changes.push(`${record.removed} entfernt`);
-
-    const label = record.type === 'full' ? 'Vollabgleich' : 'Update';
-    log.info?.(changes.length
-      ? `[Catalog] ${label}: ${changes.join(', ')} (${record.durationMs} ms)`
-      : `[Catalog] ${label}: keine Änderungen (${record.durationMs} ms)`);
-
-    const { movies, series, episodes } = record.library;
-    const episodesText = episodes === null ? 'Folgen unbekannt' : `${episodes} Folgen`;
-    log.info?.(`[Catalog] Bibliothek: ${movies} Filme, ${series} Serien, ${episodesText}`);
+    formatRunSummary(record).forEach(line => log.info?.(line));
   };
 
   const writeItem = (item, syncedAt) => {

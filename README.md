@@ -124,7 +124,7 @@ Browsing (home page, library, genres, publishers, search, trailer scroller) is s
 - an update run every few minutes adds new and changed titles (default: every 10 minutes)
 - a full run once a day also removes titles that disappeared from Jellyfin (default: 03:00)
 
-Both schedules can be changed under Admin > Einstellungen > Katalog, where a run can also be started by hand. The sync authenticates with `JELLYFIN_API_KEY`; per-user library access is still applied on every request. Playback, resume state, favourites and item details always come live from Jellyfin. If the mirror is empty, VANTA falls back to live Jellyfin queries.
+Both schedules can be changed under Admin > Einstellungen > Katalog, where a run can also be started by hand. From the command line, `npm run refresh` runs an update right away (or `npm run refresh -- --full` for a full run) — it hands the run to the running server, or syncs on its own when no server is up. The sync authenticates with `JELLYFIN_API_KEY`; per-user library access is still applied on every request. Playback, resume state, favourites and item details always come live from Jellyfin. If the mirror is empty, VANTA falls back to live Jellyfin queries.
 
 ## Important Notes
 
