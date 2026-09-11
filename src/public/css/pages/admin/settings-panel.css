@@ -1,102 +1,20 @@
 /* ---------------------------------
-   ADMIN SETTINGS PANEL — Overlay über der Admin-Seite
+   ADMIN SETTINGS — Bereich unter #/admin/settings
+   Kein Overlay mehr: der Bereich steht als normaler Block auf der Seite.
    --------------------------------- */
-.admin-settings-backdrop {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
-  background: rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(24px) saturate(118%);
-  -webkit-backdrop-filter: blur(24px) saturate(118%);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 180ms ease, visibility 180ms ease;
-  z-index: 1500;
-}
-
-.admin-settings-backdrop.open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
 .admin-settings-panel {
-  position: relative;
-  width: min(560px, calc(100vw - 36px));
-  max-height: min(720px, calc(100vh - 48px));
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background: rgba(var(--abyss-glass-tint), 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: var(--abyss-radius-dialog);
-  box-shadow: 0 36px 96px rgba(0, 0, 0, 0.68);
-  backdrop-filter: blur(30px) saturate(128%);
-  -webkit-backdrop-filter: blur(30px) saturate(128%);
-  transform: translateY(12px) scale(0.985);
-  transition: transform 180ms ease;
-}
-
-.admin-settings-backdrop.open .admin-settings-panel {
-  transform: translateY(0) scale(1);
-}
-
-.admin-settings-panel:focus {
-  outline: none;
-}
-
-.admin-settings-header {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-md);
-}
-
-.admin-settings-title {
-  color: var(--text-primary);
-  font-size: 1.3rem;
-  font-weight: 740;
-}
-
-.admin-settings-close-button {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  color: var(--text-secondary);
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.admin-settings-close-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-}
-
-.admin-settings-close-button:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 2px;
+  width: min(720px, 100%);
 }
 
 /* Sektionen — luftig angeordnet und so aufgebaut, dass ein weiterer
    Abschnitt (z.B. später) einfach als zusätzliches .admin-settings-section
-   danebengesetzt werden kann, ohne dieses Panel umzubauen. */
+   danebengesetzt werden kann, ohne diesen Bereich umzubauen. */
 .admin-settings-sections {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
-  padding: 0 var(--spacing-xl) var(--spacing-xl);
 }
 
 .admin-settings-section {
@@ -369,11 +287,7 @@
 }
 
 @media (max-width: 640px) {
-  .admin-settings-header {
-    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-sm);
-  }
-
   .admin-settings-sections {
-    padding: 0 var(--spacing-lg) var(--spacing-lg);
+    gap: var(--spacing-lg);
   }
 }

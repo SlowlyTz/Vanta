@@ -1,30 +1,138 @@
 import { createElement } from '../utils/dom.js';
 import { AuthApi } from '../api/auth.api.js';
-import { AdminUsersApi } from '../api/admin-users.api.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
+import { authStore } from '../store/auth.store.js';
 import { createSectionLoader } from '../components/loader.js';
 import { PageHeading } from '../components/pageHeading.js';
-import { createDefaultAdminTools } from '../components/admin-tools/AdminToolRegistry.js';
-import { createAdminNav } from './admin/adminNav.js';
+import { createBackIcon } from '../components/navbar/icons.js';
+import { listAdminTools, createAdminTool } from '../components/admin-tools/AdminToolRegistry.js';
+import { closeAllAdminModals } from '../components/admin-tools/adminModal.js';
+import { createAdminMenu } from './admin/adminMenu.js';
 import { createAdminHeader } from './admin/adminHeader.js';
-import { createAdminSearchResults } from './admin/adminSearch.js';
-import { createAdminSettingsPanel } from './admin/adminSettingsPanel.js';
 
-// Seiteneinstieg der Admin-Verwaltung (#/admin). Der Router kennt keine
-// Rollenprüfung (nur requiresAuth/guestOnly), deshalb prüft die Seite selbst
-// per AuthApi.getCurrentUser(), ob der Nutzer Admin ist. Während der Prüfung
-// steht ein Ladezustand, damit für Nicht-Admins nie auch nur kurz die
-// Admin-Struktur aufblitzt. Der eigentliche Schutz sitzt serverseitig in
-// requireFreshAdmin — dieser Check ist reine UX.
-export default function AdminPage() {
+// Beschriftung der Suchleiste je Bereich. Bereiche ohne setFilter (z.B.
+// Einstellungen) bekommen gar keine Leiste und stehen deshalb nicht hier.
+const SECTION_SEARCH = {
+  requests: { placeholder: 'Anfragen durchsuchen…', label: 'Anfragen durchsuchen' },
+  users: { placeholder: 'Nutzer durchsuchen…', label: 'Nutzer durchsuchen' }
+};
+
+// Seiteneinstieg der Admin-Verwaltung. Ohne `section` (#/admin) steht hier das
+// Menü, mit `section` (#/admin/requests|users|settings) genau ein Bereich samt
+// Zurück-Button. Der Router kennt keine Rollenprüfung (nur requiresAuth), also
+// prüft die Seite selbst, ob der Nutzer Admin ist. Der eigentliche Schutz sitzt
+// serverseitig in requireFreshAdmin — dieser Check ist reine UX.
+export default function AdminPage({ section = null } = {}) {
+  const container = createElement('div', { className: 'admin-page page-container content-section' });
+
+  let activeTool = null;
+  let torndown = false;
+
+  // Der Router verwirft Seiten ohne Unmount-Hook (main.innerHTML = ''). Alles,
+  // was diese Seite außerhalb ihres Containers hinterlässt — vor allem das
+  // Nutzer-Detailmodal an document.body samt Escape-Handler — muss deshalb hier
+  // weg, sobald die Route wechselt. Der Listener nimmt sich dabei selbst raus.
+  function teardown() {
+    if (torndown) return;
+    torndown = true;
+    window.removeEventListener('hashchange', teardown);
+    activeTool?.destroy?.();
+    activeTool = null;
+    // Modals live on document.body, which the router never clears — the user
+    // detail view as well as the ban/delete confirmations opened out of it.
+    closeAllAdminModals();
+  }
+
+  window.addEventListener('hashchange', teardown);
+
+  const denyAccess = () => {
+    if (torndown) return;
+    appStore.showToast('Kein Zugriff', 'error');
+    window.location.hash = '#/home';
+  };
+
+  const render = () => {
+    if (torndown) return;
+
+    const tools = listAdminTools();
+    const activeMeta = section ? tools.find(tool => tool.id === section) : null;
+
+    container.innerHTML = '';
+    container.appendChild(activeMeta ? buildSectionView(activeMeta.id) : buildMenuView(tools));
+  };
+
+  function buildMenuView(tools) {
+    const menu = createAdminMenu({
+      tools,
+      onSelect: (id) => { window.location.hash = `#/admin/${id}`; }
+    });
+
+    // /admin/open liefert genau die offenen (pending) Anfragen und ist damit
+    // billiger als die Gesamtliste. Die Zahl kommt nach, das Menü steht sofort.
+    RequestsApi.getOpenRequests()
+      .then(requests => menu.setBadge('requests', (requests || []).length))
+      .catch(error => console.error('[AdminPage] Offene Anfragen für das Menü konnten nicht geladen werden:', error));
+
+    return createElement('div', { className: 'admin-page-layout' },
+      PageHeading({
+        title: 'Admin-Verwaltung',
+        subtitle: 'Medienanfragen prüfen und Nutzer verwalten.'
+      }),
+      menu.element
+    );
+  }
+
+  function buildSectionView(id) {
+    const tool = createAdminTool(id);
+    activeTool = tool;
+
+    const backButton = createElement('button', {
+      className: 'admin-back-button',
+      type: 'button',
+      'aria-label': 'Zurück zur Admin-Verwaltung',
+      onClick: () => { window.location.hash = '#/admin'; }
+    }, createBackIcon(), 'Zurück');
+
+    const search = tool.setFilter
+      ? createAdminHeader({
+        ...SECTION_SEARCH[id],
+        onSearch: (term) => tool.setFilter(term)
+      })
+      : null;
+
+    const layout = createElement('div', { className: 'admin-page-layout' },
+      createElement('div', { className: 'admin-back-row' }, backButton),
+      PageHeading({ title: tool.label }),
+      search ? createElement('div', { className: 'admin-page-header-row' }, search.element) : null,
+      createElement('div', { className: 'admin-section-body' }, tool.element)
+    );
+
+    tool.load?.();
+
+    return layout;
+  }
+
+  // Der Router füllt den authStore, bevor er die Seite baut — der Rollenwert
+  // liegt also normalerweise schon vor. Das wird bewusst synchron ausgewertet:
+  // ein Spinner pro Wechsel zwischen Menü und Bereich wäre bei jedem Klick zu
+  // sehen. Nur wenn der Wert fehlt, wird er nachgeladen.
+  const cachedUser = authStore.getState().user;
+
+  if (typeof cachedUser?.isAdmin === 'boolean') {
+    if (cachedUser.isAdmin) {
+      render();
+    } else {
+      denyAccess();
+    }
+
+    return container;
+  }
+
   const loadingEl = createElement('div', { className: 'admin-page-loading' },
     createSectionLoader({ label: 'Zugriff wird geprüft…' })
   );
-
-  const container = createElement('div', { className: 'admin-page page-container content-section' },
-    loadingEl
-  );
+  container.appendChild(loadingEl);
 
   (async () => {
     let isAdmin = false;
@@ -37,125 +145,12 @@ export default function AdminPage() {
     }
 
     if (!isAdmin) {
-      appStore.showToast('Kein Zugriff', 'error');
-      window.location.hash = '#/home';
+      denyAccess();
       return;
     }
 
-    loadingEl.remove();
-    container.appendChild(buildAdminLayout());
+    render();
   })();
 
   return container;
-}
-
-// Baut eine Bereichsansicht (Anfragen/Nutzer). Einen Zurück-Button braucht
-// hier kein Tool mehr: die Nutzer-Detailansicht öffnet als Modal und schließt
-// sich selbst, die Liste bleibt dahinter stehen.
-function buildSectionPanel(tool) {
-  return createElement('div', { className: 'admin-section-panel' }, tool.element);
-}
-
-function buildAdminLayout() {
-  // Suchindex der globalen Suche: unabhängig von den Bereichs-Tabs immer die
-  // vollständigen Listen, damit auch abgeschlossene Anfragen und alle Nutzer
-  // gefunden werden (plan.md, Teil B2). Wird einmal beim Aufbau geladen und
-  // über onRequestsChanged aktuell gehalten, sobald der "Alle"-Tab neu lädt.
-  let searchUsers = [];
-  let searchRequests = [];
-
-  const tools = createDefaultAdminTools({
-    onRequestsChanged: (tab, requests) => {
-      if (tab === 'all') searchRequests = requests;
-      nav.setBadge('requests', tab === 'all'
-        ? requests.filter(r => r.status === 'pending').length
-        : requests.length);
-    }
-  });
-
-  const sectionPanels = new Map();
-  tools.forEach(tool => sectionPanels.set(tool.id, buildSectionPanel(tool)));
-
-  const nav = createAdminNav({
-    sections: tools.map(tool => ({ id: tool.id, label: tool.label, icon: tool.icon })),
-    onSelect: (id) => showSection(id)
-  });
-
-  const searchResults = createAdminSearchResults({
-    onSelectUser: (user) => {
-      nav.setActive('users');
-      tools.find(t => t.id === 'users')?.selectUser?.(user.id);
-    },
-    onSelectRequest: () => nav.setActive('requests')
-  });
-
-  const applySectionVisibility = (isSearching) => {
-    sectionPanels.forEach((panel, id) => {
-      panel.hidden = isSearching || id !== nav.getActive();
-    });
-    searchResults.element.hidden = !isSearching;
-  };
-
-  const handleSearch = (term) => {
-    const isSearching = term.trim().length > 0;
-    applySectionVisibility(isSearching);
-
-    if (isSearching) {
-      searchResults.render({ term, users: searchUsers, requests: searchRequests });
-    } else {
-      searchResults.clear();
-    }
-  };
-
-  function showSection(id) {
-    header.clear();
-    tools.find(t => t.id === id)?.load?.();
-  }
-
-  const header = createAdminHeader({
-    onSearch: handleSearch,
-    onToggleSettings: () => {
-      if (settingsPanel.isOpen()) {
-        settingsPanel.close();
-      } else {
-        settingsPanel.open();
-        header.setSettingsOpen(true);
-      }
-    }
-  });
-
-  const settingsPanel = createAdminSettingsPanel({
-    onClose: () => header.setSettingsOpen(false)
-  });
-
-  const contentEl = createElement('div', { className: 'admin-page-content' },
-    searchResults.element,
-    ...tools.map(tool => sectionPanels.get(tool.id))
-  );
-
-  const layout = createElement('div', { className: 'admin-page-layout' },
-    PageHeading({
-      title: 'Admin-Verwaltung',
-      subtitle: 'Medienanfragen prüfen und Nutzer verwalten.'
-    }),
-    createElement('div', { className: 'admin-page-header-row' }, header.element),
-    createElement('div', { className: 'admin-page-body' }, nav.element, contentEl),
-    settingsPanel.element
-  );
-
-  // Startzustand: erster Bereich (Anfragen) aktiv und geladen.
-  showSection(nav.getActive());
-
-  RequestsApi.getAllRequests()
-    .then(requests => {
-      searchRequests = requests || [];
-      nav.setBadge('requests', searchRequests.filter(r => r.status === 'pending').length);
-    })
-    .catch(error => console.error('[AdminPage] Anfragen für Suche/Badge konnten nicht geladen werden:', error));
-
-  AdminUsersApi.listUsers()
-    .then(res => { searchUsers = res?.users || []; })
-    .catch(error => console.error('[AdminPage] Nutzer für die Suche konnten nicht geladen werden:', error));
-
-  return layout;
 }

@@ -162,14 +162,107 @@ describe('AdminRequestsTool', () => {
     expect(status.textContent).toBe('Netzwerkfehler');
   });
 
-  it('notifies onRequestsChanged with the active tab and loaded requests, for the page-level badge', async () => {
-    RequestsApi.getOpenRequests.mockResolvedValue([makeRequest()]);
-    const onRequestsChanged = vi.fn();
-
-    const tool = createAdminRequestsTool({ onRequestsChanged });
+  it('lets the error state stand alone instead of stacking an empty state under it', async () => {
+    RequestsApi.getOpenRequests.mockResolvedValue([makeRequest({ title: 'Fight Club' })]);
+    const tool = createAdminRequestsTool();
     await tool.load();
     await flush();
 
-    expect(onRequestsChanged).toHaveBeenCalledWith('open', [expect.objectContaining({ id: 1 })]);
+    tool.setFilter('gibt es nicht');
+    expect(tool.element.querySelector('.admin-requests-empty').classList.contains('hidden')).toBe(false);
+
+    RequestsApi.getOpenRequests.mockRejectedValue(new Error('Serverfehler'));
+    await tool.load();
+    await flush();
+
+    const status = tool.element.querySelector('.admin-requests-status');
+    const empty = tool.element.querySelector('.admin-requests-empty');
+    expect(status.classList.contains('hidden')).toBe(false);
+    expect(status.textContent).toBe('Serverfehler');
+    expect(empty.classList.contains('hidden')).toBe(true);
+  });
+
+  it('keeps the empty state hidden while a search runs during the initial load', async () => {
+    let resolveLoad;
+    RequestsApi.getOpenRequests.mockReturnValue(new Promise(resolve => { resolveLoad = resolve; }));
+    const tool = createAdminRequestsTool();
+    tool.load();
+
+    tool.setFilter('irgendwas');
+
+    const empty = tool.element.querySelector('.admin-requests-empty');
+    expect(empty.classList.contains('hidden')).toBe(true);
+
+    resolveLoad([]);
+    await flush();
+  });
+
+  it('filters the loaded list by title or username via setFilter, without refetching', async () => {
+    RequestsApi.getOpenRequests.mockResolvedValue([
+      makeRequest({ id: 1, title: 'Fight Club', username: 'alice' }),
+      makeRequest({ id: 2, title: 'Heat', username: 'bob' })
+    ]);
+
+    const tool = createAdminRequestsTool();
+    await tool.load();
+    await flush();
+
+    tool.setFilter('CLU');
+    expect(tool.element.querySelectorAll('.admin-request-item')).toHaveLength(1);
+    expect(tool.element.textContent).toContain('Fight Club');
+
+    tool.setFilter('bob');
+    expect(tool.element.querySelectorAll('.admin-request-item')).toHaveLength(1);
+    expect(tool.element.textContent).toContain('Heat');
+
+    tool.setFilter('');
+    expect(tool.element.querySelectorAll('.admin-request-item')).toHaveLength(2);
+    expect(RequestsApi.getOpenRequests).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the empty state when the filter matches nothing', async () => {
+    RequestsApi.getOpenRequests.mockResolvedValue([makeRequest()]);
+
+    const tool = createAdminRequestsTool();
+    await tool.load();
+    await flush();
+
+    tool.setFilter('nichts davon');
+
+    const empty = tool.element.querySelector('.admin-requests-empty');
+    expect(empty.classList.contains('hidden')).toBe(false);
+    expect(empty.textContent).toBe('Keine Treffer für diese Suche');
+    expect(tool.element.querySelectorAll('.admin-request-item')).toHaveLength(0);
+  });
+
+  it('keeps the filter across a tab switch and re-applies it to the reloaded list', async () => {
+    RequestsApi.getOpenRequests.mockResolvedValue([makeRequest({ id: 1, title: 'Fight Club' })]);
+    RequestsApi.getAllRequests.mockResolvedValue([
+      makeRequest({ id: 1, title: 'Fight Club', status: 'pending' }),
+      makeRequest({ id: 2, title: 'Heat', status: 'approved' })
+    ]);
+
+    const tool = createAdminRequestsTool();
+    await tool.load();
+    await flush();
+
+    tool.setFilter('heat');
+    expect(tool.element.querySelectorAll('.admin-request-item')).toHaveLength(0);
+
+    tool.element.querySelectorAll('.admin-requests-tab')[1].click();
+    await flush();
+
+    expect(tool.element.querySelectorAll('.admin-request-item')).toHaveLength(1);
+    expect(tool.element.textContent).toContain('Heat');
+  });
+
+  it('describes itself for the admin menu, with the icon as a factory', () => {
+    const tool = createAdminRequestsTool();
+
+    expect(tool.id).toBe('requests');
+    expect(tool.label).toBe('Anfragen');
+    expect(tool.description).toBeTruthy();
+    // Ein einzelner Knoten würde zwischen Menükarte und Bereichskopf wandern.
+    expect(tool.icon()).not.toBe(tool.icon());
   });
 });

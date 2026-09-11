@@ -1,13 +1,12 @@
 import { createElement } from '../../utils/dom.js';
-import { createTopbarIcon, createCloseIcon, createSettingsGearIcon } from '../../components/navbar/icons.js';
+import { createTopbarIcon, createCloseIcon } from '../../components/navbar/icons.js';
 
 const SEARCH_DEBOUNCE_MS = 150;
 
-// Kopfzeile der Admin-Seite: eine globale Suchleiste über Nutzer und Anfragen,
-// rechts daneben der Zahnrad-Button fürs Einstellungen-Panel. Die eigentliche
-// Such- und Panel-Logik lebt in adminSearch.js / adminSettingsPanel.js — hier
-// wird nur die Eingabe entprellt und nach außen gereicht.
-export function createAdminHeader({ onSearch, onToggleSettings }) {
+// Suchleiste eines Admin-Bereichs. Die Suche ist auf den Bereich beschränkt,
+// in dem die Leiste steht — gefiltert wird im Bereich selbst (tool.setFilter),
+// hier wird die Eingabe nur entprellt und nach außen gereicht.
+export function createAdminHeader({ onSearch, placeholder = 'Suchen…', label = 'Suchen' } = {}) {
   let debounceTimer = null;
 
   const clearDebounce = () => {
@@ -28,8 +27,8 @@ export function createAdminHeader({ onSearch, onToggleSettings }) {
   const searchInput = createElement('input', {
     className: 'admin-header-search-input',
     type: 'search',
-    placeholder: 'Nutzer oder Anfragen suchen…',
-    'aria-label': 'Nutzer oder Anfragen suchen',
+    placeholder,
+    'aria-label': label,
     onInput: () => {
       updateClearVisibility();
       clearDebounce();
@@ -50,23 +49,18 @@ export function createAdminHeader({ onSearch, onToggleSettings }) {
     }
   }, createCloseIcon());
 
-  const searchWrapper = createElement('div', { className: 'admin-header-search-wrapper' },
+  const searchWrapper = createElement('div', {
+    className: 'admin-header-search-wrapper',
+    // The magnifier and the padding around the field are part of the hit area.
+    onClick: () => searchInput.focus()
+  },
     createTopbarIcon('search'),
     searchInput,
     clearButton
   );
 
-  const settingsButton = createElement('button', {
-    className: 'admin-header-settings-button',
-    type: 'button',
-    'aria-label': 'Admin-Einstellungen',
-    'aria-expanded': 'false',
-    onClick: () => onToggleSettings?.()
-  }, createSettingsGearIcon());
-
   const element = createElement('div', { className: 'admin-header-bar' },
-    searchWrapper,
-    settingsButton
+    searchWrapper
   );
 
   return {
@@ -77,10 +71,6 @@ export function createAdminHeader({ onSearch, onToggleSettings }) {
       searchInput.value = '';
       updateClearVisibility();
       emitSearch('');
-    },
-    setSettingsOpen: (isOpen) => {
-      settingsButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      settingsButton.classList.toggle('admin-header-settings-button-active', Boolean(isOpen));
     }
   };
 }
