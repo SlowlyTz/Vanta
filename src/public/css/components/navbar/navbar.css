@@ -138,24 +138,43 @@
   display: block;
 }
 
+.mobile-menu-button {
+  position: relative;
+}
+
+/* The three lines sit on the button centre and are only offset by transform,
+   so the open state rotates them into an exactly centred X. */
 .mobile-menu-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 18px;
   height: 2px;
+  margin: -1px 0 0 -9px;
   border-radius: 999px;
   background: currentColor;
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1), opacity 160ms ease;
+}
+
+.mobile-menu-line:nth-child(1) {
+  transform: translateY(-6px);
+}
+
+.mobile-menu-line:nth-child(3) {
+  transform: translateY(6px);
 }
 
 .navbar.mobile-open .mobile-menu-line:nth-child(1) {
-  transform: translateY(6.5px) rotate(45deg);
+  transform: rotate(45deg);
 }
 
 .navbar.mobile-open .mobile-menu-line:nth-child(2) {
   opacity: 0;
+  transform: scaleX(0.4);
 }
 
 .navbar.mobile-open .mobile-menu-line:nth-child(3) {
-  transform: translateY(-6.5px) rotate(-45deg);
+  transform: rotate(-45deg);
 }
 
 @media (max-width: 768px) {
