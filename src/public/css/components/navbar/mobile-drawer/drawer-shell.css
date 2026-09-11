@@ -36,6 +36,33 @@ body.mobile-nav-open .mobile-drawer-nav {
   transform: translate3d(0, 0, 0) scale(1);
 }
 
+/* Every entry flies in from the left once the drawer opens; --fly-index is
+   set by mobileDrawer.js (0 = header, then the items in order). Closing
+   drops the animation, so the entries stay put while the panel fades. */
+@keyframes mobile-drawer-fly-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-22px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+body.mobile-nav-open .mobile-drawer-header,
+body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
+  animation: mobile-drawer-fly-in 380ms var(--abyss-ease) both;
+  animation-delay: calc(40ms + var(--fly-index, 0) * 45ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mobile-nav-open .mobile-drawer-header,
+  body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
+    animation: none;
+  }
+}
+
 .mobile-drawer-header {
   position: relative;
   flex: 0 0 auto;

@@ -216,6 +216,12 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
   const mobileProfileItem = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, mobileProfileLink);
   mobileNavLinksList.appendChild(mobileProfileItem);
 
+  // Stagger order for the fly-in animation, see drawer-shell.css.
+  mobileDrawerHeader.style.setProperty('--fly-index', '0');
+  Array.from(mobileNavLinksList.children).forEach((item, index) => {
+    item.style.setProperty('--fly-index', String(index + 1));
+  });
+
   const mobileNavBackdrop = createElement('div', {
     className: 'mobile-nav-backdrop',
     'aria-hidden': 'true',
