@@ -91,14 +91,6 @@ export function createTopbarIcon(key) {
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
     `,
-    cast: `
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M2 7V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4"></path>
-        <path d="M2 17a5 5 0 0 1 5 5"></path>
-        <path d="M2 13a9 9 0 0 1 9 9"></path>
-        <path d="M2 21h.01"></path>
-      </svg>
-    `,
     search: `
       <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="7"></circle>
