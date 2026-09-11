@@ -54,10 +54,13 @@
   text-decoration: underline;
 }
 
+/* Scrolling is left to the browser: no `scroll-behavior: smooth` here, it
+   turns every wheel/touch delta into a restarted animation and swallows
+   most of a trackpad gesture. The arrows pass `behavior: 'smooth'` to
+   scrollTo() themselves. */
 .carousel-track {
   max-width: 100%;
   min-width: 0;
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
   touch-action: pan-x pan-y;
@@ -71,7 +74,6 @@
   overflow-y: hidden;
   max-width: 100%;
   min-width: 0;
-  scroll-behavior: smooth;
   scroll-padding-inline: 4px;
   padding: 10px 4px 20px; /* padding prevent shadow cropping */
   scrollbar-width: none;
@@ -117,7 +119,6 @@
   overflow-y: hidden;
   max-width: 100%;
   min-width: 0;
-  scroll-behavior: smooth;
   scroll-padding-inline: 4px;
   padding: 10px 4px 24px;
   scrollbar-width: none;

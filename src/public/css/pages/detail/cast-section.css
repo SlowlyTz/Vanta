@@ -68,7 +68,6 @@
   overflow-y: hidden;
   max-width: 100%;
   min-width: 0;
-  scroll-behavior: smooth;
   scroll-padding-inline: 4px;
   padding: 8px 4px 14px;
   scrollbar-width: none;
