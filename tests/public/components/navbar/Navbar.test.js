@@ -56,11 +56,23 @@ describe('Navbar', () => {
     expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]')).toBeFalsy();
   });
 
-  it('renders group, cast, search and profile actions on the right', () => {
+  it('numbers the drawer header and entries for the staggered fly-in', () => {
+    Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    const header = document.querySelector('.mobile-drawer-header');
+    const items = Array.from(document.querySelectorAll('.mobile-drawer-list > .mobile-nav-link-item'));
+
+    expect(header.style.getPropertyValue('--fly-index')).toBe('0');
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.map(item => item.style.getPropertyValue('--fly-index')))
+      .toEqual(items.map((_, index) => String(index + 1)));
+  });
+
+  it('renders group, search and profile actions on the right', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     expect(navbar.element.querySelector('.navbar-action-group')).toBeTruthy();
-    expect(navbar.element.querySelector('.navbar-action-cast')).toBeTruthy();
+    expect(navbar.element.querySelector('.navbar-action-cast')).toBeNull();
 
     const searchAction = navbar.element.querySelector('.navbar-action-search');
     expect(searchAction.getAttribute('href')).toBe('#/search');

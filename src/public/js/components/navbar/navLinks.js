@@ -16,7 +16,6 @@ export const TOP_TABS = [
 
 export const TOP_ACTIONS = [
   { key: 'group', label: 'Gruppe' },
-  { key: 'cast', label: 'Cast' },
   { key: 'search', label: 'Suche', href: '#/search' },
   { key: 'profile', label: 'Profil', href: '#/profile' }
 ];
