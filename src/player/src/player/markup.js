@@ -1,6 +1,5 @@
 export const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 export const WHEEL_SEEK_DEBOUNCE_MS = 320;
-export const NEXT_EPISODE_THRESHOLD = 0.9;
 export const NEXT_EPISODE_VIEWER_MESSAGE = 'Die nächste Folge kann von einem WatchTogether-Admin gestartet werden.';
 
 const POSTER_FALLBACK_GRADIENT = 'radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)';

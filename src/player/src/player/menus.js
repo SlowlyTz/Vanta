@@ -2,9 +2,15 @@ import { createQualityMenu } from '../quality.js';
 import { createSubtitleMenu } from '../subtitles.js';
 import { createWatchPartyParticipantsMenu } from '../watchPartyParticipants.js';
 import { createEpisodeBrowser } from '../episodes.js';
-import { findNextEpisode, shouldShowNextEpisodePrompt, canStartNextEpisode, createNextEpisodeGate } from '../nextEpisode.js';
+import {
+  findNextEpisode,
+  shouldShowNextEpisodePrompt,
+  computeNextEpisodeTimings,
+  canStartNextEpisode,
+  createNextEpisodeGate
+} from '../nextEpisode.js';
 import { createNextEpisodePrompt } from '../nextEpisodePrompt.js';
-import { NEXT_EPISODE_THRESHOLD, NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
+import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 
 export function bindMenus(context) {
   const { root, player, reporter, watchParty, episodeBrowser } = context;
@@ -84,11 +90,9 @@ export function bindMenus(context) {
 
     const currentEpisodeId = episodeBrowser.context.currentEpisodeId;
     if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
-    if (!shouldShowNextEpisodePrompt({
-      currentTime: player.currentTime,
-      duration: context.knownDuration || player.duration,
-      threshold: NEXT_EPISODE_THRESHOLD
-    })) return;
+
+    const duration = context.knownDuration || player.duration;
+    if (!shouldShowNextEpisodePrompt({ currentTime: player.currentTime, duration })) return;
 
     const next = findNextEpisode(episodeBrowser.context, currentEpisodeId);
     if (!next) return;
@@ -97,7 +101,9 @@ export function bindMenus(context) {
     const interactive = canStartNextEpisode(watchParty);
     context.nextEpisodePrompt.show(next, {
       interactive,
-      message: interactive ? null : NEXT_EPISODE_VIEWER_MESSAGE
+      message: interactive ? null : NEXT_EPISODE_VIEWER_MESSAGE,
+      skipAt: computeNextEpisodeTimings({ duration })?.skipAt,
+      getCurrentTime: () => player.currentTime
     });
   };
 

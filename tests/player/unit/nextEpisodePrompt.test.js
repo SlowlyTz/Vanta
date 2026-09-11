@@ -217,3 +217,134 @@ describe('createNextEpisodePrompt', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });
+
+describe('createNextEpisodePrompt – Countdown auf Medienzeit', () => {
+  let root;
+  let rafCallbacks;
+  let mediaTime;
+
+  beforeEach(() => {
+    root = document.createElement('div');
+    document.body.appendChild(root);
+
+    mediaTime = 0;
+    rafCallbacks = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => {
+      rafCallbacks.push(cb);
+      return rafCallbacks.length;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    root.remove();
+  });
+
+  function advanceTo(seconds) {
+    mediaTime = seconds;
+    rafCallbacks.splice(0).forEach(cb => cb(0));
+  }
+
+  function showWithSkip(prompt, next, { skipAt = 100, from = 75 } = {}) {
+    mediaTime = from;
+    prompt.show(next, { skipAt, getCurrentTime: () => mediaTime });
+  }
+
+  function countdownText(prompt) {
+    return prompt.element.querySelector('.vanta-player-next-episode-countdown');
+  }
+
+  it('zählt entlang der Medienzeit herunter und bestätigt beim Erreichen von skipAt', () => {
+    const onConfirm = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn() });
+    const next = makeNext();
+    showWithSkip(prompt, next);
+
+    expect(countdownText(prompt).hidden).toBe(false);
+    expect(countdownText(prompt).textContent).toBe('Startet in 25 s');
+
+    advanceTo(87.5);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(prompt.confirmButton.style.getPropertyValue('--next-episode-progress')).toBe('0.5');
+    expect(countdownText(prompt).textContent).toBe('Startet in 13 s');
+
+    advanceTo(100);
+    expect(onConfirm).toHaveBeenCalledWith(next);
+    expect(prompt.element.hidden).toBe(true);
+
+    prompt.destroy();
+  });
+
+  it('hält den Countdown an, solange die Medienzeit stehen bleibt (Pause)', () => {
+    const onConfirm = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn() });
+    showWithSkip(prompt, makeNext());
+
+    for (let i = 0; i < 20; i += 1) advanceTo(75);
+
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(prompt.element.hidden).toBe(false);
+    expect(countdownText(prompt).textContent).toBe('Startet in 25 s');
+
+    prompt.destroy();
+  });
+
+  it('schiebt den Skip nach hinten, wenn zurückgespult wird', () => {
+    const onConfirm = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn() });
+    showWithSkip(prompt, makeNext());
+
+    advanceTo(40);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(prompt.confirmButton.style.getPropertyValue('--next-episode-progress')).toBe('0');
+    expect(countdownText(prompt).textContent).toBe('Startet in 60 s');
+
+    advanceTo(100);
+    expect(onConfirm).toHaveBeenCalled();
+
+    prompt.destroy();
+  });
+
+  it('startet keinen Countdown, wenn bereits hinter skipAt eingestiegen wird', () => {
+    const onConfirm = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn() });
+    showWithSkip(prompt, makeNext(), { skipAt: 100, from: 101 });
+
+    expect(rafCallbacks).toHaveLength(0);
+    expect(countdownText(prompt).hidden).toBe(true);
+
+    advanceTo(200);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(prompt.element.hidden).toBe(false);
+
+    prompt.destroy();
+  });
+
+  it('blendet den Countdown beim Schließen wieder aus', () => {
+    const prompt = createNextEpisodePrompt({ root, onConfirm: vi.fn(), onDismiss: vi.fn() });
+    showWithSkip(prompt, makeNext());
+    expect(countdownText(prompt).hidden).toBe(false);
+
+    prompt.dismissButton.click();
+    expect(countdownText(prompt).hidden).toBe(true);
+
+    prompt.destroy();
+  });
+
+  it('fällt ohne skipAt auf den Wanduhr-Countdown zurück', () => {
+    const onConfirm = vi.fn();
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn(), countdownMs: 1000 });
+    prompt.show(makeNext());
+    expect(countdownText(prompt).textContent).toBe('Startet in 1 s');
+
+    now = 1000;
+    rafCallbacks.splice(0).forEach(cb => cb(now));
+    expect(onConfirm).toHaveBeenCalled();
+
+    prompt.destroy();
+  });
+});
