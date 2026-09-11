@@ -14,6 +14,7 @@ import adminRoutes from './routes/admin/index.js';
 import watchPartyRoutes from './routes/watch-party.routes.js';
 import watchPartyInvitationsRoutes from './routes/watch-party-invitations.routes.js';
 import pageRoutes from './routes/page.routes.js';
+import internalRoutes from './routes/internal.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/requests', requestsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/watch-parties', watchPartyRoutes);
 app.use('/api/watch-party-invitations', watchPartyInvitationsRoutes);
+app.use('/api/internal', internalRoutes);
 app.use('/', pageRoutes);
 
 // Error Middleware

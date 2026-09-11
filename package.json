@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "refresh": "node scripts/refresh-catalog.js",
     "player:build": "vite build --config src/player/vite.config.js",
     "player:watch": "vite build --watch --config src/player/vite.config.js",
     "test": "vitest run",
