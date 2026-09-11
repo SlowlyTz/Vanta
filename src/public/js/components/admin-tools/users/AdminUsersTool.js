@@ -18,6 +18,16 @@ function buildListSignature(list) {
     .join(',');
 }
 
+// Menu entry of this area. The icon is a factory, not a node: the menu builds
+// its own card per tool and a single shared node could only ever live in one
+// of them.
+export const ADMIN_USERS_TOOL = {
+  id: 'users',
+  label: 'Nutzerverwaltung',
+  description: 'Jellyfin-Nutzer verwalten, sperren und Streams begrenzen',
+  icon: () => createUsersManagementIcon()
+};
+
 export function createAdminUsersTool() {
   let users = [];
   let libraries = [];
@@ -26,6 +36,7 @@ export function createAdminUsersTool() {
   let lastRenderedSignature = null;
   let openDetailModal = null;
   let replacingDetail = false;
+  let destroyed = false;
 
   const statusEl = createElement('div', { className: 'admin-requests-status search-empty-state hidden' });
   const listEl = createElement('div', { className: 'admin-users-list' });
@@ -77,8 +88,8 @@ export function createAdminUsersTool() {
     });
   };
 
-  // Der Filterbegriff kommt von der globalen Suchleiste der Admin-Seite
-  // (adminHeader.js), die Eingaben bereits selbst entprellt. setFilter muss
+  // Der Filterbegriff kommt von der Suchleiste des Bereichs (adminHeader.js),
+  // die Eingaben bereits selbst entprellt. setFilter muss
   // deshalb nicht erneut entprellen — nur das Ergebnis diffen (renderList).
   const setFilter = (term = '') => {
     searchTerm = term || '';
@@ -110,22 +121,14 @@ export function createAdminUsersTool() {
       variant: 'admin-user-dialog-detail',
       onClose: () => {
         openDetailModal = null;
-        if (!replacingDetail) load();
+        if (!replacingDetail && !destroyed) load();
       }
     });
   };
 
-  // Öffnet die Detailansicht für einen bestimmten Nutzer, z.B. aus einem
-  // Treffer der globalen Suche heraus. Gibt zurück, ob der Nutzer (noch)
-  // in der zuletzt geladenen Liste existiert.
-  const selectUser = (userId) => {
-    const user = users.find(u => u.id === userId);
-    if (!user) return false;
-    showDetail(user);
-    return true;
-  };
-
   const load = async ({ keepSelectedUserId = null } = {}) => {
+    if (destroyed) return;
+
     statusEl.classList.add('hidden');
     setSectionBusy(listEl, true);
     listEl.innerHTML = '';
@@ -137,6 +140,10 @@ export function createAdminUsersTool() {
         AdminUsersApi.listLibraries(),
         AuthApi.getCurrentUser().catch(() => null)
       ]);
+
+      // A save/ban/delete triggers a reload; if the route changed while that
+      // was in flight, showDetail() below would put a modal back on the body.
+      if (destroyed) return;
 
       users = usersRes?.users || [];
       libraries = librariesRes?.libraries || [];
@@ -159,6 +166,7 @@ export function createAdminUsersTool() {
         replacingDetail = false;
       }
     } catch (error) {
+      if (destroyed) return;
       console.error('[Admin Users Tool Load Error]', error);
       listEl.innerHTML = '';
       statusEl.textContent = error.message || 'Nutzer konnten nicht geladen werden';
@@ -168,14 +176,18 @@ export function createAdminUsersTool() {
     }
   };
 
+  // Stops a reload that is still in flight from putting the detail view back on
+  // document.body after the page is gone. The page closes the overlays.
+  const destroy = () => {
+    destroyed = true;
+    openDetailModal?.close();
+  };
+
   return {
-    id: 'users',
-    label: 'Nutzerverwaltung',
-    description: 'Jellyfin-Nutzer verwalten, sperren und Streams begrenzen',
-    icon: createUsersManagementIcon(),
+    ...ADMIN_USERS_TOOL,
     element,
     load: () => load(),
     setFilter,
-    selectUser
+    destroy
   };
 }

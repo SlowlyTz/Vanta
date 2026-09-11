@@ -1,78 +1,132 @@
 /* ---------------------------------
-   ADMIN NAV — Bereichsnavigation (Anfragen / Nutzer)
+   ADMIN MENU — Kachel je Bereich (#/admin)
    --------------------------------- */
-.admin-nav {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  /* Breit genug für "Nutzerverwaltung" samt Icon und Badge — schmaler
-     kürzt das Label per Ellipse ab. */
-  width: 248px;
+.admin-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--spacing-md);
 }
 
-.admin-nav-item {
+.admin-menu-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  border-radius: var(--abyss-radius);
-  color: var(--text-secondary);
-  font-weight: 640;
+  gap: var(--spacing-md);
+  width: 100%;
+  min-height: 104px;
+  padding: var(--spacing-lg);
   text-align: left;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.admin-nav-item:hover {
-  background: rgba(255, 255, 255, 0.055);
+  border-radius: var(--abyss-radius);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.105);
   color: var(--text-primary);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
-.admin-nav-item.active {
-  background: rgba(var(--abyss-accent), 0.14);
-  color: var(--text-primary);
+.admin-menu-card:hover {
+  background: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
 }
 
-.admin-nav-item:focus-visible {
+.admin-menu-card:active {
+  transform: translateY(0) scale(0.995);
+}
+
+.admin-menu-card:focus-visible {
   outline: 2px solid rgba(var(--abyss-accent), 0.72);
   outline-offset: 2px;
 }
 
-.admin-nav-item-main {
+.admin-menu-card-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--abyss-radius);
+  background: rgba(var(--abyss-accent), 0.1);
+  color: var(--text-primary);
+}
+
+/* Der Icon-Knoten kommt fertig gestempelt aus navbar/icons.js und bringt seine
+   eigene Größe mit — hier wird er nur zentriert und auf eine Farbe gebracht. */
+.admin-menu-card-icon > span {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  min-width: 0;
+  justify-content: center;
+  color: inherit;
 }
 
-.admin-nav-label {
+.admin-menu-card-text {
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.admin-nav-badge {
+.admin-menu-card-title {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 740;
+  line-height: 1.2;
+}
+
+.admin-menu-card-description {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.admin-menu-badge {
   flex: 0 0 auto;
-  min-width: 20px;
-  padding: 1px 7px;
+  align-self: flex-start;
+  min-width: 22px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: rgb(var(--abyss-accent));
   color: var(--bg-primary);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 740;
   text-align: center;
-  line-height: 1.5;
-}
-
-.admin-nav-badge.hidden {
-  display: none;
+  line-height: 1.6;
 }
 
 /* ---------------------------------
-   ADMIN SECTION PANEL — Inhalt des aktiven Bereichs
+   ADMIN SECTION — ein Bereich als ganze Seite (#/admin/<bereich>)
    --------------------------------- */
-.admin-section-panel[hidden] {
-  display: none;
+.admin-back-row {
+  display: flex;
+  align-items: center;
+}
+
+.admin-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: 40px;
+  padding: 0 var(--spacing-md) 0 var(--spacing-sm);
+  border-radius: var(--abyss-radius);
+  color: var(--text-secondary);
+  font-weight: 640;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-back-button:hover {
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-primary);
+}
+
+.admin-back-button:focus-visible {
+  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline-offset: 2px;
+}
+
+.admin-section-body {
+  min-width: 0;
 }

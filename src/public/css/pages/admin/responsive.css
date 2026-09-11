@@ -1,32 +1,21 @@
 /* ---------------------------------
    ADMIN PAGE — Responsive
-   Ab 900px: seitliche Bereichsnavigation. Darunter: Tabs statt Sidebar.
-   Die Nutzer-Detailansicht ist in beiden Fällen ein Modal (siehe
-   users-tool/confirm-dialog.css), braucht also keinen Ansichtswechsel und
-   keinen eigenen Zurück-Button mehr.
+   Das Menü läuft auf schmalen Breiten einspaltig; ein Bereich füllt in jeder
+   Breite die ganze Seite, der Zurück-Button steht immer links darüber.
    --------------------------------- */
 @media (max-width: 899px) {
-  .admin-page-body {
-    flex-direction: column;
-    gap: var(--spacing-lg);
-  }
-
-  .admin-nav {
-    flex-direction: row;
-    width: 100%;
-    gap: var(--spacing-xs);
-    overflow-x: auto;
-  }
-
-  .admin-nav-item {
-    flex: 1 1 auto;
-    justify-content: center;
-    white-space: nowrap;
+  .admin-menu-grid {
+    gap: var(--spacing-sm);
   }
 }
 
 @media (max-width: 640px) {
-  .admin-page-header-row {
-    flex-wrap: wrap;
+  .admin-menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-menu-card {
+    min-height: 0;
+    padding: var(--spacing-md);
   }
 }

@@ -1,8 +1,8 @@
 /* ---------------------------------
    ADMIN PAGE — Seitengerüst
-   Kopfbereich (Titel, Suche + Zahnrad) oben, darunter Bereichsnavigation
-   links (Desktop) bzw. Tabs (Mobil) und der Inhalt des aktiven Bereichs
-   rechts. Siehe plan.md, Teil A3 für das Zielschema.
+   #/admin zeigt nur das Menü, #/admin/<bereich> nur diesen einen Bereich.
+   Beide Ansichten laufen über die volle Breite; eine Sidebar gibt es nicht
+   mehr.
    --------------------------------- */
 .admin-page {
   display: flex;
@@ -25,15 +25,4 @@
 .admin-page-header-row {
   display: flex;
   align-items: center;
-}
-
-.admin-page-body {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-xl);
-}
-
-.admin-page-content {
-  flex: 1;
-  min-width: 0;
 }

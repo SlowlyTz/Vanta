@@ -1,8 +1,7 @@
 /* Icon-Box, wie sie von createChatIcon()/createUsersManagementIcon() aus
    navbar/icons.js gestempelt wird. Ehemals Teil des Kachel-Grids im
    Einstellungen-Dialog; die Admin-Verwaltung ist inzwischen eine eigene
-   Seite (#/admin) ohne Tool-Grid, die Icon-Box wird aber weiterhin für die
-   Icons in der Bereichsnavigation der Seite verwendet. */
+   Seite (#/admin), die Icon-Box wird dort auf den Menükarten verwendet. */
 .admin-tool-card-icon {
   flex: 0 0 auto;
   width: 36px;

@@ -1,5 +1,5 @@
 /* ---------------------------------
-   ADMIN HEADER — Suchleiste + Zahnrad
+   ADMIN HEADER — Suchleiste eines Bereichs
    --------------------------------- */
 .admin-header-bar {
   display: flex;
@@ -74,129 +74,12 @@
   outline-offset: 2px;
 }
 
-.admin-header-settings-button {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.052);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: var(--abyss-radius);
-  color: var(--text-secondary);
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
-}
-
-.admin-header-settings-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-}
-
-.admin-header-settings-button:active {
-  transform: scale(0.96);
-}
-
-.admin-header-settings-button:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 3px;
-}
-
-.admin-header-settings-button-active {
-  background: rgba(var(--abyss-accent), 0.14);
-  border-color: rgba(var(--abyss-accent), 0.35);
-  color: var(--text-primary);
-}
-
 @media (max-width: 640px) {
   .admin-header-bar {
     gap: var(--spacing-sm);
   }
 
-  .admin-header-search-wrapper,
-  .admin-header-settings-button {
+  .admin-header-search-wrapper {
     height: 46px;
   }
-}
-
-/* ---------------------------------
-   ADMIN SEARCH — gruppierte Ergebnisansicht
-   (fachlich Teil der Kopfzeile, wird direkt darunter angezeigt)
-   --------------------------------- */
-.admin-search-results {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xl);
-  padding: var(--spacing-lg) 0;
-}
-
-.admin-search-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.admin-search-group-header {
-  display: flex;
-  align-items: baseline;
-  gap: var(--spacing-sm);
-}
-
-.admin-search-group-title {
-  color: var(--text-primary);
-  font-size: 1.05rem;
-  font-weight: 740;
-  line-height: 1.2;
-}
-
-.admin-search-group-count {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.admin-search-group-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  list-style: none;
-}
-
-.admin-search-result-item {
-  list-style: none;
-}
-
-.admin-search-result {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-radius: var(--abyss-radius);
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.105);
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.admin-search-result:hover {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.admin-search-result:active {
-  transform: scale(0.99);
-}
-
-.admin-search-result:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 2px;
-}
-
-.admin-search-result-title {
-  color: var(--text-primary);
-  font-weight: 620;
-}
-
-.admin-search-result-meta {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
 }

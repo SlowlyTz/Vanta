@@ -3,6 +3,7 @@ import { createAdminHeader } from '../../../../src/public/js/pages/admin/adminHe
 
 describe('createAdminHeader', () => {
   afterEach(() => {
+    document.body.innerHTML = '';
     vi.useRealTimers();
   });
 
@@ -93,34 +94,54 @@ describe('createAdminHeader', () => {
     expect(header.getTerm()).toBe('hello');
   });
 
-  it('clicking the settings button calls onToggleSettings', () => {
-    const onToggleSettings = vi.fn();
-    const header = createAdminHeader({ onSearch: vi.fn(), onToggleSettings });
-    const settingsButton = header.element.querySelector('.admin-header-settings-button');
-
-    settingsButton.click();
-
-    expect(onToggleSettings).toHaveBeenCalledTimes(1);
-  });
-
-  it('setSettingsOpen(true/false) is reflected in aria-expanded on the settings button', () => {
-    const header = createAdminHeader({ onSearch: vi.fn(), onToggleSettings: vi.fn() });
-    const settingsButton = header.element.querySelector('.admin-header-settings-button');
-
-    expect(settingsButton.getAttribute('aria-expanded')).toBe('false');
-
-    header.setSettingsOpen(true);
-    expect(settingsButton.getAttribute('aria-expanded')).toBe('true');
-
-    header.setSettingsOpen(false);
-    expect(settingsButton.getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('the settings button carries an accessible label and a focus-visible target', () => {
+  it('clicking the magnifier or the padding around the field focuses the search input', () => {
     const header = createAdminHeader({ onSearch: vi.fn() });
-    const settingsButton = header.element.querySelector('.admin-header-settings-button');
+    document.body.appendChild(header.element);
 
-    expect(settingsButton.getAttribute('aria-label')).toBe('Admin-Einstellungen');
-    expect(settingsButton.tagName).toBe('BUTTON');
+    const wrapper = header.element.querySelector('.admin-header-search-wrapper');
+    const input = wrapper.querySelector('input');
+    const icon = wrapper.querySelector('svg') || wrapper.firstElementChild;
+
+    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('clicking the clear button empties the field and leaves the caret in it', () => {
+    const onSearch = vi.fn();
+    const header = createAdminHeader({ onSearch });
+    document.body.appendChild(header.element);
+
+    const wrapper = header.element.querySelector('.admin-header-search-wrapper');
+    const input = wrapper.querySelector('input');
+    input.value = 'abc';
+    input.dispatchEvent(new Event('input'));
+
+    const clearButton = wrapper.querySelector('button');
+    clearButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(input.value).toBe('');
+    expect(onSearch).toHaveBeenCalledWith('');
+    expect(document.activeElement).toBe(input);
+    expect(clearButton.classList.contains('hidden')).toBe(true);
+  });
+
+  it('renders only the scoped search field — the settings gear moved to its own section', () => {
+    const header = createAdminHeader({ onSearch: vi.fn() });
+
+    expect(header.element.querySelector('.admin-header-settings-button')).toBeNull();
+    expect(header.setSettingsOpen).toBeUndefined();
+  });
+
+  it('takes the placeholder and the accessible label from the section it belongs to', () => {
+    const header = createAdminHeader({
+      onSearch: vi.fn(),
+      placeholder: 'Anfragen durchsuchen…',
+      label: 'Anfragen durchsuchen'
+    });
+    const input = header.element.querySelector('.admin-header-search-input');
+
+    expect(input.getAttribute('placeholder')).toBe('Anfragen durchsuchen…');
+    expect(input.getAttribute('aria-label')).toBe('Anfragen durchsuchen');
   });
 });

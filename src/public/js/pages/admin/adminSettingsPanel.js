@@ -1,15 +1,24 @@
 import { createElement } from '../../utils/dom.js';
-import { createCloseIcon } from '../../components/navbar/icons.js';
+import { createSettingsGearIcon } from '../../components/navbar/icons.js';
 import { AdminSettingsApi } from '../../api/admin-settings.api.js';
 
 const WEBHOOK_PLACEHOLDER = 'https://discord.com/api/webhooks/…';
 
-// Einstellungen-Panel der Admin-Seite. Für diese Ausbaustufe enthält es nur
-// den Discord-Webhook-Abschnitt, ist aber als Liste von Sektionen aufgebaut
-// (`sectionsContainer`), damit spätere Abschnitte einfach danebengesetzt
-// werden können, ohne das Panel umzubauen.
-export function createAdminSettingsPanel({ onClose }) {
-  let isOpenState = false;
+// Menu entry of this area. The icon is a factory, not a node: the menu builds
+// its own card per tool and a single shared node could only ever live in one
+// of them.
+export const ADMIN_SETTINGS_TOOL = {
+  id: 'settings',
+  label: 'Einstellungen',
+  description: 'Discord-Benachrichtigungen für neue Medienanfragen einrichten',
+  icon: () => createSettingsGearIcon()
+};
+
+// Einstellungen-Bereich der Admin-Seite (#/admin/settings). Für diese
+// Ausbaustufe enthält er nur den Discord-Webhook-Abschnitt, ist aber als Liste
+// von Sektionen aufgebaut (`sectionsContainer`), damit spätere Abschnitte
+// einfach danebengesetzt werden können, ohne den Bereich umzubauen.
+export function createAdminSettingsPanel() {
   let busy = false;
   let currentEnabled = false;
   let webhookLoaded = false;
@@ -212,38 +221,10 @@ export function createAdminSettingsPanel({ onClose }) {
     webhookSection
   );
 
-  const closeButton = createElement('button', {
-    className: 'admin-settings-close-button',
-    type: 'button',
-    'aria-label': 'Einstellungen schließen',
-    onClick: () => close()
-  }, createCloseIcon());
-
-  const panel = createElement('div', {
+  const element = createElement('section', {
     className: 'admin-settings-panel',
-    role: 'dialog',
-    tabindex: '-1',
-    'aria-modal': 'true',
     'aria-label': 'Admin-Einstellungen'
-  },
-    createElement('div', { className: 'admin-settings-header' },
-      createElement('h2', { className: 'admin-settings-title' }, 'Admin-Einstellungen'),
-      closeButton
-    ),
-    sectionsContainer
-  );
-
-  const element = createElement('div', {
-    className: 'admin-settings-backdrop',
-    'aria-hidden': 'true',
-    onClick: (event) => {
-      if (event.target === element) close();
-    }
-  }, panel);
-
-  const handleKeydown = (event) => {
-    if (event.key === 'Escape') close();
-  };
+  }, sectionsContainer);
 
   const load = async () => {
     setMessage('');
@@ -259,7 +240,7 @@ export function createAdminSettingsPanel({ onClose }) {
   };
 
   // Der Status wird erst beim erstmaligen Aufklappen geholt, nicht schon beim
-  // Öffnen des Panels. Der Endpunkt hängt hinter requireFreshAdmin, das bei
+  // Betreten des Bereichs. Der Endpunkt hängt hinter requireFreshAdmin, das bei
   // jedem Request Jellyfin befragt — wer den Webhook gar nicht ansehen will,
   // soll dafür keinen Roundtrip bezahlen.
   function setWebhookExpanded(expanded) {
@@ -274,30 +255,8 @@ export function createAdminSettingsPanel({ onClose }) {
     }
   }
 
-  const open = () => {
-    if (isOpenState) return;
-    isOpenState = true;
-    urlInput.value = '';
-    updateSaveButtonState();
-    element.classList.add('open');
-    element.setAttribute('aria-hidden', 'false');
-    document.addEventListener('keydown', handleKeydown);
-    window.requestAnimationFrame(() => panel.focus());
-  };
-
-  const close = () => {
-    if (!isOpenState) return;
-    isOpenState = false;
-    element.classList.remove('open');
-    element.setAttribute('aria-hidden', 'true');
-    document.removeEventListener('keydown', handleKeydown);
-    onClose?.();
-  };
-
   return {
-    element,
-    open,
-    close,
-    isOpen: () => isOpenState
+    ...ADMIN_SETTINGS_TOOL,
+    element
   };
 }

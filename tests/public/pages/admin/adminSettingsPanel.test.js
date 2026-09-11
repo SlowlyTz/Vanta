@@ -34,8 +34,7 @@ describe('createAdminSettingsPanel', () => {
   });
 
   it('starts with the webhook section collapsed and fetches nothing until it is expanded', async () => {
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     await flush();
 
     const section = panel.element.querySelector('.admin-settings-section');
@@ -62,8 +61,7 @@ describe('createAdminSettingsPanel', () => {
   });
 
   it('collapses again on a second click without refetching', async () => {
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -83,8 +81,7 @@ describe('createAdminSettingsPanel', () => {
     let resolveGet;
     AdminSettingsApi.getDiscordWebhook.mockReturnValue(new Promise(resolve => { resolveGet = resolve; }));
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
 
     expect(panel.element.querySelector('.admin-settings-webhook-status').textContent).toBe('Lädt…');
@@ -101,8 +98,7 @@ describe('createAdminSettingsPanel', () => {
       statusOf({ configured: true, enabled: true, maskedUrl: 'https://discord.com/api/webhooks/1234…f9c2' })
     );
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -115,8 +111,7 @@ describe('createAdminSettingsPanel', () => {
       statusOf({ configured: true, enabled: true, maskedUrl: 'https://discord.com/api/webhooks/abcd…wxyz' })
     );
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -137,8 +132,7 @@ describe('createAdminSettingsPanel', () => {
   });
 
   it('the save button stays disabled while the URL field is empty', async () => {
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -156,8 +150,7 @@ describe('createAdminSettingsPanel', () => {
       statusOf({ configured: true, enabled: true, maskedUrl: 'https://discord.com/api/webhooks/abcd…wxyz' })
     );
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -183,8 +176,7 @@ describe('createAdminSettingsPanel', () => {
     error.status = 500;
     AdminSettingsApi.updateDiscordWebhook.mockRejectedValue(error);
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -201,8 +193,7 @@ describe('createAdminSettingsPanel', () => {
   it('Testen with text in the URL field tests that URL (checking before saving)', async () => {
     AdminSettingsApi.testDiscordWebhook.mockResolvedValue({ ok: true });
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -222,8 +213,7 @@ describe('createAdminSettingsPanel', () => {
   it('Testen with an empty URL field tests the saved webhook instead', async () => {
     AdminSettingsApi.testDiscordWebhook.mockResolvedValue({ ok: true });
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -238,8 +228,7 @@ describe('createAdminSettingsPanel', () => {
   it('shows the server-reported status/error when a test fails against a bad URL', async () => {
     AdminSettingsApi.testDiscordWebhook.mockResolvedValue({ ok: false, status: 404, error: 'Unknown Webhook' });
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -257,8 +246,7 @@ describe('createAdminSettingsPanel', () => {
     error.status = 400;
     AdminSettingsApi.updateDiscordWebhook.mockRejectedValue(error);
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -282,8 +270,7 @@ describe('createAdminSettingsPanel', () => {
     );
     AdminSettingsApi.removeDiscordWebhook.mockResolvedValue(statusOf());
 
-    const panel = createAdminSettingsPanel({ onClose: vi.fn() });
-    panel.open();
+    const panel = createAdminSettingsPanel();
     expandWebhook(panel);
     await flush();
 
@@ -296,21 +283,32 @@ describe('createAdminSettingsPanel', () => {
     expect(panel.element.querySelector('.admin-settings-webhook-status').textContent).toBe('Kein Webhook konfiguriert.');
   });
 
-  it('close() can be triggered via Escape, backdrop click, or the close button, and calls onClose', () => {
-    const onClose = vi.fn();
-    const panel = createAdminSettingsPanel({ onClose });
-    panel.open();
+  it('renders inline instead of as a modal — no backdrop, no open/close, no Escape handler', () => {
+    const panel = createAdminSettingsPanel();
+    document.body.appendChild(panel.element);
     expandWebhook(panel);
-    expect(panel.isOpen()).toBe(true);
 
+    expect(panel.element.className).toBe('admin-settings-panel');
+    expect(panel.open).toBeUndefined();
+    expect(panel.close).toBeUndefined();
+    expect(panel.isOpen).toBeUndefined();
+
+    // The panel used to bind a document-level keydown handler that the router
+    // never unbound; Escape must simply do nothing now.
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(panel.isOpen()).toBe(false);
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(panel.element.isConnected).toBe(true);
+    expect(panel.element.querySelector('.admin-settings-section').classList.contains('expanded')).toBe(true);
 
-    panel.open();
-    expandWebhook(panel);
-    panel.element.dispatchEvent(new Event('click'));
-    expect(panel.isOpen()).toBe(false);
-    expect(onClose).toHaveBeenCalledTimes(2);
+    panel.element.remove();
+  });
+
+  it('exposes itself to the admin menu as the Einstellungen area', () => {
+    const panel = createAdminSettingsPanel();
+
+    expect(panel.id).toBe('settings');
+    expect(panel.label).toBe('Einstellungen');
+    expect(panel.description).toBeTruthy();
+    expect(typeof panel.icon).toBe('function');
+    expect(panel.icon()).not.toBe(panel.icon());
   });
 });

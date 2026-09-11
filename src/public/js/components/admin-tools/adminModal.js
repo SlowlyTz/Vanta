@@ -9,6 +9,15 @@ import { createElement } from '../../utils/dom.js';
 // Stapelreihenfolge gesteuert werden — die Detailansicht braucht deutlich mehr
 // Platz als eine Rückfrage und muss unter den Bestätigungsdialogen liegen, die
 // aus ihr heraus geöffnet werden.
+
+// Every open overlay lives on document.body, which the router never clears.
+// The registry lets a page close whatever is still open when it goes away.
+const openModals = new Set();
+
+export function closeAllAdminModals() {
+  for (const modal of [...openModals]) modal.close();
+}
+
 export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
   let closed = false;
   const previouslyFocused = document.activeElement;
@@ -20,6 +29,7 @@ export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
   const close = () => {
     if (closed) return;
     closed = true;
+    openModals.delete(handle);
     document.removeEventListener('keydown', handleKeydown);
     overlay.remove();
     previouslyFocused?.focus?.();
@@ -53,5 +63,8 @@ export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
   document.body.appendChild(overlay);
   window.requestAnimationFrame?.(() => card.focus?.());
 
-  return { close, element: overlay };
+  const handle = { close, element: overlay };
+  openModals.add(handle);
+
+  return handle;
 }

@@ -236,29 +236,6 @@ describe('AdminUsersTool', () => {
     expect(detailModal().querySelector('.admin-user-dialog-close')).toBeTruthy();
   });
 
-  it('selectUser opens the detail modal for a user from the last loaded list', async () => {
-    AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser({ id: 'u1', name: 'alice' })] });
-
-    const tool = createAdminUsersTool();
-    await tool.load();
-    await flush();
-
-    const handled = tool.selectUser('u1');
-
-    expect(handled).toBe(true);
-    expect(detailModal().querySelector('.admin-user-detail-name').textContent).toBe('alice');
-  });
-
-  it('selectUser returns false for a user id that is not in the loaded list', async () => {
-    AdminUsersApi.listUsers.mockResolvedValue({ users: [] });
-
-    const tool = createAdminUsersTool();
-    await tool.load();
-    await flush();
-
-    expect(tool.selectUser('missing')).toBe(false);
-  });
-
   it('after saving a field, the detail modal stays open and shows the refreshed record', async () => {
     AdminUsersApi.listUsers
       .mockResolvedValueOnce({ users: [makeUser({ maxConcurrentStreams: 1 })] })
@@ -343,5 +320,23 @@ describe('AdminUsersTool', () => {
     await flush();
 
     expect(appStore.showToast).toHaveBeenCalledWith('Nutzer konnte nicht umbenannt werden', 'error');
+  });
+  it('destroy() closes an open detail modal without triggering another reload', async () => {
+    AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
+
+    const tool = createAdminUsersTool();
+    await tool.load();
+    await flush();
+
+    tool.element.querySelector('.admin-user-action-btn').click();
+    expect(detailModal()).toBeTruthy();
+
+    tool.destroy();
+    await flush();
+
+    // Das Modal haengt an document.body — ohne destroy() bliebe es beim
+    // Seitenwechsel stehen, samt seinem Escape-Handler am document.
+    expect(detailModal()).toBeNull();
+    expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(1);
   });
 });
