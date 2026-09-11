@@ -1,4 +1,5 @@
 import { AppSettingsService } from './app-settings.service.js';
+import { formatScopeLabel } from './request-scope.js';
 
 const DISCORD_LIMITS = { title: 256, description: 4096, fieldValue: 1024 };
 const DESCRIPTION_PREVIEW_LENGTH = 300;
@@ -50,6 +51,7 @@ export function buildRequestEmbed(request, media = null) {
       { name: 'Angefragt von', value: truncate(request.username || 'Unbekannt', DISCORD_LIMITS.fieldValue), inline: true },
       { name: 'Typ', value: TMDB_TYPE_LABEL[request.tmdb_type] || request.tmdb_type, inline: true },
       { name: 'Jahr', value: year || 'Unbekannt', inline: true },
+      { name: 'Umfang', value: formatScopeLabel(request), inline: true },
       { name: 'Status', value: 'Offen', inline: true }
     ]
   };

@@ -16,11 +16,21 @@ class RequestsApiClient {
     });
   }
 
-  static async createRequest(tmdbId, tmdbType, note = '') {
+  // `scope` defaults to 'all' on the server, so a whole-title request can omit it.
+  static async createRequest(tmdbId, tmdbType, note = '', { scope, seasonNumber, episodeNumber } = {}) {
+    const body = { tmdbId, tmdbType, note };
+    if (scope) body.scope = scope;
+    if (seasonNumber !== undefined && seasonNumber !== null) body.seasonNumber = seasonNumber;
+    if (episodeNumber !== undefined && episodeNumber !== null) body.episodeNumber = episodeNumber;
+
     return request('/api/requests', {
       method: 'POST',
-      body: { tmdbId, tmdbType, note }
+      body
     });
+  }
+
+  static async getSeason(tmdbId, seasonNumber) {
+    return request(`/api/requests/season?tmdbId=${encodeURIComponent(tmdbId)}&seasonNumber=${encodeURIComponent(seasonNumber)}`);
   }
 
   static async getMyRequests() {

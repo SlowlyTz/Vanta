@@ -3,7 +3,7 @@ import { RequestsApi } from '../api/requests.api.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 import { PageHeading } from '../components/pageHeading.js';
-import { STATUS_MAP, loadRequestSearchState, getTmdbImageUrl } from './requests/helpers.js';
+import { STATUS_MAP, loadRequestSearchState, getTmdbImageUrl, getScopeLabel } from './requests/helpers.js';
 import { bindSearch } from './requests/search.js';
 
 export default function RequestsPage(params = {}) {
@@ -168,6 +168,7 @@ export default function RequestsPage(params = {}) {
             createElement('span', { className: 'request-card-year' }, date)
           ),
           createElement('h3', { className: 'request-card-title' }, req.title),
+          createElement('span', { className: 'request-card-scope' }, getScopeLabel(req)),
           createElement('span', { className: `request-status request-status-${statusInfo.cls}` }, statusInfo.label)
         )
       );
@@ -190,7 +191,7 @@ export default function RequestsPage(params = {}) {
       ctx.newRequestStatus.appendChild(createElement('h3', {}, 'Keine Ergebnisse'));
       ctx.newRequestStatus.appendChild(createElement('p', {}, `Nichts gefunden für "${restoredSearchState.query}".`));
     } else {
-      setTimeout(() => ctx.newRequestSearchInput.focus(), 100);
+      ctx.newRequestSearchInput.setAttribute('data-autofocus', '');
     }
   }
 

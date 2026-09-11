@@ -44,22 +44,6 @@
   color: var(--text-secondary);
 }
 
-.request-detail-seasons {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: var(--spacing-sm);
-  font-size: 0.85rem;
-}
-
-.request-detail-season {
-  color: #ef4444;
-}
-
-.request-detail-season.season-available {
-  color: #22c55e;
-}
-
 .request-detail-section-title {
   font-size: 1.3rem;
   font-weight: 700;
@@ -110,44 +94,232 @@
   text-overflow: ellipsis;
 }
 
-.request-detail-seasons-section {
-  margin-bottom: var(--spacing-xxl);
-}
-
-.request-detail-seasons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+/* ---------------------------------
+   5b. REQUEST SCOPE SELECTOR
+   Sits between the hero and the cast section: whole series, single
+   seasons or one episode.
+   --------------------------------- */
+.request-scope-section {
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
 }
 
-.request-detail-season-card {
-  background: var(--bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm);
+.request-scope-section .request-detail-section-title {
+  margin-bottom: 0;
+}
+
+.request-scope-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.request-scope-mode {
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.request-detail-season-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.request-detail-season-card img {
-  width: 100%;
-  aspect-ratio: 2/3;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
-}
-
-.request-detail-season-name {
-  margin-top: var(--spacing-sm);
-  font-size: 0.9rem;
+.request-scope-mode:hover {
+  border-color: rgba(255, 255, 255, 0.2);
   color: var(--text-primary);
 }
 
-.request-detail-season-episodes {
-  font-size: 0.8rem;
+.request-scope-mode.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--text-primary);
+}
+
+.request-scope-note {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.request-scope-note-error {
+  color: #ff7878;
+}
+
+.request-scope-season-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.request-scope-season {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.request-scope-season:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.request-scope-season.selected {
+  border-color: rgba(var(--abyss-accent), 0.75);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.request-scope-season:disabled,
+.request-scope-episode:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.request-scope-season-poster {
+  width: 54px;
+  min-height: 81px;
+  object-fit: cover;
+  background: var(--bg-tertiary);
+  flex: 0 0 auto;
+}
+
+.request-scope-season-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.request-scope-season-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-scope-season-meta {
+  font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
+.request-scope-season-state {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.request-scope-episode-seasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.request-scope-episode-season {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.request-scope-season-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: 11px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.request-scope-season-toggle:hover,
+.request-scope-season-toggle.expanded {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.request-scope-episodes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px 10px;
+}
+
+.request-scope-episode {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.request-scope-episode:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.request-scope-episode.selected {
+  border-color: rgba(var(--abyss-accent), 0.75);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.request-scope-episode-number {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.request-scope-episode-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-scope-mode:focus-visible,
+.request-scope-season:focus-visible,
+.request-scope-season-toggle:focus-visible,
+.request-scope-episode:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.request-scope-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.request-scope-hint {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
+.request-scope-hint-error {
+  color: #ff7878;
+}

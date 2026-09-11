@@ -35,3 +35,15 @@
 .request-reject:hover {
   background: rgba(239, 68, 68, 0.25);
 }
+
+/* Umfang der Anfrage in der Admin-Zeile; das Zeilenlayout selbst liegt in
+   css/components/admin-tools/requests-tool.css. */
+.admin-request-item-scope {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}

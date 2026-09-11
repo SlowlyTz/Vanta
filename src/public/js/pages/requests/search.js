@@ -16,14 +16,32 @@ export function bindSearch(ctx) {
     const tmdbId = item.id;
     const tmdbType = item.media_type;
 
-    const isDisabled = item.banned || item.exists || item.requested;
+    // Only a banned or already requested hit is inert. A title that is in the
+    // library stays clickable and jumps to its library detail view; without a
+    // Jellyfin id (an old result restored from sessionStorage) it falls back to
+    // the request detail route.
+    const isInLibrary = Boolean(item.exists) && !item.banned;
+    const isInert = Boolean(item.banned || (!isInLibrary && item.requested));
+    const targetHash = isInLibrary && item.jellyfinItemId
+      ? `#/item/${item.jellyfinItemId}`
+      : `#/request-detail/${tmdbType}/${tmdbId}`;
+
+    const openTarget = () => {
+      if (isInert) return;
+      window.location.hash = targetHash;
+    };
 
     const card = createElement('div', {
-      className: `request-card request-card-clickable${isDisabled ? ' request-card-disabled' : ''}`,
+      className: `request-card request-card-clickable${isInert ? ' request-card-disabled' : ''}${isInLibrary ? ' request-card-available' : ''}`,
       'data-tmdb-id': tmdbId,
-      onClick: () => {
-        if (isDisabled) return;
-        window.location.hash = `#/request-detail/${tmdbType}/${tmdbId}`;
+      role: isInert ? null : 'button',
+      tabindex: isInert ? null : '0',
+      'aria-disabled': isInert ? 'true' : null,
+      onClick: openTarget,
+      onKeydown: event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openTarget();
       }
     });
 
@@ -48,8 +66,8 @@ export function bindSearch(ctx) {
 
     if (item.banned) {
       statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-error' }, 'Gebannt'));
-    } else if (item.exists) {
-      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-available' }, 'In Mediathek verfügbar'));
+    } else if (isInLibrary) {
+      statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-available' }, 'In Bibliothek'));
     } else if (item.requested) {
       statusBadge.appendChild(createElement('span', { className: 'request-result-badge request-result-badge-requested' }, 'Bereits angefragt'));
     }

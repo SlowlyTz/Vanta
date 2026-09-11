@@ -1,6 +1,7 @@
 import db from '../db/database.js';
 import { TmdbService } from './tmdb.service.js';
 import { JellyfinCrossCheck } from './jellyfin-crosscheck.service.js';
+import { normalizeScopeSelection, toScopeInteger } from './request-scope.js';
 import fs from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -10,8 +11,8 @@ const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
 const BANNED_FILE = join(DB_DIR, 'banned.json');
 
 const createRequest = db.prepare(`
-  INSERT INTO requests (tmdb_id, tmdb_type, title, media_type, poster_path, status, seasons, note, user_id, username, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+  INSERT INTO requests (tmdb_id, tmdb_type, title, media_type, poster_path, status, seasons, request_scope, season_number, episode_number, note, user_id, username, created_at, updated_at)
+  VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const getRequestById = db.prepare('SELECT * FROM requests WHERE id = ?');
@@ -22,21 +23,39 @@ const deleteRequest = db.prepare('DELETE FROM requests WHERE id = ?');
 const updateRequestStatus = db.prepare('UPDATE requests SET status = ?, updated_at = ? WHERE id = ?');
 const getCachedMedia = db.prepare('SELECT * FROM tmdb_media WHERE tmdb_id = ? AND tmdb_type = ?');
 
+// Everything but a rejected row stands in the way of a new request — an already
+// imported season is on the shelf, so asking for it again is still a duplicate.
+const getBlockingRequests = db.prepare(`
+  SELECT request_scope, season_number, episode_number FROM requests
+  WHERE tmdb_id = ? AND tmdb_type = ? AND status != 'rejected'
+`);
+
 const emptyBannedList = () => ({ movies: [], series: [] });
 
+// The search route asks for the banned state twice per hit, up to 40 hits per keystroke.
+// Re-reading and re-parsing the file that often is pure waste; the cache is dropped again
+// whenever the file is written, and nothing outside this module writes it.
+let bannedListCache = null;
+
 const readBannedList = () => {
+  if (bannedListCache) return bannedListCache;
+
   if (!fs.existsSync(BANNED_FILE)) return emptyBannedList();
 
   try {
     const parsed = JSON.parse(fs.readFileSync(BANNED_FILE, 'utf8'));
-    return {
+    bannedListCache = {
       movies: Array.isArray(parsed.movies) ? parsed.movies : [],
       series: Array.isArray(parsed.series) ? parsed.series : []
     };
   } catch (error) {
+    // Never cache a failure: the cache is only dropped on a write, so one
+    // unreadable read would keep the list empty for the rest of the process.
     console.warn('[Banned Requests] Could not read banned.json:', error.message);
     return emptyBannedList();
   }
+
+  return bannedListCache;
 };
 
 const writeBannedList = (list) => {
@@ -45,6 +64,7 @@ const writeBannedList = (list) => {
   }
 
   fs.writeFileSync(BANNED_FILE, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  bannedListCache = null;
 };
 
 const getBannedBucket = (tmdbType) => tmdbType === 'tv' ? 'series' : 'movies';
@@ -58,12 +78,43 @@ const normalizeRequest = (request) => {
   if (!request) return null;
   return {
     ...request,
-    seasons: request.seasons ? JSON.parse(request.seasons) : []
+    seasons: request.seasons ? JSON.parse(request.seasons) : [],
+    request_scope: request.request_scope || 'all',
+    season_number: toScopeInteger(request.season_number),
+    episode_number: toScopeInteger(request.episode_number)
   };
 };
 
+// One row covers exactly one scope. `row` is an open request, the rest is the new one.
+const rowCovers = (row, scope, seasonNumber, episodeNumber) => {
+  const rowScope = row.request_scope || 'all';
+  if (rowScope === 'all') return true;
+  // A whole-title request subsumes every open season and episode, so any of
+  // them already answers it.
+  if (scope === 'all') return true;
+
+  const rowSeason = toScopeInteger(row.season_number);
+  if (rowSeason !== seasonNumber) return false;
+
+  // A season already on the pile also covers every episode inside it, while a
+  // single episode only ever collides with itself.
+  if (rowScope === 'season') return true;
+  return scope === 'episode' && toScopeInteger(row.episode_number) === episodeNumber;
+};
+
 class RequestsService {
-  static async create(userId, username, tmdbId, tmdbType, note = '') {
+  static async create(userId, username, tmdbId, tmdbType, note = '', selection = {}) {
+    const { scope, seasonNumber, episodeNumber, error: scopeError } = normalizeScopeSelection({
+      ...selection,
+      tmdbType
+    });
+
+    if (scopeError) {
+      const error = new Error(scopeError);
+      error.status = 400;
+      throw error;
+    }
+
     const details = tmdbType === 'tv'
       ? await TmdbService.getTvDetails(tmdbId)
       : await TmdbService.getMovieDetails(tmdbId);
@@ -80,7 +131,7 @@ class RequestsService {
       throw error;
     }
 
-    const exists = await this.exists(tmdbId, tmdbType);
+    const exists = await this.exists(tmdbId, tmdbType, { scope, seasonNumber, episodeNumber });
     if (exists) {
       const error = new Error('Diese Anfrage existiert bereits');
       error.status = 409;
@@ -88,6 +139,8 @@ class RequestsService {
     }
 
     const now = Date.now();
+    // Unchanged meaning: the TMDB season metadata of the whole series, never the
+    // user's selection — that lives in request_scope/season_number/episode_number.
     const seasonsJson = tmdbType === 'tv'
       ? JSON.stringify(details.seasons?.filter(s => s.season_number >= 0) || [])
       : '[]';
@@ -99,6 +152,9 @@ class RequestsService {
       details.media_type,
       details.poster_path,
       seasonsJson,
+      scope,
+      seasonNumber,
+      episodeNumber,
       note,
       userId,
       username,
@@ -114,11 +170,25 @@ class RequestsService {
     return { request, media: details };
   }
 
-  static async exists(tmdbId, tmdbType) {
-    const row = db.prepare(`
-      SELECT id FROM requests WHERE tmdb_id = ? AND tmdb_type = ? AND status != 'rejected'
-    `).get(tmdbId, tmdbType);
-    return !!row;
+  // Scope-aware duplicate check. Without a selection it answers the old question:
+  // is the whole title already requested?
+  static async exists(tmdbId, tmdbType, selection = {}) {
+    const scope = selection.scope || 'all';
+    const seasonNumber = toScopeInteger(selection.seasonNumber);
+    const episodeNumber = toScopeInteger(selection.episodeNumber);
+
+    const rows = getBlockingRequests.all(tmdbId, tmdbType);
+    return rows.some(row => rowCovers(row, scope, seasonNumber, episodeNumber));
+  }
+
+  // Every open scope for a title, across all users — the client cannot derive
+  // this from its own requests, but the duplicate rule is evaluated globally.
+  static async getOpenScopes(tmdbId, tmdbType) {
+    return getBlockingRequests.all(tmdbId, tmdbType).map(row => ({
+      request_scope: row.request_scope || 'all',
+      season_number: toScopeInteger(row.season_number),
+      episode_number: toScopeInteger(row.episode_number)
+    }));
   }
 
   static async getById(id) {
@@ -165,7 +235,13 @@ class RequestsService {
     }
 
     await this.updateStatus(id, 'rejected');
-    this.addToBannedList(request);
+
+    // Only a rejected whole title is banned for good. A rejected season or episode
+    // may be asked for again, so it must never reach banned.json.
+    if ((request.request_scope || 'all') === 'all') {
+      this.addToBannedList(request);
+    }
+
     return this.getById(id);
   }
 
@@ -173,18 +249,21 @@ class RequestsService {
     deleteRequest.run(id);
   }
 
-  static async crossCheck(userId, token, tmdbId, tmdbType) {
-    const details = tmdbType === 'tv'
+  // `media` lets a caller that already holds the TMDB payload skip the detail
+  // fetch entirely — the search route has up to 40 hits and would otherwise pull
+  // /tv/{id} plus /credits for every one of them. `withSeasons` skips the extra
+  // Jellyfin round-trip for callers that only need availability.
+  static async crossCheck(userId, token, tmdbId, tmdbType, { media = null, withSeasons = true } = {}) {
+    const details = media || (tmdbType === 'tv'
       ? await TmdbService.getTvDetails(tmdbId)
-      : await TmdbService.getMovieDetails(tmdbId);
+      : await TmdbService.getMovieDetails(tmdbId));
 
-    const check = await JellyfinCrossCheck.checkMediaExists(userId, token, details);
+    const check = await JellyfinCrossCheck.checkMediaExists(userId, token, details, tmdbType);
     check.banned = this.isBanned(tmdbId, tmdbType);
 
-    if (tmdbType === 'tv' && check.exists && check.jellyfinItems.length > 0) {
-      const seriesId = check.jellyfinItems[0].Id;
+    if (withSeasons && tmdbType === 'tv' && check.exists && check.jellyfinItemId) {
       const tmdbSeasons = details.seasons || [];
-      const seasonResults = await JellyfinCrossCheck.checkSeriesSeasons(userId, token, seriesId, tmdbSeasons);
+      const seasonResults = await JellyfinCrossCheck.checkSeriesSeasons(userId, token, check.jellyfinItemId, tmdbSeasons);
       return { ...check, seasons: seasonResults };
     }
 
@@ -212,13 +291,13 @@ class RequestsService {
     }
 
     const media = getCachedMedia.get(request.tmdb_id, request.tmdb_type);
-    list[bucket].push({
+    const entry = {
       name: request.title,
       releaseYear: getReleaseYear(media),
       tmdbId: Number(request.tmdb_id)
-    });
+    };
 
-    writeBannedList(list);
+    writeBannedList({ ...list, [bucket]: [...list[bucket], entry] });
   }
 }
 

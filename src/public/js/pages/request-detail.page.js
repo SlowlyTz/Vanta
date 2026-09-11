@@ -4,6 +4,8 @@ import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { DetailView } from '../components/detailView.js';
 import { openTrailerModal } from '../components/trailerModal.js';
+import { mergeSeasons, buildRequestCoverage } from './requests/helpers.js';
+import { createRequestScopeSelector } from './requests/scopeSelector.js';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const TMDB_BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
@@ -29,7 +31,9 @@ function normalizeRequestDetail(details, type) {
   };
 }
 
-function buildStatusContent({ crossCheck, isBanned, isRequested, type }) {
+// Series get their season availability from the scope selector below the hero,
+// so the hero only carries the title-level badges.
+function buildStatusContent({ crossCheck, isBanned, isRequested }) {
   const badges = createElement('div', { className: 'request-detail-badges' });
 
   if (crossCheck.exists) {
@@ -42,20 +46,7 @@ function buildStatusContent({ crossCheck, isBanned, isRequested, type }) {
     badges.appendChild(createElement('span', { className: 'request-detail-badge badge-requested' }, 'Bereits angefragt'));
   }
 
-  const nodes = [];
-  if (badges.children.length > 0) nodes.push(badges);
-
-  if (crossCheck.exists && type === 'tv' && crossCheck.seasons && crossCheck.seasons.length > 0) {
-    const seasonList = createElement('div', { className: 'request-detail-seasons' });
-    crossCheck.seasons.forEach(s => {
-      seasonList.appendChild(createElement('div', {
-        className: `request-detail-season${s.exists ? ' season-available' : ' season-missing'}`
-      }, `${s.name} ${s.exists ? '(vorhanden)' : '(nicht vorhanden)'}`));
-    });
-    nodes.push(seasonList);
-  }
-
-  return nodes.length > 0 ? nodes : null;
+  return badges.children.length > 0 ? [badges] : null;
 }
 
 function buildCastSection(cast) {
@@ -87,45 +78,10 @@ function buildCastSection(cast) {
   return section;
 }
 
-function buildSeasonsSection(seasons) {
-  const relevant = (seasons || []).filter(s => s.season_number >= 0);
-  if (relevant.length === 0) return null;
-
-  const section = createElement('div', { className: 'request-detail-seasons-section' },
-    createElement('h3', { className: 'request-detail-section-title' }, 'Staffeln')
-  );
-  const grid = createElement('div', { className: 'request-detail-seasons-grid' });
-
-  relevant.forEach(season => {
-    const card = createElement('div', { className: 'request-detail-season-card' });
-    if (season.poster_path) {
-      card.appendChild(createElement('img', {
-        src: `${TMDB_IMAGE_BASE}${season.poster_path}`,
-        alt: season.name,
-        loading: 'lazy',
-        onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
-      }));
-    }
-    card.appendChild(createElement('div', { className: 'request-detail-season-name' }, season.name));
-    card.appendChild(createElement('div', { className: 'request-detail-season-episodes' }, `${season.episode_count || 0} Folgen`));
-    grid.appendChild(card);
-  });
-
-  section.appendChild(grid);
-  return section;
-}
-
 export default function RequestDetailPage({ type, id }) {
   const container = createElement('div', { className: 'page-container request-detail-page' });
 
-  const isAlreadyRequested = async (tmdbId, tmdbType) => {
-    try {
-      const requests = await RequestsApi.getMyRequests();
-      return requests.some(r => r.tmdb_id === tmdbId && r.tmdb_type === tmdbType && r.status !== 'rejected');
-    } catch {
-      return false;
-    }
-  };
+  const tmdbId = parseInt(id, 10);
 
   const loadDetails = async () => {
     container.innerHTML = '';
@@ -134,14 +90,21 @@ export default function RequestDetailPage({ type, id }) {
 
     try {
       const [details, crossCheck] = await Promise.all([
-        RequestsApi.getDetails(parseInt(id), type),
-        RequestsApi.crossCheck(parseInt(id), type).catch(() => ({ exists: false, seasons: [] }))
+        RequestsApi.getDetails(tmdbId, type),
+        RequestsApi.crossCheck(tmdbId, type)
+          .catch(() => ({ exists: false, seasons: [], requestedScopes: [] }))
       ]);
+
+      // Der Cross-Check liefert die offenen Anfragen ALLER Nutzer für diesen
+      // Titel — dieselbe Menge, gegen die der Server das Duplikat prüft.
+      const coverage = buildRequestCoverage(crossCheck.requestedScopes || []);
 
       const normalized = normalizeRequestDetail(details, type);
       const isBanned = Boolean(details.banned || crossCheck.banned);
-      const isRequested = Boolean(details.requested) || await isAlreadyRequested(parseInt(id), type);
-      const canRequest = !isRequested && !crossCheck.exists && !isBanned;
+      const isRequested = Boolean(details.requested) || coverage.all;
+      // Series are requested through the scope selector below the hero, which
+      // also covers the partially available case; movies keep the single action.
+      const canRequest = type !== 'tv' && !isRequested && !crossCheck.exists && !isBanned;
 
       const handleRequest = async (event) => {
         const btn = event.currentTarget;
@@ -149,7 +112,7 @@ export default function RequestDetailPage({ type, id }) {
         btn.setAttribute('aria-busy', 'true');
         btn.textContent = 'Wird angefragt...';
         try {
-          await RequestsApi.createRequest(parseInt(id), type, '');
+          await RequestsApi.createRequest(tmdbId, type, '', { scope: 'all' });
           btn.textContent = 'Angefragt';
           btn.classList.remove('btn-primary');
           btn.classList.add('btn-requested');
@@ -186,21 +149,35 @@ export default function RequestDetailPage({ type, id }) {
         }
       ].filter(Boolean);
 
-      const statusContent = buildStatusContent({ crossCheck, isBanned, isRequested, type });
+      const statusContent = buildStatusContent({ crossCheck, isBanned, isRequested });
       const castSection = buildCastSection(details.cast);
-      const seasonsSection = type === 'tv' ? buildSeasonsSection(details.seasons) : null;
+
+      const scopeSelector = type === 'tv'
+        ? createRequestScopeSelector({
+          tmdbId,
+          seasons: mergeSeasons(details.seasons, crossCheck.seasons),
+          coverage,
+          seriesExists: Boolean(crossCheck.exists),
+          banned: isBanned
+        })
+        : null;
 
       const detailView = DetailView({
         item: normalized,
         actions,
         castSection,
-        seasonsSection,
         statusContent
       });
 
       container.innerHTML = '';
       while (detailView.firstChild) {
         container.appendChild(detailView.firstChild);
+      }
+
+      // The scope selector belongs between the hero and the cast section.
+      const hero = container.querySelector('.detail-page');
+      if (scopeSelector && hero) {
+        container.insertBefore(scopeSelector.element, hero.nextSibling);
       }
 
     } catch (error) {

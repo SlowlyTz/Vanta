@@ -1,6 +1,6 @@
 import { createElement } from '../../../utils/dom.js';
 import { RequestsApi } from '../../../api/requests.api.js';
-import { STATUS_MAP, getTmdbImageUrl } from '../../../pages/requests/helpers.js';
+import { STATUS_MAP, getTmdbImageUrl, getScopeLabel, getRequestScope } from '../../../pages/requests/helpers.js';
 
 const TYPE_LABELS = { movie: 'Film', tv: 'Serie' };
 
@@ -11,10 +11,10 @@ function formatRequestDate(value) {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Eine Zeile in der Admin-Anfragenliste: Poster-Thumbnail, Titel, Nutzer, Typ
-// und Anfragedatum. Im "Alle"-Tab (showStatus) kommt zusätzlich ein
-// Status-Badge dazu; Genehmigen/Ablehnen gibt es nur, solange die Anfrage
-// noch offen ist.
+// Eine Zeile in der Admin-Anfragenliste: Poster-Thumbnail, Titel, Nutzer, Typ,
+// Umfang der Anfrage (komplette Serie / Staffel / Folge) und Anfragedatum.
+// Im "Alle"-Tab (showStatus) kommt zusätzlich ein Status-Badge dazu;
+// Genehmigen/Ablehnen gibt es nur, solange die Anfrage noch offen ist.
 export function createAdminRequestItem(request, { onChange, onNotify, showStatus = false } = {}) {
   const posterUrl = getTmdbImageUrl(request.poster_path, 'w154');
   const poster = posterUrl
@@ -32,6 +32,7 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
   const meta = createElement('div', { className: 'admin-request-item-meta' },
     createElement('span', { className: 'admin-request-item-user' }, request.username),
     createElement('span', { className: 'admin-request-item-type' }, typeLabel),
+    createElement('span', { className: 'admin-request-item-scope' }, getScopeLabel(request)),
     dateLabel ? createElement('span', { className: 'admin-request-item-date' }, dateLabel) : null
   );
 
@@ -74,16 +75,25 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
       }
     }, 'Genehmigen');
 
+    // Nur eine abgelehnte Gesamtanfrage sperrt den Titel; eine einzelne Staffel
+    // oder Folge kann danach erneut angefragt werden (requests.service.js).
+    const bansTitle = getRequestScope(request) === 'all';
+    const rejectHint = bansTitle
+      ? 'Anfrage ablehnen — der Titel wandert danach auf die Sperrliste und kann nicht erneut angefragt werden'
+      : `Anfrage ablehnen — betrifft nur ${getScopeLabel(request)}, der Titel bleibt anfragbar`;
+
     const rejectBtn = createElement('button', {
       className: 'request-admin-action request-reject',
       type: 'button',
-      title: 'Anfrage ablehnen — der Titel wandert danach auf die Sperrliste und kann nicht erneut angefragt werden',
+      title: rejectHint,
       onClick: async (e) => {
         e.stopPropagation();
         setBusy(true);
         try {
           await RequestsApi.rejectRequest(request.id);
-          onNotify?.(`„${request.title}“ abgelehnt — landet auf der Sperrliste und kann nicht erneut angefragt werden`, 'success');
+          onNotify?.(bansTitle
+            ? `„${request.title}“ abgelehnt — landet auf der Sperrliste und kann nicht erneut angefragt werden`
+            : `${getScopeLabel(request)} von „${request.title}“ abgelehnt — kann erneut angefragt werden`, 'success');
           onChange?.();
         } catch (error) {
           console.error('Failed to reject request:', error);
