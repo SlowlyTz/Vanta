@@ -36,10 +36,11 @@ COOKIE_SECURE=false
 TMDB_API_KEY=
 ```
 
-Build the player once:
+Build the player and the opening scene once:
 
 ```bash
 npm run player:build
+npm run intro:build
 ```
 
 Start the development server:
@@ -52,6 +53,7 @@ Production start:
 
 ```bash
 npm run player:build
+npm run intro:build
 npm start
 ```
 
@@ -96,6 +98,7 @@ VANTA adds app-level workflows and playback features on top of Jellyfin:
 - **Request moderation**: admin approval/rejection flow for requested media, including local request and rejection history.
 - **Custom VANTA player**: Vite-built streaming player with custom controls, quality selection, audio/subtitle menus, episode switching, Jellyfin playback reporting, and backend-resolved HLS/playback URLs.
 - **Mobile-first player behavior**: custom fullscreen/orientation flow intended to keep VANTA controls available instead of falling back to the native iOS video player.
+- **Opening scene**: a three.js particle animation of the VANTA logo covers every page load before anything of the app is visible. It plays at most once per ten minutes per browser (`localStorage` key `vanta.intro.lastPlayedAt`) and is skipped on `#/player/…` and `#/watch-party/…` deep links. Source in `src/intro/`, built to `src/public/vendor/intro/`.
 - **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata.
 - **Publisher/studio hubs**: curated publisher views for studios and services such as Disney, Warner Bros., Netflix, Apple TV, Prime Video, and HBO.
 - **Admin user tools**: manage Jellyfin users from VANTA, including user details, password changes, library access, local bans, and VANTA-specific stream limits.
@@ -131,5 +134,5 @@ Both schedules can be changed under Admin > Einstellungen > Katalog, where a run
 - In production, `SESSION_SECRET` must be set to a long, random value.
 - If VANTA is served behind HTTPS, set `COOKIE_SECURE=true`.
 - `TMDB_API_KEY` and `JELLYFIN_API_KEY` are required; the server will not start without them. Create the Jellyfin key under Dashboard > API Keys.
-- After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date.
+- After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date; the same goes for `src/intro/` and `npm run intro:build`.
 - VANTA is not a full Jellyfin Web replacement. Its focus is a custom, streamlined streaming and media browsing experience.
