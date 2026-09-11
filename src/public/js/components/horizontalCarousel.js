@@ -88,19 +88,6 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
     });
   };
 
-  const handleWheel = (event) => {
-    if (getMaxScroll() <= 5) return;
-
-    const horizontalIntent = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-    const shiftedVerticalIntent = event.shiftKey && Math.abs(event.deltaY) > 0;
-
-    if (!horizontalIntent && !shiftedVerticalIntent) return;
-
-    event.preventDefault();
-    listContainer.scrollLeft += horizontalIntent ? event.deltaX : event.deltaY;
-    requestArrowUpdate();
-  };
-
   const headerChildren = [
     createElement('h3', { className: 'carousel-title-text' }, title)
   ];
@@ -132,7 +119,6 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
   );
 
   listContainer.addEventListener('scroll', requestArrowUpdate, { passive: true });
-  listContainer.addEventListener('wheel', handleWheel, { passive: false });
 
   if (typeof ResizeObserver !== 'undefined') {
     const resizeObserver = new ResizeObserver(requestArrowUpdate);
