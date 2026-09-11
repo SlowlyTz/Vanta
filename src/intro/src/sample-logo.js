@@ -11,17 +11,17 @@ const extend = (box, x, y) => {
   if (y > box.maxY) box.maxY = y;
 };
 
-// The V and the word are separated by the widest run of empty columns that
-// lies between painted ones. Returns the column where the second group starts.
-export function findSplitColumn(columns) {
-  let best = { start: -1, width: 0 };
+// The V is the first painted run of columns; the word starts after the first
+// gap behind it that is wide enough not to be an anti-aliasing artefact (the
+// gaps between the letters are wider still, so "widest gap" would cut the
+// word instead). Returns the column where the word starts.
+export function findSplitColumn(columns, minGap = Math.max(1, Math.floor(columns.length * 0.01))) {
   let runStart = -1;
   let seenPaint = false;
 
   for (let x = 0; x < columns.length; x++) {
-    const painted = columns[x] > 0;
-    if (painted) {
-      if (seenPaint && runStart >= 0 && x - runStart > best.width) best = { start: runStart, width: x - runStart };
+    if (columns[x] > 0) {
+      if (seenPaint && runStart >= 0 && x - runStart >= minGap) return x;
       runStart = -1;
       seenPaint = true;
     } else if (runStart < 0) {
@@ -29,7 +29,7 @@ export function findSplitColumn(columns) {
     }
   }
 
-  return best.width > 0 ? best.start + best.width : columns.length;
+  return columns.length;
 }
 
 export function sampleLogo(image, { count, random = Math.random, alphaThreshold = 40 } = {}) {

@@ -18,8 +18,12 @@ function bitmap() {
 }
 
 describe('findSplitColumn', () => {
-  it('returns the column after the widest gap between painted runs', () => {
-    expect(findSplitColumn([0, 1, 1, 0, 0, 0, 1, 1, 0, 1])).toBe(6);
+  it('returns the column after the first gap behind the first painted run', () => {
+    expect(findSplitColumn([0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1])).toBe(5);
+  });
+
+  it('ignores gaps narrower than the minimum', () => {
+    expect(findSplitColumn([1, 1, 0, 1, 1, 0, 0, 0, 1], 2)).toBe(8);
   });
 
   it('ignores leading and trailing empty columns', () => {
