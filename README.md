@@ -30,6 +30,7 @@ Important `.env` values:
 PORT=3000
 NODE_ENV=development
 JELLYFIN_BASE_URL=http://localhost:8096
+JELLYFIN_API_KEY=
 SESSION_SECRET=replace-with-a-long-random-secret
 COOKIE_SECURE=false
 TMDB_API_KEY=
@@ -108,17 +109,27 @@ VANTA stores runtime data under `db/`. This directory is intentionally git-ignor
 
 Relevant data files:
 
-- `db/requests.db` for media requests and the TMDB cache
+- `db/requests.db` for media requests, the TMDB cache and app settings
+- `db/catalog.db` for the local catalogue mirror (see below)
 - `db/banned.json` for rejected media requests
 - `db/user/banned.json` for banned users
 - `db/user/settings.json` for VANTA-specific user rules, such as maximum concurrent streams
 
 Jellyfin remains the source of truth for real user accounts, passwords, libraries, and admin permissions. VANTA only adds local rules that it enforces during login and playback.
 
+### Catalogue mirror
+
+Browsing (home page, library, genres, publishers, search, trailer scroller) is served from a local SQLite mirror of all movies and series instead of live Jellyfin queries, so those pages load without waiting on the Jellyfin server. The mirror is filled on first start and kept fresh automatically:
+
+- an update run every few minutes adds new and changed titles (default: every 10 minutes)
+- a full run once a day also removes titles that disappeared from Jellyfin (default: 03:00)
+
+Both schedules can be changed under Admin > Einstellungen > Katalog, where a run can also be started by hand. The sync authenticates with `JELLYFIN_API_KEY`; per-user library access is still applied on every request. Playback, resume state, favourites and item details always come live from Jellyfin. If the mirror is empty, VANTA falls back to live Jellyfin queries.
+
 ## Important Notes
 
 - In production, `SESSION_SECRET` must be set to a long, random value.
 - If VANTA is served behind HTTPS, set `COOKIE_SECURE=true`.
-- `TMDB_API_KEY` is required; the server will not start without it.
+- `TMDB_API_KEY` and `JELLYFIN_API_KEY` are required; the server will not start without them. Create the Jellyfin key under Dashboard > API Keys.
 - After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date.
 - VANTA is not a full Jellyfin Web replacement. Its focus is a custom, streamlined streaming and media browsing experience.
