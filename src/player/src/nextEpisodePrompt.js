@@ -22,6 +22,9 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   let timeoutId = null;
   let animationFrameId = null;
   let startedAt = 0;
+  let countdownFrom = 0;
+  let countdownTo = 0;
+  let readCurrentTime = null;
   let active = null;
   let interactive = true;
   let lastInputWasKeyboard = false;
@@ -53,6 +56,11 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   seriesEl.className = 'vanta-player-next-episode-series';
   seriesEl.hidden = true;
 
+  const countdown = document.createElement('span');
+  countdown.className = 'vanta-player-next-episode-countdown';
+  countdown.setAttribute('aria-live', 'off');
+  countdown.hidden = true;
+
   const message = document.createElement('p');
   message.className = 'vanta-player-next-episode-message';
   message.hidden = true;
@@ -70,7 +78,7 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   dismissButton.textContent = 'Abbrechen';
 
   actions.append(dismissButton, confirmButton);
-  body.append(kicker, code, titleEl, seriesEl, message, actions);
+  body.append(kicker, code, titleEl, seriesEl, countdown, message, actions);
   element.append(media, body);
   root.appendChild(element);
 
@@ -78,16 +86,42 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
     confirmButton.style.setProperty('--next-episode-progress', String(Math.min(1, Math.max(0, progress))));
   }
 
-  function tick(now) {
-    const progress = (now - startedAt) / countdownMs;
-    setProgress(progress);
+  function setRemaining(seconds) {
+    if (!Number.isFinite(seconds)) {
+      countdown.hidden = true;
+      countdown.textContent = '';
+      return;
+    }
+    countdown.textContent = `Startet in ${Math.max(0, Math.ceil(seconds))} s`;
+    countdown.hidden = false;
+  }
 
-    if (progress >= 1) {
+  function tick(now) {
+    const elapsed = now - startedAt;
+    setProgress(elapsed / countdownMs);
+    setRemaining((countdownMs - elapsed) / 1000);
+
+    if (elapsed / countdownMs >= 1) {
       confirm();
       return;
     }
 
     animationFrameId = window.requestAnimationFrame(tick);
+  }
+
+  // Countdown driven by media time rather than wall-clock time, so pausing the
+  // video pauses the countdown and seeking backwards pushes the skip back out.
+  function tickMediaTime() {
+    const remaining = countdownTo - readCurrentTime();
+    setProgress(1 - remaining / (countdownTo - countdownFrom));
+    setRemaining(remaining);
+
+    if (Number.isFinite(remaining) && remaining <= 0) {
+      confirm();
+      return;
+    }
+
+    animationFrameId = window.requestAnimationFrame(tickMediaTime);
   }
 
   function clearTimers() {
@@ -107,8 +141,10 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   function hide() {
     clearTimers();
     active = null;
+    readCurrentTime = null;
     element.hidden = true;
     setProgress(0);
+    setRemaining(NaN);
 
     const focusIsInside = document.activeElement && element.contains(document.activeElement);
     if (focusIsInside && previouslyFocused?.isConnected) {
@@ -117,8 +153,36 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
     previouslyFocused = null;
   }
 
+  function startCountdown(skipAt, getCurrentTime) {
+    const currentTime = typeof getCurrentTime === 'function' ? getCurrentTime() : NaN;
+
+    if (Number.isFinite(skipAt) && Number.isFinite(currentTime)) {
+      // Already past the auto-advance point (e.g. the viewer seeked into the last
+      // seconds): show the overlay, but never skip without a visible countdown.
+      if (skipAt <= currentTime) {
+        setRemaining(NaN);
+        return;
+      }
+      countdownFrom = currentTime;
+      countdownTo = skipAt;
+      readCurrentTime = getCurrentTime;
+      setRemaining(skipAt - currentTime);
+      animationFrameId = window.requestAnimationFrame(tickMediaTime);
+      return;
+    }
+
+    startedAt = performance.now();
+    setRemaining(countdownMs / 1000);
+    animationFrameId = window.requestAnimationFrame(tick);
+  }
+
   function show(next, options = {}) {
-    const { interactive: nextInteractive = true, message: infoMessage = null } = options;
+    const {
+      interactive: nextInteractive = true,
+      message: infoMessage = null,
+      skipAt = null,
+      getCurrentTime = null
+    } = options;
     clearTimers();
     active = next;
     interactive = nextInteractive;
@@ -152,10 +216,10 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
       message.hidden = true;
       confirmButton.hidden = false;
       setProgress(0);
-      startedAt = performance.now();
-      animationFrameId = window.requestAnimationFrame(tick);
+      startCountdown(skipAt, getCurrentTime);
     } else {
       confirmButton.hidden = true;
+      setRemaining(NaN);
       message.textContent = infoMessage || VIEWER_MESSAGE;
       message.hidden = false;
     }

@@ -1,7 +1,33 @@
-export function shouldShowNextEpisodePrompt({ currentTime, duration, threshold = 0.9 }) {
-  if (!Number.isFinite(duration) || duration <= 0) return false;
+// Progress at which the "next episode" overlay appears.
+export const NEXT_EPISODE_PROMPT_THRESHOLD = 0.97;
+// Progress at which playback auto-advances to the next episode.
+export const NEXT_EPISODE_SKIP_THRESHOLD = 0.985;
+// The overlay is always visible for at least this long before the auto-advance.
+// On short episodes the gap between the two thresholds is smaller than this, so
+// the overlay is pulled forward rather than the skip being pushed back.
+export const NEXT_EPISODE_MIN_PROMPT_SECONDS = 25;
+
+export function computeNextEpisodeTimings({
+  duration,
+  promptThreshold = NEXT_EPISODE_PROMPT_THRESHOLD,
+  skipThreshold = NEXT_EPISODE_SKIP_THRESHOLD,
+  minPromptSeconds = NEXT_EPISODE_MIN_PROMPT_SECONDS
+} = {}) {
+  if (!Number.isFinite(duration) || duration <= 0) return null;
+
+  const skipAt = duration * skipThreshold;
+  const promptAt = Math.max(0, Math.min(duration * promptThreshold, skipAt - minPromptSeconds));
+
+  return { promptAt, skipAt };
+}
+
+export function shouldShowNextEpisodePrompt({ currentTime, duration, ...thresholds }) {
   if (!Number.isFinite(currentTime)) return false;
-  return currentTime / duration >= threshold;
+
+  const timings = computeNextEpisodeTimings({ duration, ...thresholds });
+  if (!timings) return false;
+
+  return currentTime >= timings.promptAt;
 }
 
 export function canStartNextEpisode(watchParty) {

@@ -64,6 +64,17 @@
   white-space: nowrap;
 }
 
+.vanta-player-next-episode-countdown {
+  margin-top: 4px;
+  color: rgb(255 255 255 / 0.62);
+  font: 600 0.72rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-player-next-episode-countdown[hidden] {
+  display: none;
+}
+
 .vanta-player-next-episode-message {
   margin: 6px 0 2px;
   color: rgb(255 255 255 / 0.72);
