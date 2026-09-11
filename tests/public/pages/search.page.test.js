@@ -55,6 +55,24 @@ describe('SearchPage', () => {
     expect(container.querySelector('.search-empty-state p').textContent).toBe('Tippe den Namen eines Films oder einer Serie in das Suchfeld ein.');
   });
 
+  it('markiert das Suchfeld für den Autofokus des Routers', () => {
+    const container = SearchPage();
+    const input = container.querySelector('.search-input-field');
+
+    expect(input.hasAttribute('data-autofocus')).toBe(true);
+  });
+
+  it('markiert das Suchfeld nicht, wenn die Route bereits eine Suche mitbringt', () => {
+    window.location.hash = '#/search?q=matrix';
+    MediaApi.search.mockResolvedValue([]);
+
+    const container = SearchPage();
+    const input = container.querySelector('.search-input-field');
+
+    expect(input.value).toBe('matrix');
+    expect(input.hasAttribute('data-autofocus')).toBe(false);
+  });
+
   it('ignores a stale response that resolves after a newer search has started', async () => {
     const container = SearchPage();
 

@@ -93,17 +93,9 @@ export default function SearchPage() {
     placeholder: 'Filme oder Serien suchen...',
     value: initialQuery,
     onInput: handleInput,
-    autocomplete: 'off'
+    autocomplete: 'off',
+    'data-autofocus': !initialQuery
   });
-
-  if (!initialQuery) {
-    setTimeout(() => {
-      if (!window.matchMedia('(max-width: 768px)').matches) return;
-      try {
-        searchInput.focus();
-      } catch (_) {}
-    }, 100);
-  }
 
   const searchWrapper = createElement('div', { className: 'search-container' },
     createElement('div', { className: 'search-input-wrapper' }, searchInput),
