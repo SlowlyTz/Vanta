@@ -3,8 +3,21 @@ import { COMMON_ITEM_FIELDS, TRAILER_ITEM_FIELDS } from './fields.js';
 import { getFeaturedPublisherById, matchFeaturedPublisher } from '../../../public/js/constants/featuredPublishers.js';
 import { ItemsService } from './items.service.js';
 import { findNextEpisode } from '../../../player/src/nextEpisode.js';
+import { getActiveCatalogReader } from '../catalog/reader.js';
+import { getVisibleLibraryIds } from '../catalog/visibility.js';
 
 const NEXT_EPISODE_PROGRESS_THRESHOLD = 90;
+
+// Browsing reads come from the local catalogue mirror whenever it is filled;
+// Jellyfin stays the fallback for a fresh install and for everything per-user
+// (resume, playback state). Returns null when the mirror cannot answer.
+async function fromCatalog(userId, token, read) {
+  const reader = getActiveCatalogReader();
+  if (!reader) return null;
+
+  const libraryIds = await getVisibleLibraryIds(userId, token);
+  return read(reader, libraryIds);
+}
 
 function getItems(userId, token, params = {}) {
   return jellyfinJson(`/Users/${userId}/Items`, {
@@ -28,11 +41,12 @@ function shouldPromoteContinueWatchingEpisode(item) {
 
 async function buildEpisodeContext(userId, token, seriesId) {
   const seasons = await ItemsService.getSeasons(userId, token, seriesId);
-  const episodesBySeason = {};
-
-  for (const season of seasons) {
-    episodesBySeason[season.Id] = await ItemsService.getEpisodes(userId, token, seriesId, season.Id);
-  }
+  // One round-trip per season, all at once: sequentially a six-season show
+  // costs seven Jellyfin round-trips before the resume row can render.
+  const episodeLists = await Promise.all(
+    seasons.map(season => ItemsService.getEpisodes(userId, token, seriesId, season.Id))
+  );
+  const episodesBySeason = Object.fromEntries(seasons.map((season, index) => [season.Id, episodeLists[index]]));
 
   return { seasons, episodesBySeason };
 }
@@ -78,6 +92,10 @@ export class LibraryService {
   }
 
   static async getMovies(userId, token) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.newest({ type: 'Movie', libraryIds, limit: 24 }));
+    if (mirrored) return mirrored;
+
     const data = await getItems(userId, token, {
       IncludeItemTypes: 'Movie',
       Recursive: 'true',
@@ -89,6 +107,10 @@ export class LibraryService {
   }
 
   static async getSeries(userId, token) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.newest({ type: 'Series', libraryIds, limit: 24 }));
+    if (mirrored) return mirrored;
+
     const data = await getItems(userId, token, {
       IncludeItemTypes: 'Series',
       Recursive: 'true',
@@ -100,6 +122,10 @@ export class LibraryService {
   }
 
   static async search(userId, token, query) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.search({ query, libraryIds, limit: 50 }));
+    if (mirrored) return mirrored;
+
     const data = await getItems(userId, token, {
       SearchTerm: query,
       IncludeItemTypes: 'Movie,Series',
@@ -110,6 +136,10 @@ export class LibraryService {
   }
 
   static async getGenres(userId, token, type) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.genres({ type, libraryIds }));
+    if (mirrored) return mirrored;
+
     const data = await jellyfinJson('/Genres', {
       token,
       query: { userId, IncludeItemTypes: type, Recursive: 'true' }
@@ -118,6 +148,10 @@ export class LibraryService {
   }
 
   static async getStudios(userId, token) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.studios({ libraryIds }));
+    if (mirrored) return mirrored;
+
     const data = await jellyfinJson('/Studios', {
       token,
       query: {
@@ -131,6 +165,10 @@ export class LibraryService {
   }
 
   static async getLibrary(userId, token, type, genre = null, studio = null, page = 1, limit = 50) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.page({ type, libraryIds, genre, studios: studio ? [studio] : [], page, limit }));
+    if (mirrored) return mirrored;
+
     const types = type.split(',').map(t => t.trim()).filter(Boolean);
 
     if (types.length <= 1) {
@@ -176,6 +214,10 @@ export class LibraryService {
       return { items: [], totalRecordCount: 0 };
     }
 
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.page({ type, libraryIds, genre, studios: studioNames, page, limit }));
+    if (mirrored) return mirrored;
+
     const types = type.split(',').map(t => t.trim()).filter(Boolean);
     const requests = [];
 
@@ -203,6 +245,10 @@ export class LibraryService {
   }
 
   static async getAllMoviesAndSeries(userId, token, limit = 2000) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
+      reader.all({ libraryIds }));
+    if (mirrored) return mirrored;
+
     const data = await getItems(userId, token, {
       IncludeItemTypes: 'Movie,Series',
       Recursive: 'true',
