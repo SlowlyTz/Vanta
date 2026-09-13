@@ -29,15 +29,17 @@ const series = (id, overrides = {}) => ({
   Id: id, Type: 'Series', Name: `Serie ${id}`, LibraryId: 'lib-series', Genres: ['Komödie'], ...overrides
 });
 
-function setup(items = [], libraries = LIBRARIES, episodeCount = 1444) {
+function setup(items = [], libraries = LIBRARIES, episodeCount = 1444, options = {}) {
   const db = createCatalogDb({ SQL });
   const snapshot = { libraries, items, episodeCount };
   const source = { fetchAll: vi.fn(async () => snapshot) };
   let clock = 1_000;
   const log = { warn: vi.fn(), error: vi.fn(), info: vi.fn() };
-  const sync = createCatalogSync({ db, source, now: () => (clock += 1), log });
+  const sync = createCatalogSync({ db, source, now: () => (clock += 1), log, ...options });
   return { db, source, sync, snapshot, log };
 }
+
+const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
 const rows = (db, sql, ...params) => db.prepare(sql).all(...params);
 
@@ -284,6 +286,56 @@ describe('CatalogSync', () => {
       source.fetchAll.mockRejectedValueOnce(new Error('down'));
       await sync.runUpdate();
       expect(log.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('afterRun hook', () => {
+    it('receives the added and updated items after the summary was logged', async () => {
+      const afterRun = vi.fn();
+      const { sync, snapshot, log } = setup([movie('m1'), series('s1')], LIBRARIES, 1444, { afterRun });
+
+      const record = await sync.runFull();
+      await flush();
+
+      expect(afterRun).toHaveBeenCalledTimes(1);
+      expect(afterRun.mock.calls[0][0].record).toBe(record);
+      expect(afterRun.mock.calls[0][0].items.map(item => item.Id)).toEqual(['m1', 's1']);
+      expect(log.info.mock.invocationCallOrder[0]).toBeLessThan(afterRun.mock.invocationCallOrder[0]);
+
+      snapshot.items = [movie('m1', { Name: 'Neu' }), series('s1'), movie('m2')];
+      await sync.runUpdate();
+      await flush();
+
+      expect(afterRun).toHaveBeenCalledTimes(2);
+      expect(afterRun.mock.calls[1][0].items.map(item => item.Id)).toEqual(['m1', 'm2']);
+    });
+
+    it('is called with an empty list when nothing changed and not at all on a failed run', async () => {
+      const afterRun = vi.fn();
+      const { sync, source } = setup([movie('m1')], LIBRARIES, 1444, { afterRun });
+
+      await sync.runFull();
+      await sync.runUpdate();
+      await flush();
+      expect(afterRun).toHaveBeenCalledTimes(2);
+      expect(afterRun.mock.calls[1][0].items).toEqual([]);
+
+      source.fetchAll.mockRejectedValueOnce(new Error('down'));
+      await sync.runUpdate();
+      await flush();
+      expect(afterRun).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not let a failing hook affect the run', async () => {
+      const afterRun = vi.fn(async () => { throw new Error('Cache kaputt'); });
+      const { sync, log } = setup([movie('m1')], LIBRARIES, 1444, { afterRun });
+
+      const record = await sync.runFull();
+      await flush();
+
+      expect(record.error).toBeNull();
+      expect(sync.isRunning()).toBe(false);
+      expect(log.warn).toHaveBeenCalledWith('[CatalogSync] afterRun fehlgeschlagen: Cache kaputt');
     });
   });
 });

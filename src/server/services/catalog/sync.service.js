@@ -49,7 +49,9 @@ const toRow = (item, syncedAt) => ({
 
 const ROW_COLUMNS = Object.keys(toRow({ Id: '', Type: 'Movie', Name: '' }, 0));
 
-export function createCatalogSync({ db, source, now = Date.now, log = console }) {
+// `afterRun` receives the record and the items a successful run added or
+// updated; it runs detached so a slow hook (image warm-up) never delays the sync.
+export function createCatalogSync({ db, source, now = Date.now, log = console, afterRun = null }) {
   const statements = {
     existing: db.prepare('SELECT id, data FROM catalog_items'),
     upsert: db.prepare(`
@@ -124,6 +126,7 @@ export function createCatalogSync({ db, source, now = Date.now, log = console })
     const known = new Map(statements.existing.all().map(row => [row.id, row.data]));
     const seen = new Set();
     const stats = { added: 0, updated: 0, unchanged: 0, removed: 0, removalSkipped: null };
+    const changed = [];
 
     db.transaction(() => {
       statements.clearLibraries.run();
@@ -142,6 +145,7 @@ export function createCatalogSync({ db, source, now = Date.now, log = console })
         else stats.updated++;
 
         writeItem(item, syncedAt);
+        changed.push(item);
       }
 
       if (removeMissing) {
@@ -159,7 +163,14 @@ export function createCatalogSync({ db, source, now = Date.now, log = console })
       }
     });
 
-    return stats;
+    return { stats, changed };
+  };
+
+  const notifyAfterRun = (record, changed) => {
+    if (!afterRun) return;
+    Promise.resolve()
+      .then(() => afterRun({ record, items: changed }))
+      .catch(error => log.warn?.(`[CatalogSync] afterRun fehlgeschlagen: ${error.message}`));
   };
 
   const run = (type) => {
@@ -168,10 +179,12 @@ export function createCatalogSync({ db, source, now = Date.now, log = console })
     current = (async () => {
       const startedAt = now();
       const record = { type, startedAt, finishedAt: null, durationMs: null, error: null };
+      let changed = [];
 
       try {
         const snapshot = await source.fetchAll();
-        const stats = apply(snapshot, { removeMissing: type === 'full' });
+        const { stats, changed: changedItems } = apply(snapshot, { removeMissing: type === 'full' });
+        changed = changedItems;
         if (Number.isFinite(snapshot.episodeCount)) writeMeta('library', { episodes: snapshot.episodeCount });
         Object.assign(record, stats, { total: statements.countItems.get().count, library: libraryCounts() });
 
@@ -187,7 +200,10 @@ export function createCatalogSync({ db, source, now = Date.now, log = console })
         if (!record.error) writeMeta('lastSuccess', record);
         db.persist();
         current = null;
-        if (!record.error) logSummary(record);
+        if (!record.error) {
+          logSummary(record);
+          notifyAfterRun(record, changed);
+        }
       }
 
       return record;
