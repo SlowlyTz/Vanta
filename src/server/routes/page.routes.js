@@ -1,12 +1,11 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { INDEX_FILE } from '../config/static.js';
 
 const router = express.Router();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// The shell must be revalidated on every load: it names the hashed bundles.
 router.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../public/index.html'));
+  res.sendFile(INDEX_FILE, { cacheControl: false, headers: { 'Cache-Control': 'no-cache' } });
 });
 
 export default router;
