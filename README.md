@@ -129,6 +129,12 @@ Browsing (home page, library, genres, publishers, search, trailer scroller) is s
 
 Both schedules can be changed under Admin > Einstellungen > Katalog, where a run can also be started by hand. From the command line, `npm run refresh` runs an update right away (or `npm run refresh -- --full` for a full run) — it hands the run to the running server, or syncs on its own when no server is up. The sync authenticates with `JELLYFIN_API_KEY`; per-user library access is still applied on every request. Playback, resume state, favourites and item details always come live from Jellyfin. If the mirror is empty, VANTA falls back to live Jellyfin queries.
 
+### Image cache
+
+Posters, backdrops and logos are resized once on the VANTA server and stored as WebP under `cache/images/` (override with `IMAGE_CACHE_DIR`, relative paths count from the repo root). Each image is kept in a few fixed widths (posters 200/400/800, backdrops 800/1280/1920), so Jellyfin is asked for the original only on the first request and every later request is a plain file read. After each catalogue sync the poster and backdrop of every new or changed title are rendered in the background, so the home page is warm before anyone opens it.
+
+The directory is git-ignored and safe to delete at any time; missing renditions are simply rendered again. For a library of around 480 titles expect a few hundred MB at most. Resizing needs the `sharp` package (installed with `npm install`); if its native binary cannot be loaded, VANTA logs a warning at startup and proxies images straight from Jellyfin as before.
+
 ## Important Notes
 
 - In production, `SESSION_SECRET` must be set to a long, random value.

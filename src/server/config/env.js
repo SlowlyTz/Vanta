@@ -32,4 +32,6 @@ export default {
   SESSION_SECRET,
   COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
   TMDB_API_KEY,
+  // Optional: where resized poster/backdrop renditions are stored (default cache/images).
+  IMAGE_CACHE_DIR: process.env.IMAGE_CACHE_DIR || '',
 };

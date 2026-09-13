@@ -27,6 +27,9 @@ db/*.db
 db/*.db-*
 db/*
 
+# Resized image renditions
+cache/
+
 # Testing / Coverage
 coverage/
 *.lcov
