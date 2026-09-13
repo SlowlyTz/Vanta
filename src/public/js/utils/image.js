@@ -1,79 +1,118 @@
 import { MediaApi } from '../api/media.api.js';
 
-export function getItemImageUrl(item, type = 'Primary') {
-  if (!item) return '';
+const POSTER_WIDTH = 400;
+const BACKDROP_WIDTH = 1280;
 
-  const posterWidth = 400;
-  const backdropWidth = 1280;
-  const getTag = (imageItem, imageType) => {
-    if (!imageItem) return null;
-    if (imageType === 'Backdrop') return imageItem.BackdropImageTags?.[0] || null;
-    return imageItem.ImageTags?.[imageType] || null;
-  };
-  const imageUrl = (id, imageType, width, tag = null) => {
-    return MediaApi.getImageUrl(id, imageType, width, tag ? { tag } : {});
-  };
+// Candidate widths the server caches; the browser picks one via srcset.
+const POSTER_WIDTHS = [200, 400, 800];
+const BACKDROP_WIDTHS = [800, 1280, 1920];
+
+// Rendered card widths from the CSS, so the browser never loads more than a
+// card of that width (times its pixel ratio) can show.
+const SIZES = {
+  poster: '(min-width: 1200px) 220px, (min-width: 768px) 180px, 160px',
+  landscape: '(min-width: 768px) 360px, 300px',
+  hero: '100vw'
+};
+
+const getTag = (imageItem, imageType) => {
+  if (!imageItem) return null;
+  if (imageType === 'Backdrop') return imageItem.BackdropImageTags?.[0] || null;
+  return imageItem.ImageTags?.[imageType] || null;
+};
+
+const imageUrl = (id, imageType, width, tag = null) => {
+  return MediaApi.getImageUrl(id, imageType, width, tag ? { tag } : {});
+};
+
+// Which item, image type and tag a card should show, plus whether it is laid
+// out wide (backdrop widths) or as a poster. Null means no image at all.
+function resolveImageSource(item, type) {
+  const source = (id, imageType, wide, tag = null) => ({ id, imageType, wide, tag });
 
   // 1. Direct tag checks
   if (type === 'Primary') {
     if (item.Type === 'Episode' && item.SeriesPrimaryImageTag && item.SeriesId) {
-      return imageUrl(item.SeriesId, 'Primary', posterWidth, item.SeriesPrimaryImageTag);
+      return source(item.SeriesId, 'Primary', false, item.SeriesPrimaryImageTag);
     }
     if (item.ImageTags && item.ImageTags.Primary) {
-      return imageUrl(item.Id, 'Primary', posterWidth, getTag(item, 'Primary'));
+      return source(item.Id, 'Primary', false, getTag(item, 'Primary'));
     }
     if (item.SeriesPrimaryImageTag && item.SeriesId) {
-      return imageUrl(item.SeriesId, 'Primary', posterWidth, item.SeriesPrimaryImageTag);
+      return source(item.SeriesId, 'Primary', false, item.SeriesPrimaryImageTag);
     }
     if (item.AlbumPrimaryImageTag && item.AlbumId) {
-      return imageUrl(item.AlbumId, 'Primary', posterWidth, item.AlbumPrimaryImageTag);
+      return source(item.AlbumId, 'Primary', false, item.AlbumPrimaryImageTag);
     }
   }
 
   if (type === 'Backdrop') {
     if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
-      return imageUrl(item.Id, 'Backdrop', backdropWidth, getTag(item, 'Backdrop'));
+      return source(item.Id, 'Backdrop', true, getTag(item, 'Backdrop'));
     }
     if (item.ParentBackdropImageTags && item.ParentBackdropImageTags.length > 0 && item.ParentBackdropItemId) {
-      return imageUrl(item.ParentBackdropItemId, 'Backdrop', backdropWidth, item.ParentBackdropImageTags[0]);
+      return source(item.ParentBackdropItemId, 'Backdrop', true, item.ParentBackdropImageTags[0]);
     }
     // Try Series Backdrop if it is an episode/season
     if (item.SeriesId) {
-      return imageUrl(item.SeriesId, 'Backdrop', backdropWidth);
+      return source(item.SeriesId, 'Backdrop', true);
     }
   }
 
   // Check generic types
   if (item.ImageTags && item.ImageTags[type]) {
-    const width = type === 'Backdrop' ? backdropWidth : posterWidth;
-    return imageUrl(item.Id, type, width, getTag(item, type));
+    return source(item.Id, type, type === 'Backdrop', getTag(item, type));
   }
 
   // 2. Generic fallbacks (e.g. Episode without poster gets Series poster or Episode backdrop)
   if (type === 'Primary') {
     // Try Series Primary
     if (item.SeriesId) {
-      return imageUrl(item.SeriesId, 'Primary', posterWidth, item.SeriesPrimaryImageTag);
+      return source(item.SeriesId, 'Primary', false, item.SeriesPrimaryImageTag);
     }
     // Try Parent ID
     if (item.ParentId) {
-      return imageUrl(item.ParentId, 'Primary', posterWidth);
+      return source(item.ParentId, 'Primary', false);
     }
   }
 
   if (type === 'Backdrop') {
     // Try Primary
     if (item.ImageTags && item.ImageTags.Primary) {
-      return imageUrl(item.Id, 'Primary', backdropWidth, getTag(item, 'Primary'));
+      return source(item.Id, 'Primary', true, getTag(item, 'Primary'));
     }
     // Try Parent Backdrop
     if (item.ParentBackdropItemId) {
-      return imageUrl(item.ParentBackdropItemId, 'Backdrop', backdropWidth, item.ParentBackdropImageTags?.[0]);
+      return source(item.ParentBackdropItemId, 'Backdrop', true, item.ParentBackdropImageTags?.[0]);
     }
   }
 
-  // 3. SVG dynamic placeholder
-  return createPlaceholderSvg(item.Name || 'Medien', type);
+  return null;
+}
+
+export function getItemImageUrl(item, type = 'Primary') {
+  if (!item) return '';
+
+  const source = resolveImageSource(item, type);
+  if (!source) {
+    // 3. SVG dynamic placeholder
+    return createPlaceholderSvg(item.Name || 'Medien', type);
+  }
+
+  return imageUrl(source.id, source.imageType, source.wide ? BACKDROP_WIDTH : POSTER_WIDTH, source.tag);
+}
+
+// `src` is exactly what getItemImageUrl returns; `srcset`/`sizes` let the
+// browser pick a smaller or larger cached rendition for the given card layout.
+// Placeholders have no srcset.
+export function getItemImageSources(item, type = 'Primary', layout = 'poster') {
+  const src = getItemImageUrl(item, type);
+  const source = item ? resolveImageSource(item, type) : null;
+  if (!source) return { src, srcset: null, sizes: null };
+
+  const widths = source.imageType === 'Backdrop' ? BACKDROP_WIDTHS : POSTER_WIDTHS;
+  const srcset = widths.map(width => `${imageUrl(source.id, source.imageType, width, source.tag)} ${width}w`).join(', ');
+  return { src, srcset, sizes: SIZES[layout] || SIZES.poster };
 }
 
 export function getPersonImageUrl(person, width = 160) {

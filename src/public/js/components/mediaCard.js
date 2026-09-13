@@ -1,5 +1,5 @@
 import { createElement } from '../utils/dom.js';
-import { getItemImageUrl } from '../utils/image.js';
+import { getItemImageSources } from '../utils/image.js';
 import { formatYear } from '../utils/format.js';
 import { markReturnFromDetail } from '../utils/routeState.js';
 
@@ -8,7 +8,7 @@ export function MediaCard({ item, landscape = false, sourceType = null }) {
 
   const isEpisode = item.Type === 'Episode';
   const imageType = landscape ? 'Backdrop' : 'Primary';
-  const imageUrl = getItemImageUrl(item, imageType);
+  const image = getItemImageSources(item, imageType, landscape ? 'landscape' : 'poster');
 
   // Playback progress for resumable items
   let progressPercent = 0;
@@ -33,10 +33,13 @@ export function MediaCard({ item, landscape = false, sourceType = null }) {
   }
 
   const imageEl = createElement('img', {
-    src: imageUrl,
+    src: image.src,
+    srcset: image.srcset,
+    sizes: image.sizes,
     alt: item.Name,
     className: 'media-card-image',
-    loading: 'lazy'
+    loading: 'lazy',
+    decoding: 'async'
   });
 
   const imageContainerChildren = [imageEl];
