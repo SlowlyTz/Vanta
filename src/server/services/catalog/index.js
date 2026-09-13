@@ -17,14 +17,17 @@ export async function getCatalog() {
   const db = await openCatalogDb();
   const settings = createCatalogSettings();
   const images = getImageCache();
+  const reader = createCatalogReader(db);
   const sync = createCatalogSync({
     db,
     source: createJellyfinCatalogSource(),
-    // Pre-renders the card sizes of new and changed titles with the server key.
-    afterRun: ({ items }) => images.warm(items, { token: env.JELLYFIN_API_KEY })
+    // Pre-renders the card sizes with the server key. The whole catalogue is
+    // passed, not only the changed titles: files that already exist cost one
+    // stat each, and a cache that was emptied or never filled gets warmed on
+    // the next run instead of on the first visitor.
+    afterRun: () => images.warm(reader.all(), { token: env.JELLYFIN_API_KEY })
   });
   const scheduler = createCatalogScheduler({ sync, settings });
-  const reader = createCatalogReader(db);
   setActiveCatalogReader(reader);
 
   instance = { db, sync, settings, scheduler, reader };
