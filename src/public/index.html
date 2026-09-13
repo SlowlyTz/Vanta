@@ -8,14 +8,15 @@
   <!-- Opening scene: the cover is styled inline so nothing of the app shows
        before the stylesheets arrive; intro-gate.js hides it before first paint
        when the scene is not due. The animation removes the cover on its own;
-       the keyframe below is the no-JS safety net. -->
+       the keyframe below is the no-JS safety net. The gate stays a classic
+       script outside the Vite build (vite-ignore) and is served as is. -->
   <style>
     #intro { position: fixed; inset: 0; z-index: 2147483000; background: #000; animation: intro-failsafe 0s 15s forwards; }
     #intro canvas { display: block; width: 100%; height: 100%; }
     html.intro-off #intro { display: none; }
     @keyframes intro-failsafe { to { visibility: hidden; pointer-events: none; } }
   </style>
-  <script src="/js/intro-gate.js"></script>
+  <script src="/js/intro-gate.js" vite-ignore></script>
   <!-- Outfit, self-hosted (see css/fonts.css); the latin file covers every
        declared weight, so one preload warms the whole family -->
   <link rel="preload" href="/assets/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>

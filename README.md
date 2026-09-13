@@ -49,19 +49,29 @@ Start the development server:
 npm run dev
 ```
 
-Production start:
+Production start (`NODE_ENV=production` in `.env` or the environment):
 
 ```bash
-npm run player:build
-npm run intro:build
+npm run build
 npm start
 ```
+
+`npm run build` builds the player, the opening scene and the web app itself; the last step bundles `src/public/` with Vite into `dist/` (not committed). In production the server refuses to start without `dist/index.html`.
 
 VANTA runs at `http://localhost:3000` by default.
 
 ## Development
 
-The regular web app is served directly from `src/public/`. The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`.
+Which files the server hands out depends on `NODE_ENV`:
+
+- any value other than `production` (the default) serves `src/public/` as it is: plain ES modules and stylesheets, no build step, every file revalidated on each load (`Cache-Control: no-cache`).
+- `production` serves the Vite build in `dist/` first and falls back to `src/public/` for everything the build does not contain (`/vendor/**`, `/assets/**`, `/js/intro-gate.js`). All files in `dist/` except `index.html` carry a content hash and are cached for a year (`immutable`); `index.html` is always revalidated.
+
+In both modes text responses are gzip/brotli compressed and hashed player chunks under `/vendor/player/` are immutable, while the unhashed entries (`vanta-player.js`, `vanta-intro.js`) are revalidated so a rebuild takes effect at once. Images under `/assets/` are cached for a day.
+
+The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; the opening scene from `src/intro/` into `src/public/vendor/intro/`. Both keep fixed paths because the app loads them by URL at runtime, and both outputs are committed.
+
+The Outfit font is self-hosted: the woff2 files live in `src/public/assets/fonts/`, the `@font-face` rules in `src/public/css/fonts.css`. Nothing is loaded from Google Fonts.
 
 When working on the player, run the watcher alongside the server:
 

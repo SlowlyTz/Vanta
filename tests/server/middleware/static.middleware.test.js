@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import fs from 'fs';
@@ -7,7 +7,13 @@ import path from 'path';
 const PLAYER_DIR = path.resolve('src/public/vendor/player');
 const HASHED_CHUNK = fs.readdirSync(PLAYER_DIR).find(name => /-[A-Za-z0-9_-]{8}\.js$/.test(name));
 
-async function loadModules() {
+async function loadModules({ nodeEnv, distExists = true } = {}) {
+  vi.resetModules();
+  vi.doMock('../../../src/server/config/env.js', () => ({ default: { NODE_ENV: nodeEnv } }));
+  vi.doMock('fs', async importOriginal => {
+    const actual = await importOriginal();
+    return { ...actual, default: { ...actual.default, existsSync: () => distExists } };
+  });
   const config = await import('../../../src/server/config/static.js');
   const middleware = await import('../../../src/server/middleware/static.middleware.js');
   const pageRoutes = (await import('../../../src/server/routes/page.routes.js')).default;
@@ -28,9 +34,11 @@ function createApp({ compressResponses, staticAssets, pageRoutes }) {
 }
 
 describe('Static asset delivery', () => {
+  beforeEach(() => vi.doUnmock('fs'));
+
   describe('cache policy', () => {
     it('revalidates the shell and unhashed files, keeps hashed chunks and images', async () => {
-      const { cacheControlFor } = await loadModules();
+      const { cacheControlFor } = await loadModules({ nodeEnv: 'development' });
 
       expect(cacheControlFor('index.html')).toBe('no-cache');
       expect(cacheControlFor('js/app.js')).toBe('no-cache');
@@ -41,11 +49,27 @@ describe('Static asset delivery', () => {
       expect(cacheControlFor('assets/logo-vanta.png')).toBe('public, max-age=86400');
       expect(cacheControlFor('assets/fonts/outfit-latin.woff2')).toBe('public, max-age=86400');
     });
+
+    it('treats every file of the Vite build as hashed except its index.html', async () => {
+      const { cacheControlFor } = await loadModules({ nodeEnv: 'development' });
+
+      expect(cacheControlFor('index.html', { hashedDir: true })).toBe('no-cache');
+      expect(cacheControlFor('assets/index-BFWgCkam.js', { hashedDir: true })).toBe('public, max-age=31536000, immutable');
+      expect(cacheControlFor('assets/outfit-latin-Bc-8i84L.woff2', { hashedDir: true })).toBe('public, max-age=31536000, immutable');
+    });
   });
 
   describe('development serving', () => {
+    it('serves src/public only and the unbuilt index.html', async () => {
+      const modules = await loadModules({ nodeEnv: 'development', distExists: false });
+
+      expect(modules.SERVE_DIST).toBe(false);
+      expect(modules.staticAssets).toHaveLength(1);
+      expect(modules.INDEX_FILE).toBe(path.resolve('src/public/index.html'));
+    });
+
     it('sends the shell with no-cache and an ETag on / and /index.html', async () => {
-      const app = createApp(await loadModules());
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
       for (const url of ['/', '/index.html', '/some/deep/link']) {
         const res = await request(app).get(url);
@@ -58,7 +82,7 @@ describe('Static asset delivery', () => {
     });
 
     it('sets the cache headers per file class', async () => {
-      const app = createApp(await loadModules());
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
       expect((await request(app).get('/vendor/intro/vanta-intro.js')).headers['cache-control']).toBe('no-cache');
       expect((await request(app).get(`/vendor/player/${HASHED_CHUNK}`)).headers['cache-control']).toBe('public, max-age=31536000, immutable');
@@ -67,7 +91,7 @@ describe('Static asset delivery', () => {
     });
 
     it('answers a conditional request for an unchanged file with 304', async () => {
-      const app = createApp(await loadModules());
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
       const first = await request(app).get('/js/app.js');
 
       const res = await request(app).get('/js/app.js').set('If-None-Match', first.headers.etag);
@@ -77,7 +101,7 @@ describe('Static asset delivery', () => {
 
   describe('compression', () => {
     it('gzips scripts, stylesheets, the shell and JSON when the client accepts gzip', async () => {
-      const app = createApp(await loadModules());
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
       for (const url of ['/js/app.js', '/css/base.css', '/', '/api/media/library']) {
         const res = await request(app).get(url).set('Accept-Encoding', 'gzip');
@@ -88,7 +112,7 @@ describe('Static asset delivery', () => {
     });
 
     it('leaves fonts, images and the media proxies uncompressed', async () => {
-      const app = createApp(await loadModules());
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
       for (const url of ['/assets/fonts/outfit-latin.woff2', '/assets/logo-vanta.png', '/api/media/image/abc']) {
         const res = await request(app).get(url).set('Accept-Encoding', 'gzip');
@@ -98,10 +122,25 @@ describe('Static asset delivery', () => {
     });
 
     it('sends identity when the client does not accept gzip', async () => {
-      const app = createApp(await loadModules());
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
       const res = await request(app).get('/js/app.js').set('Accept-Encoding', 'identity');
       expect(res.headers['content-encoding']).toBeUndefined();
+    });
+  });
+
+  describe('production serving', () => {
+    it('serves dist/ first with src/public as fallback', async () => {
+      const modules = await loadModules({ nodeEnv: 'production', distExists: true });
+
+      expect(modules.SERVE_DIST).toBe(true);
+      expect(modules.staticAssets).toHaveLength(2);
+      expect(modules.INDEX_FILE).toBe(path.resolve('dist/index.html'));
+    });
+
+    it('refuses to start without a build', async () => {
+      await expect(loadModules({ nodeEnv: 'production', distExists: false }))
+        .rejects.toThrow('dist/index.html is missing');
     });
   });
 });

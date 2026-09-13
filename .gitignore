@@ -38,6 +38,9 @@ coverage/
 # Generated player sourcemaps
 src/public/vendor/player/*.map
 
+# Vite build of the web app (npm run build)
+dist/
+
 # IDE and OS files
 .DS_Store
 .DS_Store?
