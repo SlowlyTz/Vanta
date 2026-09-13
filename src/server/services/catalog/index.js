@@ -4,6 +4,8 @@ import { createCatalogSync } from './sync.service.js';
 import { createCatalogSettings } from './settings.js';
 import { createCatalogScheduler } from './scheduler.js';
 import { createCatalogReader, setActiveCatalogReader } from './reader.js';
+import { getImageCache } from '../images/image-cache.js';
+import env from '../../config/env.js';
 
 let instance = null;
 
@@ -14,7 +16,13 @@ export async function getCatalog() {
 
   const db = await openCatalogDb();
   const settings = createCatalogSettings();
-  const sync = createCatalogSync({ db, source: createJellyfinCatalogSource() });
+  const images = getImageCache();
+  const sync = createCatalogSync({
+    db,
+    source: createJellyfinCatalogSource(),
+    // Pre-renders the card sizes of new and changed titles with the server key.
+    afterRun: ({ items }) => images.warm(items, { token: env.JELLYFIN_API_KEY })
+  });
   const scheduler = createCatalogScheduler({ sync, settings });
   const reader = createCatalogReader(db);
   setActiveCatalogReader(reader);
