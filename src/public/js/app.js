@@ -1,6 +1,7 @@
 import { router } from './router.js';
 import { initAppRealtime } from './realtime/app-realtime.js';
 import { mountWatchPartyInvitationOverlay } from './components/watch-party/WatchPartyInvitationOverlay.js';
+import { initDetailPrefetch } from './utils/prefetch.js';
 
 // Define routing mappings using dynamic ES modules imports
 router.add('#/login', () => import('./pages/login.page.js'), { guestOnly: true });
@@ -32,4 +33,5 @@ document.addEventListener('DOMContentLoaded', () => {
   mountWatchPartyInvitationOverlay();
   initAppRealtime();
   router.init();
+  initDetailPrefetch();
 });

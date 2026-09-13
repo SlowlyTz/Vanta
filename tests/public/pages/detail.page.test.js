@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MediaApi } from '../../../src/public/js/api/media.api.js';
 import DetailPage from '../../../src/public/js/pages/detail.page.js';
+import { prefetchDetail, resetDetailPrefetch } from '../../../src/public/js/utils/prefetch.js';
 
 vi.mock('../../../src/public/js/api/media.api.js', () => ({
   MediaApi: {
@@ -128,5 +129,72 @@ describe('DetailPage favorite button', () => {
     await flush();
 
     expect(checkbox.checked).toBe(false);
+  });
+});
+
+describe('DetailPage prefetch cache', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetDetailPrefetch();
+    MediaApi.getSimilar.mockResolvedValue([]);
+    MediaApi.getSeasons.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    resetDetailPrefetch();
+    document.body.innerHTML = '';
+  });
+
+  it('renders from the prefetched bundle without calling MediaApi.getItem', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Name: 'Prefetched Movie' }));
+    await prefetchDetail('item-1');
+    MediaApi.getItem.mockClear();
+    MediaApi.getSimilar.mockClear();
+
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(container.textContent).toContain('Prefetched Movie');
+    expect(MediaApi.getItem).not.toHaveBeenCalled();
+    expect(MediaApi.getSimilar).not.toHaveBeenCalled();
+  });
+
+  it('waits for a still running prefetch instead of requesting the item again', async () => {
+    let resolveItem;
+    MediaApi.getItem.mockReturnValue(new Promise(resolve => { resolveItem = resolve; }));
+    const prefetched = prefetchDetail('item-1');
+    await flush();
+
+    const container = DetailPage({ id: 'item-1' });
+    expect(container.querySelector('.section-loader')).toBeTruthy();
+
+    resolveItem(createBaseItem({ Name: 'Late Movie' }));
+    await prefetched;
+    await flush();
+
+    expect(container.textContent).toContain('Late Movie');
+    expect(MediaApi.getItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to its own request when the prefetch failed', async () => {
+    MediaApi.getItem.mockRejectedValueOnce(new Error('offline'));
+    const prefetched = prefetchDetail('item-1');
+    await prefetched.catch(() => {});
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Name: 'Fresh Movie' }));
+
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(container.textContent).toContain('Fresh Movie');
+    expect(MediaApi.getItem).toHaveBeenCalledTimes(2);
+  });
+
+  it('requests the item itself when nothing was prefetched', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem());
+
+    DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(MediaApi.getItem).toHaveBeenCalledWith('item-1');
   });
 });
