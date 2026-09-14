@@ -23,8 +23,11 @@
   box-shadow: none;
 }
 
+/* While the drawer is open the navbar slides aside with the page and sits
+   under the dimmed backdrop like everything else; the drawer's own close
+   button and the backdrop take over closing. */
 .navbar.navbar-spotlight.mobile-open {
-  z-index: 1900;
+  z-index: 1690;
 }
 
 .navbar-left,
