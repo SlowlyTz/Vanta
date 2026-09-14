@@ -75,13 +75,16 @@ describe('CatalogReader', () => {
       expect(reader.page({ type: 'Series', genre: 'Horror' }).totalRecordCount).toBe(0);
     });
 
+    it('returns null for types the mirror does not hold so the caller falls back to Jellyfin', () => {
+      expect(reader.page({ type: 'Episode', page: 1, limit: 1 })).toBeNull();
+      expect(reader.page({ type: 'Movie,Episode' })).toBeNull();
+      expect(reader.newest({ type: 'Episode' })).toBeNull();
+      expect(reader.genres({ type: 'Episode' })).toBeNull();
+    });
+
     it('filters by one or several studio names', () => {
       expect(ids(reader.page({ type: 'Movie', studios: ['warner bros.'] }).items)).toEqual(['m1', 'm2']);
       expect(ids(reader.page({ type: 'Movie,Series', studios: ['Netflix', '20th Century Fox'] }).items)).toEqual(['m3', 's1']);
-    });
-
-    it('falls back to every title for an unknown type', () => {
-      expect(reader.page({ type: 'Episode' }).totalRecordCount).toBe(5);
     });
   });
 

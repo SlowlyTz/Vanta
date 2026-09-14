@@ -5,10 +5,15 @@ const SORTS = {
   newest: 'date_created DESC, sort_name COLLATE NOCASE ASC'
 };
 
-const parseTypes = (type) => String(type || '')
-  .split(',')
-  .map(part => part.trim())
-  .filter(part => part === 'Movie' || part === 'Series');
+const MIRRORED_TYPES = new Set(['Movie', 'Series']);
+
+// Only movies and series are mirrored. A request for any other type (e.g.
+// Episode) returns null so the caller falls back to Jellyfin instead of
+// silently getting an unfiltered count of everything in the mirror.
+const parseTypes = (type) => {
+  const types = String(type || '').split(',').map(part => part.trim()).filter(Boolean);
+  return types.every(part => MIRRORED_TYPES.has(part)) ? types : null;
+};
 
 // Read side of the catalogue mirror. Every method takes the caller's visible
 // library ids so per-user library access is applied to the mirror the same
@@ -75,11 +80,16 @@ export function createCatalogReader(db) {
   return {
     isReady: () => count.get().count > 0,
 
-    newest: ({ type, libraryIds = null, limit = 24 }) =>
-      select({ types: parseTypes(type), libraryIds }, { sort: 'newest', limit }),
+    newest: ({ type, libraryIds = null, limit = 24 }) => {
+      const types = parseTypes(type);
+      if (!types) return null;
+      return select({ types, libraryIds }, { sort: 'newest', limit });
+    },
 
     page: ({ type, libraryIds = null, genre = null, studios = [], page = 1, limit = 50 }) => {
-      const filters = { types: parseTypes(type), libraryIds, genre, studios };
+      const types = parseTypes(type);
+      if (!types) return null;
+      const filters = { types, libraryIds, genre, studios };
       return {
         items: select(filters, { limit, offset: (page - 1) * limit }),
         totalRecordCount: total(filters)
@@ -95,7 +105,9 @@ export function createCatalogReader(db) {
     // Names only, like Jellyfin's /Genres and /Studios but restricted to what
     // the caller can actually see.
     genres: ({ type, libraryIds = null }) => {
-      const { where, params } = buildWhere({ types: parseTypes(type), libraryIds });
+      const types = parseTypes(type);
+      if (!types) return null;
+      const { where, params } = buildWhere({ types, libraryIds });
       return db.prepare(`
         SELECT g.genre AS Name, COUNT(*) AS count FROM catalog_item_genres g
         JOIN catalog_items i ON i.id = g.item_id ${where}
@@ -113,7 +125,7 @@ export function createCatalogReader(db) {
     },
 
     byProviderId: ({ tmdbId = null, imdbId = null, type = null, libraryIds = null }) => {
-      const filters = buildWhere({ types: type ? parseTypes(type) : [], libraryIds });
+      const filters = buildWhere({ types: parseTypes(type) || [], libraryIds });
       const clauses = [];
       const params = [...filters.params];
       if (tmdbId) { clauses.push('i.tmdb_id = ?'); params.push(String(tmdbId)); }
