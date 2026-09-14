@@ -115,42 +115,18 @@ export function getItemImageSources(item, type = 'Primary', layout = 'poster') {
   return { src, srcset, sizes: SIZES[layout] || SIZES.poster };
 }
 
+// Cast members without a photo get the same neutral portrait everywhere.
+export const PERSON_PLACEHOLDER_URL = '/assets/person-placeholder.webp';
+
 export function getPersonImageUrl(person, width = 160) {
-  if (!person) return createPersonPlaceholderSvg();
+  if (!person) return PERSON_PLACEHOLDER_URL;
 
   const imageTag = person.PrimaryImageTag || person.ImageTags?.Primary;
   if (person.Id && imageTag) {
-    return MediaApi.getImageUrl(person.Id, 'Primary', width, { tag: imageTag });
+    return `${MediaApi.getImageUrl(person.Id, 'Primary', width, { tag: imageTag })}&fallback=person`;
   }
 
-  return createPersonPlaceholderSvg(person.Name || '');
-}
-
-export function createPersonPlaceholderSvg(name = '') {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0]?.toUpperCase() || '')
-    .join('');
-
-  const label = initials || '?';
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
-      <defs>
-        <linearGradient id="person-bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="hsl(240, 8%, 18%)"/>
-          <stop offset="100%" stop-color="hsl(240, 10%, 9%)"/>
-        </linearGradient>
-      </defs>
-      <rect width="160" height="160" fill="url(%23person-bg)"/>
-      <circle cx="80" cy="62" r="26" fill="hsl(240, 5%, 52%)" opacity="0.72"/>
-      <path d="M34 138c7-30 25-46 46-46s39 16 46 46" fill="hsl(240, 5%, 52%)" opacity="0.72"/>
-      <text x="80" y="88" dominant-baseline="middle" text-anchor="middle" font-family="'Outfit', -apple-system, sans-serif" font-size="26" font-weight="700" fill="hsl(0, 0%, 96%)" opacity="0.36">${label}</text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;utf8,${svg.trim().replace(/[\n\r]/g, '').replace(/"/g, "'").replace(/#/g, '%23')}`;
+  return PERSON_PLACEHOLDER_URL;
 }
 
 function createPlaceholderSvg(title, type) {

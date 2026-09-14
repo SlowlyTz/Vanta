@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getItemImageUrl, getItemImageSources } from '../../../src/public/js/utils/image.js';
+import { getItemImageUrl, getItemImageSources, getPersonImageUrl, PERSON_PLACEHOLDER_URL } from '../../../src/public/js/utils/image.js';
 
 const movie = { Id: 'm1', Name: 'Inception', Type: 'Movie', ImageTags: { Primary: 'p1', Logo: 'l1' }, BackdropImageTags: ['b1'] };
 
@@ -78,5 +78,14 @@ describe('getItemImageSources', () => {
     expect(placeholder.sizes).toBeNull();
 
     expect(getItemImageSources(null)).toEqual({ src: '', srcset: null, sizes: null });
+  });
+
+  it('uses the portrait placeholder for people without a photo and asks the proxy for it otherwise', () => {
+    expect(getPersonImageUrl(null)).toBe(PERSON_PLACEHOLDER_URL);
+    expect(getPersonImageUrl({ Id: 'p1', Name: 'Ohne Bild' })).toBe(PERSON_PLACEHOLDER_URL);
+    const withPhoto = getPersonImageUrl({ Id: 'p2', Name: 'Mit Bild', PrimaryImageTag: 'abc' }, 120);
+    expect(withPhoto).toContain('/api/media/image/p2?type=Primary');
+    expect(withPhoto).toContain('tag=abc');
+    expect(withPhoto).toContain('&fallback=person');
   });
 });

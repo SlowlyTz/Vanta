@@ -1,6 +1,6 @@
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
-import { createPersonPlaceholderSvg, getPersonImageUrl } from '../../utils/image.js';
+import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../../utils/image.js';
 import { MediaCarousel } from '../../components/mediaCarousel.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
 
@@ -86,8 +86,6 @@ export function createActorModal({ currentItemId }) {
 
     const modalClose = createModalCloseButton();
     modalContent.appendChild(modalClose);
-
-    const avatarPlaceholder = createPersonPlaceholderSvg(person.Name || '');
     const avatarImg = createElement('img', {
       src: getPersonImageUrl(person, 280),
       alt: person.Name,
@@ -95,7 +93,7 @@ export function createActorModal({ currentItemId }) {
       loading: 'lazy',
       onError: (event) => {
         event.currentTarget.onerror = null;
-        event.currentTarget.src = avatarPlaceholder;
+        event.currentTarget.src = PERSON_PLACEHOLDER_URL;
       }
     });
 

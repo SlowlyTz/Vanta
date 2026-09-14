@@ -83,11 +83,12 @@ describe('DetailPage favorite button', () => {
     const toggle = container.querySelector('.detail-actions .played-toggle');
     expect(toggle).toBeTruthy();
     expect(toggle.getAttribute('aria-pressed')).toBe('false');
-    expect(toggle.textContent).toContain('Als gesehen markieren');
+    expect(toggle.getAttribute('aria-label')).toBe('Als gesehen markieren');
 
     toggle.click();
-    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    document.querySelector('.confirm-dialog-confirm').click();
     await flush();
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
     expect(MediaApi.markPlayed).toHaveBeenCalledWith('item-1');
   });
 

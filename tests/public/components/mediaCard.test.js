@@ -99,7 +99,7 @@ describe('MediaCard', () => {
     expect(fresh.querySelector('.media-card-played')).toBeNull();
   });
 
-  it('hosts a compact played toggle on request whose click does not open the item', () => {
+  it('hosts a compact played toggle on request whose click does not open the item', async () => {
     window.location.hash = '#/item/s1';
     const card = MediaCard({
       item: { Id: 'e1', Type: 'Episode', Name: 'Pilot', SeriesName: 'Show', UserData: { Played: false, PlaybackPositionTicks: 10 }, RunTimeTicks: 100 },
@@ -113,6 +113,10 @@ describe('MediaCard', () => {
 
     toggle.click();
     expect(window.location.hash).toBe('#/item/s1');
+    const dialog = document.querySelector('.confirm-dialog');
+    expect(dialog.textContent).toContain('Willst du diese Folge als gesehen markieren?');
+    dialog.querySelector('.confirm-dialog-confirm').click();
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
   });
 });

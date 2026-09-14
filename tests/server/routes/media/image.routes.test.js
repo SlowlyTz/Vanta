@@ -109,6 +109,16 @@ describe('GET /image/:id', () => {
     expect(svg).toContain('width="320"');
   });
 
+  it('redirects to the person portrait when a person image asks for that fallback', async () => {
+    cache.getImage.mockRejectedValue(Object.assign(new Error('Jellyfin antwortete mit 404'), { status: 404 }));
+
+    const res = await request(createApp()).get('/image/person-1?type=Primary&tag=t1&fallback=person');
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/assets/person-placeholder.webp');
+    expect(res.headers['cache-control']).toBe('no-cache');
+  });
+
   it('proxies the Jellyfin response untouched when sharp is unavailable', async () => {
     cache.isAvailable.mockReturnValue(false);
     ImagesService.fetchImageStream.mockResolvedValue({
