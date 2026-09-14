@@ -1,4 +1,5 @@
 import { createElement } from '../utils/dom.js';
+import { createMetaIcon } from './metaIcons.js';
 import { getItemImageUrl } from '../utils/image.js';
 import { formatYear, formatTicksToDuration } from '../utils/format.js';
 
@@ -12,7 +13,7 @@ function getHeroLogoUrl(item) {
 function createMetaPill({ className, icon, text }) {
   if (!text) return null;
   return createElement('span', { className: `meta-pill ${className || ''}`.trim() },
-    icon ? createElement('span', { className: 'meta-pill-icon', 'aria-hidden': 'true' }, icon) : null,
+    icon ? createMetaIcon(icon) : null,
     createElement('span', {}, text)
   );
 }
@@ -66,10 +67,10 @@ export function HeroCarousel({ items = [] }) {
       : createElement('h1', { className: 'home-hero-title' }, item.Name);
 
     const metaPills = [
-      createMetaPill({ className: 'meta-rating', icon: '🔞', text: item.OfficialRating }),
-      createMetaPill({ className: 'meta-runtime', icon: '⏱', text: formatTicksToDuration(item.RunTimeTicks) }),
-      createMetaPill({ className: 'meta-score', icon: '★', text: item.CommunityRating ? item.CommunityRating.toFixed(1) : '' }),
-      createMetaPill({ className: 'meta-year', text: formatYear(item.PremiereDate || item.ProductionYear) })
+      createMetaPill({ className: 'meta-rating', icon: 'age', text: item.OfficialRating }),
+      createMetaPill({ className: 'meta-runtime', icon: 'runtime', text: formatTicksToDuration(item.RunTimeTicks) }),
+      createMetaPill({ className: 'meta-score', icon: 'star', text: item.CommunityRating ? item.CommunityRating.toFixed(1) : '' }),
+      createMetaPill({ className: 'meta-year', icon: 'year', text: formatYear(item.PremiereDate || item.ProductionYear) })
     ].filter(Boolean);
 
     const content = createElement('div', {

@@ -1,2 +1,80 @@
-@import './footer/brand-content.css';
-@import './footer/bottom-and-responsive.css';
+/* ---------------------------------
+   FOOTER — one slim line
+--------------------------------- */
+.app-footer {
+  margin-top: var(--spacing-xxl);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.footer-inner {
+  width: min(100%, 1480px);
+  margin: 0 auto;
+  padding: 22px clamp(20px, 5vw, 64px) calc(22px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  transition: color var(--transition-fast);
+}
+
+.footer-brand:hover {
+  color: var(--text-primary);
+}
+
+.footer-brand-logo {
+  width: 28px;
+  height: auto;
+}
+
+.footer-nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.footer-link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  list-style: none;
+  justify-content: center;
+}
+
+.footer-link {
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.footer-link:hover {
+  color: var(--text-primary);
+}
+
+.footer-copyright {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .footer-inner {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding-top: 18px;
+    text-align: center;
+  }
+  .footer-link-list {
+    gap: 6px 14px;
+  }
+}

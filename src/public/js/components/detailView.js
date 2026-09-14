@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 import { createExpandableText } from './expandableText.js';
+import { createMetaIcon, metaIconFor } from './metaIcons.js';
 
 // Two lines on phones, a little more room on wide screens.
 const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
@@ -13,29 +14,31 @@ export function DetailView({ item, actions, favoriteButton, playedButton = null,
   );
 
   const metadataItems = [];
+  const pill = (icon, text, className = '') =>
+    createElement('span', { className: `metadata-item ${className}`.trim() }, createMetaIcon(icon), createElement('span', {}, text));
 
   if (item.year) {
-    metadataItems.push(createElement('span', { className: 'metadata-item' }, item.year));
+    metadataItems.push(pill('year', item.year));
   }
 
   if (item.duration) {
-    metadataItems.push(createElement('span', { className: 'metadata-item' }, item.duration));
+    metadataItems.push(pill('runtime', item.duration));
   }
 
   if (item.typeLabel) {
-    metadataItems.push(createElement('span', { className: 'metadata-item' }, item.typeLabel));
+    metadataItems.push(pill(metaIconFor(item.typeLabel), item.typeLabel));
   }
 
   if (item.fsk) {
-    metadataItems.push(createElement('span', { className: 'metadata-item FSK' }, item.fsk));
+    metadataItems.push(pill('age', item.fsk, 'FSK'));
   }
 
   if (item.rating) {
-    metadataItems.push(createElement('span', { className: 'metadata-item rating' }, `⭐ ${Number(item.rating).toFixed(1)}`));
+    metadataItems.push(pill('star', Number(item.rating).toFixed(1), 'rating'));
   }
 
   if (item.criticRating) {
-    metadataItems.push(createElement('span', { className: 'metadata-item rating' }, `🍅 ${item.criticRating}%`));
+    metadataItems.push(pill('critic', `${item.criticRating}%`, 'rating'));
   }
 
   const crewInfo = [];

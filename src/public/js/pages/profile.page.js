@@ -4,6 +4,7 @@ import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
+import { PageHeading } from '../components/pageHeading.js';
 
 const LIMIT = 24;
 
@@ -49,10 +50,7 @@ export default function ProfilePage({ initialTab = 'continue' } = {}) {
   const user = authStore.getState().user;
   const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
 
-  const profileHeader = createElement('div', { className: 'profile-header' },
-    createElement('h1', { className: 'profile-title' }, 'Profil'),
-    createElement('p', { className: 'profile-username' }, displayName)
-  );
+  const profileHeader = PageHeading({ title: 'Profil', subtitle: displayName });
 
   const tabButtons = new Map();
   const tabsNav = createElement('div', { className: 'profile-tabs' });

@@ -9,27 +9,6 @@
   overflow-x: clip;
 }
 
-.profile-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-xl);
-}
-
-.profile-title {
-  font-size: 2rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ffffff 0%, #a5a5a5 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  line-height: 1.2;
-}
-
-.profile-username {
-  color: var(--text-secondary);
-  font-size: 1rem;
-  font-weight: 500;
-}
 
 .profile-tabs {
   display: flex;
