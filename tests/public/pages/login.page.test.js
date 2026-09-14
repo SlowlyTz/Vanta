@@ -166,4 +166,36 @@ describe('LoginPage', () => {
     expect(hint.classList.contains('open')).toBe(false);
     container.remove();
   });
+
+  it('exposes the fields the way password managers expect', () => {
+    const container = LoginPage();
+    const form = container.querySelector('.login-form');
+    const username = container.querySelector('#login-username');
+    const password = container.querySelector('#login-password');
+
+    expect(form.getAttribute('method')).toBe('post');
+    expect(form.getAttribute('action')).toBe('/api/auth/login');
+    expect(username.getAttribute('name')).toBe('username');
+    expect(username.getAttribute('autocomplete')).toBe('username');
+    expect(username.getAttribute('autocapitalize')).toBe('none');
+    expect(password.getAttribute('name')).toBe('password');
+    expect(password.getAttribute('autocomplete')).toBe('current-password');
+    expect(password.getAttribute('enterkeyhint')).toBe('go');
+  });
+
+  it('hides a revealed password again before submitting', async () => {
+    authStore.login.mockResolvedValue({});
+    const container = LoginPage();
+    container.querySelector('#login-username').value = 'alice';
+    const password = container.querySelector('#login-password');
+    password.value = 'pw';
+
+    container.querySelector('.form-input-toggle').click();
+    expect(password.type).toBe('text');
+
+    container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    expect(password.type).toBe('password');
+    expect(container.querySelector('.form-input-toggle').getAttribute('aria-pressed')).toBe('false');
+    await flush();
+  });
 });

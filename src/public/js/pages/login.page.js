@@ -42,6 +42,7 @@ export default function LoginPage() {
     }
 
     hideLoginError();
+    if (passwordInput.type !== 'password') passwordToggle.click();
     loginButton.disabled = true;
     loginButton.setAttribute('aria-busy', 'true');
     loginButton.textContent = LOGIN_BUTTON_BUSY_TEXT;
@@ -68,22 +69,32 @@ export default function LoginPage() {
     }
   };
 
+  // name/autocomplete pairs and a real form action are what password
+  // managers key on to offer and save credentials.
   const usernameInput = createElement('input', {
     type: 'text',
     id: 'login-username',
+    name: 'username',
     className: 'form-input',
     placeholder: 'Benutzername',
     required: true,
     autocomplete: 'username',
+    autocapitalize: 'none',
+    autocorrect: 'off',
+    spellcheck: 'false',
+    inputmode: 'text',
+    enterkeyhint: 'next',
     dataset: { autofocus: '' }
   });
 
   const passwordInput = createElement('input', {
     type: 'password',
     id: 'login-password',
+    name: 'password',
     className: 'form-input',
     placeholder: 'Passwort',
-    autocomplete: 'current-password'
+    autocomplete: 'current-password',
+    enterkeyhint: 'go'
   });
 
   const passwordToggle = createElement('button', {
@@ -175,6 +186,8 @@ export default function LoginPage() {
 
   const loginForm = createElement('form', {
     className: 'login-form',
+    method: 'post',
+    action: '/api/auth/login',
     onSubmit: handleLogin
   },
     errorBanner,
