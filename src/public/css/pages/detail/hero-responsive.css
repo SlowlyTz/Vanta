@@ -16,8 +16,13 @@
 
   .detail-hero-main {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'poster'
+      'head'
+      'info';
     min-height: 0;
-    gap: var(--spacing-lg);
+    column-gap: 0;
+    row-gap: var(--spacing-lg);
   }
 
   .detail-poster {
@@ -26,6 +31,7 @@
     justify-self: center;
   }
 
+  .detail-info-head,
   .detail-info {
     align-items: center;
     max-width: 760px;

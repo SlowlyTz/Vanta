@@ -1,5 +1,9 @@
 import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
+import { createExpandableText } from './expandableText.js';
+
+// Two lines on phones, a little more room on wide screens.
+const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
 
 export function DetailView({ item, actions, favoriteButton, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null }) {
   const container = createElement('div', { className: 'page-container' });
@@ -105,18 +109,24 @@ export function DetailView({ item, actions, favoriteButton, playedButton = null,
         createElement('div', { className: 'detail-poster' },
           posterImg
         ),
-        createElement('div', { className: 'detail-info' },
+        // Title and facts sit next to the poster on phones, everything else
+        // runs below across the full width (see extended-responsive.css).
+        createElement('div', { className: 'detail-info-head' },
           createElement('h1', { className: 'detail-title' },
             item.name,
             originalTitleEl
           ),
           episodeTitleEl,
-          metadataItems.length > 0 ? createElement('div', { className: 'detail-metadata' }, metadataItems) : null,
+          metadataItems.length > 0 ? createElement('div', { className: 'detail-metadata' }, metadataItems) : null
+        ),
+        createElement('div', { className: 'detail-info' },
           genreTags.length > 0 ? createElement('div', { className: 'detail-genres' }, genreTags) : null,
           taglineEl,
           statusContent,
           actionButtons.length > 0 ? createElement('div', { className: 'detail-actions' }, actionButtons) : null,
-          createElement('p', { className: 'detail-overview' }, item.overview),
+          item.overview
+            ? createExpandableText({ text: item.overview, lines: overviewLines(), className: 'detail-overview' })
+            : null,
           crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null
         )
       )

@@ -11,13 +11,6 @@ import { buildSeasonsSection } from './detail/seasonsSection.js';
 import { loadDetailData } from './detail/detailData.js';
 import { extractYouTubeVideoId, openTrailerModal } from '../components/trailerModal.js';
 
-function getReturnToHash() {
-  const [, query = ''] = (window.location.hash || '').split('?');
-  const returnTo = new URLSearchParams(query).get('returnTo');
-  if (!returnTo || !returnTo.startsWith('#/')) return null;
-  return returnTo;
-}
-
 function getYouTubeTrailerId(item) {
   const remoteTrailer = Array.isArray(item.RemoteTrailers)
     ? item.RemoteTrailers.find((trailer) => extractYouTubeVideoId(trailer?.Url))
@@ -97,7 +90,6 @@ export default function DetailPage({ id }) {
   const container = createElement('div', { className: 'page-container' });
   container.dataset.edgeTop = 'true';
   const actorModal = createActorModal({ currentItemId: id });
-  const returnToHash = getReturnToHash();
 
   const render = async () => {
     container.innerHTML = '';
@@ -132,18 +124,7 @@ export default function DetailPage({ id }) {
           label: 'Trailer',
           className: 'btn-secondary',
           onClick: () => openTrailerModal({ title: `${normalized.name} Trailer`, videoId: youtubeTrailerId })
-        } : null,
-        {
-          label: 'Zurück',
-          className: 'btn-secondary',
-          onClick: () => {
-            if (returnToHash) {
-              window.location.hash = returnToHash;
-              return;
-            }
-            window.history.back();
-          }
-        }
+        } : null
       ].filter(Boolean);
 
       const favoriteButton = createFavoriteButton(item);
