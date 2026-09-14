@@ -123,4 +123,47 @@ describe('LoginPage', () => {
     expect(password.type).toBe('password');
     expect(toggle.getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('sends rememberMe with the login and defaults it to off', async () => {
+    authStore.login.mockResolvedValue({});
+    const container = LoginPage();
+    container.querySelector('#login-username').value = 'alice';
+    container.querySelector('#login-password').value = 'pw';
+
+    const remember = container.querySelector('#login-remember');
+    expect(remember.checked).toBe(false);
+    container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect(authStore.login).toHaveBeenLastCalledWith('alice', 'pw', false);
+
+    remember.checked = true;
+    container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush();
+    expect(authStore.login).toHaveBeenLastCalledWith('alice', 'pw', true);
+  });
+
+  it('opens the remember-me hint on tap and closes it with Escape or a click elsewhere', () => {
+    const container = LoginPage();
+    document.body.appendChild(container);
+    const hint = container.querySelector('.login-hint');
+    const trigger = container.querySelector('.login-hint-trigger');
+    const bubble = container.querySelector('#login-remember-hint');
+
+    expect(bubble.getAttribute('role')).toBe('tooltip');
+    expect(bubble.textContent).toContain('14 Tage');
+    expect(trigger.getAttribute('aria-describedby')).toBe('login-remember-hint');
+
+    trigger.click();
+    expect(hint.classList.contains('open')).toBe(true);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(hint.classList.contains('open')).toBe(false);
+
+    trigger.click();
+    expect(hint.classList.contains('open')).toBe(true);
+    document.body.click();
+    expect(hint.classList.contains('open')).toBe(false);
+    container.remove();
+  });
 });

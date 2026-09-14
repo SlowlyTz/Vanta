@@ -170,6 +170,167 @@
   box-shadow: 0 0 0 3px rgba(var(--abyss-accent), 0.2);
 }
 
+/* "Angemeldet bleiben" with its info bubble */
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: calc(-1 * var(--spacing-xs));
+}
+
+.login-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  transition: color var(--transition-fast);
+}
+
+.login-checkbox:hover {
+  color: var(--text-primary);
+}
+
+.login-checkbox-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.login-checkbox-box {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--bg-primary);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.login-checkbox-box svg {
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.login-checkbox-input:checked + .login-checkbox-box {
+  background: rgb(var(--abyss-accent));
+  border-color: transparent;
+}
+
+.login-checkbox-input:checked + .login-checkbox-box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.login-checkbox-input:focus-visible + .login-checkbox-box {
+  box-shadow: 0 0 0 4px rgba(var(--abyss-accent), 0.15);
+  border-color: rgba(var(--abyss-accent), 0.45);
+}
+
+.login-hint {
+  position: relative;
+  display: inline-flex;
+}
+
+.login-hint-trigger {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-muted);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.login-hint-trigger:hover,
+.login-hint-trigger:focus-visible,
+.login-hint.open .login-hint-trigger {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.login-hint-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: hsl(240, 8%, 14%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  text-align: left;
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 6px) scale(0.98);
+  transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+  pointer-events: none;
+}
+
+/* The little tail pointing at the icon */
+.login-hint-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  margin-top: -6px;
+  background: inherit;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transform: rotate(45deg);
+}
+
+.login-hint.open .login-hint-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0) scale(1);
+  pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .login-hint-trigger:hover + .login-hint-bubble,
+  .login-hint-trigger:focus-visible + .login-hint-bubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* Anchor the bubble to the left edge on narrow screens so it stays in view */
+@media (max-width: 480px) {
+  .login-hint-bubble {
+    left: auto;
+    right: -8px;
+    transform: translate(0, 6px) scale(0.98);
+  }
+  .login-hint-bubble::after {
+    left: auto;
+    right: 18px;
+  }
+  .login-hint.open .login-hint-bubble {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
 .login-error {
   background: var(--error-bg);
   border: 1px solid var(--error-color);
@@ -255,7 +416,12 @@
 @media (prefers-reduced-motion: reduce) {
   .form-input,
   .form-input-toggle,
-  .btn-login {
+  .btn-login,
+  .login-checkbox,
+  .login-checkbox-box,
+  .login-checkbox-box svg,
+  .login-hint-trigger,
+  .login-hint-bubble {
     transition: none;
   }
 

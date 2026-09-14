@@ -31,11 +31,11 @@ class AuthStore {
     };
   }
 
-  async login(username, password) {
+  async login(username, password, rememberMe = false) {
     this.loading = true;
     this.notify();
     try {
-      const data = await AuthApi.login(username, password);
+      const data = await AuthApi.login(username, password, rememberMe);
       this.user = data.user;
       this.notify();
       return data.user;

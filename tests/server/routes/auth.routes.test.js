@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import authRoutes from '../../../src/server/routes/auth.routes.js';
+import authRoutes, { REMEMBER_ME_MAX_AGE_MS } from '../../../src/server/routes/auth.routes.js';
 
 vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: {
@@ -28,14 +28,16 @@ import { AuthService } from '../../../src/server/services/jellyfin/auth.service.
 import { UserBanService } from '../../../src/server/services/user-ban.service.js';
 import { KnownUsersService } from '../../../src/server/services/known-users.service.js';
 
-function createApp() {
+function createApp({ onSession = null } = {}) {
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => {
     const store = {};
     req.session = {
+      cookie: {},
       destroy: vi.fn((cb) => { Object.keys(store).forEach(k => delete req.session[k]); cb(null); })
     };
+    onSession?.(req.session);
     next();
   });
   app.use('/', authRoutes);
@@ -60,6 +62,24 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.user).toEqual({ id: 'user-1', name: 'alice', isAdmin: false });
       expect(KnownUsersService.remember).toHaveBeenCalledWith({ userId: 'user-1', username: 'alice' });
+    });
+
+    it('keeps the cookie a session cookie unless rememberMe is sent', async () => {
+      AuthService.login.mockResolvedValue({
+        AccessToken: 'token-1',
+        User: { Id: 'user-1', Name: 'alice', Policy: { IsAdministrator: false } }
+      });
+      let session;
+      const app = createApp({ onSession: s => { session = s; } });
+
+      await request(app).post('/login').send({ username: 'alice', password: 'pw' });
+      expect(session.cookie.maxAge).toBeUndefined();
+
+      await request(app).post('/login').send({ username: 'alice', password: 'pw', rememberMe: 'yes' });
+      expect(session.cookie.maxAge).toBeUndefined();
+
+      await request(app).post('/login').send({ username: 'alice', password: 'pw', rememberMe: true });
+      expect(session.cookie.maxAge).toBe(REMEMBER_ME_MAX_AGE_MS);
     });
 
     it('returns a generic 401 for wrong credentials', async () => {

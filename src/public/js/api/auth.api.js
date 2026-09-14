@@ -1,10 +1,10 @@
 import { request } from './client.js';
 
 export const AuthApi = {
-  login(username, password) {
+  login(username, password, rememberMe = false) {
     return request('/api/auth/login', {
       method: 'POST',
-      body: { username, password }
+      body: { username, password, rememberMe: rememberMe === true }
     });
   },
 
