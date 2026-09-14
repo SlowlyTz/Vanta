@@ -1,28 +1,40 @@
+:root {
+  /* How far the app slides right while the drawer is open. */
+  --drawer-push: clamp(56px, 6vw, 96px);
+  --drawer-width: min(320px, 86vw);
+  --drawer-motion: 380ms var(--abyss-ease);
+}
+
+/* A full-height panel that slides in from the left edge and pushes the app
+   aside; the same on desktop and phones, only the width differs. */
 .mobile-drawer-nav {
   position: fixed;
-  top: 60px;
-  left: 20px;
-  width: min(320px, calc(100vw - 44px));
-  max-height: calc(100dvh - 84px);
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--drawer-width);
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: 14px;
   background: rgba(var(--abyss-glass-tint), 0.82);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--abyss-radius-dialog);
+  border-left: 0;
+  border-radius: 0 var(--abyss-radius-drawer) var(--abyss-radius-drawer) 0;
   box-shadow: 26px 0 78px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(26px) saturate(128%);
   -webkit-backdrop-filter: blur(26px) saturate(128%);
-  padding: 16px 14px 20px;
+  padding: calc(18px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
   overflow-y: auto;
   scrollbar-width: none;
   list-style: none;
-  opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translate3d(-18px, -4px, 0) scale(0.985);
-  transition: opacity 220ms ease, visibility 220ms ease, transform 260ms cubic-bezier(0.25, 1, 0.5, 1);
-  z-index: 1800;
+  contain: layout paint;
+  transform: translate3d(-100%, 0, 0);
+  transition: transform var(--drawer-motion), visibility 0s linear 380ms;
+  z-index: 1950;
 }
 
 .mobile-drawer-nav::-webkit-scrollbar {
@@ -30,10 +42,33 @@
 }
 
 body.mobile-nav-open .mobile-drawer-nav {
-  opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--drawer-motion), visibility 0s;
+}
+
+/* The app itself moves right with the drawer. The navbar is fixed, so it
+   gets the same shift on its own instead of through the shell. */
+.app-main,
+.app-footer,
+.navbar.navbar-spotlight {
+  transition: transform var(--drawer-motion);
+}
+
+body.mobile-nav-open .app-main,
+body.mobile-nav-open .app-footer,
+body.mobile-nav-open .navbar.navbar-spotlight {
+  transform: translate3d(var(--drawer-push), 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-drawer-nav,
+  .app-main,
+  .app-footer,
+  .navbar.navbar-spotlight {
+    transition: none;
+  }
 }
 
 /* Every entry flies in from the left once the drawer opens; --fly-index is
@@ -105,12 +140,6 @@ body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
 
 .mobile-drawer-close:active {
   transform: scale(0.95);
-}
-
-@media (min-width: 769px) {
-  .mobile-drawer-close {
-    display: none;
-  }
 }
 
 .mobile-drawer-list {
