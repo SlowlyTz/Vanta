@@ -3,9 +3,9 @@
 // The one job here is to answer a page navigation with /offline.html when the
 // network is gone, instead of the browser's own error page.
 (function (self) {
-  var CACHE = 'vanta-offline-v1';
+  var CACHE = 'vanta-offline-v2';
   var OFFLINE_URL = '/offline.html';
-  var PRECACHE = [OFFLINE_URL, '/assets/logo-vanta.png', '/assets/fonts/outfit-latin.woff2'];
+  var PRECACHE = [OFFLINE_URL, '/js/offline.js', '/assets/logo-vanta.png', '/assets/fonts/outfit-latin.woff2'];
 
   self.addEventListener('install', function (event) {
     event.waitUntil(
@@ -25,8 +25,25 @@
     );
   });
 
+  function isPrecached(request) {
+    var path = new URL(request.url).pathname;
+    return request.method === 'GET' && PRECACHE.indexOf(path) !== -1;
+  }
+
   self.addEventListener('fetch', function (event) {
     var request = event.request;
+
+    // The offline page's own files (script, logo, font) must come from the
+    // cache when the network is gone; otherwise they are fetched as usual.
+    if (isPrecached(request)) {
+      event.respondWith(
+        fetch(request).catch(function () {
+          return caches.match(request, { ignoreSearch: true });
+        })
+      );
+      return;
+    }
+
     if (request.mode !== 'navigate') return;
 
     event.respondWith(
