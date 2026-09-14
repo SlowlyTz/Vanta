@@ -31,13 +31,13 @@
     gap: 12px;
   }
   .home-hero-title {
-    font-size: 2.15rem;
+    font-size: 2rem;
     letter-spacing: 0;
     line-height: 1.08;
   }
   .home-hero-logo {
-    width: min(78vw, 340px);
-    max-height: 110px;
+    width: min(60vw, 260px);
+    max-height: 84px;
   }
   .home-hero-metadata {
     flex-wrap: wrap;
@@ -47,7 +47,8 @@
   .home-hero-desc {
     font-size: 0.95rem;
     line-height: 1.45;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
+    max-height: calc(2 * 1.45em);
   }
   .home-hero-actions {
     flex-wrap: wrap;

@@ -1,5 +1,6 @@
 import { createElement } from '../../utils/dom.js';
 import { createScrollerIcon } from './context.js';
+import { createMetaIcon } from '../../components/metaIcons.js';
 
 export function bindSlideRenderer(ctx) {
   ctx.updateChrome = () => {
@@ -141,7 +142,7 @@ export function bindSlideRenderer(ctx) {
       meta.appendChild(createElement('span', { className: 'trailer-meta-chip trailer-info-fsk' }, trailer.fsk));
     }
     if (trailer.rating) {
-      meta.appendChild(createElement('span', { className: 'trailer-meta-chip trailer-info-rating' }, `★ ${Number(trailer.rating).toFixed(1)}`));
+      meta.appendChild(createElement('span', { className: 'trailer-meta-chip trailer-info-rating' }, createMetaIcon('star'), ` ${Number(trailer.rating).toFixed(1)}`));
     }
 
     const title = createElement('h2', { className: 'trailer-info-title', id: titleId }, trailer.title);

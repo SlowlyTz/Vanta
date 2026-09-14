@@ -75,7 +75,7 @@ describe('ProfilePage', () => {
 
     const container = ProfilePage();
 
-    expect(container.querySelector('.profile-title').textContent).toBe('Profil');
+    expect(container.querySelector('.page-heading-title').textContent).toBe('Profil');
     expect(container.querySelectorAll('.profile-tab-button')).toHaveLength(3);
     expect(container.querySelector('.profile-tab-content .section-loader')).toBeTruthy();
     expect(container.querySelector('.profile-tab-content').getAttribute('aria-busy')).toBe('true');
