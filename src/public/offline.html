@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#09090b">
   <title>Kein Internet – VANTA</title>
-  <!-- Served by sw.js when a page load fails without a connection. Everything
-       is inline because only this file, the logo and the latin font are cached;
-       the styles mirror css/components/offline-overlay.css. -->
+  <!-- Served by sw.js when a page load fails without a connection. The styles
+       are inline because only this file, js/offline.js, the logo and the latin
+       font are cached; they mirror css/components/offline-overlay.css. -->
   <style>
     @font-face {
       font-family: 'Outfit';
@@ -111,32 +111,6 @@
       <p class="offline-status" id="offline-status" aria-live="polite"></p>
     </div>
   </main>
-  <script>
-    (function () {
-      var button = document.getElementById('offline-retry');
-      var status = document.getElementById('offline-status');
-      var checking = false;
-
-      function retry() {
-        if (checking) return;
-        checking = true;
-        button.disabled = true;
-        status.textContent = 'Verbindung wird geprüft…';
-        fetch('/', { method: 'HEAD', cache: 'no-store' })
-          .then(function (response) {
-            if (response.ok) { window.location.replace('/'); return; }
-            throw new Error('unreachable');
-          })
-          .catch(function () {
-            status.textContent = 'Immer noch keine Verbindung.';
-            checking = false;
-            button.disabled = false;
-          });
-      }
-
-      button.addEventListener('click', retry);
-      window.addEventListener('online', retry);
-    })();
-  </script>
+  <script src="/js/offline.js"></script>
 </body>
 </html>

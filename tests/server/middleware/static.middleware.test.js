@@ -109,6 +109,9 @@ describe('Static asset delivery', () => {
       expect(offline.headers['content-type']).toMatch(/text\/html/);
       expect(offline.text).toContain('Kein Internet');
       expect(offline.text).not.toContain('<div id="app"></div>');
+      // the app CSP forbids inline scripts, so the page must not rely on one
+      expect(offline.text).not.toMatch(/<script>/);
+      expect((await request(app).get('/js/offline.js')).status).toBe(200);
     });
 
     it('answers a conditional request for an unchanged file with 304', async () => {

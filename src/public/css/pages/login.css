@@ -315,18 +315,28 @@
   }
 }
 
-/* Anchor the bubble to the left edge on narrow screens so it stays in view */
+/* On narrow screens the bubble spans the checkbox row instead of hanging off
+   the icon, so it never leaves the viewport; the tail goes with it. */
 @media (max-width: 480px) {
+  .login-remember {
+    position: relative;
+  }
+  .login-hint {
+    position: static;
+  }
   .login-hint-bubble {
-    left: auto;
-    right: -8px;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
     transform: translate(0, 6px) scale(0.98);
   }
   .login-hint-bubble::after {
-    left: auto;
-    right: 18px;
+    display: none;
   }
-  .login-hint.open .login-hint-bubble {
+  .login-hint.open .login-hint-bubble,
+  .login-hint-trigger:hover + .login-hint-bubble,
+  .login-hint-trigger:focus-visible + .login-hint-bubble {
     transform: translate(0, 0) scale(1);
   }
 }
