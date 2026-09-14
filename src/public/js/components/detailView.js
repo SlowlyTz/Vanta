@@ -1,7 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 
-export function DetailView({ item, actions, favoriteButton, castSection, seasonsSection, similarSection, statusContent = null }) {
+export function DetailView({ item, actions, favoriteButton, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null }) {
   const container = createElement('div', { className: 'page-container' });
 
   const genreTags = (item.genres || []).map(genre =>
@@ -65,6 +65,10 @@ export function DetailView({ item, actions, favoriteButton, castSection, seasons
 
   if (favoriteButton) {
     actionButtons.push(favoriteButton);
+  }
+
+  if (playedButton) {
+    actionButtons.push(playedButton);
   }
 
   const posterImg = createElement('img', {

@@ -2,8 +2,9 @@ import { createElement } from '../utils/dom.js';
 import { getItemImageSources } from '../utils/image.js';
 import { formatYear } from '../utils/format.js';
 import { markReturnFromDetail } from '../utils/routeState.js';
+import { createPlayedToggle } from './playedToggle.js';
 
-export function MediaCard({ item, landscape = false, sourceType = null }) {
+export function MediaCard({ item, landscape = false, sourceType = null, playedToggle = false }) {
   if (!item) return null;
 
   const isEpisode = item.Type === 'Episode';
@@ -66,8 +67,23 @@ export function MediaCard({ item, landscape = false, sourceType = null }) {
     );
   }
 
+  // Watched state, like Jellyfin's check on the card: a plain badge, or the
+  // toggle itself where the card offers "mark as played" (episodes).
+  const isPlayed = item.UserData?.Played === true;
+  if (playedToggle) {
+    imageContainerChildren.push(createPlayedToggle(item, {
+      compact: true,
+      onChange: (played) => {
+        card.classList.toggle('is-played', played);
+        if (played) card.querySelector('.media-progress-bar')?.remove();
+      }
+    }));
+  } else if (isPlayed) {
+    imageContainerChildren.push(createPlayedBadge());
+  }
+
   const card = createElement('div', {
-    className: `media-card ${landscape ? 'landscape' : ''}`,
+    className: `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}`,
     dataset: { itemId: item.Id },
     onClick: () => {
       markReturnFromDetail({ itemId: item.Id, sourceType });
@@ -84,4 +100,10 @@ export function MediaCard({ item, landscape = false, sourceType = null }) {
   );
 
   return card;
+}
+
+function createPlayedBadge() {
+  const badge = createElement('div', { className: 'media-card-played', title: 'Gesehen', 'aria-label': 'Gesehen' });
+  badge.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+  return badge;
 }

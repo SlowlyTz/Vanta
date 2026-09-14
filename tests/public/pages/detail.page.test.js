@@ -10,7 +10,9 @@ vi.mock('../../../src/public/js/api/media.api.js', () => ({
     getSeasons: vi.fn(),
     getEpisodes: vi.fn(),
     favoriteItem: vi.fn(),
-    unfavoriteItem: vi.fn()
+    unfavoriteItem: vi.fn(),
+    markPlayed: vi.fn(),
+    markUnplayed: vi.fn()
   }
 }));
 
@@ -69,6 +71,34 @@ describe('DetailPage favorite button', () => {
     const checkbox = heart.querySelector('.checkbox');
     expect(heart).toBeTruthy();
     expect(checkbox.checked).toBe(true);
+  });
+
+  it('renders the played toggle for a Movie and marks it through the API', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ UserData: { IsFavorite: false, Played: false } }));
+    MediaApi.markPlayed.mockResolvedValue({ played: true });
+
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    const toggle = container.querySelector('.detail-actions .played-toggle');
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(toggle.textContent).toContain('Als gesehen markieren');
+
+    toggle.click();
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    await flush();
+    expect(MediaApi.markPlayed).toHaveBeenCalledWith('item-1');
+  });
+
+  it('does not render the played toggle for a Series', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Type: 'Series' }));
+    MediaApi.getSeasons.mockResolvedValue([]);
+
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(container.querySelector('.detail-actions .played-toggle')).toBeNull();
   });
 
   it('does not render the favorite control for unsupported item types', async () => {

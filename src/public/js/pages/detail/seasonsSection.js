@@ -28,7 +28,7 @@ export function buildSeasonsSection(item, seasons) {
         );
       } else {
         episodes.forEach(episode => {
-          const card = MediaCard({ item: episode, landscape: true });
+          const card = MediaCard({ item: episode, landscape: true, playedToggle: true });
           if (card) episodeGrid.appendChild(card);
         });
       }

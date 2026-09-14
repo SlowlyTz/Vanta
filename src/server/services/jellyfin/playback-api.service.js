@@ -69,10 +69,19 @@ export class PlaybackApiService {
     });
   }
 
+  // Jellyfin's own "mark played": POST sets Played, bumps PlayCount and resets
+  // the position; DELETE clears it. Both answer with the item's UserData.
   static markPlayed(userId, token, itemId) {
-    return jellyfinFetch(`/Users/${encodeURIComponent(userId)}/PlayedItems/${encodeURIComponent(itemId)}`, {
+    return jellyfinJson(`/Users/${encodeURIComponent(userId)}/PlayedItems/${encodeURIComponent(itemId)}`, {
       token,
       method: 'POST'
+    });
+  }
+
+  static markUnplayed(userId, token, itemId) {
+    return jellyfinJson(`/Users/${encodeURIComponent(userId)}/PlayedItems/${encodeURIComponent(itemId)}`, {
+      token,
+      method: 'DELETE'
     });
   }
 }
