@@ -7,6 +7,7 @@ import { MediaCarousel } from '../components/mediaCarousel.js';
 import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
+import { whenConnected } from '../utils/whenConnected.js';
 
 const HOME_ROUTE = '#/home';
 const HOME_SECTION_GROUPS = [
@@ -53,8 +54,10 @@ export default function HomePage() {
       }
     };
 
-    applyScroll();
-    requestAnimationFrame(applyScroll);
+    whenConnected(container, () => {
+      applyScroll();
+      requestAnimationFrame(applyScroll);
+    });
   };
 
   const loadData = async () => {

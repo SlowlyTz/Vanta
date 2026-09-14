@@ -3,6 +3,8 @@ import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../constants/featuredPublishers.js';
+
+const MIN_STUDIO_TITLES = 3;
 import { PageHeading } from '../components/pageHeading.js';
 
 export default function PublishersPage() {
@@ -60,7 +62,12 @@ export default function PublishersPage() {
     }
 
     const featured = getFeaturedPublishersFromStudios(studios);
-    const others = studios.filter(studio => !matchFeaturedPublisher(studio.Name));
+    // Only studios with a few titles are worth a button; entries without a
+    // count (Jellyfin fallback without the mirror) stay visible.
+    const others = studios.filter(studio =>
+      !matchFeaturedPublisher(studio.Name)
+      && (typeof studio.ItemCount !== 'number' || studio.ItemCount >= MIN_STUDIO_TITLES)
+    );
 
     const wrapper = createElement('div', {});
 

@@ -43,4 +43,19 @@ describe('PublishersPage', () => {
     expect(container.querySelector('.section-loader')).toBeNull();
     expect(container.textContent).toContain('Fehler beim Laden');
   });
+
+  it('lists only studios with at least three titles and keeps uncounted ones', async () => {
+    MediaApi.getStudios.mockResolvedValue([
+      { Name: 'Big Studio', ItemCount: 12 },
+      { Name: 'Tiny Studio', ItemCount: 2 },
+      { Name: 'Exactly Three', ItemCount: 3 },
+      { Name: 'Uncounted' }
+    ]);
+
+    const container = PublishersPage();
+    await flush();
+
+    const names = Array.from(container.querySelectorAll('.publisher-button')).map(b => b.textContent);
+    expect(names).toEqual(['Big Studio', 'Exactly Three', 'Uncounted']);
+  });
 });

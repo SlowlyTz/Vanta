@@ -115,13 +115,15 @@ export function createCatalogReader(db) {
       `).all(...params).map(row => ({ Name: row.Name }));
     },
 
+    // `ItemCount` says how many visible titles carry the studio, so the
+    // publisher page can hide one-off entries.
     studios: ({ libraryIds = null } = {}) => {
       const { where, params } = buildWhere({ libraryIds });
       return db.prepare(`
-        SELECT s.studio AS Name, s.studio_normalized AS Id FROM catalog_item_studios s
+        SELECT s.studio AS Name, s.studio_normalized AS Id, COUNT(*) AS count FROM catalog_item_studios s
         JOIN catalog_items i ON i.id = s.item_id ${where}
         GROUP BY s.studio_normalized ORDER BY s.studio COLLATE NOCASE
-      `).all(...params).map(row => ({ Name: row.Name, Id: row.Id }));
+      `).all(...params).map(row => ({ Name: row.Name, Id: row.Id, ItemCount: row.count }));
     },
 
     byProviderId: ({ tmdbId = null, imdbId = null, type = null, libraryIds = null }) => {
