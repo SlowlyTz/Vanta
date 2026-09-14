@@ -3,25 +3,45 @@
     --drawer-push: 44px;
     --drawer-width: min(84vw, 300px);
   }
+  /* Everything must fit without scrolling while no accordion is open, so
+     the header scales with the viewport height and the list stays tight. */
   .mobile-drawer-nav {
-    gap: 12px;
-    padding: calc(14px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: calc(12px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
   }
   .mobile-drawer-header {
-    min-height: 176px;
-    padding: 16px 8px 14px;
+    min-height: clamp(88px, 15dvh, 150px);
+    padding: 8px 8px 6px;
   }
   .mobile-drawer-logo {
-    width: min(150px, 74%);
+    width: min(120px, 60%);
   }
   .mobile-drawer-close .settings-header-icon {
     width: 18px;
     height: 18px;
   }
+  .mobile-drawer-list {
+    gap: 6px;
+  }
+  .mobile-drawer-nav .navbar-link {
+    min-height: 44px;
+  }
   .navbar-mobile-settings-item {
     display: block;
-    margin-top: 18px;
-    padding-top: 18px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 768px) and (max-height: 600px) {
+  .mobile-drawer-header {
+    min-height: 72px;
+  }
+  .mobile-drawer-logo {
+    width: 88px;
+  }
+  .mobile-drawer-nav .navbar-link {
+    min-height: 40px;
   }
 }

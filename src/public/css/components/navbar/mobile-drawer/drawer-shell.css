@@ -62,6 +62,32 @@ body.mobile-nav-open .navbar.navbar-spotlight {
   transform: translate3d(var(--drawer-push), 0, 0);
 }
 
+/* Short desktop windows: shrink the header so the list needs no scrolling */
+@media (min-width: 769px) and (max-height: 720px) {
+  .mobile-drawer-nav {
+    gap: 6px;
+    padding-top: 10px;
+    padding-bottom: 12px;
+  }
+  .mobile-drawer-header {
+    min-height: 72px;
+    padding-bottom: 2px;
+  }
+  .mobile-drawer-logo {
+    width: 88px;
+  }
+  .mobile-drawer-list {
+    gap: 6px;
+  }
+  .mobile-drawer-nav .navbar-link {
+    min-height: 42px;
+  }
+  .mobile-drawer-nav .navbar-mobile-settings-item {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mobile-drawer-nav,
   .app-main,
@@ -162,8 +188,8 @@ body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
 
 .mobile-drawer-nav .navbar-mobile-settings-item {
   display: block;
-  margin-top: 14px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
