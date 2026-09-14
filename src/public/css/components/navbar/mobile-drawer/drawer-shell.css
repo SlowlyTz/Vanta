@@ -168,12 +168,38 @@ body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
   transform: scale(0.95);
 }
 
+/* The list takes the remaining height and hands it to the entries, so the
+   buttons grow (up to a cap) and spread over the panel instead of leaving
+   the lower half empty. An open accordion adds height and scrolls. */
 .mobile-drawer-list {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
   list-style: none;
   min-width: 0;
+}
+
+.mobile-drawer-list > .mobile-nav-link-item {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mobile-drawer-list > .mobile-nav-link-item > .navbar-link,
+.mobile-drawer-list > .mobile-nav-link-item > .mobile-drawer-accordion-trigger {
+  flex: 1 1 auto;
+  max-height: 72px;
+}
+
+.mobile-drawer-accordion-trigger .navbar-link,
+.mobile-drawer-accordion-trigger .mobile-drawer-accordion-toggle {
+  height: 100%;
+}
+
+.mobile-drawer-list > .mobile-nav-link-item > .mobile-drawer-submenu {
+  flex: 0 0 auto;
 }
 
 .mobile-drawer-list[hidden],
