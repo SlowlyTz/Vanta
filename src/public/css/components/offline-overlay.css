@@ -1,0 +1,102 @@
+/* ---------------------------------
+   OFFLINE OVERLAY
+   Full-screen notice while the app has no connection. offline.html carries a
+   copy of these rules inline, keep both in sync.
+--------------------------------- */
+.offline-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background:
+    radial-gradient(circle at 50% 30%, hsl(240, 10%, 12%) 0%, transparent 60%),
+    var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.offline-overlay[hidden] {
+  display: none;
+}
+
+.offline-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-md);
+  padding: clamp(28px, 6vw, 40px);
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: offline-card-in 320ms var(--abyss-ease) both;
+}
+
+.offline-logo {
+  width: 96px;
+  height: auto;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.42));
+}
+
+.offline-icon {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--error-bg);
+  color: var(--error-color);
+  margin-top: var(--spacing-xs);
+}
+
+.offline-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.offline-text {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 34ch;
+}
+
+.offline-retry {
+  margin-top: var(--spacing-sm);
+  min-width: 200px;
+  min-height: 48px;
+}
+
+.offline-retry[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+  transform: none;
+  box-shadow: none;
+}
+
+.offline-status {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+@keyframes offline-card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offline-card {
+    animation: none;
+  }
+}

@@ -9,6 +9,8 @@
   var SKIPPED_ROUTES = ['#/player/', '#/watch-party/'];
 
   function shouldPlay(input) {
+    // Offline there is nothing to load; the offline page should show at once.
+    if (input.online === false) return false;
     var hash = input.hash || '';
     for (var i = 0; i < SKIPPED_ROUTES.length; i++) {
       if (hash.indexOf(SKIPPED_ROUTES[i]) === 0) return false;
@@ -50,7 +52,7 @@
   window.VantaIntroGate = gate;
 
   var now = Date.now();
-  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash })) {
+  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true })) {
     window.document.documentElement.classList.add('intro-off');
     return;
   }

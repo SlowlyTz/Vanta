@@ -64,6 +64,8 @@ describe('intro-gate', () => {
     expect(gate.shouldPlay({ now: TEN_MINUTES, lastPlayedAt: 1, hash: '' })).toBe(false);
     expect(gate.shouldPlay({ now: TEN_MINUTES + 1, lastPlayedAt: 1, hash: '' })).toBe(true);
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '#/player/1' })).toBe(false);
+    expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', online: false })).toBe(false);
+    expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', online: true })).toBe(true);
   });
 
   it('starts fetching the scene at decision time, but only when it plays', () => {
