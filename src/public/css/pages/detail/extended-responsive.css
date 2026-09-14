@@ -1,8 +1,4 @@
 @media (max-width: 768px) {
-  .detail-hero-backdrop {
-    height: auto;
-    min-height: 0;
-  }
   .detail-content {
     padding: var(--spotlight-navbar-clearance) var(--spacing-md) 16px;
     gap: 18px;

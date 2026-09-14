@@ -1,11 +1,10 @@
 @media (max-width: 992px) {
   .detail-page {
     --detail-hero-height: 0px;
+    --detail-backdrop-height: min(70vh, 600px);
   }
 
   .detail-hero-backdrop {
-    height: auto;
-    min-height: 0;
     background-position: center top;
   }
 
