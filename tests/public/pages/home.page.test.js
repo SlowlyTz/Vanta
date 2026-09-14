@@ -72,6 +72,24 @@ describe('HomePage restore', () => {
     expect(MediaApi.getHome).toHaveBeenCalledTimes(1);
   });
 
+  it('shows hero and carousel skeletons until the home data arrives', async () => {
+    let resolveHome;
+    MediaApi.getHome.mockReturnValue(new Promise(resolve => { resolveHome = resolve; }));
+    MediaApi.getHomeSectionGroup.mockResolvedValue({ sections: [] });
+
+    const container = HomePage();
+    await flushPromises();
+
+    expect(container.querySelector('.home-hero-skeleton')).toBeTruthy();
+    expect(container.querySelectorAll('.skeleton-carousel').length).toBeGreaterThanOrEqual(5);
+    expect(container.textContent).toContain('Startseite wird geladen');
+
+    resolveHome({ movies: [], series: [], resume: [] });
+    await flushPromises();
+
+    expect(container.querySelector('.home-hero-skeleton')).toBeNull();
+  });
+
   it('renders an empty-state block for a section with no items but an emptyMessage', async () => {
     MediaApi.getHome.mockResolvedValue({ movies: [], series: [], resume: [] });
     MediaApi.getHomeSectionGroup.mockImplementation(group => {

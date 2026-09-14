@@ -1,7 +1,8 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
-import { createSectionLoader, setSectionBusy } from '../components/loader.js';
+import { setSectionBusy } from '../components/loader.js';
+import { createHeroSkeleton, createCarouselSkeleton } from '../components/skeleton.js';
 import { MediaCarousel } from '../components/mediaCarousel.js';
 import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
@@ -71,7 +72,13 @@ export default function HomePage() {
 
     container.innerHTML = '';
     setSectionBusy(container, true);
-    container.appendChild(createSectionLoader({ label: 'Startseite wird geladen' }));
+    container.appendChild(createHeroSkeleton());
+    container.appendChild(
+      createElement('div', { className: 'content-section' },
+        createCarouselSkeleton({ title: 'Weiter schauen', landscape: true, count: 5, className: 'media-section-loading' }),
+        HOME_SECTION_GROUPS.map(group => renderGroupLoader(group))
+      )
+    );
 
     try {
       const raw = await MediaApi.getHome();
@@ -119,17 +126,16 @@ export default function HomePage() {
     return hasHero || hasResume || hasSections;
   };
 
-  const renderGroupLoader = (group) => (
-    createElement('div', {
-      className: 'media-carousel-container media-section-loading',
-      dataset: { homeSectionGroup: group.key }
-    },
-      createElement('div', { className: 'carousel-header' },
-        createElement('h3', { className: 'carousel-title-text' }, group.title)
-      ),
-      createSectionLoader({ label: group.loadingLabel, compact: true })
-    )
-  );
+  const renderGroupLoader = (group) => {
+    const skeleton = createCarouselSkeleton({
+      title: group.title,
+      label: group.loadingLabel,
+      featured: group.key === 'featured',
+      className: 'media-section-loading'
+    });
+    skeleton.dataset.homeSectionGroup = group.key;
+    return skeleton;
+  };
 
   const renderEmptySection = (section) => (
     createElement('div', { className: 'media-carousel-container media-section-empty' },
