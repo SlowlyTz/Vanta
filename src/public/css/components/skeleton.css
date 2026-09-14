@@ -1,0 +1,167 @@
+/* ---------------------------------
+   SKELETONS
+   Loading placeholders that take the footprint of the real hero and
+   carousels (sizes mirror media-card.css, carousel.css, home/hero-base.css).
+--------------------------------- */
+.skeleton-bar,
+.skeleton-card-image,
+.skeleton-hero-backdrop {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-bar::after,
+.skeleton-card-image::after,
+.skeleton-hero-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.06) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton-bar {
+  display: block;
+  height: 0.9em;
+}
+
+/* The status text stays for assistive tech; the spinner is not needed. */
+.skeleton-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Cards */
+.skeleton-card {
+  width: 100%;
+}
+
+.skeleton-card-image {
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-card.landscape .skeleton-card-image {
+  aspect-ratio: 16 / 9;
+}
+
+.skeleton-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.skeleton-bar-title {
+  width: 70%;
+  height: 0.95rem;
+}
+
+.skeleton-bar-subtitle {
+  width: 40%;
+  height: 0.8rem;
+}
+
+/* Carousel */
+.skeleton-carousel {
+  position: relative;
+}
+
+.skeleton-carousel .skeleton-bar-heading {
+  width: 180px;
+  height: 1.2rem;
+}
+
+.skeleton-track {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Hero */
+.home-hero-skeleton .skeleton-hero-backdrop {
+  border-radius: 0;
+  background-color: var(--bg-secondary);
+}
+
+.home-hero-skeleton .skeleton-hero-backdrop::after {
+  animation-duration: 2.2s;
+}
+
+.skeleton-hero-content {
+  gap: 14px;
+}
+
+.skeleton-bar-hero-title {
+  width: min(420px, 70%);
+  height: 3rem;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-hero-meta {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-bar-pill {
+  width: 72px;
+  height: 26px;
+  border-radius: var(--abyss-radius);
+}
+
+.skeleton-bar-text {
+  width: 100%;
+  max-width: 560px;
+  height: 0.95rem;
+}
+
+.skeleton-bar-text.short {
+  width: 65%;
+}
+
+.skeleton-hero-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.skeleton-bar-button {
+  width: 150px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.skeleton-bar-button.secondary {
+  width: 120px;
+  background-color: var(--bg-tertiary);
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 768px) {
+  .skeleton-bar-hero-title {
+    height: 2.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar::after,
+  .skeleton-card-image::after,
+  .skeleton-hero-backdrop::after {
+    animation: none;
+  }
+}
