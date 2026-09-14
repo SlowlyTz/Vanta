@@ -54,12 +54,18 @@ describe('HomePage restore', () => {
     saveRouteState('#/home', { data: { hero: [], resume: [makeItem('a'), makeItem('b')], sections: [] } });
     markReturnFromDetail({ scrollY: 555, itemId: 'a' });
 
-    HomePage();
+    const container = HomePage();
     await flushPromises(2);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+
+    // the scroll is restored once the router has attached the page
+    document.body.appendChild(container);
+    await new Promise(resolve => setTimeout(resolve, 60));
 
     expect(MediaApi.getHome).not.toHaveBeenCalled();
     expect(MediaApi.getHomeSectionGroup).not.toHaveBeenCalled();
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: 'center' });
+    container.remove();
   });
 
   it('falls back to a fresh fetch when a marker exists but no data is cached', async () => {

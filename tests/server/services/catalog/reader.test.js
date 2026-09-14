@@ -111,11 +111,11 @@ describe('CatalogReader', () => {
       expect(reader.genres({ type: 'Series', libraryIds: [] })).toEqual([]);
     });
 
-    it('lists distinct studios with a stable id', () => {
+    it('lists distinct studios with a stable id and their title count', () => {
       expect(reader.studios()).toEqual([
-        { Name: '20th Century Fox', Id: '20th century fox' },
-        { Name: 'Netflix', Id: 'netflix' },
-        { Name: 'Warner Bros.', Id: 'warner bros.' }
+        { Name: '20th Century Fox', Id: '20th century fox', ItemCount: 1 },
+        { Name: 'Netflix', Id: 'netflix', ItemCount: 1 },
+        { Name: 'Warner Bros.', Id: 'warner bros.', ItemCount: 2 }
       ]);
     });
   });
