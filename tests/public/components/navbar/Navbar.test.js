@@ -56,13 +56,13 @@ describe('Navbar', () => {
     expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]')).toBeFalsy();
   });
 
-  it('lists the drawer entries as Home, Filme, Serien, Publisher, Scroller, Anfragen, Suche', () => {
+  it('lists the drawer entries as Home, Filme, Serien, Publisher, Scroller, Anfragen', () => {
     Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     const labels = Array.from(document.querySelectorAll('.mobile-drawer-list > .mobile-nav-link-item .mobile-nav-label'))
       .map(el => el.textContent);
 
-    expect(labels).toEqual(['Home', 'Filme', 'Serien', 'Publisher', 'Scroller', 'Anfragen', 'Suche', 'Einstellungen', 'Profil']);
+    expect(labels).toEqual(['Home', 'Filme', 'Serien', 'Publisher', 'Scroller', 'Anfragen', 'Einstellungen', 'Profil']);
   });
 
   it('numbers the drawer header and entries for the staggered fly-in', () => {

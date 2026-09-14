@@ -54,8 +54,13 @@
 .detail-hero-main {
   display: grid;
   grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  grid-template-areas:
+    'poster head'
+    'poster info';
+  align-content: center;
   align-items: center;
-  gap: clamp(36px, 5vw, 72px);
+  column-gap: clamp(36px, 5vw, 72px);
+  row-gap: 16px;
   min-height: 0;
   min-width: 0;
 }
@@ -83,11 +88,27 @@
   object-fit: cover;
 }
 
-.detail-info {
+.detail-poster {
+  grid-area: poster;
+}
+
+.detail-info-head {
+  grid-area: head;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  justify-content: center;
+  align-self: end;
+  width: 100%;
+  max-width: 860px;
+  min-width: 0;
+}
+
+.detail-info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
   width: 100%;
   max-width: 860px;
   min-width: 0;
@@ -172,6 +193,50 @@
   color: var(--text-secondary);
   max-width: 780px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Clamped description that unfolds on "mehr lesen" (see expandableText.js).
+   The max-height is set inline while the height animates. */
+.expandable-text {
+  overflow: hidden;
+  transition: max-height 320ms var(--abyss-ease);
+}
+
+.expandable-text-body {
+  margin: 0;
+}
+
+.expandable-text-toggle {
+  display: inline;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: rgb(var(--abyss-accent));
+  text-shadow: none;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.expandable-text-toggle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.expandable-text-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--abyss-accent), 0.25);
+}
+
+.expandable-text.is-expanded .expandable-text-toggle {
+  display: block;
+  margin-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expandable-text {
+    transition: none;
+  }
 }
 
 .detail-crew {

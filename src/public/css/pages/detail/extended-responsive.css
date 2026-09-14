@@ -7,12 +7,25 @@
     padding: var(--spotlight-navbar-clearance) var(--spacing-md) 16px;
     gap: 18px;
   }
+  /* Poster and title side by side, the rest below across the full width */
   .detail-hero-main {
-    gap: 18px;
+    grid-template-columns: minmax(0, 118px) minmax(0, 1fr);
+    grid-template-areas:
+      'poster head'
+      'info info';
+    column-gap: 16px;
+    row-gap: 18px;
+    align-items: end;
   }
+  .detail-info-head,
   .detail-info {
     align-items: flex-start;
     text-align: left;
+    margin: 0;
+  }
+  .detail-info-head {
+    gap: 10px;
+    padding-bottom: 4px;
   }
   .detail-title {
     font-size: 2rem;
@@ -27,14 +40,66 @@
   .detail-actions {
     justify-content: flex-start;
   }
-  .detail-metadata {
-    gap: 8px 12px;
+  .detail-poster {
+    width: 100%;
+    max-width: 118px;
+    margin: 0;
+    justify-self: start;
+  }
+  .detail-info {
+    gap: 12px;
+    width: 100%;
+  }
+  .detail-title {
+    font-size: 1.75rem;
+    line-height: 1.12;
+  }
+  .detail-original-title {
     font-size: 0.9rem;
+  }
+  .detail-metadata {
+    gap: 6px 8px;
+    font-size: 0.85rem;
+  }
+  .metadata-item {
+    padding: 3px 10px;
+    font-size: 0.76rem;
+  }
+  .detail-genres {
+    gap: 6px;
+  }
+  .genre-tag {
+    padding: 3px 10px;
+    font-size: 0.78rem;
+  }
+  .detail-tagline {
+    font-size: 0.95rem;
+  }
+  /* Play across the full width, the rest in one compact row below it */
+  .detail-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    margin: 4px 0;
+  }
+  .detail-actions .btn-primary {
+    flex: 1 0 100%;
+    min-height: 50px;
+    font-size: 1.05rem;
+  }
+  .detail-actions .btn-secondary {
+    flex: 1 1 auto;
+    min-height: 44px;
   }
   .detail-overview {
     font-size: 0.98rem;
     line-height: 1.5;
     text-align: left;
+    text-shadow: none;
+  }
+  .detail-crew {
+    font-size: 0.85rem;
+    gap: 4px;
   }
   .cast-title {
     font-size: 1.15rem;
@@ -47,9 +112,33 @@
     width: 70px;
     height: 70px;
   }
+  /* Episodes as a compact list: thumbnail left, title and number beside it */
   .episodes-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
+  }
+  .episodes-grid .media-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .episodes-grid .media-card-image-container {
+    flex: 0 0 148px;
+    width: 148px;
+  }
+  .episodes-grid .media-card-details {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-top: 0;
+  }
+  .episodes-grid .media-card-title {
+    white-space: normal;
+    font-size: 0.9rem;
+  }
+  .episodes-grid .media-card-subtitle {
+    white-space: normal;
+    font-size: 0.82rem;
   }
 
   .detail-trailer-backdrop {

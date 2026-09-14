@@ -4,8 +4,7 @@ export const NAV_LINKS = [
   { key: 'series', label: 'Serien', href: '#/series', type: 'Series' },
   { key: 'publishers', label: 'Publisher', href: '#/publishers', isStudios: true },
   { key: 'scroller', label: 'Scroller', href: '#/scroller' },
-  { key: 'requests', label: 'Anfragen', href: '#/requests' },
-  { key: 'search', label: 'Suche', href: '#/search' }
+  { key: 'requests', label: 'Anfragen', href: '#/requests' }
 ];
 
 export const TOP_TABS = [
