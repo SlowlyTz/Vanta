@@ -10,14 +10,15 @@
   padding-bottom: 0;
 }
 
+/* The backdrop has its own height, independent of the content below it, so
+   unfolding the description does not rescale the image; the bottom gradient
+   fades it into the page background. */
 .detail-hero-backdrop {
   position: absolute;
   top: 0;
-  bottom: 0;
   left: 0;
   width: 100%;
-  height: auto;
-  min-height: 0;
+  height: var(--detail-backdrop-height, var(--detail-hero-height));
   background-size: cover;
   background-position: center 24%;
   pointer-events: none;
@@ -33,7 +34,7 @@
   bottom: 0;
   background: 
     linear-gradient(to right, rgba(4, 4, 6, 0.98) 0%, rgba(4, 4, 6, 0.78) 38%, rgba(4, 4, 6, 0.28) 100%),
-    linear-gradient(to top, var(--bg-primary) 0%, rgba(4, 4, 6, 0.72) 18%, rgba(4, 4, 6, 0.2) 72%, rgba(4, 4, 6, 0) 100%);
+    linear-gradient(to top, var(--bg-primary) 0%, rgba(4, 4, 6, 0.72) 22%, rgba(4, 4, 6, 0.2) 72%, rgba(4, 4, 6, 0) 100%);
   z-index: 2;
 }
 
