@@ -13,6 +13,8 @@ vi.mock('../../src/public/js/realtime/app-realtime.js', () => ({ initAppRealtime
 vi.mock('../../src/public/js/components/watch-party/WatchPartyInvitationOverlay.js', () => ({
   mountWatchPartyInvitationOverlay: vi.fn()
 }));
+vi.mock('../../src/public/js/components/offlineOverlay.js', () => ({ mountOfflineOverlay: vi.fn() }));
+vi.mock('../../src/public/js/utils/service-worker.js', () => ({ registerServiceWorker: vi.fn() }));
 
 await import('../../src/public/js/app.js');
 

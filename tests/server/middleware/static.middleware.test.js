@@ -90,6 +90,27 @@ describe('Static asset delivery', () => {
       expect((await request(app).get('/css/base.css')).headers['cache-control']).toBe('no-cache');
     });
 
+    it('serves the PWA files as files, not as the shell', async () => {
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
+
+      const sw = await request(app).get('/sw.js');
+      expect(sw.status).toBe(200);
+      expect(sw.headers['content-type']).toMatch(/javascript/);
+      expect(sw.headers['cache-control']).toBe('no-cache');
+      expect(sw.text).toContain('offline.html');
+
+      const manifest = await request(app).get('/manifest.webmanifest');
+      expect(manifest.status).toBe(200);
+      expect(manifest.headers['content-type']).toMatch(/manifest\+json/);
+      expect(manifest.headers['cache-control']).toBe('no-cache');
+
+      const offline = await request(app).get('/offline.html');
+      expect(offline.status).toBe(200);
+      expect(offline.headers['content-type']).toMatch(/text\/html/);
+      expect(offline.text).toContain('Kein Internet');
+      expect(offline.text).not.toContain('<div id="app"></div>');
+    });
+
     it('answers a conditional request for an unchanged file with 304', async () => {
       const app = createApp(await loadModules({ nodeEnv: 'development' }));
       const first = await request(app).get('/js/app.js');

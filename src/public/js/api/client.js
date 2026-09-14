@@ -1,4 +1,5 @@
 const AUTH_UNAUTHORIZED_EVENT = 'vanta:auth-unauthorized';
+const NETWORK_ERROR_EVENT = 'vanta:network-error';
 
 const createApiError = (message, response, options = {}) => {
   const error = new Error(message);
@@ -27,7 +28,17 @@ export async function request(url, options = {}) {
   }
 
   try {
-    const response = await fetch(url, options);
+    let response;
+    try {
+      response = await fetch(url, options);
+    } catch (networkError) {
+      // fetch only rejects when the request never got a response (offline,
+      // server down, aborted); the offline overlay listens for this.
+      if (networkError?.name !== 'AbortError') {
+        window.dispatchEvent(new CustomEvent(NETWORK_ERROR_EVENT, { detail: { url } }));
+      }
+      throw networkError;
+    }
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));
