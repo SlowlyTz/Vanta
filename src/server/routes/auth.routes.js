@@ -7,10 +7,14 @@ import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../m
 
 const router = express.Router();
 
+// "Angemeldet bleiben": the cookie outlives the browser session for two
+// weeks; without it the session cookie has no maxAge at all.
+export const REMEMBER_ME_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+
 const BAN_MESSAGE = 'Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.';
 
 router.post('/login', asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, rememberMe } = req.body;
 
   if (!username) {
     return res.status(400).json({ error: 'Username is required' });
@@ -30,6 +34,9 @@ router.post('/login', asyncHandler(async (req, res) => {
     req.session.userId = data.User.Id;
     req.session.username = data.User.Name;
     req.session.isAdmin = isAdmin;
+    if (rememberMe === true) {
+      req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE_MS;
+    }
 
     KnownUsersService.remember({ userId: data.User.Id, username: data.User.Name });
 

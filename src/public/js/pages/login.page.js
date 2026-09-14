@@ -8,6 +8,10 @@ const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
 const GENERIC_LOGIN_ERROR = 'Login fehlgeschlagen. Bitte überprüfe deine Daten.';
 const PASSWORD_SHOW_LABEL = 'Passwort anzeigen';
 const PASSWORD_HIDE_LABEL = 'Passwort verbergen';
+const REMEMBER_HINT_TEXT = 'Du bleibst auf diesem Gerät 14 Tage angemeldet, auch wenn du den Browser schließt. Auf geteilten Geräten besser nicht aktivieren.';
+
+const INFO_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><circle cx="12" cy="8" r="0.6" fill="currentColor"></circle></svg>`;
+const CHECK_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>`;
 
 const EYE_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2"></path><path d="M6.6 6.6A17.4 17.4 0 0 0 2 12s3.5 7 10 7a10.7 10.7 0 0 0 4.4-.9"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>`;
@@ -43,7 +47,7 @@ export default function LoginPage() {
     loginButton.textContent = LOGIN_BUTTON_BUSY_TEXT;
 
     try {
-      await authStore.login(username, password);
+      await authStore.login(username, password, rememberCheckbox.checked);
       appStore.showToast('Erfolgreich angemeldet!', 'success');
       let redirectHash = '#/home';
       try {
@@ -98,6 +102,70 @@ export default function LoginPage() {
   });
   passwordToggle.innerHTML = EYE_ICON;
 
+  const rememberCheckbox = createElement('input', {
+    type: 'checkbox',
+    id: 'login-remember',
+    name: 'rememberMe',
+    className: 'login-checkbox-input'
+  });
+
+  const checkmark = createElement('span', { className: 'login-checkbox-box', 'aria-hidden': 'true' });
+  checkmark.innerHTML = CHECK_ICON;
+
+  // The hint opens on hover/focus (desktop) and on tap (touch); Escape or a
+  // click elsewhere closes the tapped state again.
+  const hintBubble = createElement('div', {
+    className: 'login-hint-bubble',
+    id: 'login-remember-hint',
+    role: 'tooltip'
+  }, REMEMBER_HINT_TEXT);
+
+  const hintTrigger = createElement('button', {
+    type: 'button',
+    className: 'login-hint-trigger',
+    'aria-label': 'Was bedeutet „Angemeldet bleiben“?',
+    'aria-describedby': 'login-remember-hint',
+    'aria-expanded': 'false',
+    onClick: (event) => {
+      event.stopPropagation();
+      setHintOpen(!hint.classList.contains('open'));
+    }
+  });
+  hintTrigger.innerHTML = INFO_ICON;
+
+  const hint = createElement('div', { className: 'login-hint' }, hintTrigger, hintBubble);
+
+  // The document listeners only exist while the bubble is open, so nothing
+  // is left behind when the router swaps the page.
+  const closeHintOnOutsideClick = (event) => {
+    if (!hint.contains(event.target)) setHintOpen(false);
+  };
+  const closeHintOnEscape = (event) => {
+    if (event.key === 'Escape') setHintOpen(false);
+  };
+
+  function setHintOpen(open) {
+    if (hint.classList.contains('open') === open) return;
+    hint.classList.toggle('open', open);
+    hintTrigger.setAttribute('aria-expanded', String(open));
+    if (open) {
+      document.addEventListener('click', closeHintOnOutsideClick);
+      document.addEventListener('keydown', closeHintOnEscape);
+    } else {
+      document.removeEventListener('click', closeHintOnOutsideClick);
+      document.removeEventListener('keydown', closeHintOnEscape);
+    }
+  }
+
+  const rememberRow = createElement('div', { className: 'login-remember' },
+    createElement('label', { className: 'login-checkbox', for: 'login-remember' },
+      rememberCheckbox,
+      checkmark,
+      createElement('span', { className: 'login-checkbox-label' }, 'Angemeldet bleiben')
+    ),
+    hint
+  );
+
   const loginButton = createElement('button', {
     type: 'submit',
     className: 'btn-primary btn-login'
@@ -121,6 +189,7 @@ export default function LoginPage() {
         passwordToggle
       )
     ),
+    rememberRow,
     loginButton
   );
 
