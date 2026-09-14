@@ -11,9 +11,14 @@ const router = express.Router();
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const SHORT = 'public, max-age=3600';
 
-const sendPlaceholder = (res, type) => {
-  res.setHeader('Content-Type', 'image/svg+xml');
+const PERSON_PLACEHOLDER = '/assets/person-placeholder.webp';
+
+// `fallback=person` asks for the neutral portrait instead of the generic
+// "Bild nicht verfügbar" graphic when the upstream image cannot be served.
+const sendPlaceholder = (res, type, fallback) => {
   res.setHeader('Cache-Control', 'no-cache');
+  if (fallback === 'person') return res.redirect(302, PERSON_PLACEHOLDER);
+  res.setHeader('Content-Type', 'image/svg+xml');
   return res.status(200).send(getSvgPlaceholder(type));
 };
 
@@ -32,7 +37,7 @@ const proxyThrough = async (req, res, { id, accessToken, type, query }) => {
 router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const { accessToken } = req.session;
   const { id } = req.params;
-  const { type = 'Primary', tag, width, height, maxWidth, maxHeight, quality } = req.query;
+  const { type = 'Primary', tag, width, height, maxWidth, maxHeight, quality, fallback } = req.query;
   const cache = getImageCache();
 
   try {
@@ -67,7 +72,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
     if (res.headersSent) return;
     console.error(`[Image Proxy Error] Failed to proxy image ${id} (${type}):`, error.message);
     res.removeHeader('ETag');
-    return sendPlaceholder(res, type);
+    return sendPlaceholder(res, type, fallback);
   }
 }));
 

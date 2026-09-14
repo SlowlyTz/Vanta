@@ -1,12 +1,11 @@
 import { createElement } from '../utils/dom.js';
-import { createPersonPlaceholderSvg, getPersonImageUrl } from '../utils/image.js';
+import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../utils/image.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';
 
 export function CastCarousel({ actors = [], onActorClick }) {
   if (!actors || actors.length === 0) return null;
 
   const actorCards = actors.map(actor => {
-    const actorPlaceholder = createPersonPlaceholderSvg(actor.Name || '');
     
     return createElement('div', {
       className: 'cast-card',
@@ -22,7 +21,7 @@ export function CastCarousel({ actors = [], onActorClick }) {
         loading: 'lazy',
         onError: (event) => {
           event.currentTarget.onerror = null;
-          event.currentTarget.src = actorPlaceholder;
+          event.currentTarget.src = PERSON_PLACEHOLDER_URL;
         }
       }),
       createElement('div', { className: 'cast-name' }, actor.Name),
