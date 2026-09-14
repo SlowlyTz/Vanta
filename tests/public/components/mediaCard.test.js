@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MediaCard } from '../../../src/public/js/components/mediaCard.js';
 
+vi.mock('../../../src/public/js/api/media.api.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    MediaApi: { ...actual.MediaApi, markPlayed: vi.fn().mockResolvedValue({}), markUnplayed: vi.fn().mockResolvedValue({}) }
+  };
+});
+
 describe('MediaCard', () => {
   beforeEach(() => {
     window.location.hash = '#/profile';
@@ -80,5 +87,32 @@ describe('MediaCard', () => {
     expect(img.getAttribute('src').startsWith('data:image/svg+xml')).toBe(true);
     expect(img.hasAttribute('srcset')).toBe(false);
     expect(img.hasAttribute('sizes')).toBe(false);
+  });
+
+  it('shows a watched check on played items', () => {
+    const card = MediaCard({ item: { Id: 'm1', Type: 'Movie', Name: 'Heat', UserData: { Played: true } } });
+    expect(card.classList.contains('is-played')).toBe(true);
+    expect(card.querySelector('.media-card-played')).toBeTruthy();
+    expect(card.querySelector('.played-toggle')).toBeNull();
+
+    const fresh = MediaCard({ item: { Id: 'm2', Type: 'Movie', Name: 'Alien', UserData: { Played: false } } });
+    expect(fresh.querySelector('.media-card-played')).toBeNull();
+  });
+
+  it('hosts a compact played toggle on request whose click does not open the item', () => {
+    window.location.hash = '#/item/s1';
+    const card = MediaCard({
+      item: { Id: 'e1', Type: 'Episode', Name: 'Pilot', SeriesName: 'Show', UserData: { Played: false, PlaybackPositionTicks: 10 }, RunTimeTicks: 100 },
+      landscape: true,
+      playedToggle: true
+    });
+
+    const toggle = card.querySelector('.played-toggle.compact');
+    expect(toggle).toBeTruthy();
+    expect(card.querySelector('.media-progress-bar')).toBeTruthy();
+
+    toggle.click();
+    expect(window.location.hash).toBe('#/item/s1');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
   });
 });

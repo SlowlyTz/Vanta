@@ -1,4 +1,5 @@
 import { createElement } from '../utils/dom.js';
+import { createPlayedToggle } from '../components/playedToggle.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { MediaApi } from '../api/media.api.js';
@@ -146,11 +147,14 @@ export default function DetailPage({ id }) {
       ].filter(Boolean);
 
       const favoriteButton = createFavoriteButton(item);
+      // Series are marked per episode in the seasons section, like Jellyfin.
+      const playedButton = item.Type === 'Movie' ? createPlayedToggle(item) : null;
 
       const detailView = DetailView({
         item: normalized,
         actions,
         favoriteButton,
+        playedButton,
         castSection,
         seasonsSection,
         similarSection

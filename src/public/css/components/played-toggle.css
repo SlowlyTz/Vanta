@@ -1,0 +1,89 @@
+/* ---------------------------------
+   PLAYED TOGGLE
+   "Als gesehen markieren" on the detail page (with label) and on episode
+   cards (compact, icon only).
+--------------------------------- */
+.played-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.played-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.03);
+}
+
+.played-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--abyss-accent), 0.25);
+}
+
+.played-toggle[aria-pressed="true"] {
+  background-color: rgb(var(--abyss-accent));
+  border-color: transparent;
+  color: var(--bg-primary);
+}
+
+.played-toggle[aria-pressed="true"]:hover {
+  background-color: #ffffff;
+}
+
+.played-toggle.compact {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.played-toggle.compact svg {
+  width: 16px;
+  height: 16px;
+}
+
+.played-toggle.compact:hover {
+  transform: scale(1.08);
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+.played-toggle.compact[aria-pressed="true"] {
+  background-color: rgb(var(--abyss-accent));
+  color: var(--bg-primary);
+}
+
+.played-toggle.compact[aria-pressed="true"]:hover {
+  background-color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .played-toggle {
+    transition: none;
+  }
+  .played-toggle:hover,
+  .played-toggle.compact:hover {
+    transform: none;
+  }
+}

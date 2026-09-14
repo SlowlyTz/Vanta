@@ -1,6 +1,7 @@
 import express from 'express';
 import { LibraryService } from '../../services/jellyfin/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
+import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
 import { HomeCategoriesService } from '../../services/home-categories.service.js';
 import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
@@ -156,6 +157,27 @@ router.get('/item/:id/episodes', requireAuth, asyncHandler(async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch episodes' });
   }
 }));
+
+const setPlayed = (played) => asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+  const { id } = req.params;
+
+  try {
+    const userData = played
+      ? await PlaybackApiService.markPlayed(userId, accessToken, id)
+      : await PlaybackApiService.markUnplayed(userId, accessToken, id);
+    return res.json({ played, userData });
+  } catch (error) {
+    console.error('[Media Played Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
+    return res.status(500).json({ error: played ? 'Failed to mark as played' : 'Failed to mark as unplayed' });
+  }
+});
+
+router.post('/item/:id/played', requireAuth, setPlayed(true));
+router.delete('/item/:id/played', requireAuth, setPlayed(false));
 
 router.get('/genres', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;

@@ -181,4 +181,20 @@ describe('MediaApi', () => {
       expect(result).toEqual({ isFavorite: false });
     });
   });
+
+  describe('markPlayed / markUnplayed', () => {
+    it('posts and deletes the played endpoint', async () => {
+      fetch.mockReturnValue(createJsonResponse({ played: true }));
+      await MediaApi.markPlayed('item 1');
+      let [url, options] = fetch.mock.calls[0];
+      expect(url).toBe('/api/media/item/item%201/played');
+      expect(options.method).toBe('POST');
+
+      fetch.mockReturnValue(createJsonResponse({ played: false }));
+      await MediaApi.markUnplayed('item-1');
+      [url, options] = fetch.mock.calls[1];
+      expect(url).toBe('/api/media/item/item-1/played');
+      expect(options.method).toBe('DELETE');
+    });
+  });
 });

@@ -14,6 +14,13 @@ vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
   ItemsService: {}
 }));
 
+vi.mock('../../../../src/server/services/jellyfin/playback-api.service.js', () => ({
+  PlaybackApiService: {
+    markPlayed: vi.fn(),
+    markUnplayed: vi.fn()
+  }
+}));
+
 vi.mock('../../../../src/server/services/home-categories.service.js', () => ({
   HomeCategoriesService: {}
 }));
@@ -23,6 +30,7 @@ vi.mock('../../../../src/server/services/home-sections.service.js', () => ({
 }));
 
 import { LibraryService } from '../../../../src/server/services/jellyfin/library.service.js';
+import { PlaybackApiService } from '../../../../src/server/services/jellyfin/playback-api.service.js';
 
 function createApp() {
   const app = express();
@@ -105,6 +113,36 @@ describe('Library Routes', () => {
       const res = await request(createApp()).get('/library?type=Movie');
 
       expect(res.status).toBe(401);
+    });
+  });
+
+  describe('/item/:id/played', () => {
+    it('marks an item as played through Jellyfin and returns its user data', async () => {
+      PlaybackApiService.markPlayed.mockResolvedValue({ Played: true, PlayCount: 1 });
+
+      const res = await request(createApp()).post('/item/item-1/played');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ played: true, userData: { Played: true, PlayCount: 1 } });
+      expect(PlaybackApiService.markPlayed).toHaveBeenCalledWith('test-user', 'test-token', 'item-1');
+    });
+
+    it('marks an item as unplayed', async () => {
+      PlaybackApiService.markUnplayed.mockResolvedValue({ Played: false });
+
+      const res = await request(createApp()).delete('/item/item-1/played');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ played: false, userData: { Played: false } });
+      expect(PlaybackApiService.markUnplayed).toHaveBeenCalledWith('test-user', 'test-token', 'item-1');
+    });
+
+    it('answers 500 when Jellyfin fails', async () => {
+      PlaybackApiService.markPlayed.mockRejectedValue(new Error('boom'));
+
+      const res = await request(createApp()).post('/item/item-1/played');
+
+      expect(res.status).toBe(500);
     });
   });
 });

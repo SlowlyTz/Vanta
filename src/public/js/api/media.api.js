@@ -156,5 +156,17 @@ export const MediaApi = {
     return request(`/api/media/item/${encodeURIComponent(id)}/favorite`, {
       method: 'DELETE'
     });
+  },
+
+  markPlayed(id) {
+    return request(`/api/media/item/${encodeURIComponent(id)}/played`, {
+      method: 'POST'
+    });
+  },
+
+  markUnplayed(id) {
+    return request(`/api/media/item/${encodeURIComponent(id)}/played`, {
+      method: 'DELETE'
+    });
   }
 };
