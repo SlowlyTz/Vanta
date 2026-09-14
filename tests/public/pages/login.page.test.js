@@ -95,4 +95,32 @@ describe('LoginPage', () => {
     resolveLogin();
     await flush();
   });
+
+  it('renders the backdrop image and autofocuses the username field', () => {
+    const container = LoginPage();
+
+    const backdrop = container.querySelector('.login-visual img');
+    expect(backdrop.getAttribute('src')).toBe('/assets/login-backdrop.webp');
+    expect(backdrop.getAttribute('alt')).toBe('');
+    expect(container.querySelector('#login-username').hasAttribute('data-autofocus')).toBe(true);
+  });
+
+  it('toggles the password field between hidden and visible text', () => {
+    const container = LoginPage();
+    const password = container.querySelector('#login-password');
+    const toggle = container.querySelector('.form-input-toggle');
+
+    expect(password.type).toBe('password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(toggle.getAttribute('aria-label')).toBe('Passwort anzeigen');
+
+    toggle.click();
+    expect(password.type).toBe('text');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    expect(toggle.getAttribute('aria-label')).toBe('Passwort verbergen');
+
+    toggle.click();
+    expect(password.type).toBe('password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+  });
 });
