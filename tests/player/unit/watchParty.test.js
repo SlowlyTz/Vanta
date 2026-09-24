@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyWatchPartyPermissions, computeRemoteControlTarget } from '../../../src/player/src/watchParty.js';
+import { applyWatchPartyPermissions } from '../../../src/player/src/watchParty.js';
 
 function createRoot() {
   const root = document.createElement('div');
@@ -78,58 +78,5 @@ describe('applyWatchPartyPermissions', () => {
     expect(root.querySelector('media-gesture.toggle').getAttribute('action')).toBe('toggle:paused');
     expect(root.querySelector('media-gesture.left').getAttribute('action')).toBe('seek:-10');
     expect(root.querySelector('.vanta-player-party-pill').hidden).toBe(true);
-  });
-});
-
-describe('computeRemoteControlTarget', () => {
-  it('berechnet die Zielposition für pause und pausiert ohne Zeitkompensation', () => {
-    const result = computeRemoteControlTarget({
-      action: 'pause',
-      positionMs: 42_000,
-      serverTimeMs: Date.now(),
-      playing: false,
-      currentTime: 0
-    });
-
-    expect(result.targetSeconds).toBe(42);
-    expect(result.shouldSeek).toBe(true);
-    expect(result.shouldPlay).toBe(false);
-    expect(result.shouldPause).toBe(true);
-  });
-
-  it('kompensiert die verstrichene Zeit für play und startet die Wiedergabe', () => {
-    const serverTimeMs = Date.now() - 3000;
-
-    const result = computeRemoteControlTarget({
-      action: 'play',
-      positionMs: 10_000,
-      serverTimeMs,
-      playing: true,
-      currentTime: 10
-    });
-
-    expect(result.targetSeconds).toBeCloseTo(13, 0);
-    expect(result.shouldPlay).toBe(true);
-    expect(result.shouldPause).toBe(false);
-  });
-
-  it('seekt nur, wenn die Abweichung größer als 0.75s ist', () => {
-    const closeEnough = computeRemoteControlTarget({
-      action: 'pause',
-      positionMs: 10_000,
-      serverTimeMs: Date.now(),
-      playing: false,
-      currentTime: 10.3
-    });
-    expect(closeEnough.shouldSeek).toBe(false);
-
-    const tooFar = computeRemoteControlTarget({
-      action: 'pause',
-      positionMs: 10_000,
-      serverTimeMs: Date.now(),
-      playing: false,
-      currentTime: 12
-    });
-    expect(tooFar.shouldSeek).toBe(true);
   });
 });

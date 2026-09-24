@@ -95,12 +95,6 @@ export async function createPlayerContext(options) {
     player.keyShortcuts = context.canControlWatchParty() ? fullKeyShortcuts : viewerKeyShortcuts;
     applyWatchPartyPermissions({ root, watchParty });
   };
-  context.forcePlaybackPhase = () => {
-    if (!watchParty?.enabled) return;
-    watchParty.phase = 'playback';
-    watchParty.mode = 'playback';
-  };
-
   if (watchParty?.enabled) {
     watchParty.onParticipantsChange = context.refreshWatchPartyControlAccess;
   }

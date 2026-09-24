@@ -236,7 +236,6 @@ describe('WatchPartyPage · Episode Sync', () => {
       capturedOnMessage({
         type: 'PARTY_STATE',
         party: makeParty({ status: 'playing', positionMs: 5000 }),
-        effectivePositionMs: 5000,
         serverTimeMs: joinLastServerTimeMs + 1
       });
       await Promise.resolve();

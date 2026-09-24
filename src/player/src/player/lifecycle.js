@@ -1,6 +1,5 @@
 import { exitPictureInPicture, exitInlineFullscreen } from '../platform.js';
 import { exitSmartphoneFullscreen } from '../orientation.js';
-import { computeRemoteControlTarget } from '../watchParty.js';
 
 export async function preparePlayerInitialPlayback(context) {
   const { watchParty, resumePosition } = context;
@@ -14,7 +13,7 @@ export async function preparePlayerInitialPlayback(context) {
 
     // Loading a fresh source can itself fire native play/pause/seeked events (e.g. the
     // <media-player autoplay> attribute racing with our own shouldPlay bookkeeping) well
-    // outside the window applyRemoteControl() guards. Without suppression here, the watch
+    // outside the echo tokens the sync methods book. Without suppression here, the watch
     // party owner's own boot would get echoed back to the server as a manual OWNER_PLAY/
     // OWNER_SEEK, producing phantom notifications and bogus party-state changes.
     const suppressOwnerEcho = Boolean(watchParty?.enabled);
@@ -92,17 +91,6 @@ export function createPlayerController(context) {
     syncPlay: context.syncPlay,
     syncPause: context.syncPause,
     unlockPlayback: context.unlockPlayback,
-    applyRemoteControl: async ({ action, positionMs, serverTimeMs, playing }) => {
-      if (action === 'play') context.forcePlaybackPhase();
-      const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
-        action, positionMs, serverTimeMs, playing, currentTime: player.currentTime,
-        now: watchParty?.serverNow ? watchParty.serverNow() : Date.now()
-      });
-
-      if (shouldSeek) context.syncSeek(targetSeconds);
-      if (shouldPlay) await context.syncPlay({ quiet: false });
-      else if (shouldPause) context.syncPause();
-    },
     destroy: () => {
       if (context.destroyed) return Promise.resolve();
       context.destroyed = true;

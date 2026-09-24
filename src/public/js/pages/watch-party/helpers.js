@@ -5,12 +5,7 @@ export const COUNTDOWN_MODULE_URL = '/vendor/countdown/vanta-countdown.js';
 export const OWNER_SYNC_INTERVAL_MS = 5000;
 export const AUTO_SYNC_NOTIFICATION_COOLDOWN_MS = 15_000;
 
-export const PLAYER_ROOM_STATUSES = new Set(['ready-room', 'countdown', 'playing', 'paused']);
 export const PLAYBACK_STATUSES = new Set(['playing', 'paused']);
-
-export function shouldShowPlayerForParty(nextParty) {
-  return PLAYER_ROOM_STATUSES.has(nextParty?.status);
-}
 
 export function connectedMemberCount(members) {
   return members.filter(member => member.connected).length;

@@ -3,7 +3,7 @@ import { lifecycleMethods } from './watch-party/lifecycle.js';
 import { memberMethods } from './watch-party/members.js';
 import { playbackMethods } from './watch-party/playback.js';
 import { serializeParty } from './watch-party/serialization.js';
-import { isPartyAdmin, MAX_PARTY_MEMBERS, getEffectivePosition } from './watch-party/helpers.js';
+import { isPartyAdmin, MAX_PARTY_MEMBERS } from './watch-party/helpers.js';
 
 export { isPartyAdmin, MAX_PARTY_MEMBERS };
 
@@ -20,10 +20,6 @@ Object.assign(
   playbackMethods,
   { serializeParty }
 );
-
-export function getPartyEffectivePosition(party, now = Date.now()) {
-  return getEffectivePosition(party, now);
-}
 
 let cleanupInterval = null;
 

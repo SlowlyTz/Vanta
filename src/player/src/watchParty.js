@@ -43,14 +43,3 @@ export function applyWatchPartyPermissions({ root, watchParty }) {
     gesture.style.pointerEvents = 'none';
   });
 }
-
-export function computeRemoteControlTarget({ action, positionMs, serverTimeMs, playing, currentTime, now = Date.now() }) {
-  const shouldPlay = action === 'play' || Boolean(playing);
-  // A running timeline has moved on since its anchor, whatever the action.
-  const elapsedMs = shouldPlay ? Math.max(0, now - serverTimeMs) : 0;
-  const targetSeconds = Math.max(0, (positionMs + elapsedMs) / 1000);
-  const shouldSeek = Math.abs(currentTime - targetSeconds) > 0.75;
-  const shouldPause = !shouldPlay && action === 'pause';
-
-  return { targetSeconds, shouldSeek, shouldPlay, shouldPause };
-}

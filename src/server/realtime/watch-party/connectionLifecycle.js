@@ -1,4 +1,4 @@
-import { WatchPartyService, getPartyEffectivePosition } from '../../services/watch-party.service.js';
+import { WatchPartyService } from '../../services/watch-party.service.js';
 import { createNotification } from './notifications.js';
 
 export const connectionLifecycleMethods = {
@@ -33,7 +33,6 @@ export const connectionLifecycleMethods = {
     this.sendTo(ws, {
       type: 'PARTY_STATE',
       party: WatchPartyService.serializeParty(party, user.userId),
-      effectivePositionMs: getPartyEffectivePosition(party),
       serverTimeMs: Date.now()
     });
 
