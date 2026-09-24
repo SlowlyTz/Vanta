@@ -1,6 +1,6 @@
 import { clampPosition } from './time.js';
 
-const END_EPSILON_SECONDS = 0.25;
+export const END_EPSILON_SECONDS = 0.25;
 
 export function getSeekableEnd(player) {
   if (!player?.seekable?.length) return null;

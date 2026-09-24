@@ -1,3 +1,5 @@
+import { escapeHtml } from '../html.js';
+
 // The one settings entry point of the player: a flyout that grows out of the
 // gear button (a side sheet on phones) with a small stack of pages. The start
 // page lists rows with their current value; a row drills into its page, which
@@ -16,15 +18,6 @@ function prefersReducedMotion() {
   } catch {
     return false;
   }
-}
-
-function escapeHtml(text) {
-  return String(text ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }
 
 export function createSettingsFlyout({ container, button, onOpenChange = () => {} }) {

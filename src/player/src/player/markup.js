@@ -1,3 +1,5 @@
+import { escapeHtml } from '../html.js';
+
 export const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 export const NEXT_EPISODE_VIEWER_MESSAGE = 'Startet automatisch. Abbrechen oder sofort starten können nur Admins.';
 
@@ -26,15 +28,6 @@ export function svgIcon(name, slot) {
   if (!path) return '';
   const slotAttr = slot ? ` slot="${slot}"` : '';
   return `<svg viewBox="0 0 24 24" aria-hidden="true"${slotAttr}>${path}</svg>`;
-}
-
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
 }
 
 // A seek button: the circular arrow with the step written underneath, so it

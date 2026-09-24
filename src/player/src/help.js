@@ -1,17 +1,9 @@
 import { KEYBOARD_SHORTCUTS, POINTER_SHORTCUTS } from './player/shortcuts.js';
+import { escapeHtml } from './html.js';
 
 // Full-screen help over the running video (about half transparent): every
 // key, mouse and touch control, generated from the shortcut table, and how a
 // watch party works. Opened with "?" or from the settings flyout.
-
-function escapeHtml(text) {
-  return String(text ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 export const WATCH_PARTY_HELP = [
   'Admins steuern Wiedergabe, Pause und Spulen für alle. Zuschauer sehen oben „Admin steuert“.',

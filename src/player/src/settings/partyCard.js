@@ -1,13 +1,5 @@
 import { memberHue, memberStatus } from '../partyStatus.js';
-
-function escapeHtml(text) {
-  return String(text ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+import { escapeHtml } from '../html.js';
 
 // Top of the settings flyout in a watch party: everyone's avatar with a
 // status dot, the own sync state and "Neu synchronisieren". Refreshed every

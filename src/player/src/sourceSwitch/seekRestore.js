@@ -1,9 +1,8 @@
 import { once } from '../promiseHelpers.js';
-import { clampSeekTarget } from '../seek.js';
+import { clampSeekTarget, END_EPSILON_SECONDS } from '../seek.js';
 import { syncPlayingState } from './loadingStatus.js';
 
 const SEEK_TIMEOUT_MS = 6_000;
-const END_EPSILON_SECONDS = 0.25;
 
 function formatLoadingPosition(seconds) {
   const value = Math.max(0, Math.floor(Number(seconds) || 0));

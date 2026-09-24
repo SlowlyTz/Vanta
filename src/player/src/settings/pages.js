@@ -1,17 +1,9 @@
 import { formatEpisodeCode, findEpisode, findSeasonIdOfEpisode } from '../episodes.js';
 import { canBan, canDemote, canPromote, roleLabel } from '../watchPartyParticipants.js';
 import { memberHue, memberStatus } from '../partyStatus.js';
+import { escapeHtml } from '../html.js';
 
 const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>';
-
-function escapeHtml(text) {
-  return String(text ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 // A single-choice list (subtitles, quality). Picking an option applies it and
 // returns to the start page, where the row now shows the new value.

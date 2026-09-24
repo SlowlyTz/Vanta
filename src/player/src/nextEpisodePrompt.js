@@ -1,16 +1,7 @@
 import { formatEpisodeCode } from './episodes.js';
+import { NEXT_EPISODE_VIEWER_MESSAGE } from './player/markup.js';
 
 const DEFAULT_COUNTDOWN_MS = 10_000;
-const VIEWER_MESSAGE = 'Startet automatisch. Abbrechen oder sofort starten können nur Admins.';
-
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 function episodeImageUrl(episode) {
   const tag = episode?.ImageTags?.Primary;
@@ -149,7 +140,7 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   function applyControls(message = null) {
     confirmButton.hidden = !controls;
     dismissButton.hidden = !controls;
-    messageEl.textContent = controls ? '' : (message || VIEWER_MESSAGE);
+    messageEl.textContent = controls ? '' : (message || NEXT_EPISODE_VIEWER_MESSAGE);
     messageEl.hidden = controls;
   }
 
