@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createLoadProgressTracker, formatLoadProgress, measureLoad, partialFragmentSeconds } from '../../../src/player/src/loadProgress.js';
+import { createFirstByteHistory, createLoadProgressTracker, formatLoadProgress, measureLoad, partialFragmentSeconds, transcodedPosition } from '../../../src/player/src/loadProgress.js';
 import { createPlayerMarkup } from '../../../src/player/src/player/markup.js';
 import { bindLoadIndicator } from '../../../src/player/src/player/loadIndicator.js';
 
@@ -10,7 +10,7 @@ describe('measureLoad', () => {
     expect(partialFragmentSeconds(fragment(500, 1000), 60)).toBe(3);
     expect(partialFragmentSeconds(fragment(500, 0), 60)).toBe(0);
     expect(partialFragmentSeconds(fragment(500, 1000, { start: 0 }), 60)).toBe(0);
-    expect(measureLoad({ bufferedAhead: 1, fragment: fragment(250, 1000), position: 60 })).toEqual({ fraction: 0.625, loadedSeconds: 2.5, phase: 'loading' });
+    expect(measureLoad({ bufferedAhead: 1, fragment: fragment(250, 1000), position: 60 })).toMatchObject({ fraction: 0.625, loadedSeconds: 2.5, phase: 'loading' });
     expect(measureLoad({ bufferedAhead: 6, position: 60 }).phase).toBe('done');
     expect(measureLoad({ bufferedAhead: 0.3, position: 99.5, duration: 100 }).fraction).toBe(1);
   });
@@ -19,6 +19,40 @@ describe('measureLoad', () => {
     const measured = measureLoad({ bufferedAhead: 0, fragment: fragment(0, 0), position: 60 });
     expect(measured.phase).toBe('preparing');
     expect(formatLoadProgress({ ...measured, etaSeconds: null })).toBe('Server bereitet Stream vor …');
+  });
+});
+
+describe('measureLoad · vor dem ersten Byte', () => {
+  it('zeigt echten Transkodier-Fortschritt im gebrauchten Segment mit Restzeit aus dem Tempo', () => {
+    // Position 605 s liegt im Segment 600–606 s; Jellyfin ist bei 603 s, rechnet 1,5× Echtzeit.
+    const measured = measureLoad({ position: 605, transcode: { positionSeconds: 603, speed: 1.5 }, segmentSeconds: 6 });
+    expect(measured).toMatchObject({ phase: 'transcoding', fraction: 0.5, etaSeconds: 2, approx: false });
+    expect(formatLoadProgress(measured)).toBe('Jellyfin transkodiert … 50 % · noch ca. 2 s');
+    // Relativ gezählte Position (ab Transcode-Start) wird aufs Segment gelegt.
+    expect(transcodedPosition(3, 605, 6)).toBe(603);
+    expect(transcodedPosition(603, 605, 6)).toBe(603);
+  });
+
+  it('schätzt ohne Daten aus früheren Ladezeiten und sagt das dazu', () => {
+    const early = measureLoad({ position: 0, elapsedMs: 2_000, expectedMs: 8_000 });
+    expect(early).toMatchObject({ phase: 'preparing', fraction: 0.25, etaSeconds: 6, approx: true });
+    expect(formatLoadProgress(early)).toBe('Server bereitet Stream vor … ca. 25 % · noch ca. 6 s');
+    const late = measureLoad({ position: 0, elapsedMs: 9_000, expectedMs: 8_000 });
+    expect(late.fraction).toBe(0.95);
+    expect(formatLoadProgress(late)).toBe('Server bereitet Stream vor … dauert länger als üblich');
+  });
+
+  it('merkt sich geglättet, wie lange die ersten Bytes brauchten', () => {
+    const store = new Map();
+    const storage = { getItem: key => store.get(key) ?? null, setItem: (key, value) => store.set(key, value) };
+    const history = createFirstByteHistory(() => storage);
+    expect(history.expectedMs()).toBe(8_000);
+    history.record(20_000);
+    expect(history.expectedMs()).toBe(20_000);
+    history.record(10_000);
+    expect(history.expectedMs()).toBe(17_000);
+    history.record(50);
+    expect(history.expectedMs()).toBe(17_000);
   });
 });
 
@@ -109,5 +143,37 @@ describe('bindLoadIndicator', () => {
     dom.player.dispatchEvent(new CustomEvent('source-change'));
     vi.advanceTimersByTime(250);
     expect(dom.loadingProgress.hidden).toBe(true);
+  });
+
+  it('fragt vor dem ersten Byte den Transkodier-Fortschritt ab und zeigt ihn', async () => {
+    vi.useFakeTimers();
+    root = document.createElement('div');
+    document.body.appendChild(root);
+    const dom = createPlayerMarkup(root, { title: 'T', subtitle: '', poster: '' });
+    let buffered = 0;
+    const loadTranscodeProgress = vi.fn().mockResolvedValue({ available: true, transcodedMs: 3_000, speed: 1 });
+    const recorded = [];
+    const context = {
+      dom,
+      player: dom.player,
+      disposers: [],
+      listen: (target, event, handler) => target.addEventListener(event, handler),
+      getBufferedAhead: () => buffered,
+      loadTranscodeProgress
+    };
+    Object.defineProperty(dom.player, 'currentTime', { value: 0, configurable: true });
+    bindLoadIndicator(context, { history: { expectedMs: () => 10_000, record: ms => recorded.push(ms) } });
+
+    context.loadIndicator.setCoverVisible(true);
+    expect(dom.loadingProgressText.textContent).toBe('Server bereitet Stream vor …');
+    expect(loadTranscodeProgress).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(dom.loadingProgressText.textContent).toBe('Jellyfin transkodiert … 50 % · noch ca. 3 s');
+    expect(dom.loadingProgress.classList.contains('is-estimate')).toBe(false);
+
+    buffered = 1;
+    await vi.advanceTimersByTimeAsync(250);
+    expect(dom.loadingProgressText.textContent).toBe('25 %');
+    expect(recorded).toHaveLength(1);
   });
 });

@@ -122,6 +122,7 @@ export function bindPlayerMount(ctx) {
           watchParty: ctx.watchPartyConfig,
           deferInitialLoad,
           loadSegments: () => MediaApi.getSegments(itemId),
+          loadTranscodeProgress: () => MediaApi.getTranscodeProgress(itemId),
           // Party sessions start from the defaults and remember choices only
           // for this party (see preferences.js in the player).
           preferences: { key: `vanta.player.party.${ctx.partyId}`, storage: 'session' },

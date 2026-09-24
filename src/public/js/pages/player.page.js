@@ -150,6 +150,7 @@ export default function PlayerPage({ id }) {
           window.location.hash = '#/home';
         },
         loadSegments: () => MediaApi.getSegments(playableId),
+        loadTranscodeProgress: () => MediaApi.getTranscodeProgress(playableId),
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,

@@ -118,6 +118,10 @@ export const MediaApi = {
     return request(`/api/media/playback/${id}?${params.toString()}`);
   },
 
+  getTranscodeProgress(id) {
+    return request(`/api/media/playback/${encodeURIComponent(id)}/transcode-progress`);
+  },
+
   getSegments(id) {
     return request(`/api/media/segments/${encodeURIComponent(id)}`);
   },

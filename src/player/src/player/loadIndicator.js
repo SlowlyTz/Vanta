@@ -1,13 +1,17 @@
-import { createLoadProgressTracker, formatLoadProgress } from '../loadProgress.js';
+import { createFirstByteHistory, createLoadProgressTracker, DEFAULT_SEGMENT_SECONDS, formatLoadProgress } from '../loadProgress.js';
 
 const TICK_MS = 250;
+const TRANSCODE_POLL_MS = 1_000;
 
-// Shows the real loading progress ("63 % · noch ca. 3 s") on the loading
-// cover and under the seek/buffer spinner while either is visible.
-export function bindLoadIndicator(context) {
+// Shows the loading progress ("63 % · noch ca. 3 s") on the loading cover and
+// under the seek/buffer spinner while either is visible. Before the first
+// bytes it asks the server how far Jellyfin's transcoder got, and without
+// that it estimates from earlier loads (see loadProgress.js).
+export function bindLoadIndicator(context, { history = createFirstByteHistory() } = {}) {
   const { dom, player, listen } = context;
   const tracker = createLoadProgressTracker();
   let fragment = null;
+  let segmentSeconds = DEFAULT_SEGMENT_SECONDS;
   let timer = null;
   let slow = false;
   let coverVisible = false;
@@ -15,6 +19,11 @@ export function bindLoadIndicator(context) {
   // While the cover is up for a new source (audio track, quality), the old
   // source's buffer says nothing about the new one until it is attached.
   let staleBuffer = false;
+  let transcode = null;
+  let transcodeRequest = null;
+  let lastTranscodePoll = -Infinity;
+  let firstByteRecorded = false;
+  let waited = false;
 
   // vidstack re-dispatches every hls.js event on the player element.
   listen(player, 'hls-frag-loading', event => {
@@ -27,32 +36,65 @@ export function bindLoadIndicator(context) {
   };
   listen(player, 'hls-frag-loaded', dropFragment);
   listen(player, 'hls-frag-load-emergency-aborted', dropFragment);
+  listen(player, 'hls-level-loaded', event => {
+    const target = Number(event.detail?.details?.targetduration);
+    if (target > 0) segmentSeconds = target;
+  });
   listen(player, 'source-change', () => {
     fragment = null;
     staleBuffer = false;
+    transcode = null;
   });
 
-  const measure = () => tracker.update({
-    bufferedAhead: staleBuffer ? 0 : Number(context.getBufferedAhead?.()) || 0,
+  const pollTranscode = () => {
+    if (typeof context.loadTranscodeProgress !== 'function' || transcodeRequest) return;
+    if (context.sourceSwitch?.getCurrentPlayback?.()?.isTranscoded === false) return;
+    const now = performance.now();
+    if (now - lastTranscodePoll < TRANSCODE_POLL_MS) return;
+    lastTranscodePoll = now;
+    transcodeRequest = Promise.resolve(context.loadTranscodeProgress())
+      .then(result => {
+        transcode = result?.available
+          ? { positionSeconds: Number(result.transcodedMs) / 1000, speed: result.speed }
+          : null;
+      })
+      .catch(() => { transcode = null; })
+      .finally(() => { transcodeRequest = null; });
+  };
+
+  const inputAt = position => ({
+    bufferedAhead: staleBuffer ? 0 : Number(context.getBufferedAhead?.(position)) || 0,
     fragment,
-    position: Number(player.currentTime) || 0,
-    duration: Number(player.duration)
+    position,
+    duration: Number(player.duration),
+    transcode,
+    segmentSeconds,
+    expectedMs: history.expectedMs()
   });
 
   const render = () => {
-    const progress = measure();
+    const progress = tracker.update(inputAt(Number(player.currentTime) || 0));
+    if (progress.phase === 'preparing' || progress.phase === 'transcoding') {
+      waited = true;
+      pollTranscode();
+    } else if (waited && !firstByteRecorded) {
+      // The wait until the first bytes feeds the estimate for next time.
+      firstByteRecorded = true;
+      history.record(tracker.elapsedMs());
+    }
     const text = progress.phase === 'done' ? '' : formatLoadProgress(progress);
+    const measuring = progress.phase === 'loading' || progress.phase === 'transcoding' || (progress.approx && progress.fraction > 0);
 
     if (dom.loadingProgress) {
       dom.loadingProgress.hidden = !coverVisible || !text;
       dom.loadingProgressText.textContent = text;
-      dom.loadingProgressBar.style.transform = `scaleX(${progress.phase === 'preparing' ? 0 : progress.fraction})`;
-      dom.loadingProgress.classList.toggle('is-preparing', progress.phase === 'preparing');
+      dom.loadingProgressBar.style.transform = `scaleX(${measuring ? progress.fraction : 0})`;
+      dom.loadingProgress.classList.toggle('is-preparing', !measuring);
+      dom.loadingProgress.classList.toggle('is-estimate', Boolean(progress.approx));
     }
     if (dom.inlineLabel) {
-      const label = slow
-        ? ['Lädt länger als üblich …', progress.phase === 'loading' ? text : ''].filter(Boolean).join(' · ')
-        : (progress.phase === 'loading' ? text : '');
+      const shown = progress.phase === 'done' ? '' : text;
+      const label = slow ? ['Lädt länger als üblich …', progress.phase === 'loading' ? shown : ''].filter(Boolean).join(' · ') : shown;
       dom.inlineLabel.textContent = label;
       dom.inlineLabel.hidden = !inlineVisible || !label;
     }
@@ -62,6 +104,10 @@ export function bindLoadIndicator(context) {
     const active = coverVisible || inlineVisible;
     if (active && timer === null) {
       tracker.reset();
+      transcode = null;
+      lastTranscodePoll = -Infinity;
+      firstByteRecorded = false;
+      waited = false;
       timer = window.setInterval(render, TICK_MS);
       render();
     } else if (!active && timer !== null) {
@@ -103,11 +149,8 @@ export function bindLoadIndicator(context) {
       preload.tracker.reset();
       preload.position = position;
     }
-    return preload.tracker.update({
-      bufferedAhead: Number(context.getBufferedAhead?.(position)) || 0,
-      fragment,
-      position,
-      duration: Number(player.duration)
-    });
+    const progress = preload.tracker.update(inputAt(position));
+    if (progress.phase === 'preparing' || progress.phase === 'transcoding') pollTranscode();
+    return progress;
   };
 }

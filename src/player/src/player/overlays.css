@@ -99,6 +99,10 @@
   to { translate: 290% 0; }
 }
 
+.vanta-player-loading-progress.is-estimate .vanta-player-loading-bar {
+  background: rgb(255 255 255 / 0.55);
+}
+
 .vanta-player-loading-progress-text {
   color: rgb(255 255 255 / 0.86);
   font: 600 0.84rem Outfit, system-ui, sans-serif;

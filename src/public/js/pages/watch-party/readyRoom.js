@@ -37,9 +37,10 @@ export function bindReadyRoom(ctx) {
     } else if (preload?.sentReady) {
       readyButton.textContent = 'Bereit ✓';
     } else if (ctx.readyRequested) {
+      const approx = preload?.approx ? 'ca. ' : '';
       readyButton.textContent = preload?.etaSeconds
-        ? `Wird geladen … ${percent} % · noch ca. ${preload.etaSeconds} s`
-        : `Wird geladen … ${percent} %`;
+        ? `Wird geladen … ${approx}${percent} % · noch ca. ${preload.etaSeconds} s`
+        : `Wird geladen … ${approx}${percent} %`;
     } else {
       readyButton.textContent = 'Bereit';
     }
@@ -103,8 +104,10 @@ export function bindReadyRoom(ctx) {
       });
       preload.progress = progress;
       const eta = measured?.etaSeconds ?? null;
-      if (eta !== preload.etaSeconds) {
+      const approx = Boolean(measured?.approx);
+      if (eta !== preload.etaSeconds || approx !== Boolean(preload.approx)) {
         preload.etaSeconds = eta;
+        preload.approx = approx;
         ctx.renderReadyOverlay();
       }
       if (progress >= 1) {

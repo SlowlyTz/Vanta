@@ -24,6 +24,7 @@ export async function createPlayerContext(options) {
     preferences = null,
     loadSegments = null,
     onPlaybackError = null,
+    loadTranscodeProgress = null,
     deferInitialLoad = false
   } = options;
 
@@ -54,6 +55,7 @@ export async function createPlayerContext(options) {
     preferencesConfig: preferences,
     loadSegments,
     onPlaybackError,
+    loadTranscodeProgress,
     deferInitialLoad,
     iosLike,
     dom,
