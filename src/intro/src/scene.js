@@ -8,6 +8,7 @@ import {
   ShaderMaterial,
   WebGLRenderer
 } from 'three';
+import { SPRITE_FRAGMENT } from '../../shared/particles/sprite.js';
 import { timelineAt } from './timeline.js';
 
 const FOV = 42;
@@ -56,21 +57,6 @@ const VERTEX = /* glsl */`
     gl_Position = projectionMatrix * mv;
     vColor = aColor;
     vAlpha = alpha;
-  }
-`;
-
-const FRAGMENT = /* glsl */`
-  uniform float uIntensity;
-  varying vec3 vColor;
-  varying float vAlpha;
-
-  void main() {
-    vec2 d = gl_PointCoord - 0.5;
-    float r2 = dot(d, d);
-    if (r2 > 0.25) discard;
-    float a = smoothstep(0.25, 0.0, r2);
-    a *= a;
-    gl_FragColor = vec4(vColor * a * vAlpha * uIntensity, 1.0);
   }
 `;
 
@@ -138,7 +124,7 @@ export function createIntroScene({ canvas, sample, width, height, dpr = 1, rando
   const { geometry, vShift } = buildGeometry(sample, random);
   const material = new ShaderMaterial({
     vertexShader: VERTEX,
-    fragmentShader: FRAGMENT,
+    fragmentShader: SPRITE_FRAGMENT,
     uniforms: {
       uForm: { value: 0 },
       uSlide: { value: 0 },
