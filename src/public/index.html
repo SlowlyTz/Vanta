@@ -71,7 +71,10 @@
   <link rel="stylesheet" href="/css/pages/trailer-scroller.css">
   <link rel="stylesheet" href="/css/pages/watch-party.css">
   <link rel="stylesheet" href="/css/player.css">
-  <link rel="stylesheet" href="/vendor/player/vanta-player.css">
+  <!-- The player's stylesheet comes from its own build, like its JS, which
+       the app imports at runtime; bundling it here would freeze it at the
+       last app build while the player JS moves on (vite-ignore). -->
+  <link rel="stylesheet" href="/vendor/player/vanta-player.css" vite-ignore>
 </head>
 <body>
   <!-- Opening scene cover, see intro-gate.js -->
