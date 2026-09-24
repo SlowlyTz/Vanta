@@ -1,9 +1,23 @@
 import { isLowPower, pixelRatio } from '../../shared/particles/device.js';
 import { buildDigitTargets, ensureFont } from './digits.js';
 import { createCountdownScene } from './scene.js';
-import { countdownAt, secondsIntoCountdown } from './timeline.js';
+import { countdownAt, secondsIntoCountdown, withLateGather } from './timeline.js';
 
 export { countdownAt, secondsIntoCountdown };
+
+let prepared = null;
+
+// Loads the font and samples the digits ahead of time (the lobby calls this
+// while people get ready), so mounting at the countdown is only the WebGL
+// setup. Safe to call more than once.
+export function prepareCountdown() {
+  if (!prepared) {
+    const lowPower = isLowPower();
+    prepared = ensureFont().then(() => buildDigitTargets({ count: lowPower ? 5000 : 12000 }));
+    prepared.catch(() => { prepared = null; });
+  }
+  return prepared;
+}
 
 // Renders the five-second watch-party countdown into `container`. Every frame
 // asks `now()` (the server clock) where it stands, so all clients show the
@@ -12,8 +26,7 @@ export { countdownAt, secondsIntoCountdown };
 // `done` resolves when the counted five seconds are over.
 export async function mountCountdown({ container, fadeTarget = container, startsAtServerTimeMs, durationMs = 5000, now }) {
   const lowPower = isLowPower();
-  await ensureFont();
-  const digits = buildDigitTargets({ count: lowPower ? 5000 : 12000 });
+  const digits = await prepareCountdown();
 
   const canvas = document.createElement('canvas');
   canvas.className = 'watch-party-countdown-canvas';
@@ -37,7 +50,7 @@ export async function mountCountdown({ container, fadeTarget = container, starts
   const draw = () => {
     if (destroyed) return;
     const s = secondsIntoCountdown(startsAtServerTimeMs, now(), durationMs);
-    const at = countdownAt(s, durationMs);
+    const at = withLateGather(countdownAt(s, durationMs), (performance.now() - startedAt) / 1000);
     view.render(at, (performance.now() - startedAt) / 1000);
     fadeTarget.style.opacity = String(1 - at.fade);
     if (at.done) {

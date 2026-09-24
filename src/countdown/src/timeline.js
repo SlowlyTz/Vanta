@@ -8,6 +8,9 @@ export const MORPH_SECONDS = 0.3;
 export const LOOSEN_FROM = 0.85;
 export const DIVE = [4.55, 5.0];
 export const FADE = [4.6, 5.0];
+// A scene that only got ready after the lead-in still lets its particles fly
+// together, just faster, instead of popping in as a finished digit.
+export const LATE_GATHER_SECONDS = 0.3;
 
 const clamp01 = x => Math.min(1, Math.max(0, x));
 const progress = ([start, end], s) => clamp01((s - start) / (end - start));
@@ -43,4 +46,11 @@ export function countdownAt(s, durationMs = 5000) {
     fade: progress(FADE, clamped),
     done: s >= total
   };
+}
+
+// `sinceMountSeconds`: how long this scene has been on screen. The digits keep
+// following the server clock; only the gathering is caught up locally.
+export function withLateGather(at, sinceMountSeconds) {
+  const late = smooth(clamp01(sinceMountSeconds / LATE_GATHER_SECONDS));
+  return late >= at.gather ? at : { ...at, gather: late };
 }

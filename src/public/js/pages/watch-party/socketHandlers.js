@@ -93,6 +93,8 @@ export function bindSocketHandlers(ctx) {
     ctx.party = party;
     ctx.acceptTimeline(timelineFromParty(party));
     ctx.renderParty();
+    // The countdown scene loads while people wait, so it is ready in time.
+    if (party.status === 'lobby' || party.status === 'ready-room') ctx.preloadCountdownScene();
     if (party.nextEpisodeCancelledFor && party.nextEpisodeCancelledFor === party.playableItemId) {
       ctx.controller?.cancelNextEpisode?.();
     }

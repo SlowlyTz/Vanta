@@ -5,6 +5,8 @@ import { COUNTDOWN_MODULE_URL, countdownMetaParts, formatPosition } from './help
 const FRAME_PRECISION_WINDOW_MS = 40;
 // Matches the scene: the overlay fades out over the last 0.4 s.
 const FADE_WINDOW_MS = 400;
+// The plain digit only stands in when the 3D scene is not up by then.
+export const SCENE_GRACE_MS = 1_200;
 
 export function countdownDigit(remainingMs, durationMs = 5000) {
   const maxDigit = Math.round(durationMs / 1000);
@@ -35,8 +37,9 @@ export function bindCountdown(ctx) {
   let sceneToken = 0;
   let fallbackFrame = null;
 
-  // Starts fetching the scene (three.js included) while people get ready, so
-  // it is in the cache when the countdown begins.
+  // Fetches the scene (three.js included) and, once the browser is idle,
+  // loads the font and samples the digits, so the countdown starts with the
+  // particles at once instead of a stand-in digit.
   ctx.preloadCountdownScene = () => {
     if (!ctx.countdownModule) {
       ctx.countdownModule = import(/* @vite-ignore */ COUNTDOWN_MODULE_URL).catch(error => {
@@ -44,8 +47,20 @@ export function bindCountdown(ctx) {
         ctx.countdownModule = null;
         return null;
       });
+      void ctx.countdownModule.then(module => {
+        if (!module?.prepareCountdown) return;
+        const idle = window.requestIdleCallback || (callback => window.setTimeout(callback, 200));
+        idle(() => { module.prepareCountdown().catch(() => {}); });
+      });
     }
     return ctx.countdownModule;
+  };
+
+  let graceTimer = null;
+  const showFallbackDigit = () => {
+    window.clearTimeout(graceTimer);
+    graceTimer = null;
+    ctx.countdownOverlay.classList.remove('is-awaiting-3d');
   };
 
   const stopFallback = () => {
@@ -67,6 +82,9 @@ export function bindCountdown(ctx) {
   };
 
   const destroyScene = () => {
+    window.clearTimeout(graceTimer);
+    graceTimer = null;
+    ctx.countdownOverlay.classList.remove('is-awaiting-3d');
     sceneToken += 1;
     scene?.destroy();
     scene = null;
@@ -76,7 +94,11 @@ export function bindCountdown(ctx) {
   const mountScene = async ({ startsAtServerTimeMs, durationMs }) => {
     const token = ++sceneToken;
     const module = await ctx.preloadCountdownScene();
-    if (!module || token !== sceneToken || ctx.countdownOverlay.hidden) return;
+    if (token !== sceneToken || ctx.countdownOverlay.hidden) return;
+    if (!module) {
+      showFallbackDigit();
+      return;
+    }
     try {
       const mounted = await module.mountCountdown({
         container: ctx.countdownStage,
@@ -90,10 +112,13 @@ export function bindCountdown(ctx) {
         return;
       }
       scene = mounted;
+      window.clearTimeout(graceTimer);
+      ctx.countdownOverlay.classList.remove('is-awaiting-3d');
       ctx.countdownOverlay.classList.add('is-3d');
     } catch (error) {
       // No WebGL or a lost context: the fallback keeps counting.
       console.warn('[Watch Party Countdown] falling back:', error?.message);
+      if (token === sceneToken) showFallbackDigit();
     }
   };
 
@@ -111,7 +136,13 @@ export function bindCountdown(ctx) {
     ctx.countdownLive.textContent = `${snapshot.name || 'Die Wiedergabe'} startet in ${Math.round(durationMs / 1000)} Sekunden.`;
 
     runFallback({ startsAtServerTimeMs, durationMs });
-    if (!prefersReducedMotion()) void mountScene({ startsAtServerTimeMs, durationMs });
+    if (!prefersReducedMotion()) {
+      // Until the scene is up only the backdrop and the title show; the plain
+      // digit appears only if the scene is late or fails.
+      ctx.countdownOverlay.classList.add('is-awaiting-3d');
+      graceTimer = window.setTimeout(showFallbackDigit, SCENE_GRACE_MS);
+      void mountScene({ startsAtServerTimeMs, durationMs });
+    }
   };
 
   ctx.hideCountdown = () => {

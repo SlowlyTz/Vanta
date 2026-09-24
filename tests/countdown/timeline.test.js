@@ -50,3 +50,18 @@ describe('countdownAt', () => {
     expect(countdownAt(7).done).toBe(true);
   });
 });
+
+describe('withLateGather', () => {
+  it('lässt eine spät fertige Szene die Partikel trotzdem zusammenfliegen', async () => {
+    const { withLateGather, LATE_GATHER_SECONDS } = await import('../../src/countdown/src/timeline.js');
+    const at = countdownAt(0.6);
+    expect(at.gather).toBe(1);
+    expect(withLateGather(at, 0).gather).toBe(0);
+    expect(withLateGather(at, LATE_GATHER_SECONDS / 2).gather).toBeGreaterThan(0);
+    expect(withLateGather(at, LATE_GATHER_SECONDS)).toBe(at);
+    // Rechtzeitig fertig: der Server-Vorlauf bestimmt weiter.
+    const lead = countdownAt(-0.3);
+    expect(withLateGather(lead, 1)).toBe(lead);
+    expect(withLateGather(at, 0).digit).toBe(5);
+  });
+});

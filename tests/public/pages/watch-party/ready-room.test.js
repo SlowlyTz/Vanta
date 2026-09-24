@@ -350,6 +350,51 @@ describe('WatchPartyPage · Ready Room', () => {
     }
   });
 
+  it('zeigt statt einer Ersatzziffer nur den Hintergrund, bis die 3D-Szene steht', async () => {
+    let resolveMount;
+    mountCountdown.mockImplementation(() => new Promise(resolve => { resolveMount = resolve; }));
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+    capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: Date.now() + 5400, durationMs: 5000, positionMs: 0 });
+    await flush();
+
+    const overlay = container.querySelector('.watch-party-countdown-overlay');
+    expect(overlay.classList.contains('is-awaiting-3d')).toBe(true);
+    resolveMount({ done: Promise.resolve(), destroy: vi.fn() });
+    await flush();
+    await flush();
+    expect(overlay.classList.contains('is-awaiting-3d')).toBe(false);
+    expect(overlay.classList.contains('is-3d')).toBe(true);
+    capturedOnMessage({ type: 'PARTY_ENDED', party: makeParty({ status: 'ended' }) });
+  });
+
+  it('zeigt die Ersatzziffer, wenn die 3D-Szene scheitert', async () => {
+    mountCountdown.mockRejectedValue(new Error('no WebGL'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+    capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: Date.now() + 5400, durationMs: 5000, positionMs: 0 });
+    await flush();
+    await flush();
+
+    const overlay = container.querySelector('.watch-party-countdown-overlay');
+    expect(overlay.classList.contains('is-awaiting-3d')).toBe(false);
+    expect(overlay.classList.contains('is-3d')).toBe(false);
+    expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('5');
+    capturedOnMessage({ type: 'PARTY_ENDED', party: makeParty({ status: 'ended' }) });
+    warn.mockRestore();
+  });
+
   it('übergibt Startzeit, Dauer und Server-Uhr an die 3D-Szene und blendet den Fallback aus', async () => {
     const destroy = vi.fn();
     mountCountdown.mockResolvedValue({ done: Promise.resolve(), destroy });
