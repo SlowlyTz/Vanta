@@ -43,7 +43,36 @@ export function shuffle(list) {
 
 export function getEffectivePosition(party, now = Date.now()) {
   if (party.status !== 'playing') return party.positionMs;
-  return party.positionMs + (now - party.lastServerTimeMs);
+  return party.positionMs + Math.max(0, now - party.lastServerTimeMs);
+}
+
+// The one playback timeline every client follows: at `anchorServerTimeMs`
+// the media stood at `positionMs` and, when `playing`, advances in real time
+// from there. `seq` grows with every change so late packets can be dropped.
+export function serializeTimeline(party) {
+  return {
+    positionMs: party.positionMs,
+    playing: party.status === 'playing',
+    anchorServerTimeMs: party.lastServerTimeMs,
+    seq: party.seq || 0
+  };
+}
+
+export function setTimeline(party, { positionMs, playing, anchorServerTimeMs = Date.now() }) {
+  party.positionMs = Math.max(0, Number(positionMs) || 0);
+  if (typeof playing === 'boolean') party.status = playing ? 'playing' : 'paused';
+  party.lastServerTimeMs = anchorServerTimeMs;
+  party.seq = (party.seq || 0) + 1;
+  return party;
+}
+
+// Clients stamp commands with their estimate of the server time at which the
+// position was read; that removes the one-way latency from the anchor. Stamps
+// from the future or far past (a broken clock) fall back to the arrival time.
+export function resolveAnchorTime(clientServerTimeMs, now = Date.now()) {
+  const stamp = Number(clientServerTimeMs);
+  if (!Number.isFinite(stamp) || stamp > now + 250 || stamp < now - 5_000) return now;
+  return Math.min(stamp, now);
 }
 
 export function createItemSnapshot(playableItem, fallbackItem) {

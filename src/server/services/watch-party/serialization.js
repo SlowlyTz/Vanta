@@ -1,3 +1,5 @@
+import { serializeTimeline } from './helpers.js';
+
 export function serializeParty(party, currentUserId = null) {
   const members = [...party.members.values()].map(member => ({
     userId: member.userId,
@@ -27,6 +29,7 @@ export function serializeParty(party, currentUserId = null) {
     resumeExpiresAt: party.resumeExpiresAt,
     finalPositionMs: party.finalPositionMs,
     resumeFrom: party.resumeFrom || null,
+    timeline: serializeTimeline(party),
     members,
     currentUserRole: currentUserId ? (party.members.get(currentUserId)?.role || null) : null
   };

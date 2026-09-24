@@ -1,6 +1,6 @@
 import { ItemsService } from '../jellyfin/items.service.js';
 import { badRequest, conflict } from './errors.js';
-import { assertOwner, READY_ROOM_STATUS, COUNTDOWN_MS, createItemSnapshot } from './helpers.js';
+import { assertOwner, READY_ROOM_STATUS, COUNTDOWN_MS, createItemSnapshot, setTimeline } from './helpers.js';
 
 export const playbackMethods = {
   canStart(party) {
@@ -38,9 +38,10 @@ export const playbackMethods = {
     const party = this.parties.get(partyId);
     if (!party || party.status !== 'countdown') return null;
 
-    party.status = 'playing';
-    party.positionMs = Number.isFinite(positionMs) ? positionMs : party.positionMs;
-    party.lastServerTimeMs = Date.now();
+    setTimeline(party, {
+      positionMs: Number.isFinite(positionMs) ? positionMs : party.positionMs,
+      playing: true
+    });
     return party;
   },
 
@@ -56,9 +57,7 @@ export const playbackMethods = {
     party.itemId = item.Id;
     party.playableItemId = item.Id;
     party.itemSnapshot = createItemSnapshot(item, item);
-    party.positionMs = 0;
-    party.status = 'paused';
-    party.lastServerTimeMs = Date.now();
+    setTimeline(party, { positionMs: 0, playing: false });
 
     for (const member of party.members.values()) {
       member.preloadState = 'waiting';

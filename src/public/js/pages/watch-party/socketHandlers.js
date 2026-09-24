@@ -14,6 +14,7 @@ export function bindSocketHandlers(ctx) {
 
       case 'PARTY_STATE': {
         ctx.party = message.party;
+        ctx.acceptTimeline(ctx.party.timeline);
         ctx.renderParty();
         if (ctx.party.status === 'ready-room' || ctx.party.status === 'countdown') {
           ctx.ensurePlayerReadyRoom();
@@ -28,19 +29,12 @@ export function bindSocketHandlers(ctx) {
       }
 
       case 'PARTY_UPDATED':
-        const previousStatus = ctx.party?.status;
         ctx.party = message.party;
+        ctx.acceptTimeline(ctx.party.timeline);
         ctx.renderParty();
         if (ctx.party.status === 'ready-room' || ctx.party.status === 'countdown') {
           ctx.ensurePlayerReadyRoom();
           ctx.renderReadyOverlay();
-        } else if (ctx.party.status === 'playing' && previousStatus === 'countdown') {
-          void ctx.handleControlPlay({
-            action: 'play',
-            positionMs: ctx.party.positionMs,
-            serverTimeMs: ctx.party.lastServerTimeMs || ctx.clock.now(),
-            playing: true
-          });
         } else if (shouldShowPlayerForParty(ctx.party)) {
           if (ctx.controller) {
             ctx.showPlayerSurface();
@@ -75,25 +69,8 @@ export function bindSocketHandlers(ctx) {
         }
         return;
 
-      case 'CONTROL': {
-        const payload = {
-          action: message.action,
-          positionMs: message.positionMs,
-          serverTimeMs: message.serverTimeMs,
-          playing: message.action === 'play' || Boolean(message.playing)
-        };
-
-        if (message.action === 'play') {
-          void ctx.handleControlPlay(payload);
-          return;
-        }
-
-        ctx.safeApplyRemoteControl(payload);
-        return;
-      }
-
-      case 'SYNC':
-        ctx.applySync(message);
+      case 'TIMELINE':
+        ctx.handleTimelineMessage(message);
         return;
 
       case 'NOTIFICATION':

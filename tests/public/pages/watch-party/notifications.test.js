@@ -153,10 +153,10 @@ describe('WatchPartyPage · Notifications', () => {
 
     fakeController.player.currentTime = 20;
     capturedOnMessage({
-      type: 'SYNC',
-      positionMs: 1000,
-      playing: true,
-      serverTimeMs: Date.now()
+      type: 'TIMELINE',
+      timeline: { positionMs: 1000, playing: true, anchorServerTimeMs: Date.now(), seq: 2 },
+      actorUserId: 'owner-1',
+      reason: 'sync'
     });
 
     const item = container.querySelector('.watch-party-notification.is-auto_sync');

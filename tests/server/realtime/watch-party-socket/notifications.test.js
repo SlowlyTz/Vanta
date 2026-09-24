@@ -163,11 +163,15 @@ describe('WatchPartySocketHub · Notifications', () => {
     WatchPartyService.getPartyOrThrow.mockReturnValue(party);
 
     const ws = createFakeWs();
+    const viewerWs = createFakeWs();
     hub.registerConnection('party-1', 'owner-1', ws);
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
 
     hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_PAUSE', positionMs: 2000 }, ws });
 
-    expect(ws.sent.some(m => m.type === 'NOTIFICATION' && m.notification.type === 'owner_pause')).toBe(true);
+    expect(viewerWs.sent.some(m => m.type === 'NOTIFICATION' && m.notification.type === 'owner_pause')).toBe(true);
+    // The admin who paused does not get told that the admin paused.
+    expect(ws.sent.some(m => m.type === 'NOTIFICATION')).toBe(false);
   });
 
   it('OWNER_SEEK erzeugt owner_seek Notification mit lesbarer Position', () => {
@@ -176,11 +180,13 @@ describe('WatchPartySocketHub · Notifications', () => {
     WatchPartyService.getPartyOrThrow.mockReturnValue(party);
 
     const ws = createFakeWs();
+    const viewerWs = createFakeWs();
     hub.registerConnection('party-1', 'owner-1', ws);
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
 
     hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 65_000 }, ws });
 
-    const notification = ws.sent.find(m => m.type === 'NOTIFICATION');
+    const notification = viewerWs.sent.find(m => m.type === 'NOTIFICATION');
     expect(notification.notification.type).toBe('owner_seek');
     expect(notification.notification.message).toContain('1:05');
   });
@@ -202,24 +208,26 @@ describe('WatchPartySocketHub · Notifications', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    it('drosselt mehrere OWNER_SEEK Notifications innerhalb von 800ms, CONTROL bleibt ungedrosselt', () => {
+    it('drosselt mehrere OWNER_SEEK Notifications innerhalb von 800ms, TIMELINE bleibt ungedrosselt', () => {
       const hub = new WatchPartySocketHub();
       const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'playing', positionMs: 0, lastServerTimeMs: 0 };
       WatchPartyService.getPartyOrThrow.mockReturnValue(party);
 
+      const ownerWs = createFakeWs();
       const ws = createFakeWs();
-      hub.registerConnection('party-1', 'owner-1', ws);
+      hub.registerConnection('party-1', 'owner-1', ownerWs);
+      hub.registerConnection('party-1', 'viewer-1', ws);
 
-      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 1000 }, ws });
+      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 1000 }, ws: ownerWs });
       vi.advanceTimersByTime(200);
-      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 2000 }, ws });
+      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 2000 }, ws: ownerWs });
 
-      expect(ws.sent.filter(m => m.type === 'CONTROL').length).toBe(2);
+      expect(ws.sent.filter(m => m.type === 'TIMELINE').length).toBe(2);
       expect(ws.sent.filter(m => m.type === 'NOTIFICATION').length).toBe(1);
       expect(party.positionMs).toBe(2000);
 
       vi.advanceTimersByTime(800);
-      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 3000 }, ws });
+      hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 3000 }, ws: ownerWs });
       expect(ws.sent.filter(m => m.type === 'NOTIFICATION').length).toBe(2);
     });
   });

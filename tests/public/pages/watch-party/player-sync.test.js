@@ -4,7 +4,7 @@ import { MediaApi } from '../../../../src/public/js/api/media.api.js';
 import { authStore } from '../../../../src/public/js/store/auth.store.js';
 import { appStore } from '../../../../src/public/js/store/app.store.js';
 import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-import { makeParty, flush } from './helpers.js';
+import { makeParty, flush, timelineMessage } from './helpers.js';
 
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
@@ -80,7 +80,7 @@ describe('WatchPartyPage · Player Sync', () => {
     document.body.classList.remove('player-active');
   });
 
-  it('pausiert den Player bei einer CONTROL-pause Nachricht', async () => {
+  it('pausiert den Player bei einer pausierten Zeitleiste', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({
       party: makeParty({ status: 'playing', positionMs: 5000 })
@@ -92,14 +92,14 @@ describe('WatchPartyPage · Player Sync', () => {
     await flush();
 
     expect(capturedOnMessage).toBeTruthy();
-    capturedOnMessage({ type: 'CONTROL', action: 'pause', positionMs: 8000, serverTimeMs: Date.now() });
+    capturedOnMessage(timelineMessage({ positionMs: 8000, playing: false, actorUserId: 'viewer-1' }));
 
     expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'pause', positionMs: 8000, playing: false })
     );
   });
 
-  it('startet den Player an der berechneten Position bei einer CONTROL-play Nachricht', async () => {
+  it('startet den Player an der berechneten Position bei einer laufenden Zeitleiste', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({
       party: makeParty({ status: 'playing', positionMs: 0 })
@@ -110,7 +110,7 @@ describe('WatchPartyPage · Player Sync', () => {
     await flush();
     await flush();
 
-    capturedOnMessage({ type: 'CONTROL', action: 'play', positionMs: 12000, serverTimeMs: Date.now() });
+    capturedOnMessage(timelineMessage({ positionMs: 12000, playing: true, actorUserId: 'admin-2' }));
     await flush();
     await flush();
 
@@ -217,7 +217,7 @@ describe('WatchPartyPage · Player Sync', () => {
     expect(autoplayOverlay.hidden).toBe(true);
   });
 
-  it('zeigt bei blockiertem Autoplay während einer späteren CONTROL-play Nachricht ein lokales Popup und synchronisiert beim Klick auf die aktuelle Position', async () => {
+  it('zeigt bei blockiertem Autoplay während einer späteren laufenden Zeitleiste ein lokales Popup und synchronisiert beim Klick auf die aktuelle Position', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({
       party: makeParty({ status: 'paused', positionMs: 5000 })
@@ -230,7 +230,7 @@ describe('WatchPartyPage · Player Sync', () => {
 
     fakeController.applyRemoteControl.mockRejectedValueOnce(new Error('NotAllowedError'));
     const serverTimeMs = Date.now();
-    capturedOnMessage({ type: 'CONTROL', action: 'play', positionMs: 5000, serverTimeMs });
+    capturedOnMessage(timelineMessage({ positionMs: 5000, playing: true, anchorServerTimeMs: serverTimeMs, actorUserId: 'admin-2' }));
     await flush();
 
     const autoplayOverlay = container.querySelector('.watch-party-autoplay-overlay');
@@ -245,5 +245,41 @@ describe('WatchPartyPage · Player Sync', () => {
     expect(retryPayload.positionMs).toBeGreaterThanOrEqual(5000);
     expect(retryPayload.serverTimeMs).toBeGreaterThanOrEqual(serverTimeMs);
     expect(autoplayOverlay.hidden).toBe(true);
+  });
+
+  it('ignoriert das Echo des eigenen Befehls und veraltete Zeitleisten', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'paused', positionMs: 5000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+    fakeController.applyRemoteControl.mockClear();
+
+    capturedOnMessage(timelineMessage({ positionMs: 9000, playing: true, seq: 5, actorUserId: 'owner-1' }));
+    capturedOnMessage(timelineMessage({ positionMs: 1000, playing: false, seq: 4, actorUserId: 'admin-2' }));
+    await flush();
+
+    expect(fakeController.applyRemoteControl).not.toHaveBeenCalled();
+  });
+
+  it('stempelt eigene Steuerbefehle mit der Serverzeit', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'paused', positionMs: 5000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
+    watchParty.onOwnerSeek(42_000);
+
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'OWNER_SEEK',
+      positionMs: 42_000,
+      atServerTimeMs: expect.any(Number)
+    }));
   });
 });

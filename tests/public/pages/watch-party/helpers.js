@@ -25,3 +25,19 @@ export async function flush() {
   await Promise.resolve();
   await new Promise(resolve => setTimeout(resolve, 0));
 }
+
+export function timelineMessage({
+  positionMs = 0,
+  playing = true,
+  seq = 1,
+  anchorServerTimeMs = Date.now(),
+  actorUserId = null,
+  reason = playing ? 'play' : 'pause'
+} = {}) {
+  return {
+    type: 'TIMELINE',
+    timeline: { positionMs, playing, anchorServerTimeMs, seq },
+    actorUserId,
+    reason
+  };
+}

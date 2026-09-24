@@ -102,7 +102,7 @@ describe('WatchPartySocketHub · Ready State', () => {
       expect(ws.sent.some(message => message.type === 'COUNTDOWN')).toBe(false);
     });
 
-    it('PLAYER_READY startet COUNTDOWN und danach CONTROL play, wenn alle ready sind', () => {
+    it('PLAYER_READY startet COUNTDOWN und danach die laufende TIMELINE, wenn alle ready sind', () => {
       const hub = new WatchPartySocketHub();
       const readyRoomParty = { id: 'party-1', status: 'ready-room' };
       WatchPartyService.setPlayerReady.mockReturnValue(readyRoomParty);
@@ -133,12 +133,12 @@ describe('WatchPartySocketHub · Ready State', () => {
       vi.advanceTimersByTime(5000);
 
       expect(WatchPartyService.beginPlayback).toHaveBeenCalledWith({ partyId: 'party-1', positionMs: 0 });
-      const controlMessage = ws.sent.find(m => m.type === 'CONTROL');
-      expect(controlMessage).toMatchObject({ action: 'play' });
+      const timelineMessage = ws.sent.find(m => m.type === 'TIMELINE');
+      expect(timelineMessage).toMatchObject({ reason: 'start', actorUserId: null, timeline: expect.objectContaining({ playing: true }) });
       expect(ws.sent.some(m => m.type === 'NOTIFICATION')).toBe(false);
     });
 
-    it('scheduleCountdownCompletion sendet CONTROL play, aber keine owner_play- oder owner_seek-Notification bei positionMs 0', () => {
+    it('scheduleCountdownCompletion sendet die laufende TIMELINE, aber keine owner_play- oder owner_seek-Notification bei positionMs 0', () => {
       const hub = new WatchPartySocketHub();
       const playingParty = { id: 'party-1', status: 'playing', positionMs: 0, lastServerTimeMs: Date.now() };
       WatchPartyService.beginPlayback.mockReturnValue(playingParty);
@@ -149,7 +149,11 @@ describe('WatchPartySocketHub · Ready State', () => {
       hub.scheduleCountdownCompletion('party-1', Date.now(), 0);
       vi.advanceTimersByTime(0);
 
-      expect(ws.sent).toContainEqual(expect.objectContaining({ type: 'CONTROL', action: 'play', positionMs: 0 }));
+      expect(ws.sent).toContainEqual(expect.objectContaining({
+        type: 'TIMELINE',
+        reason: 'start',
+        timeline: expect.objectContaining({ playing: true, positionMs: 0 })
+      }));
       expect(ws.sent).not.toContainEqual(expect.objectContaining({
         type: 'NOTIFICATION',
         notification: expect.objectContaining({ type: 'owner_play' })

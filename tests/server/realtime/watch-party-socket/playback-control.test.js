@@ -42,7 +42,7 @@ describe('WatchPartySocketHub · Playback Control', () => {
     sessionOverride = null;
   });
 
-  it('broadcastet CONTROL, wenn der Owner OWNER_PLAY sendet', () => {
+  it('broadcastet TIMELINE, wenn der Owner OWNER_PLAY sendet', () => {
     const hub = new WatchPartySocketHub();
     const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'paused', positionMs: 0, lastServerTimeMs: 0 };
     WatchPartyService.getPartyOrThrow.mockReturnValue(party);
@@ -56,9 +56,16 @@ describe('WatchPartySocketHub · Playback Control', () => {
 
     expect(party.status).toBe('playing');
     expect(viewerWs.sent).toEqual([
-      expect.objectContaining({ type: 'CONTROL', action: 'play', positionMs: 4200 }),
+      expect.objectContaining({
+        type: 'TIMELINE',
+        actorUserId: 'owner-1',
+        reason: 'play',
+        timeline: expect.objectContaining({ positionMs: 4200, playing: true, seq: 1 })
+      }),
       expect.objectContaining({ type: 'NOTIFICATION', notification: expect.objectContaining({ type: 'owner_play' }) })
     ]);
+    // The actor gets the timeline (to learn the seq) but not its own notification.
+    expect(ownerWs.sent).toEqual([expect.objectContaining({ type: 'TIMELINE', actorUserId: 'owner-1' })]);
   });
 
   it('lehnt OWNER_PLAY/OWNER_PAUSE/OWNER_SEEK des Owners ab, solange die Party noch nicht gestartet ist', () => {
@@ -97,7 +104,7 @@ describe('WatchPartySocketHub · Playback Control', () => {
     expect(ownerWs.sent).toEqual([]);
   });
 
-  it('OWNER_SYNC in playing aktualisiert die Position und broadcastet SYNC', () => {
+  it('OWNER_SYNC in playing aktualisiert die Position und broadcastet TIMELINE an die anderen', () => {
     const hub = new WatchPartySocketHub();
     const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'playing', positionMs: 0, lastServerTimeMs: 0 };
     WatchPartyService.getPartyOrThrow.mockReturnValue(party);
@@ -112,8 +119,9 @@ describe('WatchPartySocketHub · Playback Control', () => {
     expect(party.status).toBe('playing');
     expect(party.positionMs).toBe(7000);
     expect(viewerWs.sent).toEqual([
-      expect.objectContaining({ type: 'SYNC', positionMs: 7000, playing: true })
+      expect.objectContaining({ type: 'TIMELINE', reason: 'sync', timeline: expect.objectContaining({ positionMs: 7000, playing: true }) })
     ]);
+    expect(ownerWs.sent).toEqual([]);
   });
 
   it('liefert ERROR, wenn ein Nicht-Owner OWNER_PLAY sendet', () => {
@@ -141,5 +149,22 @@ describe('WatchPartySocketHub · Playback Control', () => {
     expect(ws.sent).toEqual([expect.objectContaining({ type: 'TIME_PONG', clientSentAt: 1234.5 })]);
     expect(ws.sent[0].serverTimeMs).toBeGreaterThanOrEqual(before);
     expect(WatchPartyService.getPartyOrThrow).not.toHaveBeenCalled();
+  });
+  it('nutzt den Zeitstempel des Clients als Anker und erhöht seq bei jeder Änderung', () => {
+    const hub = new WatchPartySocketHub();
+    const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'paused', positionMs: 0, lastServerTimeMs: 0, seq: 4 };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+    const ownerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+
+    const stampedAt = Date.now() - 60;
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_PLAY', positionMs: 1000, atServerTimeMs: stampedAt }, ws: ownerWs });
+    expect(party.lastServerTimeMs).toBe(stampedAt);
+    expect(party.seq).toBe(5);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 9000, atServerTimeMs: Date.now() + 60_000 }, ws: ownerWs });
+    expect(party.lastServerTimeMs).toBeLessThanOrEqual(Date.now());
+    expect(party.status).toBe('playing');
+    expect(party.seq).toBe(6);
   });
 });

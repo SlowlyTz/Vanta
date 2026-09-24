@@ -375,12 +375,12 @@ function Be({ root: e, watchParty: t }) {
 	});
 }
 function Ve({ action: e, positionMs: t, serverTimeMs: n, playing: r, currentTime: i, now: a = Date.now() }) {
-	let o = e === "play" ? a - n : 0, s = Math.max(0, (t + o) / 1e3), c = Math.abs(i - s) > .75, l = e === "play" || !!r;
+	let o = e === "play" || !!r, s = o ? Math.max(0, a - n) : 0, c = Math.max(0, (t + s) / 1e3);
 	return {
-		targetSeconds: s,
-		shouldSeek: c,
-		shouldPlay: l,
-		shouldPause: !l && e === "pause"
+		targetSeconds: c,
+		shouldSeek: Math.abs(i - c) > .75,
+		shouldPlay: o,
+		shouldPause: !o && e === "pause"
 	};
 }
 //#endregion

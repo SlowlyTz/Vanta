@@ -1,14 +1,71 @@
 import { appStore } from '../../store/app.store.js';
 import { OWNER_SYNC_INTERVAL_MS, AUTO_SYNC_NOTIFICATION_COOLDOWN_MS } from './helpers.js';
 
+export function timelinePositionAt(timeline, now) {
+  const positionMs = Number(timeline?.positionMs) || 0;
+  if (!timeline?.playing) return positionMs;
+  return positionMs + Math.max(0, now - (Number(timeline.anchorServerTimeMs) || now));
+}
+
+export function timelineToControl(timeline, reason) {
+  return {
+    action: reason === 'seek' ? 'seek' : (timeline.playing ? 'play' : 'pause'),
+    positionMs: timeline.positionMs,
+    serverTimeMs: timeline.anchorServerTimeMs,
+    playing: Boolean(timeline.playing)
+  };
+}
+
 export function bindSync(ctx) {
+  // Keeps the newest known timeline; anything older than what we hold is a
+  // late packet and dropped.
+  ctx.acceptTimeline = timeline => {
+    if (!timeline || !Number.isFinite(Number(timeline.seq))) return false;
+    if (ctx.timeline && timeline.seq < ctx.timeline.seq) return false;
+    ctx.timeline = timeline;
+    return true;
+  };
+
+  ctx.sendOwnerControl = (type, positionMs, extra = {}) => {
+    ctx.socket?.sendJson({ type, positionMs, atServerTimeMs: ctx.clock.now(), ...extra });
+  };
+
+  ctx.handleTimelineMessage = ({ timeline, actorUserId, reason }) => {
+    if (!timeline || !(timeline.seq > ctx.lastAppliedTimelineSeq)) return;
+    ctx.lastAppliedTimelineSeq = timeline.seq;
+    ctx.acceptTimeline(timeline);
+    if (ctx.party) {
+      ctx.party.timeline = timeline;
+      ctx.party.positionMs = timeline.positionMs;
+      ctx.party.lastServerTimeMs = timeline.anchorServerTimeMs;
+      ctx.party.status = timeline.playing ? 'playing' : 'paused';
+    }
+
+    // Our own command coming back: the local player is already there.
+    if (actorUserId && actorUserId === ctx.currentUser?.id) return;
+
+    if (reason === 'sync') {
+      ctx.applySync({
+        positionMs: timeline.positionMs,
+        playing: timeline.playing,
+        serverTimeMs: timeline.anchorServerTimeMs
+      });
+      return;
+    }
+
+    const payload = timelineToControl(timeline, reason);
+    if (reason === 'start' || !ctx.controller) {
+      void ctx.handleControlPlay(payload);
+      return;
+    }
+    void ctx.safeApplyRemoteControl(payload);
+  };
+
   ctx.startOwnerHeartbeat = () => {
     if (ctx.ownerHeartbeatTimer) return;
     ctx.ownerHeartbeatTimer = window.setInterval(() => {
       if (!ctx.isPartyAdmin() || !ctx.controller?.player) return;
-      ctx.socket?.sendJson({
-        type: 'OWNER_SYNC',
-        positionMs: Math.round(ctx.controller.player.currentTime * 1000),
+      ctx.sendOwnerControl('OWNER_SYNC', Math.round(ctx.controller.player.currentTime * 1000), {
         playing: !ctx.controller.player.paused
       });
     }, OWNER_SYNC_INTERVAL_MS);
@@ -120,26 +177,19 @@ export function bindSync(ctx) {
 
   ctx.handleControlPlay = async payload => {
     try {
-      const playStartServerTimeMs = Number(payload.serverTimeMs) || ctx.clock.now();
-      if (ctx.lastPlayStartServerTimeMs === playStartServerTimeMs) return;
-      ctx.lastPlayStartServerTimeMs = playStartServerTimeMs;
-
-      if (ctx.party) {
-        ctx.party.status = 'playing';
-        ctx.party.positionMs = payload.positionMs;
-        ctx.party.lastServerTimeMs = playStartServerTimeMs;
-      }
       ctx.hideReadyOverlay();
       ctx.hideCountdown();
       await ctx.ensurePlayerPlayback();
       ctx.showPlayerSurface();
       if (ctx.controller?.prepareInitialPlayback) {
-        await ctx.controller.prepareInitialPlayback({ position: (payload.positionMs || 0) / 1000 });
+        const positionMs = payload.playing
+          ? timelinePositionAt({ ...payload, anchorServerTimeMs: payload.serverTimeMs }, ctx.clock.now())
+          : payload.positionMs;
+        await ctx.controller.prepareInitialPlayback({ position: (positionMs || 0) / 1000 });
       }
       ctx.maybeStartOwnerHeartbeat();
       await ctx.safeApplyRemoteControl(payload);
     } catch (error) {
-      ctx.lastPlayStartServerTimeMs = null;
       appStore.showToast(error.message || 'Wiedergabe konnte nicht gestartet werden', 'error');
     }
   };

@@ -3,7 +3,7 @@ import { WatchPartyApi } from '../../../../src/public/js/api/watch-party.api.js'
 import { MediaApi } from '../../../../src/public/js/api/media.api.js';
 import { authStore } from '../../../../src/public/js/store/auth.store.js';
 import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-import { makeParty, flush } from './helpers.js';
+import { makeParty, flush, timelineMessage } from './helpers.js';
 
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
@@ -111,7 +111,7 @@ describe('WatchPartyPage · Ready Room', () => {
     expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY' });
   });
 
-  it('versteckt den Countdown-Overlay erst bei CONTROL play, nicht automatisch nach Ablauf der Zeit', async () => {
+  it('versteckt den Countdown-Overlay erst beim Start der Zeitleiste, nicht automatisch nach Ablauf der Zeit', async () => {
     vi.useFakeTimers();
     try {
       authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
@@ -135,7 +135,7 @@ describe('WatchPartyPage · Ready Room', () => {
       expect(overlay.hidden).toBe(false);
       expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('0');
 
-      capturedOnMessage({ type: 'CONTROL', action: 'play', positionMs: 0, serverTimeMs: Date.now() });
+      capturedOnMessage(timelineMessage({ reason: 'start' }));
       await vi.advanceTimersByTimeAsync(0);
       expect(overlay.hidden).toBe(true);
     } finally {
@@ -196,7 +196,7 @@ describe('WatchPartyPage · Ready Room', () => {
     expect(fakeController.applyRemoteControl).not.toHaveBeenCalled();
   });
 
-  it('revealt den Player und versteckt den Countdown erst bei CONTROL play', async () => {
+  it('revealt den Player und versteckt den Countdown erst beim Start der Zeitleiste', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'lobby' }) });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
@@ -217,7 +217,7 @@ describe('WatchPartyPage · Ready Room', () => {
 
     capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: Date.now() + 5000, positionMs: 0 });
     await flush();
-    capturedOnMessage({ type: 'CONTROL', action: 'play', positionMs: 0, serverTimeMs: Date.now() });
+    capturedOnMessage(timelineMessage({ reason: 'start' }));
     await flush();
     await flush();
 
@@ -227,18 +227,20 @@ describe('WatchPartyPage · Ready Room', () => {
     expect(playerMount.classList.contains('player-page')).toBe(true);
     expect(playerMount.classList.contains('vanta-player-root')).toBe(true);
     expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(true);
-    expect(fakeController.prepareInitialPlayback).toHaveBeenCalledWith({ position: 0 });
+    const { position } = fakeController.prepareInitialPlayback.mock.calls.at(-1)[0];
+    expect(position).toBeGreaterThanOrEqual(0);
+    expect(position).toBeLessThan(0.5);
     expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'play', playing: true })
     );
   });
 
-  it('startet den Player als Fallback bei PARTY_UPDATED playing nach dem Countdown', async () => {
+  it('startet genau einmal: PARTY_UPDATED nach dem Countdown löst keinen zweiten Start aus', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
 
-    const container = WatchPartyPage({ partyId: 'party-1' });
+    WatchPartyPage({ partyId: 'party-1' });
     await flush();
     await flush();
 
@@ -246,19 +248,17 @@ describe('WatchPartyPage · Ready Room', () => {
     capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: serverTimeMs + 5000, positionMs: 0 });
     await flush();
 
+    capturedOnMessage(timelineMessage({ reason: 'start', seq: 3, anchorServerTimeMs: serverTimeMs }));
     capturedOnMessage({
       type: 'PARTY_UPDATED',
-      party: makeParty({
-        status: 'playing',
-        positionMs: 0,
-        lastServerTimeMs: serverTimeMs
-      })
+      party: makeParty({ status: 'playing', positionMs: 0, lastServerTimeMs: serverTimeMs })
     });
+    // A duplicate of the same timeline (e.g. after a reconnect) is dropped.
+    capturedOnMessage(timelineMessage({ reason: 'start', seq: 3, anchorServerTimeMs: serverTimeMs }));
     await flush();
     await flush();
 
-    expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(true);
-    expect(fakeController.prepareInitialPlayback).toHaveBeenCalledWith({ position: 0 });
+    expect(fakeController.applyRemoteControl).toHaveBeenCalledTimes(1);
     expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'play', playing: true, serverTimeMs })
     );

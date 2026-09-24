@@ -13,12 +13,7 @@ export const countdownMethods = {
       const party = WatchPartyService.beginPlayback({ partyId, positionMs });
       if (!party) return;
 
-      this.broadcastParty(partyId, {
-        type: 'CONTROL',
-        action: 'play',
-        positionMs: party.positionMs,
-        serverTimeMs: party.lastServerTimeMs
-      });
+      this.broadcastTimeline(partyId, party, { reason: 'start' });
       this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
     }, delay);
     timer.unref?.();

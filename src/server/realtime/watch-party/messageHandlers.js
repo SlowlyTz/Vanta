@@ -1,5 +1,6 @@
 import { WatchPartyService, isPartyAdmin } from '../../services/watch-party.service.js';
 import { ownerError, isPlaybackControlAllowed, createNotification } from './notifications.js';
+import { resolveAnchorTime, serializeTimeline, setTimeline } from '../../services/watch-party/helpers.js';
 
 export const messageHandlerMethods = {
   handleMessage({ partyId, user, message, ws }) {
@@ -195,57 +196,50 @@ export const messageHandlerMethods = {
       throw ownerError('Only party admins can control playback');
     }
 
-    const now = Date.now();
-
     if (!isPlaybackControlAllowed(party)) {
       if (message.type === 'OWNER_SYNC') return;
       throw ownerError('Die Watch Party wurde noch nicht gestartet');
     }
 
+    const now = Date.now();
+    const anchorServerTimeMs = resolveAnchorTime(message.atServerTimeMs, now);
+    const positionMs = Number(message.positionMs) || 0;
+
     if (message.type === 'OWNER_PLAY') {
-      party.status = 'playing';
-      party.positionMs = Number(message.positionMs) || 0;
-      party.lastServerTimeMs = now;
-      this.broadcastParty(partyId, { type: 'CONTROL', action: 'play', positionMs: party.positionMs, serverTimeMs: now });
-      this.broadcastParty(partyId, createNotification('owner_play'));
+      setTimeline(party, { positionMs, playing: true, anchorServerTimeMs });
+      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'play' });
+      this.broadcastParty(partyId, createNotification('owner_play'), { skipUserId: userId });
       return;
     }
 
     if (message.type === 'OWNER_PAUSE') {
-      party.status = 'paused';
-      party.positionMs = Number(message.positionMs) || 0;
-      party.lastServerTimeMs = now;
-      this.broadcastParty(partyId, { type: 'CONTROL', action: 'pause', positionMs: party.positionMs, serverTimeMs: now });
-      this.broadcastParty(partyId, createNotification('owner_pause'));
+      setTimeline(party, { positionMs, playing: false, anchorServerTimeMs });
+      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'pause' });
+      this.broadcastParty(partyId, createNotification('owner_pause'), { skipUserId: userId });
       return;
     }
 
     if (message.type === 'OWNER_SEEK') {
-      party.positionMs = Number(message.positionMs) || 0;
-      party.lastServerTimeMs = now;
-      this.broadcastParty(partyId, {
-        type: 'CONTROL',
-        action: 'seek',
-        positionMs: party.positionMs,
-        playing: party.status === 'playing',
-        serverTimeMs: now
-      });
+      setTimeline(party, { positionMs, anchorServerTimeMs });
+      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'seek' });
       if (this.shouldSendSeekNotification(partyId, now)) {
-        this.broadcastParty(partyId, createNotification('owner_seek', { positionMs: party.positionMs }));
+        this.broadcastParty(partyId, createNotification('owner_seek', { positionMs: party.positionMs }), { skipUserId: userId });
       }
       return;
     }
 
     if (message.type === 'OWNER_SYNC') {
-      party.positionMs = Number(message.positionMs) || 0;
-      party.status = message.playing ? 'playing' : 'paused';
-      party.lastServerTimeMs = now;
-      this.broadcastParty(partyId, {
-        type: 'SYNC',
-        positionMs: party.positionMs,
-        playing: Boolean(message.playing),
-        serverTimeMs: now
-      }, { skipUserId: userId });
+      setTimeline(party, { positionMs, playing: Boolean(message.playing), anchorServerTimeMs });
+      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'sync' }, { skipUserId: userId });
     }
+  },
+
+  broadcastTimeline(partyId, party, { actorUserId = null, reason }, options) {
+    this.broadcastParty(partyId, {
+      type: 'TIMELINE',
+      timeline: serializeTimeline(party),
+      actorUserId,
+      reason
+    }, options);
   }
 };
