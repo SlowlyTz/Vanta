@@ -19,6 +19,15 @@ export function sortSubtitleTracks(tracks) {
   });
 }
 
+// The track for a remembered language: a regular one first, forced subtitles
+// only when that language has nothing else.
+export function pickSubtitleForLanguage(tracks, language) {
+  const wanted = normalizeLanguage(language).toLowerCase();
+  if (!wanted) return null;
+  const matching = (tracks || []).filter(track => normalizeLanguage(track.language).toLowerCase() === wanted);
+  return matching.find(track => !track.isForced) || matching[0] || null;
+}
+
 export function getSubtitleTrackId(track) {
   return `vanta-subtitle-${track.index}`;
 }
@@ -107,7 +116,7 @@ export function createSubtitleController({ player, reporter, onChange = () => {}
     onChange();
   };
 
-  const update = (playback, { preserveSelection = true } = {}) => {
+  const update = (playback, { preserveSelection = true, preferredLanguage = null } = {}) => {
     const nextTracks = sortSubtitleTracks(playback?.subtitles || []);
     const previousId = currentId;
 
@@ -117,8 +126,12 @@ export function createSubtitleController({ player, reporter, onChange = () => {}
     const shouldPreserve = preserveSelection
       && previousId !== OFF_ID
       && tracks.some(track => getSubtitleTrackId(track) === previousId);
-
-    select(shouldPreserve ? previousId : OFF_ID);
+    if (shouldPreserve) {
+      select(previousId);
+      return;
+    }
+    const preferred = pickSubtitleForLanguage(tracks, preferredLanguage);
+    select(preferred ? getSubtitleTrackId(preferred) : OFF_ID);
   };
 
   // C key: off → the last shown track (or the first), on → off.
@@ -143,6 +156,10 @@ export function createSubtitleController({ player, reporter, onChange = () => {}
       return selected ? formatSubtitleLabel(selected) : 'Aus';
     },
     getCurrentId: () => currentId,
+    getCurrentLanguage: () => {
+      const selected = tracks.find(track => getSubtitleTrackId(track) === currentId);
+      return selected ? normalizeLanguage(selected.language) || null : null;
+    },
     destroy: removeRegisteredTracks
   };
 }

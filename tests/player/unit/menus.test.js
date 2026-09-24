@@ -78,4 +78,17 @@ describe('bindMenus', () => {
     expect(env.context.settingsOpen).toBe(false);
     expect(env.context.ui.isHeld()).toBe(false);
   });
+
+  it('merkt sich nur selbst gewählte Untertitel, nach Sprache', () => {
+    env = setup();
+    env.context.preferences = { get: () => ({ subtitleLanguage: 'en' }), update: vi.fn() };
+    env.context.updateMenus({ quality: null, subtitles: [{ index: 1, language: 'de', label: 'Deutsch' }, { index: 2, language: 'en', label: 'English' }] }, { preserveSubtitleSelection: false });
+    expect(env.context.subtitleMenu.getCurrentLanguage()).toBe('en');
+    expect(env.context.preferences.update).not.toHaveBeenCalled();
+
+    env.context.selectSubtitle('vanta-subtitle-1');
+    expect(env.context.preferences.update).toHaveBeenLastCalledWith({ subtitleLanguage: 'de' });
+    env.context.toggleSubtitles();
+    expect(env.context.preferences.update).toHaveBeenLastCalledWith({ subtitleLanguage: null });
+  });
 });

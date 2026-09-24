@@ -22,10 +22,12 @@ import { bindTransportControls } from './player/transportControls.js';
 import { bindTouchTaps } from './player/touchTaps.js';
 import { bindShortcuts } from './player/shortcuts.js';
 import { createMediaSession } from './mediaSession.js';
+import { bindPreferences } from './preferences.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
   const context = await createPlayerContext(options);
+  bindPreferences(context);
   bindFullscreenControls(context);
   bindReporterAndOrientation(context);
   bindSourceSwitchIntegration(context);

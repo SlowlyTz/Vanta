@@ -17,6 +17,7 @@ export async function createPlayerContext(options) {
     onBack,
     watchParty = null,
     episodeBrowser = null,
+    preferences = null,
     deferInitialLoad = false
   } = options;
 
@@ -38,6 +39,7 @@ export async function createPlayerContext(options) {
     onBack,
     watchParty,
     episodeBrowser,
+    preferencesConfig: preferences,
     deferInitialLoad,
     iosLike,
     dom,

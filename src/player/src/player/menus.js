@@ -133,7 +133,7 @@ export function bindMenus(context) {
     title: 'Untertitel',
     render: (body, flyout) => renderOptionsPage(body, {
       options: context.subtitleMenu.getOptions(),
-      onSelect: id => context.subtitleMenu.select(id),
+      onSelect: id => context.selectSubtitle(id),
       emptyLabel: 'Keine Untertitel verfügbar'
     }, flyout)
   });
@@ -217,10 +217,25 @@ export function bindMenus(context) {
     });
   };
 
+  // A choice by the viewer is remembered (by language, so the next episode
+  // picks the matching track); automatic selections are not.
+  const rememberSubtitle = () => {
+    context.preferences?.update({ subtitleLanguage: context.subtitleMenu.getCurrentLanguage() });
+  };
+  context.selectSubtitle = id => {
+    context.subtitleMenu.select(id);
+    rememberSubtitle();
+  };
+  context.toggleSubtitles = () => {
+    context.subtitleMenu.toggle();
+    rememberSubtitle();
+  };
+
   context.updateMenus = (playback, options = {}) => {
     qualityMenu?.update(playback.quality?.profiles, playback.quality?.current);
     context.subtitleMenu.update(playback, {
-      preserveSelection: options.preserveSubtitleSelection !== false
+      preserveSelection: options.preserveSubtitleSelection !== false,
+      preferredLanguage: context.preferences?.get().subtitleLanguage || null
     });
     settings.refresh();
   };

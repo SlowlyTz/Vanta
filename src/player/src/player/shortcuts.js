@@ -94,7 +94,7 @@ export function bindShortcuts(context) {
       case 'volume-down': context.adjustVolume(-VOLUME_STEP); return true;
       case 'mute': context.toggleMute(); return true;
       case 'fullscreen': context.toggleFullscreen?.(); return true;
-      case 'subtitles': context.subtitleMenu?.toggle?.(); return true;
+      case 'subtitles': (context.toggleSubtitles || context.subtitleMenu?.toggle)?.(); return true;
       case 'help': context.toggleHelp?.(); return true;
       default: return false;
     }

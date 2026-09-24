@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createSubtitleController } from '../../../src/player/src/subtitles.js';
+import { createSubtitleController, pickSubtitleForLanguage } from '../../../src/player/src/subtitles.js';
 import { createQualityController } from '../../../src/player/src/quality.js';
 
 function fakeTextTracks() {
@@ -62,6 +62,28 @@ describe('createSubtitleController · toggle', () => {
     expect(controller.getCurrentId()).toBe('off');
     controller.toggle();
     expect(controller.getCurrentId()).toBe('vanta-subtitle-4');
+  });
+});
+
+describe('Untertitel nach gemerkter Sprache', () => {
+  const tracks = [
+    { index: 1, language: 'de', label: 'Deutsch (Forced)', isForced: true },
+    { index: 2, language: 'de', label: 'Deutsch' },
+    { index: 3, language: 'en', label: 'English' }
+  ];
+
+  it('nimmt reguläre vor erzwungenen Untertiteln', () => {
+    expect(pickSubtitleForLanguage(tracks, 'DE').index).toBe(2);
+    expect(pickSubtitleForLanguage([tracks[0]], 'de').index).toBe(1);
+    expect(pickSubtitleForLanguage(tracks, 'fr')).toBeNull();
+    expect(pickSubtitleForLanguage(tracks, null)).toBeNull();
+  });
+
+  it('wählt beim Laden einer neuen Quelle die gemerkte Sprache', () => {
+    const controller = createSubtitleController({ player: { textTracks: fakeTextTracks() }, reporter: { setSubtitleStreamIndex: vi.fn() } });
+    controller.update({ subtitles: tracks }, { preserveSelection: false, preferredLanguage: 'en' });
+    expect(controller.getCurrentId()).toBe('vanta-subtitle-3');
+    expect(controller.getCurrentLanguage()).toBe('en');
   });
 });
 
