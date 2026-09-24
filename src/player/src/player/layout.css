@@ -1,30 +1,21 @@
-/* Gesture zones: on touch, double taps on the edges seek; with a mouse a
-   click anywhere on the picture toggles playback. */
-.vanta-player-gesture {
+/* On touch a tap layer takes the gestures (double tap on the sides seeks,
+   a single tap shows or hides the controls); with a mouse a click anywhere
+   on the picture toggles playback. */
+.vanta-player-gesture,
+.vanta-player-tap-layer {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 10;
   pointer-events: auto;
 }
 
 .vanta-player-gesture-toggle {
-  left: 0;
-  right: 0;
   display: none;
 }
 
-.vanta-player-gesture-left,
-.vanta-player-gesture-right {
-  width: 30%;
-}
-
-.vanta-player-gesture-left {
-  left: 0;
-}
-
-.vanta-player-gesture-right {
-  right: 0;
+.vanta-player-tap-layer {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (pointer: fine) {
@@ -32,8 +23,7 @@
     display: block;
   }
 
-  .vanta-player-gesture-left,
-  .vanta-player-gesture-right {
+  .vanta-player-tap-layer {
     display: none;
   }
 }

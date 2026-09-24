@@ -69,8 +69,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
         <media-captions class="vanta-player-captions"></media-captions>
 
         <media-gesture class="vanta-player-gesture vanta-player-gesture-toggle" event="pointerup" action="toggle:paused" aria-hidden="true"></media-gesture>
-        <media-gesture class="vanta-player-gesture vanta-player-gesture-left" event="dblpointerup" action="seek:-10" aria-hidden="true"></media-gesture>
-        <media-gesture class="vanta-player-gesture vanta-player-gesture-right" event="dblpointerup" action="seek:10" aria-hidden="true"></media-gesture>
+        <div class="vanta-player-tap-layer" aria-hidden="true"></div>
 
         <div class="vanta-player-seek-bubble is-back" aria-hidden="true"></div>
         <div class="vanta-player-seek-bubble is-forward" aria-hidden="true"></div>

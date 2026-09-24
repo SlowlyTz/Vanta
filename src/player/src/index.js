@@ -20,6 +20,7 @@ import { bindMenus } from './player/menus.js';
 import { bindPlayerEvents } from './player/eventBindings.js';
 import { bindSyncControls } from './player/syncControls.js';
 import { bindTransportControls } from './player/transportControls.js';
+import { bindTouchTaps } from './player/touchTaps.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -30,6 +31,7 @@ export async function mountVantaPlayer(options) {
   bindMenus(context);
   bindPlayerEvents(context);
   bindTransportControls(context);
+  bindTouchTaps(context);
   bindSyncControls(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);

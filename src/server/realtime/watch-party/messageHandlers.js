@@ -4,6 +4,7 @@ import {
   getEffectivePosition,
   getSyncLeaderUserId,
   resolveAnchorTime,
+  sanitizeSeekStep,
   serializeTimeline,
   setTimeline,
   SYNC_CORRECTION_THRESHOLD_MS,
@@ -234,9 +235,12 @@ export const messageHandlerMethods = {
     }
 
     if (message.type === 'OWNER_SEEK') {
+      const step = sanitizeSeekStep(message.step);
       setTimeline(party, { positionMs, anchorServerTimeMs });
-      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'seek' });
-      if (this.shouldSendSeekNotification(partyId, now)) {
+      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'seek', step });
+      // A ten-second step shows up as a bubble with the name for everyone;
+      // only real jumps along the timeline get a notification.
+      if (!step && this.shouldSendSeekNotification(partyId, now)) {
         this.broadcastParty(partyId, createNotification('owner_seek', { ...actor, positionMs: party.positionMs }), { skipUserId: userId });
       }
       return;
@@ -263,12 +267,15 @@ export const messageHandlerMethods = {
     this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'sync' });
   },
 
-  broadcastTimeline(partyId, party, { actorUserId = null, reason }, options) {
-    this.broadcastParty(partyId, {
+  broadcastTimeline(partyId, party, { actorUserId = null, reason, step = null }, options) {
+    const payload = {
       type: 'TIMELINE',
       timeline: serializeTimeline(party),
       actorUserId,
+      actorName: actorUserId ? party.members?.get?.(actorUserId)?.username || null : null,
       reason
-    }, options);
+    };
+    if (step) payload.step = step;
+    this.broadcastParty(partyId, payload, options);
   }
 };

@@ -455,8 +455,7 @@ function Ze(e, { title: t, subtitle: n, poster: r }) {
         <media-captions class="vanta-player-captions"></media-captions>
 
         <media-gesture class="vanta-player-gesture vanta-player-gesture-toggle" event="pointerup" action="toggle:paused" aria-hidden="true"></media-gesture>
-        <media-gesture class="vanta-player-gesture vanta-player-gesture-left" event="dblpointerup" action="seek:-10" aria-hidden="true"></media-gesture>
-        <media-gesture class="vanta-player-gesture vanta-player-gesture-right" event="dblpointerup" action="seek:10" aria-hidden="true"></media-gesture>
+        <div class="vanta-player-tap-layer" aria-hidden="true"></div>
 
         <div class="vanta-player-seek-bubble is-back" aria-hidden="true"></div>
         <div class="vanta-player-seek-bubble is-forward" aria-hidden="true"></div>
@@ -20477,7 +20476,8 @@ function Vp(e) {
 	}), r(t, "pause", () => {
 		e.canEmitOwnerControl("pause") && i.onOwnerPause?.(Math.round(t.currentTime * 1e3));
 	}), r(t, "seeked", () => {
-		e.canEmitOwnerControl("seek") && i.onOwnerSeek?.(Math.round(t.currentTime * 1e3));
+		let n = e.takePendingSeekStep?.() ?? null;
+		e.canEmitOwnerControl("seek") && i.onOwnerSeek?.(Math.round(t.currentTime * 1e3), n ? { step: n } : {});
 	}), r(t, "ended", () => {
 		ke().catch(() => {}), e.reporter.stop({ ended: !0 });
 	}), r(t, "wheel", (t) => {
@@ -20568,8 +20568,9 @@ function qp({ now: e = () => performance.now(), chainMs: t = 900 } = {}) {
 		return s.at = -Infinity, a.total;
 	} };
 }
-function Jp(e, t) {
-	return `${e === "back" ? "−" : "+"}${t} s`;
+function Jp(e, t, n = null) {
+	let r = `${e === "back" ? "−" : "+"}${t} s`;
+	return n ? `${r} · ${n}` : r;
 }
 function Yp(e) {
 	return !e || typeof e.closest != "function" ? !1 : !!e.closest("input, textarea, select, [contenteditable=\"true\"], [role=\"dialog\"]");
@@ -20583,21 +20584,33 @@ function Xp(e) {
 		i.toggleAttribute("data-paused", e), n.playButtons.forEach((t) => {
 			t.dataset.state = e ? "paused" : "playing", t.setAttribute("aria-label", e ? "Wiedergabe" : "Pause"), t.title = e ? "Wiedergabe (K)" : "Pause (K)";
 		});
-	}, l = (e, t) => {
-		let r = n.seekBubbles[e];
-		r && (r.textContent = Jp(e, t), r.classList.remove("is-visible"), r.offsetWidth, r.classList.add("is-visible"), window.clearTimeout(s[e]), s[e] = window.setTimeout(() => r.classList.remove("is-visible"), Kp));
+	}, l = (e, t, r = null) => {
+		let i = n.seekBubbles[e];
+		i && (i.textContent = Jp(e, t, r), i.classList.remove("is-visible"), i.offsetWidth, i.classList.add("is-visible"), window.clearTimeout(s[e]), s[e] = window.setTimeout(() => i.classList.remove("is-visible"), Kp));
+	}, u = (e) => {
+		n.seekButtons.filter((t) => (Number(t.dataset.seek) < 0 ? "back" : "forward") === e).forEach((e) => {
+			e.classList.remove("is-pressed"), e.offsetWidth, e.classList.add("is-pressed");
+		});
 	};
-	return e.seekStep = (n, { button: r = null } = {}) => {
+	return e.pendingSeekStep = 0, e.takePendingSeekStep = () => {
+		let t = e.pendingSeekStep;
+		return e.pendingSeekStep = 0, t || null;
+	}, e.seekStep = (n) => {
 		if (e.watchParty?.enabled && !e.canControlWatchParty()) return;
-		At(t, n, { endEpsilon: .25 });
-		let i = n < 0 ? "back" : "forward";
-		l(i, o.add(i, Math.abs(n))), r && (r.classList.remove("is-pressed"), r.offsetWidth, r.classList.add("is-pressed")), a.resetIdle();
+		At(t, n, { endEpsilon: .25 }), e.pendingSeekStep += n;
+		let r = n < 0 ? "back" : "forward";
+		l(r, o.add(r, Math.abs(n))), u(r), a.resetIdle();
+	}, e.showSeekFeedback = (e, { by: t = null } = {}) => {
+		let n = Math.round(Number(e) || 0);
+		if (!n) return;
+		let r = n < 0 ? "back" : "forward";
+		l(r, o.add(r, Math.abs(n)), t), u(r);
 	}, e.togglePlay = () => {
 		e.watchParty?.enabled && !e.canControlWatchParty() || (t.paused ? t.play().catch(() => {}) : t.pause());
 	}, n.playButtons.forEach((t) => r(t, "click", (t) => {
 		t.stopPropagation(), e.togglePlay();
 	})), n.seekButtons.forEach((t) => r(t, "click", (n) => {
-		n.stopPropagation(), e.seekStep(Number(t.dataset.seek) || 0, { button: t });
+		n.stopPropagation(), e.seekStep(Number(t.dataset.seek) || 0);
 	})), r(document, "keydown", (t) => {
 		t.defaultPrevented || t.altKey || t.ctrlKey || t.metaKey || t.key !== "ArrowLeft" && t.key !== "ArrowRight" || Yp(t.target) || e.settingsOpen || (t.preventDefault(), e.seekStep(t.key === "ArrowLeft" ? -10 : 10));
 	}), [
@@ -20614,9 +20627,52 @@ function Xp(e) {
 		window.clearTimeout(s.back), window.clearTimeout(s.forward);
 	}), e;
 }
+function Zp(e, t) {
+	return e < t / 3 ? "back" : e > t * 2 / 3 ? "forward" : null;
+}
+function Qp({ onSingle: e, onSeek: t, now: n = () => performance.now(), setTimer: r = (e, t) => window.setTimeout(e, t), clearTimer: i = (e) => window.clearTimeout(e) }) {
+	let a = null, o = null, s = null;
+	return {
+		tap({ x: c, y: l, width: u }) {
+			let d = n(), f = Zp(c, u);
+			return o && f === o.side && d - o.at <= 650 ? (o.at = d, t(f), "seek") : (o = null, a && d - a.at <= 300 && Math.hypot(c - a.x, l - a.y) <= 40 && f ? (i(s), s = null, a = null, o = {
+				side: f,
+				at: d
+			}, t(f), "seek") : (a = {
+				x: c,
+				y: l,
+				at: d
+			}, i(s), s = r(() => {
+				s = null, a = null, e();
+			}, 300), "pending"));
+		},
+		destroy() {
+			i(s);
+		}
+	};
+}
+function $p(e) {
+	let { root: t, listen: n, ui: r } = e, i = t.querySelector(".vanta-player-tap-layer");
+	if (!i) return e;
+	let a = Qp({
+		onSeek: (t) => e.seekStep(t === "back" ? -10 : 10),
+		onSingle: () => {
+			r.getState() === "ready-playing-active" ? r.setState("ready-playing-idle") : r.resetIdle();
+		}
+	});
+	return n(i, "pointerup", (e) => {
+		if (e.pointerType === "mouse") return;
+		let t = i.getBoundingClientRect();
+		a.tap({
+			x: e.clientX - t.left,
+			y: e.clientY - t.top,
+			width: t.width
+		});
+	}), e.disposers.push(() => a.destroy()), e;
+}
 //#endregion
 //#region src/player/src/player/lifecycle.js
-async function Zp(e) {
+async function em(e) {
 	let { watchParty: t, resumePosition: n } = e, r = !1, i = null;
 	async function a({ position: a = n } = {}) {
 		if (r) return;
@@ -20652,7 +20708,7 @@ async function Zp(e) {
 	} catch {}
 	return e;
 }
-function Qp(e) {
+function tm(e) {
 	let { player: t, watchParty: n, isPhone: r, root: i } = e;
 	return {
 		player: t,
@@ -20667,6 +20723,7 @@ function Qp(e) {
 		syncPlay: e.syncPlay,
 		syncPause: e.syncPause,
 		unlockPlayback: e.unlockPlayback,
+		showSeekFeedback: e.showSeekFeedback,
 		destroy: () => {
 			if (e.destroyed) return Promise.resolve();
 			e.destroyed = !0, e.phoneOrientationActive = !1, e.gateActive = !1, e.sourceSwitch.clearSeekTimer(), e.echoTokens.clear();
@@ -20681,9 +20738,9 @@ function Qp(e) {
 }
 //#endregion
 //#region src/player/src/index.js
-async function $p(e) {
+async function nm(e) {
 	let t = await Qe(e);
-	return $e(t), _t(t), Vt(t), Fn(t), Vp(t), Xp(t), Gp(t), await Zp(t), Qp(t);
+	return $e(t), _t(t), Vt(t), Fn(t), Vp(t), Xp(t), $p(t), Gp(t), await em(t), tm(t);
 }
 //#endregion
-export { $p as mountVantaPlayer };
+export { nm as mountVantaPlayer };

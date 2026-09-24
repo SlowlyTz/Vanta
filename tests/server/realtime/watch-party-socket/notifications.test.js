@@ -262,4 +262,36 @@ describe('WatchPartySocketHub · Notifications', () => {
     expect(notification.message).toBe('Jemand hat pausiert.');
     expect(notification.actor).toBeNull();
   });
+
+  it('schickt die Sprungweite eines ±10-s-Sprungs mit Namen im TIMELINE und lässt die Benachrichtigung weg', () => {
+    const hub = new WatchPartySocketHub();
+    const party = {
+      id: 'party-1', ownerUserId: 'owner-1', status: 'playing', positionMs: 0, lastServerTimeMs: Date.now(),
+      members: new Map([['owner-1', { userId: 'owner-1', username: 'Lena', role: 'owner' }]])
+    };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+    const ownerWs = createFakeWs();
+    const viewerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 20_000, step: -20 }, ws: ownerWs });
+
+    expect(viewerWs.sent).toEqual([
+      expect.objectContaining({ type: 'TIMELINE', reason: 'seek', step: -20, actorName: 'Lena', actorUserId: 'owner-1' })
+    ]);
+  });
+
+  it('verwirft unsinnige Sprungweiten', () => {
+    const hub = new WatchPartySocketHub();
+    const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'playing', positionMs: 0, lastServerTimeMs: Date.now(), members: new Map() };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+    const viewerWs = createFakeWs();
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 5_000, step: 'x' }, ws: createFakeWs() });
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 5_000, step: 99_999 }, ws: createFakeWs() });
+
+    viewerWs.sent.filter(m => m.type === 'TIMELINE').forEach(m => expect(m.step).toBeUndefined());
+  });
 });

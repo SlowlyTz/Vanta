@@ -149,8 +149,9 @@ export function bindPlayerEvents(context) {
   });
 
   listen(player, 'seeked', () => {
+    const step = context.takePendingSeekStep?.() ?? null;
     if (context.canEmitOwnerControl('seek')) {
-      watchParty.onOwnerSeek?.(Math.round(player.currentTime * 1000));
+      watchParty.onOwnerSeek?.(Math.round(player.currentTime * 1000), step ? { step } : {});
     }
   });
 

@@ -122,7 +122,7 @@ export function bindSync(ctx) {
     }
   });
 
-  ctx.handleTimelineMessage = ({ timeline, actorUserId }) => {
+  ctx.handleTimelineMessage = ({ timeline, actorUserId, actorName, reason, step }) => {
     if (!timeline || !(timeline.seq > ctx.lastAppliedTimelineSeq)) return;
     ctx.lastAppliedTimelineSeq = timeline.seq;
     if (!ctx.acceptTimeline(timeline)) return;
@@ -135,6 +135,9 @@ export function bindSync(ctx) {
 
     // Our own command coming back: the local player is already there.
     if (actorUserId && actorUserId === ctx.currentUser?.id) return;
+    if (reason === 'seek' && Number.isFinite(Number(step)) && Number(step) !== 0) {
+      ctx.controller?.showSeekFeedback?.(Number(step), { by: actorName || null });
+    }
     void ctx.enterPlayback();
   };
 

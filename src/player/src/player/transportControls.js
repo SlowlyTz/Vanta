@@ -22,8 +22,9 @@ export function createSeekTally({ now = () => performance.now(), chainMs = SEEK_
   };
 }
 
-export function formatSeekBubble(direction, seconds) {
-  return `${direction === 'back' ? '−' : '+'}${seconds} s`;
+export function formatSeekBubble(direction, seconds, by = null) {
+  const text = `${direction === 'back' ? '−' : '+'}${seconds} s`;
+  return by ? `${text} · ${by}` : text;
 }
 
 function isTypingTarget(target) {
@@ -46,10 +47,10 @@ export function bindTransportControls(context) {
     });
   };
 
-  const showBubble = (direction, seconds) => {
+  const showBubble = (direction, seconds, by = null) => {
     const bubble = dom.seekBubbles[direction];
     if (!bubble) return;
-    bubble.textContent = formatSeekBubble(direction, seconds);
+    bubble.textContent = formatSeekBubble(direction, seconds, by);
     bubble.classList.remove('is-visible');
     // Restart the pop animation on every press.
     void bubble.offsetWidth;
@@ -58,17 +59,43 @@ export function bindTransportControls(context) {
     bubbleTimers[direction] = window.setTimeout(() => bubble.classList.remove('is-visible'), SEEK_BUBBLE_VISIBLE_MS);
   };
 
-  context.seekStep = (step, { button = null } = {}) => {
+  const animateButtons = direction => {
+    dom.seekButtons
+      .filter(button => (Number(button.dataset.seek) < 0 ? 'back' : 'forward') === direction)
+      .forEach(button => {
+        button.classList.remove('is-pressed');
+        void button.offsetWidth;
+        button.classList.add('is-pressed');
+      });
+  };
+
+  // Steps taken since the last `seeked` add up: quick presses often end in a
+  // single seeked event, and the watch party reports the whole jump with it.
+  context.pendingSeekStep = 0;
+  context.takePendingSeekStep = () => {
+    const step = context.pendingSeekStep;
+    context.pendingSeekStep = 0;
+    return step || null;
+  };
+
+  context.seekStep = step => {
     if (context.watchParty?.enabled && !context.canControlWatchParty()) return;
     seekBy(player, step, { endEpsilon: 0.25 });
+    context.pendingSeekStep += step;
     const direction = step < 0 ? 'back' : 'forward';
     showBubble(direction, tally.add(direction, Math.abs(step)));
-    if (button) {
-      button.classList.remove('is-pressed');
-      void button.offsetWidth;
-      button.classList.add('is-pressed');
-    }
+    animateButtons(direction);
     ui.resetIdle();
+  };
+
+  // Someone else in the party jumped: the same bubble and icon spin, with
+  // their name, so everyone sees what just happened.
+  context.showSeekFeedback = (step, { by = null } = {}) => {
+    const seconds = Math.round(Number(step) || 0);
+    if (!seconds) return;
+    const direction = seconds < 0 ? 'back' : 'forward';
+    showBubble(direction, tally.add(direction, Math.abs(seconds)), by);
+    animateButtons(direction);
   };
 
   context.togglePlay = () => {
@@ -84,7 +111,7 @@ export function bindTransportControls(context) {
 
   dom.seekButtons.forEach(button => listen(button, 'click', event => {
     event.stopPropagation();
-    context.seekStep(Number(button.dataset.seek) || 0, { button });
+    context.seekStep(Number(button.dataset.seek) || 0);
   }));
 
   // The arrow keys jump the same ten seconds as the buttons and show the

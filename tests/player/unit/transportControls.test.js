@@ -81,6 +81,7 @@ describe('createSeekTally', () => {
   it('beschriftet die Blase mit Vorzeichen', () => {
     expect(formatSeekBubble('back', 20)).toBe('−20 s');
     expect(formatSeekBubble('forward', 10)).toBe('+10 s');
+    expect(formatSeekBubble('forward', 10, 'Lena')).toBe('+10 s · Lena');
   });
 });
 
@@ -159,5 +160,27 @@ describe('bindTransportControls', () => {
     bottom.dispatchEvent(new Event('pointerleave'));
     vi.advanceTimersByTime(4_000);
     expect(env.context.ui.getState()).toBe('ready-playing-idle');
+  });
+
+  it('sammelt die Sprünge bis zum nächsten seeked, damit die Party die ganze Weite erfährt', () => {
+    env = setup();
+    const back = env.root.querySelector('.vanta-player-seek-back');
+    back.click();
+    back.click();
+    expect(env.context.takePendingSeekStep()).toBe(-20);
+    expect(env.context.takePendingSeekStep()).toBeNull();
+  });
+
+  it('zeigt Sprünge anderer mit Namen und dreht die passenden Icons', () => {
+    env = setup({ watchParty: { enabled: true }, canControl: false });
+    env.context.showSeekFeedback(10, { by: 'Lena' });
+    env.context.showSeekFeedback(10, { by: 'Lena' });
+
+    const bubble = env.root.querySelector('.vanta-player-seek-bubble.is-forward');
+    expect(bubble.textContent).toBe('+20 s · Lena');
+    expect(env.root.querySelector('.vanta-player-seek-forward').classList.contains('is-pressed')).toBe(true);
+    expect(env.root.querySelector('.vanta-player-seek-back').classList.contains('is-pressed')).toBe(false);
+    // Only a display: the local player did not move.
+    expect(env.player.currentTime).toBe(100);
   });
 });

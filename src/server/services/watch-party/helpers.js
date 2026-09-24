@@ -71,6 +71,16 @@ export function setTimeline(party, { positionMs, playing, anchorServerTimeMs = D
   return party;
 }
 
+export const MAX_SEEK_STEP_SECONDS = 600;
+
+// A button/key/double-tap jump in whole seconds (±10, or a quick run of
+// them); anything else is not a step and is dropped.
+export function sanitizeSeekStep(value) {
+  const step = Number(value);
+  if (!Number.isInteger(step) || step === 0 || Math.abs(step) > MAX_SEEK_STEP_SECONDS) return null;
+  return step;
+}
+
 export const SYNC_CORRECTION_THRESHOLD_MS = 1_000;
 export const SYNC_STABLE_MIN_MS = 10_000;
 

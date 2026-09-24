@@ -292,4 +292,26 @@ describe('WatchPartyPage · Player Sync', () => {
       vi.useRealTimers();
     }
   });
+
+  it('zeigt Sprünge anderer als Blase mit Namen und schickt eigene Sprünge mit Weite', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'playing', positionMs: 5000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+    fakeController.showSeekFeedback = vi.fn();
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    capturedOnMessage({ ...timelineMessage({ positionMs: 15_000, seq: 9, actorUserId: 'owner-1', reason: 'seek' }), step: 10, actorName: 'Alice' });
+    expect(fakeController.showSeekFeedback).toHaveBeenCalledWith(10, { by: 'Alice' });
+
+    capturedOnMessage({ ...timelineMessage({ positionMs: 15_000, seq: 10, actorUserId: 'viewer-1', reason: 'seek' }), step: 10, actorName: 'Bob' });
+    expect(fakeController.showSeekFeedback).toHaveBeenCalledTimes(1);
+
+    const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
+    watchParty.onOwnerSeek(30_000, { step: -10 });
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith(expect.objectContaining({ type: 'OWNER_SEEK', positionMs: 30_000, step: -10 }));
+    delete fakeController.showSeekFeedback;
+  });
 });

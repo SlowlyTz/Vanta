@@ -91,6 +91,7 @@ export function createPlayerController(context) {
     syncPlay: context.syncPlay,
     syncPause: context.syncPause,
     unlockPlayback: context.unlockPlayback,
+    showSeekFeedback: context.showSeekFeedback,
     destroy: () => {
       if (context.destroyed) return Promise.resolve();
       context.destroyed = true;
