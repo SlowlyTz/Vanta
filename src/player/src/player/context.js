@@ -81,7 +81,11 @@ export async function createPlayerContext(options) {
   context.streamSelection = () => {
     const selection = {};
     const audioIndex = context.audioMenu?.getCurrentIndex?.();
-    if (Number.isInteger(audioIndex) && context.sourceSwitch?.getCurrentPlayback?.()) selection.audioStreamIndex = audioIndex;
+    const current = context.sourceSwitch?.getCurrentPlayback?.();
+    if (Number.isInteger(audioIndex) && current) {
+      selection.audioStreamIndex = audioIndex;
+      if (current.mediaSourceId) selection.mediaSourceId = current.mediaSourceId;
+    }
     else if (context.preferences?.get().audioLanguage) selection.audioLanguage = context.preferences.get().audioLanguage;
     const quality = context.qualityMenu?.getCurrentId?.();
     if (quality && quality !== 'auto') selection.qualityProfile = quality;

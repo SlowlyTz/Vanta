@@ -69,6 +69,7 @@ export function bindMenus(context) {
       try {
         const playback = await context.resolvePlayback('auto', {
           audioStreamIndex,
+          mediaSourceId: currentPlayback.mediaSourceId || undefined,
           replacesPlaySessionId: currentPlayback.playSessionId
         });
         if (context.destroyed) return;

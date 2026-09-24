@@ -141,6 +141,9 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const requestedQualityProfile = String(req.query.qualityProfile || 'auto').toLowerCase();
   const audioIndexParam = req.query.audioStreamIndex;
   const requestedAudioStreamIndex = audioIndexParam !== undefined && /^\d+$/.test(String(audioIndexParam)) ? Number(audioIndexParam) : null;
+  const mediaSourceId = typeof req.query.mediaSourceId === 'string' && /^[0-9a-f-]{32,36}$/i.test(req.query.mediaSourceId)
+    ? req.query.mediaSourceId
+    : null;
   const replacesPlaySessionId = typeof req.query.replacesPlaySessionId === 'string' && /^[\w-]{1,128}$/.test(req.query.replacesPlaySessionId)
     ? req.query.replacesPlaySessionId
     : null;
@@ -169,7 +172,8 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       userAgent,
       forceHlsTranscoding: shouldForceHls,
       maxStreamingBitrate: qualityConstraints?.maxStreamingBitrate ?? null,
-      audioStreamIndex: requestedAudioStreamIndex
+      audioStreamIndex: requestedAudioStreamIndex,
+      mediaSourceId
     };
     let playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, infoOptions);
     let audioStreamIndex = requestedAudioStreamIndex;
@@ -181,7 +185,11 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       const source = playbackInfo?.MediaSources?.[0];
       const preferred = pickAudioStreamIndex(source, requestedAudioLanguage);
       if (preferred !== null && preferred !== source?.DefaultAudioStreamIndex) {
-        playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, { ...infoOptions, audioStreamIndex: preferred });
+        playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, {
+          ...infoOptions,
+          audioStreamIndex: preferred,
+          mediaSourceId: source?.Id || null
+        });
         audioStreamIndex = preferred;
       }
     }

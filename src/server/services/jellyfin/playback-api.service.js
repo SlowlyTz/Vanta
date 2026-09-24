@@ -14,7 +14,8 @@ export class PlaybackApiService {
     userAgent = '',
     forceHlsTranscoding = false,
     maxStreamingBitrate = null,
-    audioStreamIndex = null
+    audioStreamIndex = null,
+    mediaSourceId = null
   } = {}) {
     const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding });
 
@@ -30,7 +31,13 @@ export class PlaybackApiService {
       AutoOpenLiveStream: true,
       DeviceProfile: deviceProfile
     };
-    if (Number.isInteger(audioStreamIndex)) baseBody.AudioStreamIndex = audioStreamIndex;
+    // Jellyfin ignores AudioStreamIndex unless the media source is named too
+    // (it then transcodes its default track); items with one source use the
+    // item id as the source id.
+    if (Number.isInteger(audioStreamIndex)) {
+      baseBody.AudioStreamIndex = audioStreamIndex;
+      baseBody.MediaSourceId = mediaSourceId || itemId;
+    }
 
     return jellyfinJson(`/Items/${itemId}/PlaybackInfo`, {
       token,

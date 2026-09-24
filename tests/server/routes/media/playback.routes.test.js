@@ -71,6 +71,11 @@ describe('Playback Routes stream-limit integration', () => {
       });
     });
 
+    it('reicht die Quelle zur gewählten Tonspur an Jellyfin weiter', async () => {
+      await request(createApp()).get('/item-1?audioStreamIndex=2&mediaSourceId=0123456789abcdef0123456789abcdef');
+      expect(PlaybackApiService.getPlaybackInfo.mock.calls[0][3]).toMatchObject({ audioStreamIndex: 2, mediaSourceId: '0123456789abcdef0123456789abcdef' });
+    });
+
     it('gibt beim Tonspur-/Qualitätswechsel die laufende Session zum Ersetzen mit', async () => {
       await request(createApp()).get('/item-1?audioStreamIndex=2&replacesPlaySessionId=old-session_1');
       expect(streamSessionService.reserve).toHaveBeenCalledWith(expect.objectContaining({ replacesPlaySessionId: 'old-session_1' }));

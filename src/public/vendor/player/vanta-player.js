@@ -622,10 +622,10 @@ async function Je(e) {
 		echoTokens: Le()
 	};
 	return b.handleFatalPlaybackError = (e) => !qe(e) || typeof b.onPlaybackError != "function" ? !1 : (b.onPlaybackError(e), !0), b.streamSelection = () => {
-		let e = {}, t = b.audioMenu?.getCurrentIndex?.();
-		Number.isInteger(t) && b.sourceSwitch?.getCurrentPlayback?.() ? e.audioStreamIndex = t : b.preferences?.get().audioLanguage && (e.audioLanguage = b.preferences.get().audioLanguage);
-		let n = b.qualityMenu?.getCurrentId?.();
-		return n && n !== "auto" && (e.qualityProfile = n), e;
+		let e = {}, t = b.audioMenu?.getCurrentIndex?.(), n = b.sourceSwitch?.getCurrentPlayback?.();
+		Number.isInteger(t) && n ? (e.audioStreamIndex = t, n.mediaSourceId && (e.mediaSourceId = n.mediaSourceId)) : b.preferences?.get().audioLanguage && (e.audioLanguage = b.preferences.get().audioLanguage);
+		let r = b.qualityMenu?.getCurrentId?.();
+		return r && r !== "auto" && (e.qualityProfile = r), e;
 	}, b.listen = (e, t, n, r) => {
 		e.addEventListener(t, n, r), b.disposers.push(() => e.removeEventListener(t, n, r));
 	}, b.beginOwnerEchoSuppression = () => {
@@ -2300,6 +2300,7 @@ function gr(e) {
 		if (n) try {
 			let r = await e.resolvePlayback("auto", {
 				audioStreamIndex: t,
+				mediaSourceId: n.mediaSourceId || void 0,
 				replacesPlaySessionId: n.playSessionId
 			});
 			if (e.destroyed || (await e.sourceSwitch.switchTo(r, {

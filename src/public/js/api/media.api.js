@@ -112,6 +112,9 @@ export const MediaApi = {
     } else if (options.audioLanguage) {
       params.set('audioLanguage', options.audioLanguage);
     }
+    if (options.mediaSourceId) {
+      params.set('mediaSourceId', options.mediaSourceId);
+    }
     if (options.replacesPlaySessionId) {
       params.set('replacesPlaySessionId', options.replacesPlaySessionId);
     }
