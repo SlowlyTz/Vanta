@@ -1,3 +1,4 @@
+import { createInlineLoadingWatch } from './inlineLoading.js';
 import { createJellyfinReporter } from '../jellyfinReporter.js';
 import { enterInlineFullscreen } from '../platform.js';
 import {
@@ -79,10 +80,24 @@ export function bindReporterAndOrientation(context) {
     dom.inlineLoading.hidden = !visible;
   };
 
+  context.inlineLoading = createInlineLoadingWatch({
+    getVideo: () => context.player.querySelector?.('video') || null,
+    getBufferedAhead: () => context.getBufferedAhead?.(),
+    isSwitching: () => context.sourceSwitch?.isSwitching() === true,
+    setVisible: context.setInlineLoading,
+    setSlow: slow => {
+      if (!dom.inlineLabel) return;
+      dom.inlineLabel.textContent = slow ? 'Lädt länger als üblich …' : '';
+      dom.inlineLabel.hidden = !slow;
+    }
+  });
+  context.disposers.push(() => context.inlineLoading.end());
+
   context.hideError = () => {};
 
   context.showError = () => {
     context.sourceSwitch.clearSeekTimer();
+    context.inlineLoading.end();
     context.setInlineLoading(false);
     context.ui.setState('buffering');
     context.setLoading(true, 'Stream wird geladen …');

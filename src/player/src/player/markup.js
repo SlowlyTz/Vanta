@@ -170,6 +170,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
 
       <div class="vanta-player-inline-loading" role="status" aria-live="polite" hidden>
         <div class="vanta-player-inline-spinner" aria-hidden="true"></div>
+        <span class="vanta-player-inline-label" hidden></span>
       </div>
     </div>`;
 
@@ -206,6 +207,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),
     loadingStatus: root.querySelector('.vanta-player-loading-status'),
-    inlineLoading: root.querySelector('.vanta-player-inline-loading')
+    inlineLoading: root.querySelector('.vanta-player-inline-loading'),
+    inlineLabel: root.querySelector('.vanta-player-inline-label')
   };
 }

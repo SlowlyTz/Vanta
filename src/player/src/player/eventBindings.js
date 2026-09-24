@@ -42,7 +42,7 @@ export function bindPlayerEvents(context) {
   const enterBufferingState = () => {
     if (context.sourceSwitch.isSwitching() || context.destroyed) return;
     context.ui.setState('buffering');
-    context.setInlineLoading(true);
+    context.inlineLoading.begin();
   };
 
   listen(player, 'provider-change', event => {
@@ -91,7 +91,8 @@ export function bindPlayerEvents(context) {
     if (!context.sourceSwitch.isSwitching()) {
       context.sourceSwitch.setIntendsToPlay(false);
       context.sourceSwitch.clearSeekTimer();
-      context.setInlineLoading(false);
+      // A pause during a seek still waits for the frame at the target.
+      if (!player.querySelector?.('video')?.seeking) context.inlineLoading.end();
       context.ui.setState('ready-paused');
     }
   });
@@ -103,8 +104,7 @@ export function bindPlayerEvents(context) {
   listen(player, 'seeking', () => {
     if (!context.sourceSwitch.isSwitching()) {
       context.ui.setState('seeking');
-      context.setInlineLoading(true);
-      context.sourceSwitch.startSeekTimer();
+      context.inlineLoading.begin();
     }
   });
 
@@ -113,7 +113,8 @@ export function bindPlayerEvents(context) {
     if (!context.sourceSwitch.isSwitching()) {
       context.sourceSwitch.setAutoplayBlocked(false);
       context.setLoading(false);
-      context.setInlineLoading(false);
+      if (context.inlineLoading.isActive()) context.inlineLoading.check();
+      else context.setInlineLoading(false);
       context.sourceSwitch.syncPlayingState();
     }
   });
@@ -121,7 +122,8 @@ export function bindPlayerEvents(context) {
   listen(player, 'seeked', () => {
     context.sourceSwitch.clearSeekTimer();
     if (!context.sourceSwitch.isSwitching() && !context.destroyed) {
-      context.setInlineLoading(false);
+      // Not hidden here: `seeked` only means one frame is there.
+      context.inlineLoading.check();
       context.sourceSwitch.syncPlayingState();
     }
   });

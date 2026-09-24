@@ -12,7 +12,12 @@ export function bindSourceSwitchIntegration(context) {
     callbacks: {
       setLoading: context.setLoading,
       setLoadingStatus: context.setLoadingStatus,
-      setInlineLoading: context.setInlineLoading,
+      // Hiding goes through the loading watch while it runs, so a seek
+      // does not drop the spinner before playback really goes on.
+      setInlineLoading: visible => {
+        if (!visible && context.inlineLoading?.isActive()) context.inlineLoading.check();
+        else context.setInlineLoading(visible);
+      },
       showError: context.showError,
       hideError: context.hideError
     },
