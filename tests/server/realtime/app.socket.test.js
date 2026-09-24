@@ -146,33 +146,4 @@ describe('AppSocketHub', () => {
     expect(ws.sent).toEqual([]);
   });
 
-  it('broadcast sendet an alle verbundenen User', () => {
-    const hub = new AppSocketHub();
-    const wsA = createFakeWs();
-    const wsB = createFakeWs();
-    hub.register('user-1', wsA);
-    hub.register('user-2', wsB);
-
-    hub.broadcast({ type: 'GLOBAL' });
-
-    expect(wsA.sent).toEqual([{ type: 'GLOBAL' }]);
-    expect(wsB.sent).toEqual([{ type: 'GLOBAL' }]);
-  });
-
-  it('beantwortet PING mit PONG', () => {
-    const hub = new AppSocketHub();
-    const ws = createFakeWs();
-    hub.handleMessage(ws, JSON.stringify({ type: 'PING' }));
-
-    expect(ws.sent).toEqual([
-      expect.objectContaining({ type: 'PONG' })
-    ]);
-  });
-
-  it('ignoriert kaputtes JSON in handleMessage', () => {
-    const hub = new AppSocketHub();
-    const ws = createFakeWs();
-    expect(() => hub.handleMessage(ws, 'not-json')).not.toThrow();
-    expect(ws.sent).toEqual([]);
-  });
 });

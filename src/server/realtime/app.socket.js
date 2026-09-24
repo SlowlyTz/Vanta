@@ -34,7 +34,6 @@ export class AppSocketHub {
       this.register(user.userId, ws);
       this.sendTo(ws, { type: 'APP_SOCKET_READY', serverTimeMs: Date.now() });
 
-      ws.on('message', raw => this.handleMessage(ws, raw));
       ws.on('close', () => this.unregister(user.userId, ws));
     });
 
@@ -64,25 +63,6 @@ export class AppSocketHub {
     const sockets = this.connectionsByUser.get(userId);
     if (!sockets) return;
     for (const ws of sockets) this.sendTo(ws, payload);
-  }
-
-  broadcast(payload) {
-    for (const sockets of this.connectionsByUser.values()) {
-      for (const ws of sockets) this.sendTo(ws, payload);
-    }
-  }
-
-  handleMessage(ws, raw) {
-    let message;
-    try {
-      message = JSON.parse(raw.toString());
-    } catch {
-      return;
-    }
-
-    if (message?.type === 'PING') {
-      this.sendTo(ws, { type: 'PONG', serverTimeMs: Date.now() });
-    }
   }
 }
 
