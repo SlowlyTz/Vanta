@@ -88,10 +88,6 @@
   height: 38px;
 }
 
-.vanta-player-play.is-large .is-play svg {
-  margin-left: 4px;
-}
-
 .vanta-player-play.is-large:hover {
   background: rgb(255 255 255 / 0.22);
 }
