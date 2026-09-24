@@ -76,15 +76,15 @@
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
-  background: var(--accent-color);
-  color: #fff;
+  background: rgb(var(--abyss-accent));
+  color: #121212;
   font: 700 0.82rem Outfit, system-ui, sans-serif;
   cursor: pointer;
   transition: filter var(--transition-fast), opacity var(--transition-fast);
 }
 
 .watch-party-recent-join:hover {
-  filter: brightness(1.1);
+  filter: brightness(0.92);
 }
 
 .watch-party-recent-join:disabled {
