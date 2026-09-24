@@ -1,8 +1,7 @@
 import { MediaApi } from '../../api/media.api.js';
 import { appStore } from '../../store/app.store.js';
 import { loadEpisodeContext } from '../../utils/episodeContext.js';
-import { playerHeading } from '../../utils/playerHeading.js';
-import { PLAYER_MODULE_URL, getPosterUrl } from './helpers.js';
+import { PLAYER_MODULE_URL, playerMediaOptions } from '../../utils/playerMedia.js';
 
 export function bindPlayerMount(ctx) {
   ctx.ensurePlayerMountAttached = () => {
@@ -108,21 +107,11 @@ export function bindPlayerMount(ctx) {
 
         ctx.controller = await playerModule.mountVantaPlayer({
           root: ctx.playerMount,
-          itemId,
-          ...playerHeading(item),
-          poster: getPosterUrl(item),
+          ...playerMediaOptions(item, itemId, { leave: ctx.goHome }),
           resumePosition: (positionMs || 0) / 1000,
-          resolvePlayback: (mode, options) => MediaApi.getPlayback(itemId, mode, options),
-          reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
           onBack: ctx.goHome,
-          onPlaybackError: error => {
-            appStore.showToast(error.message || 'Stream-Limit erreicht.', 'error');
-            ctx.goHome();
-          },
           watchParty: ctx.watchPartyConfig,
           deferInitialLoad,
-          loadSegments: () => MediaApi.getSegments(itemId),
-          loadTranscodeProgress: () => MediaApi.getTranscodeProgress(itemId),
           // Party sessions start from the defaults and remember choices only
           // for this party (see preferences.js in the player).
           preferences: { key: `vanta.player.party.${ctx.partyId}`, storage: 'session' },

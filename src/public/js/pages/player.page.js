@@ -2,10 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';
 import { router } from '../router.js';
-import { playerHeading } from '../utils/playerHeading.js';
-import { appStore } from '../store/app.store.js';
-
-const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
+import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
 
 export default function PlayerPage({ id }) {
   const container = createElement('div', {
@@ -93,15 +90,6 @@ export default function PlayerPage({ id }) {
     return item;
   };
 
-  const getPosterUrl = item => {
-    const imageOwnerId = item.ParentBackdropItemId || item.Id || playableId;
-    const tag = item.ParentBackdropImageTags?.[0] || item.BackdropImageTags?.[0];
-    return MediaApi.getImageUrl(imageOwnerId, 'Backdrop', 1920, {
-      tag,
-      quality: 90
-    });
-  };
-
   const showBootstrapError = error => {
     container.innerHTML = '';
     const isStreamLimitError = error.code === 'STREAM_LIMIT_REACHED';
@@ -136,21 +124,14 @@ export default function PlayerPage({ id }) {
 
       controller = await playerModule.mountVantaPlayer({
         root: container,
-        itemId: playableId,
-        ...playerHeading(item),
-        poster: getPosterUrl(item),
+        ...playerMediaOptions(item, playableId, {
+          leave: () => {
+            cleanup();
+            window.location.hash = '#/home';
+          }
+        }),
         resumePosition,
-        resolvePlayback: (mode, options) => MediaApi.getPlayback(playableId, mode, options),
-        reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
         onBack: goBack,
-        // Only the stream limit ends up here: say so and go home.
-        onPlaybackError: error => {
-          appStore.showToast(error.message || 'Stream-Limit erreicht.', 'error');
-          cleanup();
-          window.location.hash = '#/home';
-        },
-        loadSegments: () => MediaApi.getSegments(playableId),
-        loadTranscodeProgress: () => MediaApi.getTranscodeProgress(playableId),
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,

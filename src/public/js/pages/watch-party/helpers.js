@@ -1,7 +1,5 @@
-import { MediaApi } from '../../api/media.api.js';
 import { formatClock } from '../../shared/time.js';
 
-export const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 export const COUNTDOWN_MODULE_URL = '/vendor/countdown/vanta-countdown.js';
 export const OWNER_SYNC_INTERVAL_MS = 5000;
 export const AUTO_SYNC_NOTIFICATION_COOLDOWN_MS = 15_000;
@@ -31,12 +29,6 @@ export function countdownMetaParts(snapshot) {
   const runtime = formatRuntime(snapshot.runtimeTicks);
   if (runtime) parts.push(runtime);
   return parts;
-}
-
-export function getPosterUrl(item) {
-  const imageOwnerId = item.ParentBackdropItemId || item.Id;
-  const tag = item.ParentBackdropImageTags?.[0] || item.BackdropImageTags?.[0];
-  return MediaApi.getImageUrl(imageOwnerId, 'Backdrop', 1920, { tag, quality: 90 });
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
