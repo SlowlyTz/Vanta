@@ -173,7 +173,8 @@ export const messageHandlerMethods = {
     });
 
     this.broadcastParty(partyId, createNotification('member_promoted', {
-      username: promoted?.username || 'Ein Nutzer'
+      userId: message.targetUserId,
+      username: promoted?.username
     }));
   },
 
@@ -197,6 +198,7 @@ export const messageHandlerMethods = {
     });
 
     this.broadcastParty(partyId, createNotification('member_banned', {
+      userId: result.bannedUser.userId,
       username: result.bannedUser.username
     }));
   },
@@ -215,18 +217,19 @@ export const messageHandlerMethods = {
     const now = Date.now();
     const anchorServerTimeMs = resolveAnchorTime(message.atServerTimeMs, now);
     const positionMs = Number(message.positionMs) || 0;
+    const actor = { userId, username: party.members?.get?.(userId)?.username };
 
     if (message.type === 'OWNER_PLAY') {
       setTimeline(party, { positionMs, playing: true, anchorServerTimeMs });
       this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'play' });
-      this.broadcastParty(partyId, createNotification('owner_play'), { skipUserId: userId });
+      this.broadcastParty(partyId, createNotification('owner_play', actor), { skipUserId: userId });
       return;
     }
 
     if (message.type === 'OWNER_PAUSE') {
       setTimeline(party, { positionMs, playing: false, anchorServerTimeMs });
       this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'pause' });
-      this.broadcastParty(partyId, createNotification('owner_pause'), { skipUserId: userId });
+      this.broadcastParty(partyId, createNotification('owner_pause', actor), { skipUserId: userId });
       return;
     }
 
@@ -234,7 +237,7 @@ export const messageHandlerMethods = {
       setTimeline(party, { positionMs, anchorServerTimeMs });
       this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'seek' });
       if (this.shouldSendSeekNotification(partyId, now)) {
-        this.broadcastParty(partyId, createNotification('owner_seek', { positionMs: party.positionMs }), { skipUserId: userId });
+        this.broadcastParty(partyId, createNotification('owner_seek', { ...actor, positionMs: party.positionMs }), { skipUserId: userId });
       }
       return;
     }

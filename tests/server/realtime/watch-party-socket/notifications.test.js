@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createFakeWs, makeUser } from './helpers.js';
+import { createNotification } from '../../../../src/server/realtime/watch-party/notifications.js';
 
 let sessionOverride = null;
 
@@ -229,5 +230,36 @@ describe('WatchPartySocketHub · Notifications', () => {
       hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SEEK', positionMs: 3000 }, ws: ownerWs });
       expect(ws.sent.filter(m => m.type === 'NOTIFICATION').length).toBe(2);
     });
+  });
+
+  it('nennt bei Play, Pause und Sprung den Namen und liefert den Auslöser mit', () => {
+    const hub = new WatchPartySocketHub();
+    const party = {
+      id: 'party-1', ownerUserId: 'owner-1', status: 'paused', positionMs: 0, lastServerTimeMs: 0,
+      members: new Map([['admin-1', { userId: 'admin-1', username: 'Lena', role: 'admin' }]])
+    };
+    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+    const adminWs = createFakeWs();
+    const viewerWs = createFakeWs();
+    hub.registerConnection('party-1', 'admin-1', adminWs);
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('admin-1'), message: { type: 'OWNER_PLAY', positionMs: 0 }, ws: adminWs });
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('admin-1'), message: { type: 'OWNER_PAUSE', positionMs: 1000 }, ws: adminWs });
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('admin-1'), message: { type: 'OWNER_SEEK', positionMs: 754_000 }, ws: adminWs });
+
+    const notifications = viewerWs.sent.filter(m => m.type === 'NOTIFICATION').map(m => m.notification);
+    expect(notifications.map(n => n.message)).toEqual([
+      'Lena hat die Wiedergabe gestartet.',
+      'Lena hat pausiert.',
+      'Lena ist zu 12:34 gesprungen.'
+    ]);
+    expect(notifications.every(n => n.actor?.userId === 'admin-1' && n.actor.username === 'Lena')).toBe(true);
+  });
+
+  it('schreibt „Jemand“, wenn kein Name bekannt ist, und hat dann keinen Auslöser', () => {
+    const { notification } = createNotification('owner_pause');
+    expect(notification.message).toBe('Jemand hat pausiert.');
+    expect(notification.actor).toBeNull();
   });
 });

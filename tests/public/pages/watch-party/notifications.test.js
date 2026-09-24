@@ -126,7 +126,8 @@ describe('WatchPartyPage · Notifications', () => {
     })).not.toThrow();
 
     const item = container.querySelector('.watch-party-notification');
-    expect(item.querySelector('.watch-party-notification-icon').textContent).toBe('i');
+    expect(item.querySelector('.watch-party-notification-icon svg').dataset.icon).toBe('info');
+    expect(item.querySelector('.watch-party-notification-avatar').classList.contains('is-system')).toBe(true);
   });
 
   it('zeigt eine lokale Notification, wenn die Wiedergabe automatisch hart synchronisiert wird', async () => {
@@ -150,9 +151,49 @@ describe('WatchPartyPage · Notifications', () => {
 
     const item = container.querySelector('.watch-party-notification.is-auto_sync');
     expect(item).not.toBeNull();
-    expect(item.querySelector('.watch-party-notification-icon').textContent).toBe('↻');
+    expect(item.querySelector('.watch-party-notification-icon svg').dataset.icon).toBe('auto_sync');
     expect(item.querySelector('.watch-party-notification-text').textContent).toBe('Wiedergabe automatisch synchronisiert.');
     expect(fakeController.player.currentTime).toBeGreaterThanOrEqual(1);
     expect(fakeController.player.currentTime).toBeLessThan(1.5);
+  });
+
+  it('zeigt Avatar in der Personenfarbe, Aktions-Badge und den Namen fett', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    capturedOnMessage({
+      type: 'NOTIFICATION',
+      notification: {
+        id: '1', type: 'owner_pause', icon: 'owner_pause', message: 'Lena hat pausiert.',
+        actor: { userId: 'u-lena', username: 'Lena' }, createdAt: Date.now()
+      }
+    });
+
+    const item = container.querySelector('.watch-party-notification');
+    const avatar = item.querySelector('.watch-party-notification-avatar');
+    expect(avatar.textContent).toBe('L');
+    expect(avatar.style.getPropertyValue('--member-hue')).not.toBe('');
+    expect(item.querySelector('.watch-party-notification-icon svg').dataset.icon).toBe('owner_pause');
+    expect(item.querySelector('.watch-party-notification-text strong').textContent).toBe('Lena');
+    expect(item.querySelector('.watch-party-notification-text').textContent).toBe('Lena hat pausiert.');
+  });
+
+  it('zeigt höchstens drei Benachrichtigungen gleichzeitig', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    for (let i = 0; i < 5; i++) {
+      capturedOnMessage({ type: 'NOTIFICATION', notification: { id: String(i), type: 'owner_play', message: `Nr. ${i}` } });
+    }
+
+    const visible = container.querySelectorAll('.watch-party-notification:not(.is-leaving)');
+    expect(visible).toHaveLength(3);
+    expect(visible[0].textContent).toContain('Nr. 2');
   });
 });

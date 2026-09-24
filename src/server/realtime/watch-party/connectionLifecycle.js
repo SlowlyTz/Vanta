@@ -39,7 +39,7 @@ export const connectionLifecycleMethods = {
     if (!wasConnected) {
       this.broadcastParty(
         partyId,
-        createNotification(wasSeenBefore ? 'member_rejoined' : 'member_joined', { username: member.username }),
+        createNotification(wasSeenBefore ? 'member_rejoined' : 'member_joined', { userId: user.userId, username: member.username }),
         { skipUserId: user.userId }
       );
     }
@@ -72,7 +72,7 @@ export const connectionLifecycleMethods = {
 
       this.broadcastParty(
         partyId,
-        createNotification('member_left', { username: user.username }),
+        createNotification('member_left', { userId: user.userId, username: user.username }),
         { skipUserId: user.userId }
       );
 

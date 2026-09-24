@@ -17,16 +17,19 @@ function formatNotificationPosition(positionMs) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-export function createNotification(type, { username, positionMs } = {}) {
+// `userId`/`username` name who the notification is about (who pressed play,
+// who joined); clients show that person's avatar next to the text.
+export function createNotification(type, { userId = null, username, positionMs } = {}) {
+  const name = username || 'Jemand';
   const messages = {
-    member_joined: `${username} ist beigetreten.`,
-    member_rejoined: `${username} ist beigetreten.`,
-    member_left: `${username} hat die Watch Party verlassen.`,
-    owner_play: 'Der Admin hat die Wiedergabe gestartet.',
-    owner_pause: 'Der Admin hat pausiert.',
-    owner_seek: `Der Admin hat zu ${formatNotificationPosition(positionMs)} gespult.`,
-    member_promoted: `${username} ist jetzt Admin.`,
-    member_banned: `${username} wurde aus der Watch Party gebannt.`
+    member_joined: `${name} ist beigetreten.`,
+    member_rejoined: `${name} ist beigetreten.`,
+    member_left: `${name} hat die Watch Party verlassen.`,
+    owner_play: `${name} hat die Wiedergabe gestartet.`,
+    owner_pause: `${name} hat pausiert.`,
+    owner_seek: `${name} ist zu ${formatNotificationPosition(positionMs)} gesprungen.`,
+    member_promoted: `${name} ist jetzt Admin.`,
+    member_banned: `${name} wurde aus der Watch Party gebannt.`
   };
 
   return {
@@ -36,6 +39,7 @@ export function createNotification(type, { username, positionMs } = {}) {
       type,
       icon: type === 'member_rejoined' ? 'member_joined' : type,
       message: messages[type] || 'Watch Party aktualisiert.',
+      actor: username ? { userId, username } : null,
       createdAt: Date.now()
     }
   };

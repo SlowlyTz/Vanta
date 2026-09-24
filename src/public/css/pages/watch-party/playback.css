@@ -37,78 +37,149 @@
   pointer-events: auto;
 }
 
+/* Party notifications: small glass cards at the top centre, each with the
+   avatar of the person it is about and a badge for what they did. */
 .watch-party-notifications {
   position: fixed;
-  top: max(16px, env(safe-area-inset-top));
-  right: max(16px, env(safe-area-inset-right));
+  /* Below the lobby's top bar; in the player (viewport locked) at the very top. */
+  top: calc(max(14px, env(safe-area-inset-top)) + 58px);
+  left: 50%;
   z-index: 100002;
-  width: min(340px, calc(100vw - 32px));
+  width: min(380px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
 .watch-party-notification {
   display: grid;
-  grid-template-columns: 30px 1fr;
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 9px 10px;
-  border-radius: 10px;
-  background: rgb(18, 19, 23);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 11px;
+  max-width: 100%;
+  padding: 7px 16px 7px 7px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 999px;
+  background: rgb(20 20 24 / 0.78);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow: 0 14px 40px rgb(0 0 0 / 0.45);
   color: #fff;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-  animation: watch-party-notification-in 180ms ease-out both;
-  pointer-events: none;
+  animation: watch-party-notification-in 320ms var(--abyss-ease) both;
 }
 
 .watch-party-notification.is-leaving {
-  animation: watch-party-notification-out 220ms ease-in both;
+  animation: watch-party-notification-out 360ms var(--abyss-ease) both;
 }
 
-.watch-party-notification-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
+.watch-party-notification-avatar {
+  --member-hue: 230;
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
-  background: rgba(var(--abyss-accent), 0.16);
-  color: rgb(var(--abyss-accent));
-  font-weight: 800;
-  font-size: 0.9rem;
+  background: linear-gradient(145deg, hsl(var(--member-hue) 55% 58%), hsl(calc(var(--member-hue) + 40) 50% 36%));
+  font: 750 0.88rem Outfit, system-ui, sans-serif;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.watch-party-notification-avatar.is-system {
+  background: rgb(255 255 255 / 0.12);
+}
+
+/* The action badge sits on the avatar's corner; without a person it is the
+   whole avatar. */
+.watch-party-notification-icon {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgb(20 20 24);
+  border-radius: 50%;
+  background: #fff;
+  color: #0b0b0e;
+}
+
+.watch-party-notification-icon svg {
+  width: 10px;
+  height: 10px;
+  fill: currentColor;
+}
+
+.watch-party-notification-avatar.is-system .watch-party-notification-icon {
+  position: static;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: none;
+  color: #fff;
+}
+
+.watch-party-notification-avatar.is-system .watch-party-notification-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.watch-party-notification.is-member_left .watch-party-notification-icon,
+.watch-party-notification.is-member_banned .watch-party-notification-icon {
+  background: #ff8a8a;
+}
+
+.watch-party-notification.is-member_joined .watch-party-notification-icon,
+.watch-party-notification.is-member_rejoined .watch-party-notification-icon {
+  background: #4ade80;
 }
 
 .watch-party-notification-text {
   min-width: 0;
-  font-size: 0.84rem;
-  font-weight: 650;
-  line-height: 1.35;
+  color: rgb(255 255 255 / 0.85);
+  font: 500 0.86rem/1.3 Outfit, system-ui, sans-serif;
   overflow-wrap: break-word;
+}
+
+.watch-party-notification-text strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+body.player-active .watch-party-notifications {
+  top: max(14px, env(safe-area-inset-top));
 }
 
 @keyframes watch-party-notification-in {
   from {
     opacity: 0;
-    transform: translateX(28px);
+    transform: translateY(-14px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
 }
 
 @keyframes watch-party-notification-out {
   from {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
   to {
     opacity: 0;
-    transform: translateX(28px);
+    transform: translateY(-10px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watch-party-notification,
+  .watch-party-notification.is-leaving {
+    animation-duration: 1ms;
   }
 }
 
