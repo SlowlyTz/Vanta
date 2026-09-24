@@ -3,6 +3,7 @@ import { getItemImageSources } from '../utils/image.js';
 import { formatYear } from '../utils/format.js';
 import { markReturnFromDetail } from '../utils/routeState.js';
 import { createPlayedToggle } from './playedToggle.js';
+import { formatEpisodeCode } from '../shared/episodeCode.js';
 
 export function MediaCard({ item, landscape = false, sourceType = null, playedToggle = false }) {
   if (!item) return null;
@@ -22,7 +23,7 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
 
   if (isEpisode) {
     cardTitle = item.SeriesName || item.Name;
-    cardSubtitle = `S${String(item.ParentIndexNumber || 1).padStart(2, '0')}E${String(item.IndexNumber || 1).padStart(2, '0')} - ${item.Name}`;
+    cardSubtitle = `${formatEpisodeCode(item)} - ${item.Name}`;
   } else if (item.Type === 'Series') {
     if (item.ChildCount) {
       cardSubtitle = item.ChildCount === 1 ? '1 Staffel' : `${item.ChildCount} Staffeln`;

@@ -1,5 +1,6 @@
 import { formatTicksToDuration, formatYear } from './format.js';
 import { getItemImageUrl } from './image.js';
+import { formatEpisodeCode } from '../shared/episodeCode.js';
 
 export function normalizeJellyfinItem(item) {
   const isEpisode = item.Type === 'Episode';
@@ -71,9 +72,7 @@ export function normalizeJellyfinItem(item) {
 function formatEpisodeLabel(item) {
   const parts = [];
   if (item.ParentIndexNumber || item.IndexNumber) {
-    const sn = String(item.ParentIndexNumber || 1).padStart(2, '0');
-    const en = String(item.IndexNumber || 1).padStart(2, '0');
-    parts.push(`S${sn}E${en}`);
+    parts.push(formatEpisodeCode(item));
   } else if (item.SeasonName) {
     parts.push(item.SeasonName);
   }

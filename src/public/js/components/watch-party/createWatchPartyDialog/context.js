@@ -1,6 +1,8 @@
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 
+export { formatEpisodeCode } from '../../../shared/episodeCode.js';
+
 export function itemTypeLabel(item) {
   if (item.Type === 'Movie') return 'Film';
   if (item.Type === 'Series') return 'Serie';
@@ -11,12 +13,6 @@ export function itemTypeLabel(item) {
 export function getPosterUrl(item) {
   const tag = item.ImageTags?.Primary || item.PrimaryImageTag;
   return MediaApi.getImageUrl(item.Id, 'Primary', 360, { tag, quality: 82 });
-}
-
-export function formatEpisodeCode(episode) {
-  const season = String(episode.ParentIndexNumber || 1).padStart(2, '0');
-  const index = String(episode.IndexNumber || 1).padStart(2, '0');
-  return `S${season}E${index}`;
 }
 
 export function createDialogContext() {

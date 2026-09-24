@@ -2,10 +2,10 @@ import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { countdownMetaParts, formatPosition } from '../helpers.js';
 import { icon } from './icons.js';
+import { episodeHeadingCode } from '../../../shared/episodeCode.js';
 
 export function episodeLabel(snapshot) {
-  if (!Number.isFinite(snapshot?.seasonNumber) || !Number.isFinite(snapshot?.episodeNumber)) return null;
-  return `S${snapshot.seasonNumber} · F${snapshot.episodeNumber}`;
+  return episodeHeadingCode(snapshot?.seasonNumber, snapshot?.episodeNumber);
 }
 
 // The big picture of the lobby: backdrop, logo (or title), what exactly is

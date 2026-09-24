@@ -1,8 +1,4 @@
-export function formatEpisodeCode(episode) {
-  const season = String(episode.ParentIndexNumber || 1).padStart(2, '0');
-  const index = String(episode.IndexNumber || 1).padStart(2, '0');
-  return `S${season}E${index}`;
-}
+export { formatEpisodeCode } from '../../public/js/shared/episodeCode.js';
 
 export function findEpisode(context, episodeId) {
   for (const episodes of Object.values(context?.episodesBySeason || {})) {

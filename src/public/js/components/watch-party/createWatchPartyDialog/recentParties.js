@@ -1,6 +1,7 @@
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { WatchPartyApi } from '../../../api/watch-party.api.js';
+import { episodeCode } from '../../../shared/episodeCode.js';
 
 const STATUS_LABELS = {
   lobby: 'Wartet auf Start',
@@ -13,9 +14,7 @@ const STATUS_LABELS = {
 
 export function recentPartyTitle(snapshot = {}) {
   if (snapshot.type === 'Episode' && snapshot.seriesName) {
-    const season = String(snapshot.seasonNumber ?? 1).padStart(2, '0');
-    const episode = String(snapshot.episodeNumber ?? 1).padStart(2, '0');
-    return `${snapshot.seriesName} · S${season}E${episode}`;
+    return `${snapshot.seriesName} · ${episodeCode(snapshot.seasonNumber, snapshot.episodeNumber)}`;
   }
   return snapshot.name || 'Watch Party';
 }
