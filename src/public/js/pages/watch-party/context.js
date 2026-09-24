@@ -26,6 +26,9 @@ export function createWatchPartyContext({ partyId }) {
     syncInfo: null,
     playbackEntered: false,
     playbackEntering: null,
+    scheduledStartAt: null,
+    syncedStartTimer: null,
+    localPlaybackStarted: false,
     timeline: null,
     lastAppliedTimelineSeq: -1,
     mountInFlight: null

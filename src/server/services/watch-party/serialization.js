@@ -9,7 +9,8 @@ export function serializeParty(party, currentUserId = null) {
     connected: member.connected,
     joinedAt: member.joinedAt,
     preloadState: member.preloadState || 'waiting',
-    preloadMessage: member.preloadMessage || ''
+    preloadMessage: member.preloadMessage || '',
+    preloadProgress: Number(member.preloadProgress) || 0
   }));
 
   return {

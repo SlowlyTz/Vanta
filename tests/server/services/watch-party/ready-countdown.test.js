@@ -53,10 +53,14 @@ describe('WatchPartyService · Ready Room und Countdown', () => {
     WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
     WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
     WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
-    WatchPartyService.beginCountdownIfReady({ partyId: created.id });
+    const { startsAtServerTimeMs, party: countdownParty } = WatchPartyService.beginCountdownIfReady({ partyId: created.id });
+    const seqBefore = countdownParty.seq;
 
-    const party = WatchPartyService.beginPlayback({ partyId: created.id, positionMs: 0 });
+    const party = WatchPartyService.beginPlayback({ partyId: created.id });
     expect(party.status).toBe('playing');
+    // The start keeps the anchor the countdown announced; nothing moves.
+    expect(party.lastServerTimeMs).toBe(startsAtServerTimeMs);
+    expect(party.seq).toBe(seqBefore);
   });
 
   it('setPreloadState("ready") setzt das Mitglied ready, "error" nicht', async () => {
@@ -84,16 +88,18 @@ describe('WatchPartyService · Ready Room und Countdown', () => {
     expect(positionMs).toBe(60_000);
   });
 
-  it('beginCountdownIfReady setzt einen Countdown von 5 Sekunden', async () => {
+  it('beginCountdownIfReady setzt 5 gezählte Sekunden plus Vorlauf und legt die Zeitleiste auf den Start', async () => {
     const created = await createTestParty();
     await joinAsViewer(created.id);
     WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
     WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
     WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
 
-    const { startsAtServerTimeMs } = WatchPartyService.beginCountdownIfReady({ partyId: created.id });
-    expect(startsAtServerTimeMs - Date.now()).toBeGreaterThanOrEqual(4990);
-    expect(startsAtServerTimeMs - Date.now()).toBeLessThanOrEqual(5000);
+    const { startsAtServerTimeMs, durationMs, party } = WatchPartyService.beginCountdownIfReady({ partyId: created.id });
+    expect(durationMs).toBe(5000);
+    expect(startsAtServerTimeMs - Date.now()).toBeGreaterThanOrEqual(5390);
+    expect(startsAtServerTimeMs - Date.now()).toBeLessThanOrEqual(5400);
+    expect(WatchPartyService.serializeParty(party).timeline).toMatchObject({ playing: true, anchorServerTimeMs: startsAtServerTimeMs, positionMs: 0 });
   });
 
   it('setPreloadState("blocked") setzt das Mitglied nicht ready, beeinflusst canStart aber nicht mehr', async () => {
@@ -118,5 +124,23 @@ describe('WatchPartyService · Ready Room und Countdown', () => {
 
     WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
     expect(WatchPartyService.canStart(party)).toBe(true);
+  });
+
+  it('merkt sich den Ladefortschritt pro Mitglied und setzt ihn beim Öffnen des Ready-Rooms zurück', async () => {
+    const created = await createTestParty();
+    await joinAsViewer(created.id);
+    WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
+
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: false, state: 'preparing', progress: 0.42 });
+    let viewer = WatchPartyService.serializeParty(WatchPartyService.parties.get(created.id)).members.find(m => m.userId === 'viewer-1');
+    expect(viewer).toMatchObject({ preloadState: 'preparing', preloadProgress: 0.42, ready: false });
+
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: false, state: 'preparing', progress: 7 });
+    viewer = WatchPartyService.serializeParty(WatchPartyService.parties.get(created.id)).members.find(m => m.userId === 'viewer-1');
+    expect(viewer.preloadProgress).toBe(1);
+
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
+    const owner = WatchPartyService.serializeParty(WatchPartyService.parties.get(created.id)).members.find(m => m.userId === 'owner-1');
+    expect(owner).toMatchObject({ ready: true, preloadProgress: 1 });
   });
 });

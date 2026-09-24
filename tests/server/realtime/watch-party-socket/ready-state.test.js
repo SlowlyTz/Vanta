@@ -81,6 +81,20 @@ describe('WatchPartySocketHub · Ready State', () => {
     ]);
   });
 
+  it('reicht den Ladefortschritt aus PLAYER_READY_STATE an den Service weiter', () => {
+    const hub = new WatchPartySocketHub();
+    WatchPartyService.setPlayerReady.mockReturnValue({ id: 'party-1', status: 'ready-room' });
+    const ws = createFakeWs();
+    hub.registerConnection('party-1', 'viewer-1', ws);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('viewer-1'), message: { type: 'PLAYER_READY_STATE', state: 'preparing', progress: 0.6 }, ws });
+
+    expect(WatchPartyService.setPlayerReady).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'viewer-1', ready: false, state: 'preparing', progress: 0.6
+    }));
+    expect(ws.sent).toEqual([expect.objectContaining({ type: 'PARTY_UPDATED' })]);
+  });
+
   describe('Ready-Room Countdown', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
@@ -102,14 +116,16 @@ describe('WatchPartySocketHub · Ready State', () => {
       expect(ws.sent.some(message => message.type === 'COUNTDOWN')).toBe(false);
     });
 
-    it('PLAYER_READY startet COUNTDOWN und danach die laufende TIMELINE, wenn alle ready sind', () => {
+    it('PLAYER_READY startet COUNTDOWN mit Zeitleiste und schaltet danach auf playing, wenn alle ready sind', () => {
       const hub = new WatchPartySocketHub();
       const readyRoomParty = { id: 'party-1', status: 'ready-room' };
       WatchPartyService.setPlayerReady.mockReturnValue(readyRoomParty);
-      const countdownParty = { id: 'party-1', status: 'countdown' };
+      const startsAtServerTimeMs = Date.now() + 5400;
+      const countdownParty = { id: 'party-1', status: 'countdown', positionMs: 0, lastServerTimeMs: startsAtServerTimeMs, seq: 2 };
       WatchPartyService.beginCountdownIfReady.mockReturnValue({
         party: countdownParty,
-        startsAtServerTimeMs: Date.now() + 5000,
+        startsAtServerTimeMs,
+        durationMs: 5000,
         positionMs: 0
       });
 
@@ -128,17 +144,23 @@ describe('WatchPartySocketHub · Ready State', () => {
         state: 'ready',
         message: 'Bereit'
       });
-      expect(ws.sent.some(message => message.type === 'COUNTDOWN')).toBe(true);
+      expect(ws.sent).toContainEqual(expect.objectContaining({
+        type: 'COUNTDOWN',
+        startsAtServerTimeMs,
+        durationMs: 5000,
+        timeline: { positionMs: 0, playing: true, anchorServerTimeMs: startsAtServerTimeMs, seq: 2 }
+      }));
 
-      vi.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(5399);
+      expect(WatchPartyService.beginPlayback).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
 
-      expect(WatchPartyService.beginPlayback).toHaveBeenCalledWith({ partyId: 'party-1', positionMs: 0 });
-      const timelineMessage = ws.sent.find(m => m.type === 'TIMELINE');
-      expect(timelineMessage).toMatchObject({ reason: 'start', actorUserId: null, timeline: expect.objectContaining({ playing: true }) });
+      expect(WatchPartyService.beginPlayback).toHaveBeenCalledWith({ partyId: 'party-1' });
+      expect(ws.sent.at(-1)).toMatchObject({ type: 'PARTY_UPDATED', party: playingParty });
       expect(ws.sent.some(m => m.type === 'NOTIFICATION')).toBe(false);
     });
 
-    it('scheduleCountdownCompletion sendet die laufende TIMELINE, aber keine owner_play- oder owner_seek-Notification bei positionMs 0', () => {
+    it('scheduleCountdownCompletion meldet playing, aber keine owner_play- oder owner_seek-Notification bei positionMs 0', () => {
       const hub = new WatchPartySocketHub();
       const playingParty = { id: 'party-1', status: 'playing', positionMs: 0, lastServerTimeMs: Date.now() };
       WatchPartyService.beginPlayback.mockReturnValue(playingParty);
@@ -146,14 +168,10 @@ describe('WatchPartySocketHub · Ready State', () => {
       const ws = createFakeWs();
       hub.registerConnection('party-1', 'owner-1', ws);
 
-      hub.scheduleCountdownCompletion('party-1', Date.now(), 0);
+      hub.scheduleCountdownCompletion('party-1', Date.now());
       vi.advanceTimersByTime(0);
 
-      expect(ws.sent).toContainEqual(expect.objectContaining({
-        type: 'TIMELINE',
-        reason: 'start',
-        timeline: expect.objectContaining({ playing: true, positionMs: 0 })
-      }));
+      expect(ws.sent).toContainEqual(expect.objectContaining({ type: 'PARTY_UPDATED', party: playingParty }));
       expect(ws.sent).not.toContainEqual(expect.objectContaining({
         type: 'NOTIFICATION',
         notification: expect.objectContaining({ type: 'owner_play' })

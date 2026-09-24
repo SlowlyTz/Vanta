@@ -5,6 +5,10 @@ export const LOBBY_IDLE_TTL_MS = 30 * 60 * 1000;
 export const ENDED_PARTY_RETENTION_MS = 5 * 60 * 1000;
 export const RESUME_TTL_MS = 48 * 60 * 60 * 1000;
 export const COUNTDOWN_MS = 5000;
+// Head start before the five counted seconds: covers the message's trip to
+// every client and lets the countdown scene fade in, so all five digits get a
+// full second everywhere.
+export const COUNTDOWN_LEAD_MS = 400;
 export const READY_PRELOAD_STATES = new Set(['ready']);
 export const MAX_PARTY_MEMBERS = 4;
 export const READY_ROOM_STATUS = 'ready-room';
@@ -52,7 +56,8 @@ export function getEffectivePosition(party, now = Date.now()) {
 export function serializeTimeline(party) {
   return {
     positionMs: party.positionMs,
-    playing: party.status === 'playing',
+    // During the countdown the timeline already runs, anchored at the start.
+    playing: party.status === 'playing' || party.status === 'countdown',
     anchorServerTimeMs: party.lastServerTimeMs,
     seq: party.seq || 0
   };

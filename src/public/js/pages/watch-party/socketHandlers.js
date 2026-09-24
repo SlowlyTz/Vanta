@@ -19,13 +19,12 @@ export function bindSocketHandlers(ctx) {
         return;
 
       case 'COUNTDOWN':
-        if (ctx.party) ctx.party.status = 'countdown';
-        ctx.ensurePlayerReadyRoom();
-        ctx.showCountdown({
+        ctx.enterCountdown({
           startsAtServerTimeMs: message.startsAtServerTimeMs,
-          positionMs: message.positionMs ?? ctx.party?.positionMs
+          durationMs: message.durationMs,
+          positionMs: message.positionMs ?? ctx.party?.positionMs,
+          timeline: message.timeline
         });
-        ctx.renderReadyOverlay();
         return;
 
       case 'LOAD_MEDIA':
@@ -85,12 +84,35 @@ export function bindSocketHandlers(ctx) {
     ctx.party = party;
     ctx.acceptTimeline(timelineFromParty(party));
     ctx.renderParty();
-    if (party.status === 'ready-room' || party.status === 'countdown') {
+    if (party.status === 'ready-room') {
       ctx.ensurePlayerReadyRoom();
       ctx.renderReadyOverlay();
+    } else if (party.status === 'countdown') {
+      const timeline = timelineFromParty(party);
+      ctx.enterCountdown({ startsAtServerTimeMs: timeline.anchorServerTimeMs, positionMs: timeline.positionMs });
     } else if (PLAYBACK_STATUSES.has(party.status)) {
+      // The server flips to playing at the same instant this client starts
+      // on its own; until then the scheduled start owns the handover.
+      if (ctx.scheduledStartAt && ctx.clock.now() < ctx.scheduledStartAt) return;
       void ctx.enterPlayback();
     }
+  };
+
+  ctx.enterCountdown = ({ startsAtServerTimeMs, durationMs = 5000, positionMs, timeline }) => {
+    if (ctx.localPlaybackStarted) return;
+    if (ctx.party) ctx.party.status = 'countdown';
+    if (timeline && ctx.acceptTimeline(timeline)) {
+      ctx.lastAppliedTimelineSeq = Math.max(ctx.lastAppliedTimelineSeq, timeline.seq);
+      if (ctx.party) ctx.party.timeline = timeline;
+    }
+
+    const alreadyCounting = ctx.scheduledStartAt === Number(startsAtServerTimeMs) && !ctx.countdownOverlay.hidden;
+    if (!alreadyCounting) {
+      void ctx.ensurePlayerReadyRoom();
+      ctx.showCountdown({ startsAtServerTimeMs, durationMs, positionMs });
+      ctx.scheduleSyncedStart(startsAtServerTimeMs);
+    }
+    ctx.renderReadyOverlay();
   };
 
   ctx.init = async () => {

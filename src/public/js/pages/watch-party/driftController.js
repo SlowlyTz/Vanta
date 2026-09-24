@@ -42,11 +42,14 @@ export function computeDriftAction({
 
   const expectedMs = timelinePositionAt(timeline, now);
   const driftMs = state.currentTime * 1000 - expectedMs;
+  // A countdown timeline runs from its anchor in the future; until then the
+  // player waits on the first frame like a paused one.
+  const beforeStart = timeline.playing && now < Number(timeline.anchorServerTimeMs);
 
-  if (!timeline.playing) {
+  if (!timeline.playing || beforeStart) {
     return {
       type: 'paused',
-      status: 'paused',
+      status: beforeStart ? 'countdown' : 'paused',
       driftMs,
       pause: !state.paused,
       seekToMs: Math.abs(driftMs) > PAUSED_TOLERANCE_MS ? expectedMs : null,

@@ -143,6 +143,7 @@ export function bindPlayerMount(ctx) {
   ctx.replacePlayer = async ({ itemId, positionMs }) => {
     ctx.stopOwnerHeartbeat();
     ctx.leavePlayback();
+    ctx.resetPreload();
     try {
       // Await so the server releases the old stream-limit slot before the new
       // episode's playback is reserved (otherwise it can briefly hit the stream limit).

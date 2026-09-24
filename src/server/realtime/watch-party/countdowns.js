@@ -4,16 +4,15 @@ const OWNER_DISCONNECT_GRACE_MS = 30_000;
 const SEEK_NOTIFICATION_THROTTLE_MS = 800;
 
 export const countdownMethods = {
-  scheduleCountdownCompletion(partyId, startsAtServerTimeMs, positionMs) {
+  scheduleCountdownCompletion(partyId, startsAtServerTimeMs) {
     this.cancelCountdown(partyId);
 
     const delay = Math.max(0, startsAtServerTimeMs - Date.now());
     const timer = setTimeout(() => {
       this.countdownTimers.delete(partyId);
-      const party = WatchPartyService.beginPlayback({ partyId, positionMs });
+      const party = WatchPartyService.beginPlayback({ partyId });
       if (!party) return;
 
-      this.broadcastTimeline(partyId, party, { reason: 'start' });
       this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
     }, delay);
     timer.unref?.();

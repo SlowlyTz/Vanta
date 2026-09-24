@@ -52,7 +52,8 @@ export const messageHandlerMethods = {
             userId,
             ready: false,
             state: message.state,
-            message: message.message
+            message: message.message,
+            progress: message.progress
           });
           this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
           return;
@@ -73,13 +74,15 @@ export const messageHandlerMethods = {
             this.broadcastParty(partyId, {
               type: 'COUNTDOWN',
               startsAtServerTimeMs: countdown.startsAtServerTimeMs,
-              positionMs: countdown.positionMs
+              durationMs: countdown.durationMs,
+              positionMs: countdown.positionMs,
+              timeline: serializeTimeline(countdown.party)
             });
             this.broadcastParty(partyId, {
               type: 'PARTY_UPDATED',
               party: WatchPartyService.serializeParty(countdown.party)
             });
-            this.scheduleCountdownCompletion(partyId, countdown.startsAtServerTimeMs, countdown.positionMs);
+            this.scheduleCountdownCompletion(partyId, countdown.startsAtServerTimeMs);
           }
           return;
         }

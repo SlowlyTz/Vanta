@@ -21,7 +21,9 @@ describe('Watch-Party-Zeitleiste', () => {
   it('serialisiert die Zeitleiste für die Clients', () => {
     const party = { status: 'playing', positionMs: 4000, lastServerTimeMs: 99, seq: 7 };
     expect(serializeTimeline(party)).toEqual({ positionMs: 4000, playing: true, anchorServerTimeMs: 99, seq: 7 });
-    expect(serializeTimeline({ status: 'countdown', positionMs: 0, lastServerTimeMs: 1 })).toMatchObject({ playing: false, seq: 0 });
+    expect(serializeTimeline({ status: 'paused', positionMs: 0, lastServerTimeMs: 1 })).toMatchObject({ playing: false, seq: 0 });
+    // The countdown's timeline already runs, from its anchor at the start.
+    expect(serializeTimeline({ status: 'countdown', positionMs: 0, lastServerTimeMs: 1 })).toMatchObject({ playing: true });
   });
 
   it('übernimmt plausible Zeitstempel der Clients und verwirft kaputte', () => {

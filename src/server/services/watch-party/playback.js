@@ -1,6 +1,6 @@
 import { ItemsService } from '../jellyfin/items.service.js';
 import { badRequest, conflict } from './errors.js';
-import { assertOwner, READY_ROOM_STATUS, COUNTDOWN_MS, createItemSnapshot, setTimeline } from './helpers.js';
+import { assertOwner, READY_ROOM_STATUS, COUNTDOWN_MS, COUNTDOWN_LEAD_MS, createItemSnapshot, setTimeline } from './helpers.js';
 
 export const playbackMethods = {
   canStart(party) {
@@ -23,25 +23,25 @@ export const playbackMethods = {
     const party = this.getPartyOrThrow(partyId);
     if (!this.canStart(party)) return null;
 
-    const now = Date.now();
+    const startsAtServerTimeMs = Date.now() + COUNTDOWN_LEAD_MS + COUNTDOWN_MS;
+    setTimeline(party, { positionMs: party.positionMs || 0, anchorServerTimeMs: startsAtServerTimeMs });
     party.status = 'countdown';
-    party.lastServerTimeMs = now;
 
     return {
       party,
-      startsAtServerTimeMs: now + COUNTDOWN_MS,
-      positionMs: party.positionMs || 0
+      startsAtServerTimeMs,
+      durationMs: COUNTDOWN_MS,
+      positionMs: party.positionMs
     };
   },
 
-  beginPlayback({ partyId, positionMs }) {
+  // The timeline was fixed when the countdown began (anchored at its end), so
+  // the start only flips the status; clients have already started on their own.
+  beginPlayback({ partyId }) {
     const party = this.parties.get(partyId);
     if (!party || party.status !== 'countdown') return null;
 
-    setTimeline(party, {
-      positionMs: Number.isFinite(positionMs) ? positionMs : party.positionMs,
-      playing: true
-    });
+    party.status = 'playing';
     return party;
   },
 

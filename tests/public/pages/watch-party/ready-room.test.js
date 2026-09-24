@@ -68,65 +68,149 @@ describe('WatchPartyPage · Ready Room', () => {
     document.body.classList.remove('player-active');
   });
 
-  it('öffnet den Ready-Room und sendet PLAYER_READY ohne Playback-Quelle nach lokalem Bereit-Klick', async () => {
-    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
-    WatchPartyApi.join.mockResolvedValue({
-      party: makeParty({
-        status: 'ready-room',
-        members: [
-          { userId: 'owner-1', username: 'Alice', role: 'owner', ready: false, connected: true, preloadState: 'idle' },
-          { userId: 'viewer-1', username: 'Bob', role: 'viewer', ready: false, connected: true, preloadState: 'idle' }
-        ]
-      })
-    });
+  it('lädt im Ready-Room vor, meldet den Fortschritt und sendet PLAYER_READY erst nach Klick und vollem Puffer', async () => {
+    vi.useFakeTimers();
+    try {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({
+          status: 'ready-room',
+          members: [
+            { userId: 'owner-1', username: 'Alice', role: 'owner', ready: false, connected: true, preloadState: 'idle' },
+            { userId: 'viewer-1', username: 'Bob', role: 'viewer', ready: false, connected: true, preloadState: 'idle' }
+          ]
+        })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+      let bufferedAhead = 0;
+      fakeController.getBufferedAhead.mockImplementation(() => bufferedAhead);
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(false);
+      expect(mountVantaPlayer).toHaveBeenCalledWith(expect.objectContaining({ deferInitialLoad: true }));
+      // The source loads as soon as the ready phase opens, before anyone clicks.
+      expect(fakeController.prepareInitialPlayback).toHaveBeenCalledWith({ position: 0 });
+      expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY_STATE', state: 'preparing', progress: 0 });
+
+      bufferedAhead = 2;
+      await vi.advanceTimersByTimeAsync(300);
+      expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY_STATE', state: 'preparing', progress: 0.5 });
+
+      const readyButton = container.querySelector('.watch-party-ready-button');
+      readyButton.click();
+      expect(fakeController.unlockPlayback).toHaveBeenCalled();
+      expect(readyButton.textContent).toBe('Wird geladen … 50 %');
+      expect(fakeSocket.sendJson).not.toHaveBeenCalledWith({ type: 'PLAYER_READY' });
+
+      bufferedAhead = 4;
+      await vi.advanceTimersByTimeAsync(300);
+      expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY' });
+      expect(readyButton.textContent).toBe('Bereit ✓');
+      expect(readyButton.disabled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('meldet "geladen" ohne Klick und sendet PLAYER_READY sofort beim Klick', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
 
     const container = WatchPartyPage({ partyId: 'party-1' });
     await flush();
     await flush();
 
-    expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(false);
-    expect(mountVantaPlayer).toHaveBeenCalledWith(expect.objectContaining({ deferInitialLoad: true }));
-
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY_STATE', state: 'loaded', progress: 1 });
     container.querySelector('.watch-party-ready-button').click();
-    await flush();
-    await flush();
-
-    expect(fakeSocket.sendJson).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: 'PLAYER_READY_STATE',
-      state: 'preparing'
-    }));
-    expect(fakeController.prepareInitialPlayback).not.toHaveBeenCalled();
     expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY' });
   });
 
-  it('versteckt den Countdown-Overlay erst beim Start der Zeitleiste, nicht automatisch nach Ablauf der Zeit', async () => {
+  it('bietet nach einem Ladefehler einen neuen Versuch an', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+    fakeController.prepareInitialPlayback.mockRejectedValueOnce(new Error('Stream-Limit erreicht'));
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const readyButton = container.querySelector('.watch-party-ready-button');
+    expect(readyButton.textContent).toBe('Erneut versuchen');
+    expect(container.querySelector('.watch-party-ready-status').textContent).toBe('Stream-Limit erreicht');
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY_STATE', state: 'error', message: 'Stream-Limit erreicht' });
+
+    readyButton.click();
+    await flush();
+    await flush();
+    expect(fakeController.prepareInitialPlayback).toHaveBeenCalledTimes(2);
+    expect(readyButton.textContent).toBe('Bereit');
+  });
+
+  it('startet zur angekündigten Serverzeit selbst, ohne auf eine Server-Nachricht zu warten', async () => {
     vi.useFakeTimers();
     try {
       authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
-      WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
       MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
 
       const container = WatchPartyPage({ partyId: 'party-1' });
       await vi.advanceTimersByTimeAsync(50);
 
-      const startsAt = Date.now() + 5000;
-      capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: startsAt, positionMs: 0 });
+      const startsAt = Date.now() + 5400;
+      capturedOnMessage({
+        type: 'COUNTDOWN',
+        startsAtServerTimeMs: startsAt,
+        durationMs: 5000,
+        positionMs: 0,
+        timeline: { positionMs: 0, playing: true, anchorServerTimeMs: startsAt, seq: 2 }
+      });
 
       const overlay = container.querySelector('.watch-party-countdown-overlay');
+      const digit = container.querySelector('.watch-party-countdown-number');
       expect(overlay.hidden).toBe(false);
       expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
-      expect(container.querySelector('.numero_counting_wrapper')).toBeTruthy();
-      expect(container.querySelector('.watch-party-countdown-number').hidden).toBe(true);
-      expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('5');
+      // The lead-in before the counted seconds still shows a five.
+      expect(digit.textContent).toBe('5');
 
-      await vi.advanceTimersByTimeAsync(5800);
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(digit.textContent).toBe('3');
+
+      await vi.advanceTimersByTimeAsync(2850);
       expect(overlay.hidden).toBe(false);
-      expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('0');
+      expect(fakeController.syncPlay).not.toHaveBeenCalled();
 
-      capturedOnMessage(timelineMessage({ reason: 'start' }));
-      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(100);
       expect(overlay.hidden).toBe(true);
+      expect(fakeController.syncPlay).toHaveBeenCalledWith({ quiet: true });
+      expect(mountVantaPlayer.mock.calls.at(-1)[0].watchParty.phase).toBe('playback');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('übernimmt nach einem Reconnect mitten im Countdown die restliche Zeit', async () => {
+    vi.useFakeTimers();
+    try {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      const startsAt = Date.now() + 2000;
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({
+          status: 'countdown',
+          timeline: { positionMs: 30_000, playing: true, anchorServerTimeMs: startsAt, seq: 5 }
+        })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('2');
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(fakeController.syncPlay).toHaveBeenCalledWith({ quiet: true });
     } finally {
       vi.useRealTimers();
     }
@@ -224,30 +308,31 @@ describe('WatchPartyPage · Ready Room', () => {
   });
 
   it('startet genau einmal: PARTY_UPDATED nach dem Countdown löst keinen zweiten Start aus', async () => {
-    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
-    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
-    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+    vi.useFakeTimers();
+    try {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
 
-    WatchPartyPage({ partyId: 'party-1' });
-    await flush();
-    await flush();
+      WatchPartyPage({ partyId: 'party-1' });
+      await vi.advanceTimersByTimeAsync(50);
 
-    const serverTimeMs = Date.now();
-    capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: serverTimeMs + 5000, positionMs: 0 });
-    await flush();
+      const startsAt = Date.now() + 5400;
+      const timeline = { positionMs: 0, playing: true, anchorServerTimeMs: startsAt, seq: 3 };
+      capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: startsAt, durationMs: 5000, positionMs: 0, timeline });
+      await vi.advanceTimersByTimeAsync(5500);
 
-    capturedOnMessage(timelineMessage({ reason: 'start', seq: 3, anchorServerTimeMs: serverTimeMs }));
-    capturedOnMessage({
-      type: 'PARTY_UPDATED',
-      party: makeParty({ status: 'playing', positionMs: 0, lastServerTimeMs: serverTimeMs })
-    });
-    // A duplicate of the same timeline (e.g. after a reconnect) is dropped.
-    capturedOnMessage(timelineMessage({ reason: 'start', seq: 3, anchorServerTimeMs: serverTimeMs }));
-    await flush();
-    await flush();
+      capturedOnMessage({
+        type: 'PARTY_UPDATED',
+        party: makeParty({ status: 'playing', positionMs: 0, lastServerTimeMs: startsAt, timeline })
+      });
+      await vi.advanceTimersByTimeAsync(2000);
 
-    expect(fakeController.prepareInitialPlayback).toHaveBeenCalledTimes(1);
-    expect(fakeController.syncPlay).toHaveBeenCalledTimes(1);
-    expect(fakeController.player.paused).toBe(false);
+      expect(mountVantaPlayer).toHaveBeenCalledTimes(1);
+      expect(fakeController.syncPlay).toHaveBeenCalledTimes(1);
+      expect(fakeController.player.paused).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

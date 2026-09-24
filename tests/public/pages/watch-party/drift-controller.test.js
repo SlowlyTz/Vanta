@@ -90,6 +90,14 @@ describe('computeDriftAction', () => {
       .toBe('blocked');
   });
 
+  it('hält den Player vor dem Countdown-Ende auf dem ersten Bild, statt loszuspielen', () => {
+    const countdown = { positionMs: 30_000, playing: true, anchorServerTimeMs: NOW + 3_000, seq: 2 };
+    expect(computeDriftAction({ timeline: countdown, state: state({ currentTime: 30, paused: true }), now: NOW }))
+      .toMatchObject({ type: 'paused', status: 'countdown', pause: false, seekToMs: null });
+    expect(computeDriftAction({ timeline: countdown, state: state({ currentTime: 30, paused: true }), now: NOW + 3_000 }).type)
+      .toBe('play');
+  });
+
   it('hält eine pausierte Party exakt auf der Position fest', () => {
     expect(computeDriftAction({ timeline: pausedAt(30_000), state: state({ currentTime: 31, paused: false }), now: NOW }))
       .toMatchObject({ type: 'paused', pause: true, seekToMs: 30_000 });

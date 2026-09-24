@@ -31,13 +31,14 @@ export const memberMethods = {
       member.ready = false;
       member.preloadState = 'idle';
       member.preloadMessage = '';
+      member.preloadProgress = 0;
       member.lastSeenAt = Date.now();
     }
 
     return party;
   },
 
-  setPlayerReady({ partyId, userId, ready, state = null, message = '' }) {
+  setPlayerReady({ partyId, userId, ready, state = null, message = '', progress = null }) {
     const party = this.getPartyOrThrow(partyId);
     if (![READY_ROOM_STATUS, 'countdown'].includes(party.status)) {
       throw conflict('Die Watch Party ist nicht im Bereit-Modus.');
@@ -49,6 +50,8 @@ export const memberMethods = {
     member.ready = Boolean(ready);
     member.preloadState = state || (ready ? 'ready' : 'idle');
     member.preloadMessage = message || '';
+    if (ready) member.preloadProgress = 1;
+    else if (Number.isFinite(Number(progress))) member.preloadProgress = Math.min(1, Math.max(0, Number(progress)));
     member.lastSeenAt = Date.now();
 
     return party;

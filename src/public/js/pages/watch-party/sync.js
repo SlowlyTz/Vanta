@@ -16,7 +16,7 @@ export function timelineFromParty(party) {
   if (party.timeline) return party.timeline;
   return {
     positionMs: Number(party.positionMs) || 0,
-    playing: party.status === 'playing',
+    playing: party.status === 'playing' || party.status === 'countdown',
     anchorServerTimeMs: Number(party.lastServerTimeMs) || 0,
     seq: 0
   };
