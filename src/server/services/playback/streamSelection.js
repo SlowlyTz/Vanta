@@ -101,7 +101,7 @@ export const streamSelectionMethods = {
     const audioStreamIndex = Number.isInteger(requestedAudioStreamIndex)
       ? requestedAudioStreamIndex
       : source?.DefaultAudioStreamIndex ?? null;
-    const audioTracks = buildAudioTracks(source);
+    const audioTracks = buildAudioTracks(source, { keepIndex: audioStreamIndex });
     const subtitles = this.buildSubtitleTracks(source);
     const qualityProfiles = buildQualityProfiles(source, forceHlsTranscoding);
     const currentProfileId = resolveQualityProfileId(

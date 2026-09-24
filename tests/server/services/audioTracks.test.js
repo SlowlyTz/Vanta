@@ -20,6 +20,20 @@ describe('audioTracks', () => {
     ]);
   });
 
+  it('zeigt gleich benannte Spuren nur einmal und behält die laufende oder die Standardspur', () => {
+    const doubled = {
+      MediaStreams: [
+        { Type: 'Audio', Index: 1, Language: 'ger', Channels: 6, Codec: 'ac3' },
+        { Type: 'Audio', Index: 2, Language: 'eng', Channels: 2, Codec: 'aac' },
+        { Type: 'Audio', Index: 3, Language: 'ger', Channels: 6, Codec: 'dts', IsDefault: true }
+      ]
+    };
+    expect(buildAudioTracks(doubled).map(track => [track.index, track.label])).toEqual([[3, 'Deutsch · 5.1'], [2, 'Englisch · 2.0']]);
+    expect(buildAudioTracks(doubled, { keepIndex: 1 }).map(track => track.index)).toEqual([1, 2]);
+    const plain = { MediaStreams: doubled.MediaStreams.map(({ IsDefault, ...stream }) => stream) };
+    expect(buildAudioTracks(plain).map(track => track.index)).toEqual([1, 2]);
+  });
+
   it('beschriftet unbekannte Sprachen und Kanalzahlen vernünftig', () => {
     expect(audioTrackLabel({ Index: 7, Language: 'und' })).toBe('Tonspur 7');
     expect(audioTrackLabel({ Index: 7, Language: 'swe', Channels: 1 })).toBe('SWE · Mono');
