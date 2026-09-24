@@ -90,7 +90,8 @@ export function createPlayerController(context) {
       try {
         if (action === 'play') context.forcePlaybackPhase();
         const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
-          action, positionMs, serverTimeMs, playing, currentTime: player.currentTime
+          action, positionMs, serverTimeMs, playing, currentTime: player.currentTime,
+          now: watchParty?.serverNow ? watchParty.serverNow() : Date.now()
         });
 
         if (shouldSeek) player.currentTime = targetSeconds;

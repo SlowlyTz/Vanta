@@ -11,6 +11,7 @@ export function bindLifecycle(ctx) {
     if (ctx.ownerHeartbeatTimer) window.clearInterval(ctx.ownerHeartbeatTimer);
     if (ctx.countdownTimer) window.clearInterval(ctx.countdownTimer);
     if (ctx.inviteResolveTimer) window.clearTimeout(ctx.inviteResolveTimer);
+    ctx.clock.stop();
     ctx.socket?.close();
     try {
       ctx.controller?.destroy();

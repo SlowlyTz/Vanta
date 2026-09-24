@@ -131,4 +131,15 @@ describe('WatchPartySocketHub · Playback Control', () => {
     ]);
     expect(party.status).toBe('paused');
   });
+  it('beantwortet TIME_PING mit der Serverzeit und dem Sendezeitpunkt des Clients', () => {
+    const hub = new WatchPartySocketHub();
+    const ws = createFakeWs();
+    const before = Date.now();
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('viewer-1'), message: { type: 'TIME_PING', clientSentAt: 1234.5 }, ws });
+
+    expect(ws.sent).toEqual([expect.objectContaining({ type: 'TIME_PONG', clientSentAt: 1234.5 })]);
+    expect(ws.sent[0].serverTimeMs).toBeGreaterThanOrEqual(before);
+    expect(WatchPartyService.getPartyOrThrow).not.toHaveBeenCalled();
+  });
 });

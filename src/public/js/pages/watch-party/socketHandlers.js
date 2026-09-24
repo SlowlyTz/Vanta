@@ -8,6 +8,10 @@ export function bindSocketHandlers(ctx) {
     if (!message?.type || ctx.destroyed) return;
 
     switch (message.type) {
+      case 'TIME_PONG':
+        ctx.clock.handlePong(message);
+        return;
+
       case 'PARTY_STATE': {
         ctx.party = message.party;
         ctx.renderParty();
@@ -34,7 +38,7 @@ export function bindSocketHandlers(ctx) {
           void ctx.handleControlPlay({
             action: 'play',
             positionMs: ctx.party.positionMs,
-            serverTimeMs: ctx.party.lastServerTimeMs || Date.now(),
+            serverTimeMs: ctx.party.lastServerTimeMs || ctx.clock.now(),
             playing: true
           });
         } else if (shouldShowPlayerForParty(ctx.party)) {
@@ -148,6 +152,7 @@ export function bindSocketHandlers(ctx) {
       ctx.socket = createWatchPartySocket({
         partyId: ctx.partyId,
         onMessage: ctx.handleSocketMessage,
+        onOpen: () => ctx.clock.start(),
         onReconnecting: () => ctx.setSyncStatus('lost', 'Verbindung verloren. Reconnect läuft …')
       });
 

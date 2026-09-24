@@ -25,7 +25,7 @@ export function bindSync(ctx) {
 
   ctx.applySync = ({ positionMs, playing, serverTimeMs }) => {
     if (!ctx.controller?.player) return;
-    const elapsedMs = playing ? Date.now() - serverTimeMs : 0;
+    const elapsedMs = playing ? ctx.clock.now() - serverTimeMs : 0;
     const targetSeconds = (positionMs + elapsedMs) / 1000;
     const drift = ctx.controller.player.currentTime - targetSeconds;
 
@@ -59,11 +59,12 @@ export function bindSync(ctx) {
   ctx.refreshRemotePayload = payload => {
     if (payload.action !== 'play') return payload;
 
-    const elapsedMs = Math.max(0, Date.now() - (Number(payload.serverTimeMs) || Date.now()));
+    const now = ctx.clock.now();
+    const elapsedMs = Math.max(0, now - (Number(payload.serverTimeMs) || now));
     return {
       ...payload,
       positionMs: Math.max(0, (Number(payload.positionMs) || 0) + elapsedMs),
-      serverTimeMs: Date.now()
+      serverTimeMs: now
     };
   };
 
@@ -86,7 +87,7 @@ export function bindSync(ctx) {
   ctx.enterLivePlayback = async ({ positionMs, serverTimeMs, playing }) => {
     if (ctx.destroyed) return;
 
-    const startServerTimeMs = Number(serverTimeMs) || Date.now();
+    const startServerTimeMs = Number(serverTimeMs) || ctx.clock.now();
     const liveJoinKey = `${startServerTimeMs}:${playing ? 'play' : 'pause'}`;
     if (ctx.lastLiveJoinKey === liveJoinKey) return;
     ctx.lastLiveJoinKey = liveJoinKey;
@@ -99,7 +100,7 @@ export function bindSync(ctx) {
     if (ctx.destroyed) return;
     ctx.setPlaybackPhase();
 
-    const elapsedMs = playing ? Math.max(0, Date.now() - startServerTimeMs) : 0;
+    const elapsedMs = playing ? Math.max(0, ctx.clock.now() - startServerTimeMs) : 0;
     const targetMs = Math.max(0, (Number(positionMs) || 0) + elapsedMs);
 
     if (ctx.controller?.prepareInitialPlayback) {
@@ -110,7 +111,7 @@ export function bindSync(ctx) {
     await ctx.safeApplyRemoteControl({
       action: playing ? 'play' : 'pause',
       positionMs: targetMs,
-      serverTimeMs: Date.now(),
+      serverTimeMs: ctx.clock.now(),
       playing
     });
 
@@ -119,7 +120,7 @@ export function bindSync(ctx) {
 
   ctx.handleControlPlay = async payload => {
     try {
-      const playStartServerTimeMs = Number(payload.serverTimeMs) || Date.now();
+      const playStartServerTimeMs = Number(payload.serverTimeMs) || ctx.clock.now();
       if (ctx.lastPlayStartServerTimeMs === playStartServerTimeMs) return;
       ctx.lastPlayStartServerTimeMs = playStartServerTimeMs;
 

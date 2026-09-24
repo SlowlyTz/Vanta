@@ -1,5 +1,6 @@
 import { createElement } from '../../utils/dom.js';
 import { authStore } from '../../store/auth.store.js';
+import { createServerClock, readSkewFromLocation } from '../../realtime/serverClock.js';
 
 export function createWatchPartyContext({ partyId }) {
   const container = createElement('div', { className: 'watch-party-page' });
@@ -27,6 +28,11 @@ export function createWatchPartyContext({ partyId }) {
     blockedPlayPayload: null,
     mountInFlight: null
   };
+
+  ctx.clock = createServerClock({
+    send: payload => ctx.socket?.sendJson(payload),
+    skewMs: readSkewFromLocation()
+  });
 
   ctx.isOwner = () => Boolean(ctx.party && ctx.currentUser && ctx.party.ownerUserId === ctx.currentUser.id);
 

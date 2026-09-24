@@ -374,13 +374,13 @@ function Be({ root: e, watchParty: t }) {
 		t && !e.getAttribute(ze) && e.setAttribute(ze, t), e.removeAttribute("action"), e.style.pointerEvents = "none";
 	});
 }
-function Ve({ action: e, positionMs: t, serverTimeMs: n, playing: r, currentTime: i }) {
-	let a = e === "play" ? Date.now() - n : 0, o = Math.max(0, (t + a) / 1e3), s = Math.abs(i - o) > .75, c = e === "play" || !!r;
+function Ve({ action: e, positionMs: t, serverTimeMs: n, playing: r, currentTime: i, now: a = Date.now() }) {
+	let o = e === "play" ? a - n : 0, s = Math.max(0, (t + o) / 1e3), c = Math.abs(i - s) > .75, l = e === "play" || !!r;
 	return {
-		targetSeconds: o,
-		shouldSeek: s,
-		shouldPlay: c,
-		shouldPause: !c && e === "pause"
+		targetSeconds: s,
+		shouldSeek: c,
+		shouldPlay: l,
+		shouldPause: !l && e === "pause"
 	};
 }
 //#endregion
@@ -20381,18 +20381,19 @@ function Bp(e) {
 		updateWatchPartyAccess: (t) => {
 			n?.enabled && (Object.assign(n, t || {}), e.refreshWatchPartyControlAccess(), e.participantsMenu?.update?.());
 		},
-		applyRemoteControl: async ({ action: n, positionMs: r, serverTimeMs: i, playing: a }) => {
+		applyRemoteControl: async ({ action: r, positionMs: i, serverTimeMs: a, playing: o }) => {
 			e.beginOwnerEchoSuppression();
 			try {
-				n === "play" && e.forcePlaybackPhase();
-				let { targetSeconds: o, shouldSeek: s, shouldPlay: c, shouldPause: l } = Ve({
-					action: n,
-					positionMs: r,
-					serverTimeMs: i,
-					playing: a,
-					currentTime: t.currentTime
+				r === "play" && e.forcePlaybackPhase();
+				let { targetSeconds: s, shouldSeek: c, shouldPlay: l, shouldPause: u } = Ve({
+					action: r,
+					positionMs: i,
+					serverTimeMs: a,
+					playing: o,
+					currentTime: t.currentTime,
+					now: n?.serverNow ? n.serverNow() : Date.now()
 				});
-				s && (t.currentTime = o), c ? (e.sourceSwitch.setIntendsToPlay(!0), await e.sourceSwitch.startCurrentPlayback()) : l && t.pause();
+				c && (t.currentTime = s), l ? (e.sourceSwitch.setIntendsToPlay(!0), await e.sourceSwitch.startCurrentPlayback()) : u && t.pause();
 			} finally {
 				e.endOwnerEchoSuppression();
 			}

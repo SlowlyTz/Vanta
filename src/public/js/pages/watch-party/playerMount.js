@@ -70,6 +70,7 @@ export function bindPlayerMount(ctx) {
           currentUserId: ctx.currentUser?.id,
           participants: ctx.party.members,
           disableQualityMenu: true,
+          serverNow: () => ctx.clock.now(),
           onOwnerPlay: ownerPositionMs => ctx.socket?.sendJson({ type: 'OWNER_PLAY', positionMs: ownerPositionMs }),
           onOwnerPause: ownerPositionMs => ctx.socket?.sendJson({ type: 'OWNER_PAUSE', positionMs: ownerPositionMs }),
           onOwnerSeek: ownerPositionMs => ctx.socket?.sendJson({ type: 'OWNER_SEEK', positionMs: ownerPositionMs }),

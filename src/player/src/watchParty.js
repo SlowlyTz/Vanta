@@ -55,8 +55,8 @@ export function applyWatchPartyPermissions({ root, watchParty }) {
   });
 }
 
-export function computeRemoteControlTarget({ action, positionMs, serverTimeMs, playing, currentTime }) {
-  const elapsedMs = action === 'play' ? Date.now() - serverTimeMs : 0;
+export function computeRemoteControlTarget({ action, positionMs, serverTimeMs, playing, currentTime, now = Date.now() }) {
+  const elapsedMs = action === 'play' ? now - serverTimeMs : 0;
   const targetSeconds = Math.max(0, (positionMs + elapsedMs) / 1000);
   const shouldSeek = Math.abs(currentTime - targetSeconds) > 0.75;
   const shouldPlay = action === 'play' || Boolean(playing);

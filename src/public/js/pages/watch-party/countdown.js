@@ -14,7 +14,7 @@ export function bindCountdown(ctx) {
     ctx.countdownPosition.textContent = formatPosition(positionMs);
 
     const tick = () => {
-      const remaining = Math.max(0, Math.ceil((startsAtServerTimeMs - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((startsAtServerTimeMs - ctx.clock.now()) / 1000));
       ctx.countdownNumber.textContent = String(remaining);
       if (remaining <= 0) {
         window.clearInterval(ctx.countdownTimer);
