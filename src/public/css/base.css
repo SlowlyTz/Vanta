@@ -2,7 +2,6 @@
   /* Abyss tokens — source of truth for the theme */
   --abyss-accent: 245, 245, 247;
   --abyss-glass-tint: 42, 42, 42;
-  --abyss-indicator: 55, 55, 55;
   --abyss-radius: 12px;
   --abyss-radius-dialog: 24px;
   --abyss-radius-drawer: 32px;
@@ -20,7 +19,6 @@
   --text-muted: hsl(240, 5%, 45%);
 
   --accent-color: rgb(var(--abyss-accent));
-  --accent-glow: rgba(var(--abyss-accent), 0.15);
   --error-color: hsl(0, 85%, 60%);
   --error-bg: hsla(0, 85%, 60%, 0.1);
   --success-color: hsl(140, 70%, 50%);
@@ -53,7 +51,6 @@
   /* Transitions */
   --transition-fast: 0.2s var(--abyss-ease-snappy);
   --transition-smooth: 0.35s var(--abyss-ease);
-  --transition-spring: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 * {

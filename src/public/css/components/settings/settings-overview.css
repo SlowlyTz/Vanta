@@ -41,13 +41,6 @@
   line-height: 1.06;
 }
 
-.settings-profile-subtitle {
-  color: rgba(255, 255, 255, 0.64);
-  font-size: 1.03rem;
-  font-weight: 520;
-  line-height: 1.25;
-}
-
 .settings-overview-grid {
   min-height: 134px;
   display: grid;

@@ -1,8 +1,7 @@
 .settings-header-icon,
 .settings-profile-icon,
 .settings-row-icon,
-.settings-chevron,
-.settings-check {
+.settings-chevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12,15 +11,13 @@
 .settings-header-icon svg,
 .settings-profile-icon svg,
 .settings-row-icon svg,
-.settings-chevron svg,
-.settings-check svg {
+.settings-chevron svg {
   display: block;
   flex: 0 0 auto;
 }
 
 .settings-header-button:focus-visible,
 .settings-option:focus-visible,
-.settings-choice:focus-visible,
 .settings-logout-button:focus-visible {
   outline: 2px solid rgba(var(--abyss-accent), 0.72);
   outline-offset: 3px;
@@ -35,7 +32,6 @@ body.settings-modal-open {
 .settings-modal-backdrop,
 .settings-dialog,
 .settings-panel,
-.admin-tool-view,
 .admin-users-view {
   overscroll-behavior: contain;
 }
