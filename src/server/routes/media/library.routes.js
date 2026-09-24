@@ -6,57 +6,34 @@ import { HomeCategoriesService } from '../../services/home-categories.service.js
 import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
+import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 
 const router = express.Router();
 
-router.get('/home', requireAuth, asyncHandler(async (req, res) => {
+router.get('/home', requireAuth, jellyfinRoute('Media Home Error', 'Failed to fetch media library data', async (req, res) => {
   const { userId, accessToken } = req.session;
 
-  try {
-    const [resume, movies, series] = await Promise.all([
-      LibraryService.getResumeItems(userId, accessToken),
-      LibraryService.getMovies(userId, accessToken),
-      LibraryService.getSeries(userId, accessToken)
-    ]);
+  const [resume, movies, series] = await Promise.all([
+    LibraryService.getResumeItems(userId, accessToken),
+    LibraryService.getMovies(userId, accessToken),
+    LibraryService.getSeries(userId, accessToken)
+  ]);
 
-    return res.json({ resume, movies, series });
-  } catch (error) {
-    console.error('[Media Home Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch media library data' });
-  }
+  return res.json({ resume, movies, series });
 }));
 
-router.get('/home-categories', requireAuth, asyncHandler(async (req, res) => {
+router.get('/home-categories', requireAuth, jellyfinRoute('Media Home Categories Error', 'Failed to fetch home categories', async (req, res) => {
   const { userId, accessToken } = req.session;
 
-  try {
-    const categories = await HomeCategoriesService.getHomeCategories(userId, accessToken);
-    return res.json(categories);
-  } catch (error) {
-    console.error('[Media Home Categories Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch home categories' });
-  }
+  const categories = await HomeCategoriesService.getHomeCategories(userId, accessToken);
+  return res.json(categories);
 }));
 
-router.get('/home-sections', requireAuth, asyncHandler(async (req, res) => {
+router.get('/home-sections', requireAuth, jellyfinRoute('Media Home Sections Error', 'Failed to fetch home sections', async (req, res) => {
   const { userId, accessToken } = req.session;
 
-  try {
-    const sections = await HomeSectionsService.getHomeSections(userId, accessToken);
-    return res.json(sections);
-  } catch (error) {
-    console.error('[Media Home Sections Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch home sections' });
-  }
+  const sections = await HomeSectionsService.getHomeSections(userId, accessToken);
+  return res.json(sections);
 }));
 
 router.get('/home-sections/:group', requireAuth, asyncHandler(async (req, res) => {
@@ -75,87 +52,47 @@ router.get('/home-sections/:group', requireAuth, asyncHandler(async (req, res) =
   }
 }));
 
-router.get('/search', requireAuth, asyncHandler(async (req, res) => {
+router.get('/search', requireAuth, jellyfinRoute('Media Search Error', 'Failed to search media items', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { q } = req.query;
 
   if (!q) return res.json([]);
 
-  try {
-    const results = await LibraryService.search(userId, accessToken, q);
-    return res.json(results);
-  } catch (error) {
-    console.error('[Media Search Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to search media items' });
-  }
+  const results = await LibraryService.search(userId, accessToken, q);
+  return res.json(results);
 }));
 
-router.get('/item/:id', requireAuth, asyncHandler(async (req, res) => {
+router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Failed to fetch item details', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  try {
-    const item = await ItemsService.getItemDetails(userId, accessToken, id);
-    return res.json(item);
-  } catch (error) {
-    console.error('[Media Item Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch item details' });
-  }
+  const item = await ItemsService.getItemDetails(userId, accessToken, id);
+  return res.json(item);
 }));
 
-router.get('/item/:id/similar', requireAuth, asyncHandler(async (req, res) => {
+router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error', 'Failed to fetch similar items', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  try {
-    const items = await ItemsService.getSimilarItems(userId, accessToken, id);
-    return res.json(items);
-  } catch (error) {
-    console.error('[Media Similar Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch similar items' });
-  }
+  const items = await ItemsService.getSimilarItems(userId, accessToken, id);
+  return res.json(items);
 }));
 
-router.get('/item/:id/seasons', requireAuth, asyncHandler(async (req, res) => {
+router.get('/item/:id/seasons', requireAuth, jellyfinRoute('Media Seasons Error', 'Failed to fetch seasons', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  try {
-    const seasons = await ItemsService.getSeasons(userId, accessToken, id);
-    return res.json(seasons);
-  } catch (error) {
-    console.error('[Media Seasons Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch seasons' });
-  }
+  const seasons = await ItemsService.getSeasons(userId, accessToken, id);
+  return res.json(seasons);
 }));
 
-router.get('/item/:id/episodes', requireAuth, asyncHandler(async (req, res) => {
+router.get('/item/:id/episodes', requireAuth, jellyfinRoute('Media Episodes Error', 'Failed to fetch episodes', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
   const { seasonId } = req.query;
 
-  try {
-    const episodes = await ItemsService.getEpisodes(userId, accessToken, id, seasonId);
-    return res.json(episodes);
-  } catch (error) {
-    console.error('[Media Episodes Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch episodes' });
-  }
+  const episodes = await ItemsService.getEpisodes(userId, accessToken, id, seasonId);
+  return res.json(episodes);
 }));
 
 const setPlayed = (played) => asyncHandler(async (req, res) => {
@@ -179,37 +116,21 @@ const setPlayed = (played) => asyncHandler(async (req, res) => {
 router.post('/item/:id/played', requireAuth, setPlayed(true));
 router.delete('/item/:id/played', requireAuth, setPlayed(false));
 
-router.get('/genres', requireAuth, asyncHandler(async (req, res) => {
+router.get('/genres', requireAuth, jellyfinRoute('Media Genres Error', 'Failed to fetch genres', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { type } = req.query;
 
   if (!type) return res.status(400).json({ error: 'Type is required' });
 
-  try {
-    const genres = await LibraryService.getGenres(userId, accessToken, type);
-    return res.json(genres);
-  } catch (error) {
-    console.error('[Media Genres Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch genres' });
-  }
+  const genres = await LibraryService.getGenres(userId, accessToken, type);
+  return res.json(genres);
 }));
 
-router.get('/studios', requireAuth, asyncHandler(async (req, res) => {
+router.get('/studios', requireAuth, jellyfinRoute('Media Studios Error', 'Failed to fetch studios', async (req, res) => {
   const { userId, accessToken } = req.session;
 
-  try {
-    const studios = await LibraryService.getStudios(userId, accessToken);
-    return res.json(studios);
-  } catch (error) {
-    console.error('[Media Studios Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch studios' });
-  }
+  const studios = await LibraryService.getStudios(userId, accessToken);
+  return res.json(studios);
 }));
 
 router.get('/library', requireAuth, asyncHandler(async (req, res) => {

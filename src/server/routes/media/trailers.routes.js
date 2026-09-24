@@ -1,61 +1,37 @@
 import express from 'express';
 import { TrailersService } from '../../services/jellyfin/trailers.service.js';
-import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
+import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 
 const router = express.Router();
 
-router.get('/trailers', requireAuth, asyncHandler(async (req, res) => {
+router.get('/trailers', requireAuth, jellyfinRoute('Media Trailers Error', 'Failed to fetch trailers', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { feedId, cursor, limit, target } = req.query;
 
-  try {
-    const result = await TrailersService.getTrailerPage(req, userId, accessToken, {
-      feedId: typeof feedId === 'string' ? feedId : null,
-      cursor: typeof cursor === 'string' ? cursor : null,
-      limit,
-      target: typeof target === 'string' ? target : null
-    });
-    return res.json(result);
-  } catch (error) {
-    console.error('[Media Trailers Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to fetch trailers' });
-  }
+  const result = await TrailersService.getTrailerPage(req, userId, accessToken, {
+    feedId: typeof feedId === 'string' ? feedId : null,
+    cursor: typeof cursor === 'string' ? cursor : null,
+    limit,
+    target: typeof target === 'string' ? target : null
+  });
+  return res.json(result);
 }));
 
-router.post('/item/:id/favorite', requireAuth, asyncHandler(async (req, res) => {
+router.post('/item/:id/favorite', requireAuth, jellyfinRoute('Media Favorite Error', 'Failed to set favorite', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  try {
-    const result = await TrailersService.setFavorite(userId, accessToken, id, true);
-    return res.json(result);
-  } catch (error) {
-    console.error('[Media Favorite Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to set favorite' });
-  }
+  const result = await TrailersService.setFavorite(userId, accessToken, id, true);
+  return res.json(result);
 }));
 
-router.delete('/item/:id/favorite', requireAuth, asyncHandler(async (req, res) => {
+router.delete('/item/:id/favorite', requireAuth, jellyfinRoute('Media Unfavorite Error', 'Failed to remove favorite', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  try {
-    const result = await TrailersService.setFavorite(userId, accessToken, id, false);
-    return res.json(result);
-  } catch (error) {
-    console.error('[Media Unfavorite Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Failed to remove favorite' });
-  }
+  const result = await TrailersService.setFavorite(userId, accessToken, id, false);
+  return res.json(result);
 }));
 
 export default router;
