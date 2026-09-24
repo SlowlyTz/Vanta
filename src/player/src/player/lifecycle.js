@@ -88,7 +88,7 @@ export function createPlayerController(context) {
       Object.assign(watchParty, nextState || {});
       context.refreshWatchPartyControlAccess();
       context.settings?.refresh();
-      context.nextEpisodePrompt?.setControls(Boolean(watchParty.canControl ?? watchParty.isOwner), NEXT_EPISODE_VIEWER_MESSAGE);
+      context.nextEpisodePrompt?.setControls(Boolean(watchParty.canControl), NEXT_EPISODE_VIEWER_MESSAGE);
     },
     cancelNextEpisode: () => context.cancelNextEpisode?.(),
     getSyncState: context.getSyncState,

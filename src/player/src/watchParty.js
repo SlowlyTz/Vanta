@@ -8,7 +8,7 @@ const TIMELINE_SELECTOR = 'media-time-slider';
 
 export function applyWatchPartyPermissions({ root, watchParty }) {
   if (!watchParty?.enabled) return;
-  const canControl = Boolean(watchParty.canControl ?? watchParty.isOwner);
+  const canControl = Boolean(watchParty.canControl);
 
   root.classList.toggle('is-watch-party-viewer', !canControl);
   const pill = root.querySelector('.vanta-player-party-pill');

@@ -33,7 +33,7 @@ describe('applyWatchPartyPermissions', () => {
 
   it('blendet für Zuschauer Play, Spulen und die bedienbare Zeitleiste aus und zeigt „Admin steuert“', () => {
     const root = createRoot();
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false } });
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, canControl: false } });
 
     expect(root.classList.contains('is-watch-party-viewer')).toBe(true);
     expect(transport(root).every(control => control.inert && control.getAttribute('aria-hidden') === 'true')).toBe(true);
@@ -45,16 +45,6 @@ describe('applyWatchPartyPermissions', () => {
     expect(root.querySelector('.vanta-player-party-pill').hidden).toBe(false);
     // Volume stays with the viewer.
     expect(root.querySelector('media-mute-button').inert).toBeFalsy();
-  });
-
-  it('canControl hat Vorrang vor isOwner', () => {
-    const promoted = createRoot();
-    applyWatchPartyPermissions({ root: promoted, watchParty: { enabled: true, isOwner: false, canControl: true } });
-    expect(promoted.classList.contains('is-watch-party-viewer')).toBe(false);
-
-    const demoted = createRoot();
-    applyWatchPartyPermissions({ root: demoted, watchParty: { enabled: true, isOwner: true, canControl: false } });
-    expect(demoted.classList.contains('is-watch-party-viewer')).toBe(true);
   });
 
   it('gibt alles zurück, wenn ein Zuschauer während der Party zum Admin wird', () => {

@@ -45,7 +45,7 @@ export function shouldShowNextEpisodePrompt({ currentTime, duration, ...threshol
 }
 
 export function canStartNextEpisode(watchParty) {
-  return !watchParty?.enabled || Boolean(watchParty.canControl ?? watchParty.isOwner);
+  return !watchParty?.enabled || Boolean(watchParty.canControl);
 }
 
 export function createNextEpisodeGate() {

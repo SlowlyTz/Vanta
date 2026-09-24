@@ -81,7 +81,6 @@ describe('WatchPartyPage · Admin-Rollen', () => {
 
     const call = mountVantaPlayer.mock.calls.at(-1)[0];
     expect(call.watchParty.canControl).toBe(true);
-    expect(call.watchParty.isOwner).toBe(true);
     expect(call.watchParty.currentUserId).toBe('owner-1');
   });
 
@@ -178,7 +177,6 @@ describe('WatchPartyPage · Admin-Rollen', () => {
     });
 
     expect(fakeController.updateWatchPartyAccess).toHaveBeenCalledWith(expect.objectContaining({
-      isOwner: true,
       canControl: true,
       participants: promotedMembers,
       currentUserId: 'viewer-1'

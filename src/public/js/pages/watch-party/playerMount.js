@@ -81,7 +81,6 @@ export function bindPlayerMount(ctx) {
         ctx.watchPartyConfig = {
           enabled: true,
           phase,
-          isOwner: ctx.isPartyAdmin(), // Übergangskompatibilität für ältere Player-Gates
           canControl: ctx.isPartyAdmin(),
           currentUserId: ctx.currentUser?.id,
           participants: ctx.party.members,

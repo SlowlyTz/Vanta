@@ -353,7 +353,7 @@ function Ne(e, t = {}) {
 var Pe = ".vanta-player-transport", Fe = "media-time-slider";
 function Ie({ root: e, watchParty: t }) {
 	if (!t?.enabled) return;
-	let n = !!(t.canControl ?? t.isOwner);
+	let n = !!t.canControl;
 	e.classList.toggle("is-watch-party-viewer", !n);
 	let r = e.querySelector(".vanta-player-party-pill");
 	r && (r.hidden = n), e.querySelectorAll(Pe).forEach((e) => {
@@ -632,7 +632,7 @@ async function Je(e) {
 		window.setTimeout(() => {
 			b.ownerEchoSuppressionDepth = Math.max(0, b.ownerEchoSuppressionDepth - 1);
 		}, e);
-	}, b.watchPartyPhase = () => u?.phase || u?.mode || (u?.enabled ? "playback" : null), b.isDeferredReadyRoom = () => b.watchPartyPhase() === "ready-room", b.canControlWatchParty = () => u?.enabled ? !!(u.canControl ?? u.isOwner) : !0, b.canEmitOwnerControl = (e) => e && b.echoTokens.consume(e) ? !1 : !!u?.enabled && b.canControlWatchParty() && b.watchPartyPhase() === "playback" && b.ownerEchoSuppressionDepth === 0, b.refreshWatchPartyControlAccess = () => {
+	}, b.watchPartyPhase = () => u?.phase || (u?.enabled ? "playback" : null), b.isDeferredReadyRoom = () => b.watchPartyPhase() === "ready-room", b.canControlWatchParty = () => u?.enabled ? !!u.canControl : !0, b.canEmitOwnerControl = (e) => e && b.echoTokens.consume(e) ? !1 : !!u?.enabled && b.canControlWatchParty() && b.watchPartyPhase() === "playback" && b.ownerEchoSuppressionDepth === 0, b.refreshWatchPartyControlAccess = () => {
 		u?.enabled && (Ie({
 			root: t,
 			watchParty: u
@@ -2071,7 +2071,7 @@ function Qn({ currentTime: e, duration: t, ...n }) {
 	return r ? e >= r.promptAt : !1;
 }
 function $n(e) {
-	return !e?.enabled || !!(e.canControl ?? e.isOwner);
+	return !e?.enabled || !!e.canControl;
 }
 function er() {
 	let e = /* @__PURE__ */ new Set(), t = null;
@@ -21647,7 +21647,7 @@ function nh(e) {
 		player: t,
 		prepareInitialPlayback: e.prepareInitialPlayback,
 		updateWatchPartyAccess: (t) => {
-			n?.enabled && (Object.assign(n, t || {}), e.refreshWatchPartyControlAccess(), e.settings?.refresh(), e.nextEpisodePrompt?.setControls(!!(n.canControl ?? n.isOwner), Be));
+			n?.enabled && (Object.assign(n, t || {}), e.refreshWatchPartyControlAccess(), e.settings?.refresh(), e.nextEpisodePrompt?.setControls(!!n.canControl, Be));
 		},
 		cancelNextEpisode: () => e.cancelNextEpisode?.(),
 		getSyncState: e.getSyncState,

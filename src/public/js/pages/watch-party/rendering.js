@@ -98,14 +98,12 @@ export function bindRendering(ctx) {
     if (!ctx.watchPartyConfig || !ctx.party) return;
 
     const canControl = ctx.isPartyAdmin();
-    ctx.watchPartyConfig.isOwner = canControl;
     ctx.watchPartyConfig.canControl = canControl;
     ctx.watchPartyConfig.participants = ctx.party.members;
     ctx.watchPartyConfig.currentUserId = ctx.currentUser?.id;
     ctx.watchPartyConfig.isHost = ctx.isOwner();
     ctx.watchPartyConfig.waitForBuffering = ctx.party.waitForBuffering !== false;
     ctx.controller?.updateWatchPartyAccess?.({
-      isOwner: canControl,
       canControl,
       isHost: ctx.isOwner(),
       waitForBuffering: ctx.party.waitForBuffering !== false,

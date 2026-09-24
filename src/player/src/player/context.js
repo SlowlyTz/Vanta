@@ -105,11 +105,11 @@ export async function createPlayerContext(options) {
     }, delay);
   };
 
-  context.watchPartyPhase = () => watchParty?.phase || watchParty?.mode || (watchParty?.enabled ? 'playback' : null);
+  context.watchPartyPhase = () => watchParty?.phase || (watchParty?.enabled ? 'playback' : null);
   context.isDeferredReadyRoom = () => context.watchPartyPhase() === 'ready-room';
   context.canControlWatchParty = () => {
     if (!watchParty?.enabled) return true;
-    return Boolean(watchParty.canControl ?? watchParty.isOwner);
+    return Boolean(watchParty.canControl);
   };
   // `kind` is the media event (play, pause, seek). A pending echo token for it
   // means the sync itself caused the event, so it is consumed, not reported.

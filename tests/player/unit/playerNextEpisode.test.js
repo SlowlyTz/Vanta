@@ -91,11 +91,10 @@ describe('canStartNextEpisode', () => {
 
   it('erlaubt Start für Admin/Owner in WatchTogether', () => {
     expect(canStartNextEpisode({ enabled: true, canControl: true })).toBe(true);
-    expect(canStartNextEpisode({ enabled: true, isOwner: true })).toBe(true);
   });
 
   it('verweigert Start für Zuschauer in WatchTogether', () => {
-    expect(canStartNextEpisode({ enabled: true, canControl: false, isOwner: false })).toBe(false);
+    expect(canStartNextEpisode({ enabled: true, canControl: false })).toBe(false);
   });
 });
 
