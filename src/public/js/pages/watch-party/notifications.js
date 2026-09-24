@@ -1,6 +1,6 @@
 import { createElement } from '../../utils/dom.js';
-import { memberInitial, notificationIcon } from './helpers.js';
-import { memberHue } from './lobby/roster.js';
+import { notificationIcon } from './helpers.js';
+import { memberHue, memberInitial } from '../../shared/members.js';
 
 export const NOTIFICATION_VISIBLE_MS = 4_200;
 const NOTIFICATION_LEAVE_MS = 400;

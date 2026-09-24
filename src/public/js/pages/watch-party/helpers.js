@@ -1,4 +1,5 @@
 import { MediaApi } from '../../api/media.api.js';
+import { formatClock } from '../../shared/time.js';
 
 export const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 export const COUNTDOWN_MODULE_URL = '/vendor/countdown/vanta-countdown.js';
@@ -11,20 +12,9 @@ export function connectedMemberCount(members) {
   return members.filter(member => member.connected).length;
 }
 
-export function memberInitial(username) {
-  return (username || '?').trim().charAt(0).toUpperCase() || '?';
-}
-
 export function formatPosition(positionMs) {
-  if (!positionMs || positionMs <= 0) return 'Von Anfang an';
-  const totalSeconds = Math.floor(positionMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const time = hours > 0
-    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    : `${minutes}:${String(seconds).padStart(2, '0')}`;
-  return `Fortsetzen bei ${time}`;
+  const totalSeconds = Math.floor((Number(positionMs) || 0) / 1000);
+  return totalSeconds > 0 ? `Fortsetzen bei ${formatClock(totalSeconds)}` : 'Von Anfang an';
 }
 
 export function formatRuntime(runtimeTicks) {

@@ -1,33 +1,11 @@
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
-import { formatRuntime } from '../helpers.js';
+import { countdownMetaParts, formatPosition } from '../helpers.js';
 import { icon } from './icons.js';
 
 export function episodeLabel(snapshot) {
   if (!Number.isFinite(snapshot?.seasonNumber) || !Number.isFinite(snapshot?.episodeNumber)) return null;
   return `S${snapshot.seasonNumber} · F${snapshot.episodeNumber}`;
-}
-
-export function resumeLabel(positionMs) {
-  const totalSeconds = Math.floor((Number(positionMs) || 0) / 1000);
-  if (totalSeconds <= 0) return 'Von Anfang an';
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const time = hours > 0
-    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    : `${minutes}:${String(seconds).padStart(2, '0')}`;
-  return `Fortsetzen bei ${time}`;
-}
-
-export function heroMeta(snapshot = {}) {
-  const parts = [];
-  if (snapshot.productionYear) parts.push(String(snapshot.productionYear));
-  if (snapshot.officialRating) parts.push(snapshot.officialRating);
-  if (snapshot.communityRating) parts.push(`★ ${Number(snapshot.communityRating).toFixed(1)}`);
-  const runtime = formatRuntime(snapshot.runtimeTicks);
-  if (runtime) parts.push(runtime);
-  return parts;
 }
 
 // The big picture of the lobby: backdrop, logo (or title), what exactly is
@@ -69,11 +47,11 @@ export function createLobbyHero() {
     subtitle.hidden = !subtitleText;
 
     meta.innerHTML = '';
-    heroMeta(snapshot).forEach(part => meta.appendChild(createElement('li', {}, part)));
+    countdownMetaParts(snapshot).forEach(part => meta.appendChild(createElement('li', {}, part)));
     meta.hidden = meta.childElementCount === 0;
 
     resume.innerHTML = '';
-    resume.append(icon(positionMs > 0 ? 'clock' : 'play'), createElement('span', {}, resumeLabel(positionMs)));
+    resume.append(icon(positionMs > 0 ? 'clock' : 'play'), createElement('span', {}, formatPosition(positionMs)));
 
     const backdropUrl = snapshot.backdrop
       ? MediaApi.getImageUrl(snapshot.backdrop.id, 'Backdrop', 1920, { tag: snapshot.backdrop.tag, quality: 90 })

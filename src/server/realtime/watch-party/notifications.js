@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { formatClock } from '../../../public/js/shared/time.js';
 
 export function ownerError(message) {
   const error = new Error(message);
@@ -8,13 +9,6 @@ export function ownerError(message) {
 
 export function isPlaybackControlAllowed(party) {
   return party.status === 'playing' || party.status === 'paused';
-}
-
-function formatNotificationPosition(positionMs) {
-  const totalSeconds = Math.max(0, Math.floor((Number(positionMs) || 0) / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 // Notifications addressed to the person themselves share the icon of the
@@ -35,7 +29,7 @@ export function createNotification(type, { userId = null, username, positionMs }
     member_left: `${name} hat die Watch Party verlassen.`,
     owner_play: `${name} hat die Wiedergabe gestartet.`,
     owner_pause: `${name} hat pausiert.`,
-    owner_seek: `${name} ist zu ${formatNotificationPosition(positionMs)} gesprungen.`,
+    owner_seek: `${name} ist zu ${formatClock((Number(positionMs) || 0) / 1000)} gesprungen.`,
     member_promoted: `${name} ist jetzt Admin.`,
     member_promoted_self: 'Du bist jetzt Admin.',
     member_demoted: `${name} ist kein Admin mehr.`,

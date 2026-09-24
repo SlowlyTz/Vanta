@@ -1,18 +1,9 @@
 import { once } from '../promiseHelpers.js';
 import { clampSeekTarget, END_EPSILON_SECONDS } from '../seek.js';
 import { syncPlayingState } from './loadingStatus.js';
+import { formatClock } from '../../../public/js/shared/time.js';
 
 const SEEK_TIMEOUT_MS = 6_000;
-
-function formatLoadingPosition(seconds) {
-  const value = Math.max(0, Math.floor(Number(seconds) || 0));
-  const hours = Math.floor(value / 3600);
-  const minutes = Math.floor((value % 3600) / 60);
-  const remainder = value % 60;
-  return hours > 0
-    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
-    : `${minutes}:${String(remainder).padStart(2, '0')}`;
-}
 
 export function waitForDurationOrSeekable(player, timeoutMs) {
   return new Promise(resolve => {
@@ -70,7 +61,7 @@ export async function performSeek(state, targetPosition, { version } = {}) {
   const currentSeek = ++state.seekVersion;
 
   if (state.switching && target > 0) {
-    state.setLoadingStatus(`Wiedergabeposition ${formatLoadingPosition(target)} wird wiederhergestellt …`);
+    state.setLoadingStatus(`Wiedergabeposition ${formatClock(target)} wird wiederhergestellt …`);
   }
 
   if (Math.abs(Number(player.currentTime) - target) < 0.35) {

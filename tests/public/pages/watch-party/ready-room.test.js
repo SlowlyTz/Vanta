@@ -55,7 +55,7 @@ vi.mock('/vendor/player/vanta-player.js', () => ({ mountVantaPlayer }));
 
 const { mountCountdown } = vi.hoisted(() => ({ mountCountdown: vi.fn() }));
 
-vi.mock('/vendor/countdown/vanta-countdown.js', () => ({ mountCountdown }));
+vi.mock('/vendor/countdown/vanta-countdown.js', () => ({ mountCountdown, prepareCountdown: () => Promise.resolve() }));
 
 mountVantaPlayer.mockResolvedValue(fakeController);
 

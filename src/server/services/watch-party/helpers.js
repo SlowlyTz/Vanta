@@ -1,3 +1,4 @@
+import { PLAYBACK_STATES as SHARED_PLAYBACK_STATES } from '../../../public/js/shared/partyStatus.js';
 import { forbidden } from './errors.js';
 
 export const PARTY_TTL_MS = 6 * 60 * 60 * 1000;
@@ -14,7 +15,7 @@ export const MAX_PARTY_MEMBERS = 4;
 export const READY_ROOM_STATUS = 'ready-room';
 // Loading the next episode; everyone starts together once all are ready.
 export const SWITCHING_STATUS = 'switching';
-export const PLAYBACK_STATES = new Set(['sync', 'correcting', 'buffering', 'paused', 'blocked']);
+export const PLAYBACK_STATES = new Set(SHARED_PLAYBACK_STATES);
 
 export function assertOwner(party, userId) {
   if (party.ownerUserId !== userId) {

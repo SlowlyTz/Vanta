@@ -1,5 +1,5 @@
 import { createElement } from '../../../utils/dom.js';
-import { memberInitial } from '../helpers.js';
+import { memberHue, memberInitial } from '../../../shared/members.js';
 import { icon } from './icons.js';
 
 export const MAX_PARTY_MEMBERS = 4;
@@ -23,14 +23,6 @@ export function memberState(member, { phase, selfPreload = null } = {}) {
   }
   if (!member.connected) return { key: 'waiting', label: 'Offline', progress: null };
   return { key: 'idle', label: 'Wartet', progress: 0 };
-}
-
-// Each member keeps the same avatar colour, derived from their user id. The
-// golden angle spreads ids that differ in one character (u-2, u-3) far apart.
-export function memberHue(userId = '') {
-  let hash = 0;
-  for (const char of String(userId)) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return Math.round((hash * 137.508) % 360);
 }
 
 function avatarFor(member) {

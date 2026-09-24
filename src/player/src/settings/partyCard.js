@@ -1,5 +1,6 @@
 import { memberHue, memberStatus } from '../partyStatus.js';
 import { escapeHtml } from '../html.js';
+import { memberInitial } from '../../../public/js/shared/members.js';
 
 // Top of the settings flyout in a watch party: everyone's avatar with a
 // status dot, the own sync state and "Neu synchronisieren". Refreshed every
@@ -65,7 +66,7 @@ export function createPartyCard(watchParty) {
       const state = memberStatus(member);
       const name = member.username || 'Unbekannt';
       return `<span class="vanta-settings-party-avatar" data-state="${state.key}" style="--member-hue:${memberHue(member.userId)}"
-        title="${escapeHtml(`${name} · ${state.label}`)}" aria-label="${escapeHtml(`${name}: ${state.label}`)}">${escapeHtml(name.slice(0, 1).toUpperCase())}</span>`;
+        title="${escapeHtml(`${name} · ${state.label}`)}" aria-label="${escapeHtml(`${name}: ${state.label}`)}">${escapeHtml(memberInitial(member.username))}</span>`;
     }).join('');
   };
   update();

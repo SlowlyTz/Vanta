@@ -2,6 +2,7 @@ import { appStore } from '../../store/app.store.js';
 import { createElement } from '../../utils/dom.js';
 import { OWNER_SYNC_INTERVAL_MS, AUTO_SYNC_NOTIFICATION_COOLDOWN_MS } from './helpers.js';
 import { createDriftController, timelinePositionAt } from './driftController.js';
+import { PLAYBACK_STATES, playbackStateLabel } from '../../shared/partyStatus.js';
 
 export { timelinePositionAt };
 
@@ -12,7 +13,7 @@ export { timelinePositionAt };
 const LOCAL_TIMELINE_TTL_MS = 3_000;
 // How often the own player state goes to the others when nothing changes.
 export const STATUS_REPORT_MS = 2_000;
-const REPORTABLE_STATES = new Set(['sync', 'correcting', 'buffering', 'paused', 'blocked']);
+const REPORTABLE_STATES = new Set(PLAYBACK_STATES);
 
 export function timelineFromParty(party) {
   if (!party) return null;
@@ -25,21 +26,13 @@ export function timelineFromParty(party) {
   };
 }
 
+// [badge kind, text] for the own status; the words are the ones the member
+// list uses for everyone else (shared/partyStatus.js).
+const STATUS_KINDS = { sync: 'sync', paused: 'sync', correcting: 'preparing', buffering: 'preparing', blocked: 'lost' };
+
 export function syncStatusLabel({ status, driftMs }) {
-  switch (status) {
-    case 'sync':
-      return ['sync', `Synchron · ±${Math.round(Math.abs(driftMs || 0))} ms`];
-    case 'paused':
-      return ['sync', 'Pausiert · synchron'];
-    case 'correcting':
-      return ['preparing', 'Synchronisiert …'];
-    case 'buffering':
-      return ['preparing', 'Puffert …'];
-    case 'blocked':
-      return ['lost', 'Wiedergabe blockiert'];
-    default:
-      return ['preparing', 'Wird vorbereitet'];
-  }
+  const label = playbackStateLabel(status, status === 'sync' ? (driftMs ?? 0) : null);
+  return label ? [STATUS_KINDS[status], label] : ['preparing', 'Wird vorbereitet'];
 }
 
 function debugSyncEnabled() {

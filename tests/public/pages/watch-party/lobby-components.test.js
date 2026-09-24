@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { memberState, memberHue } from '../../../../src/public/js/pages/watch-party/lobby/roster.js';
-import { episodeLabel, resumeLabel, heroMeta } from '../../../../src/public/js/pages/watch-party/lobby/hero.js';
+import { memberState } from '../../../../src/public/js/pages/watch-party/lobby/roster.js';
+import { memberHue } from '../../../../src/public/js/shared/members.js';
+import { countdownMetaParts, formatPosition } from '../../../../src/public/js/pages/watch-party/helpers.js';
+import { episodeLabel } from '../../../../src/public/js/pages/watch-party/lobby/hero.js';
 
 describe('memberState', () => {
   it('zeigt in der Wartephase nur die Verbindung', () => {
@@ -37,12 +39,12 @@ describe('Hero-Texte', () => {
   it('beschriftet Folgen und Fortsetzen-Punkte', () => {
     expect(episodeLabel({ seasonNumber: 2, episodeNumber: 7 })).toBe('S2 · F7');
     expect(episodeLabel({ seasonNumber: null, episodeNumber: 7 })).toBeNull();
-    expect(resumeLabel(0)).toBe('Von Anfang an');
-    expect(resumeLabel(3_725_000)).toBe('Fortsetzen bei 1:02:05');
+    expect(formatPosition(0)).toBe('Von Anfang an');
+    expect(formatPosition(3_725_000)).toBe('Fortsetzen bei 1:02:05');
   });
 
   it('baut die Meta-Zeile nur aus vorhandenen Angaben', () => {
-    expect(heroMeta({ productionYear: 2024, runtimeTicks: 36_000_000_000 })).toEqual(['2024', '60 Min.']);
-    expect(heroMeta({})).toEqual([]);
+    expect(countdownMetaParts({ productionYear: 2024, runtimeTicks: 36_000_000_000 })).toEqual(['2024', '60 Min.']);
+    expect(countdownMetaParts({})).toEqual([]);
   });
 });
