@@ -13,7 +13,8 @@ export class PlaybackApiService {
   static async getPlaybackInfo(userId, token, itemId, {
     userAgent = '',
     forceHlsTranscoding = false,
-    maxStreamingBitrate = null
+    maxStreamingBitrate = null,
+    audioStreamIndex = null
   } = {}) {
     const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding });
 
@@ -29,6 +30,7 @@ export class PlaybackApiService {
       AutoOpenLiveStream: true,
       DeviceProfile: deviceProfile
     };
+    if (Number.isInteger(audioStreamIndex)) baseBody.AudioStreamIndex = audioStreamIndex;
 
     return jellyfinJson(`/Items/${itemId}/PlaybackInfo`, {
       token,

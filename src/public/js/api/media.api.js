@@ -107,6 +107,11 @@ export const MediaApi = {
     if (options.qualityProfile) {
       params.set('qualityProfile', options.qualityProfile);
     }
+    if (Number.isInteger(options.audioStreamIndex)) {
+      params.set('audioStreamIndex', String(options.audioStreamIndex));
+    } else if (options.audioLanguage) {
+      params.set('audioLanguage', options.audioLanguage);
+    }
     return request(`/api/media/playback/${id}?${params.toString()}`);
   },
 

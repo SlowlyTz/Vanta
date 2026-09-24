@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSubtitleController, pickSubtitleForLanguage } from '../../../src/player/src/subtitles.js';
 import { createQualityController } from '../../../src/player/src/quality.js';
+import { createAudioController } from '../../../src/player/src/audio.js';
 
 function fakeTextTracks() {
   const tracks = new Map();
@@ -101,5 +102,35 @@ describe('createQualityController', () => {
     expect(onSelect).not.toHaveBeenCalled();
     controller.select('720p');
     expect(onSelect).toHaveBeenCalledWith('720p');
+  });
+});
+
+describe('createAudioController', () => {
+  const tracks = [
+    { index: 1, language: 'eng', label: 'Englisch · 5.1', isDefault: true },
+    { index: 2, language: 'ger', label: 'Deutsch · 5.1', isDefault: false }
+  ];
+
+  it('zeigt die aktive Spur und meldet nur echte Wechsel', () => {
+    const onSelect = vi.fn();
+    const controller = createAudioController({ onSelect });
+    controller.update(tracks, 2);
+    expect(controller.getCurrentLabel()).toBe('Deutsch · 5.1');
+    expect(controller.getCurrentLanguage()).toBe('ger');
+    expect(controller.getOptions().find(option => option.selected).id).toBe(2);
+    expect(controller.hasChoices()).toBe(true);
+
+    controller.select(2);
+    expect(onSelect).not.toHaveBeenCalled();
+    controller.select(1);
+    expect(onSelect).toHaveBeenCalledWith(1);
+  });
+
+  it('nimmt ohne Angabe die Standardspur und kennt Einzelspuren', () => {
+    const controller = createAudioController({ onSelect: vi.fn() });
+    controller.update(tracks, null);
+    expect(controller.getCurrentIndex()).toBe(1);
+    controller.update([tracks[0]], 1);
+    expect(controller.hasChoices()).toBe(false);
   });
 });

@@ -70,6 +70,41 @@ describe('Playback Routes stream-limit integration', () => {
       });
     });
 
+    it('reicht eine gewählte Tonspur an Jellyfin und die Antwort weiter', async () => {
+      await request(createApp()).get('/item-1?audioStreamIndex=3');
+      expect(PlaybackApiService.getPlaybackInfo).toHaveBeenCalledTimes(1);
+      expect(PlaybackApiService.getPlaybackInfo.mock.calls[0][3]).toMatchObject({ audioStreamIndex: 3 });
+      expect(PlaybackService.resolvePlayback.mock.calls[0][2]).toMatchObject({ audioStreamIndex: 3 });
+    });
+
+    it('startet bei einer gemerkten Sprache gleich mit der passenden Tonspur', async () => {
+      PlaybackApiService.getPlaybackInfo.mockResolvedValue({
+        PlaySessionId: 'jf-session-1',
+        MediaSources: [{
+          DefaultAudioStreamIndex: 1,
+          MediaStreams: [
+            { Type: 'Audio', Index: 1, Language: 'eng', IsDefault: true },
+            { Type: 'Audio', Index: 2, Language: 'ger' }
+          ]
+        }]
+      });
+      await request(createApp()).get('/item-1?audioLanguage=ger');
+      expect(PlaybackApiService.getPlaybackInfo).toHaveBeenCalledTimes(2);
+      expect(PlaybackApiService.getPlaybackInfo.mock.calls[1][3]).toMatchObject({ audioStreamIndex: 2 });
+      expect(PlaybackService.resolvePlayback.mock.calls[0][2]).toMatchObject({ audioStreamIndex: 2 });
+    });
+
+    it('fragt nicht erneut, wenn die gemerkte Sprache schon die Standardspur ist oder fehlt', async () => {
+      PlaybackApiService.getPlaybackInfo.mockResolvedValue({
+        PlaySessionId: 'jf-session-1',
+        MediaSources: [{ DefaultAudioStreamIndex: 1, MediaStreams: [{ Type: 'Audio', Index: 1, Language: 'ger' }] }]
+      });
+      await request(createApp()).get('/item-1?audioLanguage=ger');
+      await request(createApp()).get('/item-1?audioLanguage=jpn');
+      await request(createApp()).get('/item-1?audioLanguage=<script>');
+      expect(PlaybackApiService.getPlaybackInfo).toHaveBeenCalledTimes(3);
+    });
+
     it('returns 429 with limit details when the stream limit is reached', async () => {
       const limitError = new Error('Stream-Limit erreicht. Maximal erlaubt: 1');
       limitError.status = 429;

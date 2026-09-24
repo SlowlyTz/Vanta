@@ -34,7 +34,13 @@ export async function createPlayerContext(options) {
     subtitle,
     poster,
     resumePosition,
-    resolvePlayback,
+    // Every stream request keeps the chosen audio track and quality, so a
+    // quality change or the HLS fallback does not drop back to the default
+    // track; before the first choice the remembered audio language is sent.
+    resolvePlayback: (mode, requestOptions = {}) => resolvePlayback(mode, {
+      ...context.streamSelection(),
+      ...requestOptions
+    }),
     reportPlayback,
     onBack,
     watchParty,
@@ -52,6 +58,16 @@ export async function createPlayerContext(options) {
     lastWheelSeekAt: 0,
     ownerEchoSuppressionDepth: 0,
     echoTokens: createEchoTokens()
+  };
+
+  context.streamSelection = () => {
+    const selection = {};
+    const audioIndex = context.audioMenu?.getCurrentIndex?.();
+    if (Number.isInteger(audioIndex) && context.sourceSwitch?.getCurrentPlayback?.()) selection.audioStreamIndex = audioIndex;
+    else if (context.preferences?.get().audioLanguage) selection.audioLanguage = context.preferences.get().audioLanguage;
+    const quality = context.qualityMenu?.getCurrentId?.();
+    if (quality && quality !== 'auto') selection.qualityProfile = quality;
+    return selection;
   };
 
   context.listen = (target, event, handler, listenerOptions) => {

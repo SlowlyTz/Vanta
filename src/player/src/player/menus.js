@@ -1,5 +1,6 @@
 import { createQualityController } from '../quality.js';
 import { createSubtitleController } from '../subtitles.js';
+import { createAudioController } from '../audio.js';
 import { formatEpisodeCode, findEpisode } from '../episodes.js';
 import { createSettingsFlyout } from '../settings/flyout.js';
 import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSubtitlesPage } from '../settings/pages.js';
@@ -20,6 +21,7 @@ const ROW_ICONS = {
   subtitles: '<svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>',
   quality: '<svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-8 12H9.5v-2h-2v2H6V9h1.5v2.5h2V9H11v6zm7-1a1 1 0 0 1-1 1h-4V9h4a1 1 0 0 1 1 1v4zm-3.5-.5h2v-3h-2v3z"/></svg>',
   episodes: '<svg viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm0 5h2v2H4v-2zm0 5h2v2H4v-2zm4-10h12v2H8V6zm0 5h12v2H8v-2zm0 5h12v2H8v-2z"/></svg>',
+  audio: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h3v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h3a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z"/></svg>',
   help: '<svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg>',
   participants: '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zM8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3zm8 0c-.31 0-.62.02-.91.06 1.18.84 1.91 1.95 1.91 3.19V18h4v-2c0-1.66-2.33-3-5-3z"/></svg>'
 };
@@ -78,6 +80,28 @@ export function bindMenus(context) {
       });
   context.qualityMenu = qualityMenu;
 
+  // Swaps the running stream for one with another audio track, at the same
+  // position (in a watch party the drift loop pulls it back onto the timeline).
+  context.audioMenu = createAudioController({
+    onSelect: async audioStreamIndex => {
+      if (!context.sourceSwitch.getCurrentPlayback()) return;
+      try {
+        const playback = await context.resolvePlayback('auto', { audioStreamIndex });
+        if (context.destroyed) return;
+        await context.sourceSwitch.switchTo(playback, {
+          position: context.sourceSwitch.captureState().position,
+          shouldPlay: context.sourceSwitch.getIntendsToPlay(),
+          label: 'Tonspur wird gewechselt …'
+        });
+        if (context.destroyed) return;
+        context.updateMenus(playback);
+        context.preferences?.update({ audioLanguage: context.audioMenu.getCurrentLanguage() });
+      } catch (error) {
+        if (!context.destroyed) context.showError(error.message);
+      }
+    }
+  });
+
   context.subtitleMenu = createSubtitleController({
     player,
     reporter,
@@ -119,6 +143,7 @@ export function bindMenus(context) {
 
   settings.setRows(() => [
     { page: 'subtitles', label: 'Untertitel', value: context.subtitleMenu.getCurrentLabel(), icon: ROW_ICONS.subtitles },
+    { page: 'audio', label: 'Tonspur', value: context.audioMenu.getCurrentLabel(), icon: ROW_ICONS.audio, hidden: !context.audioMenu.hasChoices() },
     { page: 'quality', label: 'Qualität', value: qualityMenu?.getCurrentLabel() || '', icon: ROW_ICONS.quality, hidden: !qualityMenu },
     { page: 'episodes', label: 'Folgen', value: currentEpisodeCode(), icon: ROW_ICONS.episodes, hidden: !episodeBrowser?.enabled },
     {
@@ -154,6 +179,15 @@ export function bindMenus(context) {
       onSelect: id => context.selectSubtitle(id),
       style: subtitleStyle(),
       onStyleChange: patch => context.applySubtitleStyle(patch)
+    }, flyout)
+  });
+
+  settings.registerPage('audio', {
+    title: 'Tonspur',
+    render: (body, flyout) => renderOptionsPage(body, {
+      options: context.audioMenu.getOptions(),
+      onSelect: index => context.audioMenu.select(index),
+      emptyLabel: 'Nur eine Tonspur'
     }, flyout)
   });
 
@@ -252,6 +286,7 @@ export function bindMenus(context) {
 
   context.updateMenus = (playback, options = {}) => {
     qualityMenu?.update(playback.quality?.profiles, playback.quality?.current);
+    context.audioMenu.update(playback.audioTracks, playback.audioStreamIndex);
     context.subtitleMenu.update(playback, {
       preserveSelection: options.preserveSubtitleSelection !== false,
       preferredLanguage: context.preferences?.get().subtitleLanguage || null

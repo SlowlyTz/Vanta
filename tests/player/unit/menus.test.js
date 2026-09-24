@@ -48,6 +48,8 @@ describe('bindMenus', () => {
     env.dom.settingsButton.click();
     const labels = [...env.root.querySelectorAll('.vanta-settings-row-label')].map(label => label.textContent);
     expect(labels).toEqual(['Untertitel', 'Qualität', 'Folgen', 'Hilfe']);
+    // A single audio track needs no row.
+    expect(env.root.querySelector('.vanta-settings-row[data-page="audio"]')).toBeNull();
   });
 
   it('zeigt in der Watch Party Sync-Status und Teilnehmer, aber keine Qualität', () => {
@@ -104,5 +106,37 @@ describe('bindMenus', () => {
     env.context.applySubtitleStyle({ size: 'large' });
     expect(env.root.dataset.subtitleSize).toBe('large');
     expect(update).toHaveBeenCalledWith({ subtitleSize: 'large', subtitleBackground: 'solid' });
+  });
+
+  it('zeigt die Tonspur-Zeile bei mehreren Spuren und wechselt den Stream an derselben Stelle', async () => {
+    env = setup();
+    const playback = {
+      quality: null,
+      subtitles: [],
+      audioStreamIndex: 1,
+      audioTracks: [{ index: 1, language: 'eng', label: 'Englisch', isDefault: true }, { index: 2, language: 'ger', label: 'Deutsch' }]
+    };
+    const switched = { ...playback, audioStreamIndex: 2 };
+    env.context.sourceSwitch = {
+      getCurrentPlayback: () => playback,
+      captureState: () => ({ position: 42 }),
+      getIntendsToPlay: () => true,
+      switchTo: vi.fn().mockResolvedValue({ success: true })
+    };
+    env.context.resolvePlayback = vi.fn().mockResolvedValue(switched);
+    env.context.preferences = { get: () => ({}), update: vi.fn() };
+    env.context.updateMenus(playback);
+
+    env.dom.settingsButton.click();
+    const row = env.root.querySelector('.vanta-settings-row[data-page="audio"]');
+    expect(row.getAttribute('aria-label')).toBe('Tonspur: Englisch');
+
+    env.context.audioMenu.select(2);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(env.context.resolvePlayback).toHaveBeenCalledWith('auto', { audioStreamIndex: 2 });
+    expect(env.context.sourceSwitch.switchTo).toHaveBeenCalledWith(switched, expect.objectContaining({ position: 42, shouldPlay: true }));
+    expect(env.context.preferences.update).toHaveBeenCalledWith({ audioLanguage: 'ger' });
   });
 });

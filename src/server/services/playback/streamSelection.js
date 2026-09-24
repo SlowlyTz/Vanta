@@ -1,8 +1,9 @@
 import { getSourceMetadata } from './mediaMetadata.js';
+import { buildAudioTracks } from './audioTracks.js';
 import { buildQualityProfiles, resolveQualityProfileId } from './qualityProfiles.js';
 
 export const streamSelectionMethods = {
-  resolvePlayback(playbackInfo, itemId, { forceHlsTranscoding = false, requestedQualityProfile = 'auto' } = {}) {
+  resolvePlayback(playbackInfo, itemId, { forceHlsTranscoding = false, requestedQualityProfile = 'auto', audioStreamIndex = null } = {}) {
     const sources = Array.isArray(playbackInfo?.MediaSources) ? playbackInfo.MediaSources : [];
 
     if (sources.length === 0) {
@@ -32,6 +33,7 @@ export const streamSelectionMethods = {
         playSessionId: playbackInfo?.PlaySessionId,
         playMethod: 'Transcode',
         requestedQualityProfile,
+        requestedAudioStreamIndex: audioStreamIndex,
         itemId
       });
     }
@@ -44,6 +46,7 @@ export const streamSelectionMethods = {
         playSessionId: playbackInfo?.PlaySessionId,
         playMethod: 'DirectStream',
         requestedQualityProfile,
+        requestedAudioStreamIndex: audioStreamIndex,
         itemId
       });
     }
@@ -56,6 +59,7 @@ export const streamSelectionMethods = {
         playSessionId: playbackInfo?.PlaySessionId,
         playMethod: 'Transcode',
         requestedQualityProfile,
+        requestedAudioStreamIndex: audioStreamIndex,
         itemId
       });
     }
@@ -70,6 +74,7 @@ export const streamSelectionMethods = {
         playSessionId: playbackInfo?.PlaySessionId,
         playMethod: source.SupportsDirectPlay ? 'DirectPlay' : 'DirectStream',
         requestedQualityProfile,
+        requestedAudioStreamIndex: audioStreamIndex,
         itemId
       });
     }
@@ -85,6 +90,7 @@ export const streamSelectionMethods = {
     playSessionId = null,
     playMethod = null,
     requestedQualityProfile = 'auto',
+    requestedAudioStreamIndex = null,
     itemId = null
   }) {
     const normalizedPath = this.normalizeJellyfinPath(targetPath, {
@@ -92,7 +98,10 @@ export const streamSelectionMethods = {
     });
     const metadata = getSourceMetadata(source);
     const resolvedPlayMethod = playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay');
-    const audioStreamIndex = source?.DefaultAudioStreamIndex ?? null;
+    const audioStreamIndex = Number.isInteger(requestedAudioStreamIndex)
+      ? requestedAudioStreamIndex
+      : source?.DefaultAudioStreamIndex ?? null;
+    const audioTracks = buildAudioTracks(source);
     const subtitles = this.buildSubtitleTracks(source);
     const qualityProfiles = buildQualityProfiles(source, forceHlsTranscoding);
     const currentProfileId = resolveQualityProfileId(
@@ -110,6 +119,7 @@ export const streamSelectionMethods = {
       playSessionId: playSessionId || null,
       playMethod: resolvedPlayMethod,
       audioStreamIndex,
+      audioTracks,
       subtitleStreamIndex: null,
       subtitles,
       container: metadata.container || null,

@@ -6,6 +6,7 @@ import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../.
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js';
 import { isValidQualityProfile, getQualityConstraints } from './playback.validation.js';
+import { pickAudioStreamIndex } from '../../services/playback/audioTracks.js';
 
 const router = express.Router();
 const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended']);
@@ -120,6 +121,11 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const requestedMode = String(req.query.mode || 'auto').toLowerCase();
   const requestedQualityProfile = String(req.query.qualityProfile || 'auto').toLowerCase();
+  const audioIndexParam = req.query.audioStreamIndex;
+  const requestedAudioStreamIndex = audioIndexParam !== undefined && /^\d+$/.test(String(audioIndexParam)) ? Number(audioIndexParam) : null;
+  const requestedAudioLanguage = typeof req.query.audioLanguage === 'string' && /^[a-z]{2,3}$/i.test(req.query.audioLanguage)
+    ? req.query.audioLanguage.toLowerCase()
+    : null;
 
   if (!['auto', 'hls'].includes(requestedMode)) {
     return res.status(400).json({ error: 'Unsupported playback mode' });
@@ -138,20 +144,31 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
 
     const qualityConstraints = getQualityConstraints(requestedQualityProfile);
     const userAgent = req.headers['user-agent'] || '';
-    const playbackInfo = await PlaybackApiService.getPlaybackInfo(
-      userId,
-      accessToken,
-      id,
-      {
-        userAgent,
-        forceHlsTranscoding: shouldForceHls,
-        maxStreamingBitrate: qualityConstraints?.maxStreamingBitrate ?? null
+    const infoOptions = {
+      userAgent,
+      forceHlsTranscoding: shouldForceHls,
+      maxStreamingBitrate: qualityConstraints?.maxStreamingBitrate ?? null,
+      audioStreamIndex: requestedAudioStreamIndex
+    };
+    let playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, infoOptions);
+    let audioStreamIndex = requestedAudioStreamIndex;
+
+    // A remembered language (no explicit track yet): if this source has a
+    // track in it other than its default, ask again with that track, so the
+    // stream starts in the right language instead of switching after start.
+    if (audioStreamIndex === null && requestedAudioLanguage) {
+      const source = playbackInfo?.MediaSources?.[0];
+      const preferred = pickAudioStreamIndex(source, requestedAudioLanguage);
+      if (preferred !== null && preferred !== source?.DefaultAudioStreamIndex) {
+        playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, { ...infoOptions, audioStreamIndex: preferred });
+        audioStreamIndex = preferred;
       }
-    );
+    }
 
     const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
       forceHlsTranscoding: shouldForceHls,
-      requestedQualityProfile
+      requestedQualityProfile,
+      audioStreamIndex
     });
 
     try {

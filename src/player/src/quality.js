@@ -49,6 +49,7 @@ export function createQualityController({ onSelect }) {
       label: formatProfileLabel(profile),
       selected: profile.id === currentId
     })),
+    getCurrentId: () => currentId,
     getCurrentLabel: () => {
       const current = profiles.find(profile => profile.id === currentId);
       return current ? formatProfileLabel(current) : 'Auto';
