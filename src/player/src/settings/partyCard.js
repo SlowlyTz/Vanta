@@ -27,6 +27,27 @@ export function createPartyCard(watchParty) {
   const avatars = element.querySelector('.vanta-settings-party-avatars');
   const sync = element.querySelector('.vanta-settings-sync');
 
+  // "Wait for buffering": a switch for the host, a plain note for everyone else.
+  const waitRow = document.createElement('div');
+  waitRow.className = 'vanta-settings-toggle-row';
+  const waitText = document.createElement('span');
+  waitText.className = 'vanta-settings-toggle-text';
+  waitText.innerHTML = '<strong>Auf Puffernde warten</strong><small></small>';
+  waitRow.appendChild(waitText);
+  const waitSwitch = document.createElement('button');
+  waitSwitch.type = 'button';
+  waitSwitch.className = 'vanta-settings-switch vanta-settings-focusable';
+  waitSwitch.setAttribute('role', 'switch');
+  waitSwitch.setAttribute('aria-label', 'Auf Puffernde warten');
+  waitSwitch.innerHTML = '<span></span>';
+  waitSwitch.addEventListener('click', () => {
+    const next = waitSwitch.getAttribute('aria-checked') !== 'true';
+    waitSwitch.setAttribute('aria-checked', next ? 'true' : 'false');
+    watchParty.onSetWaitForBuffering?.(next);
+  });
+  waitRow.appendChild(waitSwitch);
+  element.appendChild(waitRow);
+
   if (watchParty.onResync) {
     const resync = document.createElement('button');
     resync.type = 'button';
@@ -37,6 +58,13 @@ export function createPartyCard(watchParty) {
   }
 
   const update = () => {
+    const waitEnabled = watchParty.waitForBuffering !== false;
+    waitSwitch.hidden = !watchParty.isHost;
+    waitSwitch.setAttribute('aria-checked', waitEnabled ? 'true' : 'false');
+    waitText.querySelector('small').textContent = watchParty.isHost
+      ? 'Pausiert für alle, wenn jemand hängt.'
+      : `${waitEnabled ? 'An' : 'Aus'} · nur der Gastgeber kann das ändern.`;
+
     const status = watchParty.getSyncStatus?.() || { kind: 'preparing', label: 'Wird vorbereitet' };
     sync.dataset.status = status.kind;
     sync.querySelector('.vanta-settings-sync-label').textContent = status.label;

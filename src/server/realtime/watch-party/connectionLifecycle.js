@@ -65,6 +65,7 @@ export const connectionLifecycleMethods = {
       WatchPartyService.setConnected({ partyId, userId: user.userId, connected: false });
       const currentParty = WatchPartyService.parties.get(partyId);
       if (!currentParty) return;
+      if (currentParty.waiting?.userIds.includes(user.userId)) this.finishWaitingFor(partyId, user.userId);
 
       if (currentParty.ownerUserId === user.userId && currentParty.status !== 'ended') {
         this.scheduleOwnerDisconnectEnd(partyId, user.userId);

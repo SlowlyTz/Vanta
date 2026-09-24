@@ -5,6 +5,7 @@ import { connectionRegistryMethods } from './watch-party/connectionRegistry.js';
 import { countdownMethods } from './watch-party/countdowns.js';
 import { messageHandlerMethods } from './watch-party/messageHandlers.js';
 import { connectionLifecycleMethods } from './watch-party/connectionLifecycle.js';
+import { waitingMethods } from './watch-party/waiting.js';
 
 export class WatchPartySocketHub {
   constructor() {
@@ -13,6 +14,7 @@ export class WatchPartySocketHub {
     this.ownerDisconnectTimers = new Map(); // partyId -> Timeout
     this.countdownTimers = new Map(); // partyId -> Timeout
     this.lastSeekNotificationAt = new Map(); // partyId -> timestamp
+    this.initWaiting();
   }
 
   attach(server) {
@@ -56,7 +58,8 @@ Object.assign(
   connectionRegistryMethods,
   countdownMethods,
   messageHandlerMethods,
-  connectionLifecycleMethods
+  connectionLifecycleMethods,
+  waitingMethods
 );
 
 export const watchPartySocketHub = new WatchPartySocketHub();

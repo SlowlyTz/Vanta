@@ -42,6 +42,13 @@ export function serializeParty(party, currentUserId = null) {
     finalPositionMs: party.finalPositionMs,
     resumeFrom: party.resumeFrom || null,
     timeline: serializeTimeline(party),
+    waitForBuffering: party.waitForBuffering !== false,
+    waiting: party.waiting
+      ? {
+          since: party.waiting.since,
+          members: party.waiting.userIds.map(userId => ({ userId, username: party.members.get(userId)?.username || 'Jemand' }))
+        }
+      : null,
     syncLeaderUserId: getSyncLeaderUserId(party),
     members,
     currentUserRole: currentUserId ? (party.members.get(currentUserId)?.role || null) : null

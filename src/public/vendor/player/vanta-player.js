@@ -1574,25 +1574,34 @@ function pn(e) {
 function mn(e) {
 	let t = document.createElement("div");
 	t.className = "vanta-settings-party", t.innerHTML = "\n    <div class=\"vanta-settings-party-head\">\n      <span class=\"vanta-settings-party-title\">Watch Party</span>\n      <span class=\"vanta-settings-party-avatars\"></span>\n    </div>\n    <div class=\"vanta-settings-sync\">\n      <span class=\"vanta-settings-sync-dot\" aria-hidden=\"true\"></span>\n      <span class=\"vanta-settings-sync-label\" role=\"status\"></span>\n    </div>";
-	let n = t.querySelector(".vanta-settings-party-avatars"), r = t.querySelector(".vanta-settings-sync");
-	if (e.onResync) {
+	let n = t.querySelector(".vanta-settings-party-avatars"), r = t.querySelector(".vanta-settings-sync"), i = document.createElement("div");
+	i.className = "vanta-settings-toggle-row";
+	let a = document.createElement("span");
+	a.className = "vanta-settings-toggle-text", a.innerHTML = "<strong>Auf Puffernde warten</strong><small></small>", i.appendChild(a);
+	let o = document.createElement("button");
+	if (o.type = "button", o.className = "vanta-settings-switch vanta-settings-focusable", o.setAttribute("role", "switch"), o.setAttribute("aria-label", "Auf Puffernde warten"), o.innerHTML = "<span></span>", o.addEventListener("click", () => {
+		let t = o.getAttribute("aria-checked") !== "true";
+		o.setAttribute("aria-checked", t ? "true" : "false"), e.onSetWaitForBuffering?.(t);
+	}), i.appendChild(o), t.appendChild(i), e.onResync) {
 		let t = document.createElement("button");
 		t.type = "button", t.className = "vanta-settings-sync-button vanta-settings-focusable", t.textContent = "Neu synchronisieren", t.addEventListener("click", () => e.onResync()), r.appendChild(t);
 	}
-	let i = () => {
-		let t = e.getSyncStatus?.() || {
+	let s = () => {
+		let t = e.waitForBuffering !== !1;
+		o.hidden = !e.isHost, o.setAttribute("aria-checked", t ? "true" : "false"), a.querySelector("small").textContent = e.isHost ? "Pausiert für alle, wenn jemand hängt." : `${t ? "An" : "Aus"} · nur der Gastgeber kann das ändern.`;
+		let i = e.getSyncStatus?.() || {
 			kind: "preparing",
 			label: "Wird vorbereitet"
 		};
-		r.dataset.status = t.kind, r.querySelector(".vanta-settings-sync-label").textContent = t.label, n.innerHTML = (e.participants || []).map((e) => {
+		r.dataset.status = i.kind, r.querySelector(".vanta-settings-sync-label").textContent = i.label, n.innerHTML = (e.participants || []).map((e) => {
 			let t = dn(e), n = e.username || "Unbekannt";
 			return `<span class="vanta-settings-party-avatar" data-state="${t.key}" style="--member-hue:${fn(e.userId)}"
         title="${pn(`${n} · ${t.label}`)}" aria-label="${pn(`${n}: ${t.label}`)}">${pn(n.slice(0, 1).toUpperCase())}</span>`;
 		}).join("");
 	};
-	return i(), {
+	return s(), {
 		element: t,
-		update: i
+		update: s
 	};
 }
 //#endregion
@@ -21223,6 +21232,7 @@ var Am = [
 	"Admins steuern Wiedergabe, Pause und Spulen für alle. Zuschauer sehen oben „Admin steuert“.",
 	"Springt jemand 10 Sekunden, zeigen alle Bildschirme eine Blase mit dem Namen.",
 	"Im Zahnrad-Menü siehst du, wer synchron ist, und kannst dich mit „Neu synchronisieren“ zurückholen.",
+	"Hängt jemand beim Laden, pausiert die Party, bis alle wieder bereit sind. Der Gastgeber kann das im Zahnrad-Menü abschalten.",
 	"Lautstärke, Untertitel, Tonspur und Vollbild stellt jeder für sich ein."
 ];
 function jm({ party: e = !1, viewer: t = !1 } = {}) {

@@ -33,8 +33,13 @@ export const messageHandlerMethods = {
         case 'PLAYER_STATUS': {
           const party = WatchPartyService.setPlaybackStatus({ partyId, userId, state: message.state, driftMs: message.driftMs });
           this.broadcastParty(partyId, { type: 'PRESENCE', members: WatchPartyService.serializePresence(party) });
+          this.trackBuffering?.({ partyId, userId, state: message.state, bufferedMs: message.bufferedMs });
           return;
         }
+
+        case 'OWNER_SET_WAIT_FOR_BUFFERING':
+          this.setWaitForBuffering({ partyId, userId, enabled: message.enabled });
+          return;
 
         case 'READY': {
           const party = WatchPartyService.setReady({ partyId, userId, ready: Boolean(message.ready) });
@@ -219,6 +224,11 @@ export const messageHandlerMethods = {
     if (!isPlaybackControlAllowed(party)) {
       if (message.type === 'OWNER_SYNC') return;
       throw ownerError('Die Watch Party wurde noch nicht gestartet');
+    }
+
+    // A hand on play or pause ends a wait for a buffering member.
+    if (party.waiting && (message.type === 'OWNER_PLAY' || message.type === 'OWNER_PAUSE')) {
+      this.stopWaiting?.(partyId);
     }
 
     const now = Date.now();

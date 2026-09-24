@@ -93,6 +93,9 @@ export function bindPlayerMount(ctx) {
             label: ctx.syncStatusBadge.textContent
           }),
           onResync: () => ctx.drift.resync(),
+          isHost: ctx.isOwner(),
+          waitForBuffering: ctx.party.waitForBuffering !== false,
+          onSetWaitForBuffering: enabled => ctx.socket?.sendJson({ type: 'OWNER_SET_WAIT_FOR_BUFFERING', enabled: Boolean(enabled) }),
           onOwnerPlay: ownerPositionMs => ctx.sendOwnerControl('OWNER_PLAY', ownerPositionMs),
           onOwnerPause: ownerPositionMs => ctx.sendOwnerControl('OWNER_PAUSE', ownerPositionMs),
           onOwnerSeek: (ownerPositionMs, { step } = {}) => ctx.sendOwnerControl('OWNER_SEEK', ownerPositionMs, step ? { step } : {}),

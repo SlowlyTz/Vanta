@@ -62,8 +62,24 @@ export function bindRendering(ctx) {
     ctx.renderReadyState();
   };
 
+  ctx.renderWaiting = () => {
+    const waiting = ctx.party?.waiting;
+    ctx.waitingPill.hidden = !waiting;
+    if (!waiting) return;
+    const members = waiting.members || [];
+    const selfWaiting = members.some(member => member.userId === ctx.currentUser?.id);
+    const others = members.filter(member => member.userId !== ctx.currentUser?.id).map(member => member.username);
+    ctx.waitingTitle.textContent = selfWaiting && !others.length
+      ? 'Alle warten auf dich – dein Video lädt …'
+      : `Warte auf ${others.join(', ') || 'jemanden'} …`;
+    ctx.waitingHint.textContent = ctx.isOwner()
+      ? 'Du kannst das im Zahnrad-Menü unter Watch Party abschalten.'
+      : 'Der Gastgeber kann das im Zahnrad-Menü unter Watch Party abschalten.';
+  };
+
   ctx.renderParty = () => {
     if (!ctx.party) return;
+    ctx.renderWaiting();
     ctx.renderHero();
     ctx.renderMembers();
     ctx.renderActions();
@@ -78,9 +94,13 @@ export function bindRendering(ctx) {
     ctx.watchPartyConfig.canControl = canControl;
     ctx.watchPartyConfig.participants = ctx.party.members;
     ctx.watchPartyConfig.currentUserId = ctx.currentUser?.id;
+    ctx.watchPartyConfig.isHost = ctx.isOwner();
+    ctx.watchPartyConfig.waitForBuffering = ctx.party.waitForBuffering !== false;
     ctx.controller?.updateWatchPartyAccess?.({
       isOwner: canControl,
       canControl,
+      isHost: ctx.isOwner(),
+      waitForBuffering: ctx.party.waitForBuffering !== false,
       participants: ctx.party.members,
       currentUserId: ctx.currentUser?.id
     });

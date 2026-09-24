@@ -117,6 +117,14 @@ export function createWatchPartyContext({ partyId }) {
   ctx.endedState = createElement('div', { className: 'watch-party-ended-state', hidden: true });
   ctx.errorState = createElement('div', { className: 'watch-party-error', hidden: true });
 
+  // "Waiting for …" while the party pauses for a buffering member.
+  ctx.waitingTitle = createElement('strong', { className: 'watch-party-waiting-title' });
+  ctx.waitingHint = createElement('span', { className: 'watch-party-waiting-hint' });
+  ctx.waitingPill = createElement('div', { className: 'watch-party-waiting', role: 'status', 'aria-live': 'polite', hidden: true },
+    createElement('span', { className: 'watch-party-waiting-spinner', 'aria-hidden': 'true' }),
+    createElement('span', { className: 'watch-party-waiting-text' }, ctx.waitingTitle, ctx.waitingHint)
+  );
+
   ctx.notificationStack = createElement('div', {
     className: 'watch-party-notifications',
     role: 'status',
@@ -175,6 +183,7 @@ export function createWatchPartyContext({ partyId }) {
   container.appendChild(ctx.autoplayOverlay);
   container.appendChild(ctx.endedState);
   container.appendChild(ctx.errorState);
+  container.appendChild(ctx.waitingPill);
   container.appendChild(ctx.notificationStack);
 
   return ctx;

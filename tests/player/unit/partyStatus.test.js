@@ -36,3 +36,19 @@ describe('createPartyCard', () => {
     expect(card.element.querySelectorAll('.vanta-settings-party-avatar')[1].dataset.state).toBe('sync');
   });
 });
+
+describe('createPartyCard · Warten', () => {
+  it('gibt nur dem Gastgeber einen Schalter und meldet Änderungen', () => {
+    const onSetWaitForBuffering = vi.fn();
+    const host = createPartyCard({ participants: [], isHost: true, waitForBuffering: true, onSetWaitForBuffering });
+    const toggle = host.element.querySelector('.vanta-settings-switch');
+    expect(toggle.hidden).toBe(false);
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    toggle.click();
+    expect(onSetWaitForBuffering).toHaveBeenCalledWith(false);
+
+    const guest = createPartyCard({ participants: [], isHost: false, waitForBuffering: false });
+    expect(guest.element.querySelector('.vanta-settings-switch').hidden).toBe(true);
+    expect(guest.element.textContent).toContain('Aus · nur der Gastgeber kann das ändern.');
+  });
+});

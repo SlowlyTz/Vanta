@@ -103,10 +103,13 @@ export function bindSync(ctx) {
     const now = Date.now();
     if (status.status === lastStatusReport.state && now - lastStatusReport.at < STATUS_REPORT_MS) return;
     lastStatusReport = { state: status.status, at: now };
+    const bufferedSeconds = Number(ctx.controller?.getBufferedAhead?.());
     ctx.socket?.sendJson({
       type: 'PLAYER_STATUS',
       state: status.status,
-      driftMs: Number.isFinite(status.driftMs) ? Math.round(status.driftMs) : null
+      driftMs: Number.isFinite(status.driftMs) ? Math.round(status.driftMs) : null,
+      // Lets the server tell when a member it waits for has enough video again.
+      bufferedMs: Number.isFinite(bufferedSeconds) ? Math.round(bufferedSeconds * 1000) : null
     });
   };
 

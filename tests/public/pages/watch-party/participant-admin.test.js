@@ -178,12 +178,12 @@ describe('WatchPartyPage · Admin-Rollen', () => {
       party: makeParty({ status: 'playing', positionMs: 0, members: promotedMembers })
     });
 
-    expect(fakeController.updateWatchPartyAccess).toHaveBeenCalledWith({
+    expect(fakeController.updateWatchPartyAccess).toHaveBeenCalledWith(expect.objectContaining({
       isOwner: true,
       canControl: true,
       participants: promotedMembers,
       currentUserId: 'viewer-1'
-    });
+    }));
   });
 
   it('BANNED_FROM_PARTY zerstört den Player, zeigt einen Toast und navigiert nach Hause', async () => {

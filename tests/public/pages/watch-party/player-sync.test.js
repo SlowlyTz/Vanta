@@ -330,4 +330,33 @@ describe('WatchPartyPage · Player Sync', () => {
     const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
     expect(watchParty.participants.find(member => member.userId === 'owner-1').playbackState).toBe('buffering');
   });
+
+  it('zeigt die Warte-Pille mit Namen und gibt dem Gastgeber den Schalter', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'playing', positionMs: 5000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const pill = container.querySelector('.watch-party-waiting');
+    expect(pill.hidden).toBe(true);
+
+    capturedOnMessage({
+      type: 'PARTY_UPDATED',
+      party: makeParty({ status: 'paused', positionMs: 5000, waitForBuffering: true, waiting: { since: Date.now(), members: [{ userId: 'viewer-1', username: 'Bob' }] } })
+    });
+    expect(pill.hidden).toBe(false);
+    expect(pill.textContent).toContain('Warte auf Bob …');
+    expect(pill.textContent).toContain('Du kannst das im Zahnrad-Menü unter Watch Party abschalten.');
+
+    const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
+    expect(watchParty.isHost).toBe(true);
+    watchParty.onSetWaitForBuffering(false);
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'OWNER_SET_WAIT_FOR_BUFFERING', enabled: false });
+
+    capturedOnMessage({ type: 'PARTY_UPDATED', party: makeParty({ status: 'playing', positionMs: 5000, waiting: null }) });
+    expect(pill.hidden).toBe(true);
+  });
 });
