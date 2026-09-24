@@ -5,16 +5,7 @@ import { formatEpisodeCode, findEpisode } from '../episodes.js';
 import { createSettingsFlyout } from '../settings/flyout.js';
 import { createPartyCard } from '../settings/partyCard.js';
 import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSubtitlesPage } from '../settings/pages.js';
-import {
-  findNextEpisode,
-  shouldShowNextEpisodePrompt,
-  computeNextEpisodeTimings,
-  canStartNextEpisode,
-  createNextEpisodeGate
-} from '../nextEpisode.js';
-import { createNextEpisodePrompt } from '../nextEpisodePrompt.js';
-import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
-import { findOutro } from '../segments.js';
+import { bindNextEpisode } from './nextEpisodeBinding.js';
 import { MAX_PARTY_MEMBERS } from '../../../public/js/shared/watchParty.js';
 
 const SYNC_REFRESH_MS = 1_000;
@@ -217,51 +208,7 @@ export function bindMenus(context) {
     });
   }
 
-  const nextEpisodeGate = createNextEpisodeGate();
-
-  context.nextEpisodePrompt = episodeBrowser?.enabled
-    ? createNextEpisodePrompt({
-        root: shell,
-        onConfirm: (next, { auto = false } = {}) => {
-          episodeBrowser.onNextEpisode?.(next, { auto });
-        },
-        onDismiss: next => {
-          nextEpisodeGate.markDismissed(episodeBrowser.context?.currentEpisodeId);
-          // In a watch party an admin's cancel closes the prompt for everyone.
-          if (canStartNextEpisode(watchParty)) episodeBrowser.onDismissNextEpisode?.(next);
-        }
-      })
-    : null;
-
-  // The party cancelled the prompt (an admin pressed "Abbrechen").
-  context.cancelNextEpisode = () => {
-    nextEpisodeGate.markDismissed(episodeBrowser?.context?.currentEpisodeId);
-    context.nextEpisodePrompt?.hide();
-  };
-
-  context.maybeShowNextEpisodePrompt = () => {
-    if (!context.nextEpisodePrompt || !episodeBrowser?.context) return;
-
-    const currentEpisodeId = episodeBrowser.context.currentEpisodeId;
-    if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
-    if (watchParty?.enabled && watchParty.isNextEpisodeCancelled?.()) return;
-
-    const duration = context.knownDuration || player.duration;
-    const outro = findOutro(context.segments);
-    if (!shouldShowNextEpisodePrompt({ currentTime: player.currentTime, duration, outro })) return;
-
-    const next = findNextEpisode(episodeBrowser.context, currentEpisodeId);
-    if (!next) return;
-
-    nextEpisodeGate.markShown(currentEpisodeId);
-    const controls = canStartNextEpisode(watchParty);
-    context.nextEpisodePrompt.show(next, {
-      controls,
-      message: controls ? null : NEXT_EPISODE_VIEWER_MESSAGE,
-      skipAt: computeNextEpisodeTimings({ duration, outro })?.skipAt,
-      getCurrentTime: () => player.currentTime
-    });
-  };
+  bindNextEpisode(context);
 
   // A choice by the viewer is remembered (by language, so the next episode
   // picks the matching track); automatic selections are not.
