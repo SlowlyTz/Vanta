@@ -7,9 +7,7 @@ const VALID_STATES = new Set([
   'ready-playing-idle',
   'seeking',
   'buffering',
-  'switching-source',
-  'error',
-  'destroyed'
+  'switching-source'
 ]);
 
 export function createPlayerUi(root, options = {}) {

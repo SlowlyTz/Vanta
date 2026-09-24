@@ -56,7 +56,6 @@ export function startSeekTimer(state) {
 export async function performSeek(state, targetPosition, { version } = {}) {
   const { player } = state;
   const target = clampSeekTarget(targetPosition, player, END_EPSILON_SECONDS);
-  state.lastSeekTarget = target;
   state.lastRequestedPosition = target;
   const currentSeek = ++state.seekVersion;
 

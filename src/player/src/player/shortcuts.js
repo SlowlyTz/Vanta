@@ -100,7 +100,6 @@ export function bindShortcuts(context) {
     }
   };
 
-  context.runShortcut = run;
 
   listen(document, 'keydown', event => {
     if (event.defaultPrevented || context.destroyed) return;

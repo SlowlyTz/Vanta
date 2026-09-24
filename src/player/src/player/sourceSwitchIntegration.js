@@ -18,8 +18,7 @@ export function bindSourceSwitchIntegration(context) {
         if (!visible && context.inlineLoading?.isActive()) context.inlineLoading.check();
         else context.setInlineLoading(visible);
       },
-      showError: context.showError,
-      hideError: context.hideError
+      showError: context.showError
     },
     onBeforeSourceChange: () => {
       exitPictureInPicture().catch(() => {});
@@ -38,7 +37,6 @@ export function bindSourceSwitchIntegration(context) {
     (async () => {
       try {
         await enterSmartphoneFullscreen({ root, onError: () => {} });
-        context.orientationLocked = true;
         if (!isLandscape()) {
           context.showOrientationGate();
         }

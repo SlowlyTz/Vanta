@@ -35,7 +35,6 @@ export function createSourceSwitch(options) {
 
     state.switching = true;
     clearSeekTimer(state);
-    state.hideError();
     state.setLoading(true, nextState.label);
     state.setInlineLoading(false);
     state.ui.setState(loadOptions.isBoot ? 'booting' : 'switching-source');
@@ -87,7 +86,6 @@ export function createSourceSwitch(options) {
     const version = state.loadVersion;
     state.switching = true;
     clearSeekTimer(state);
-    state.hideError();
     if (!quiet) {
       state.setLoading(true, 'Wiedergabe wird gestartet …');
       state.ui.setState('booting');

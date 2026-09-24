@@ -8,8 +8,7 @@ export function createSourceSwitchState({
     setLoading,
     setLoadingStatus,
     setInlineLoading,
-    showError,
-    hideError
+    showError
   },
   onBeforeSourceChange,
   shouldPreventPlayback
@@ -22,7 +21,6 @@ export function createSourceSwitchState({
     setLoadingStatus,
     setInlineLoading,
     showError,
-    hideError,
     onBeforeSourceChange,
     shouldPreventPlayback,
     currentPlayback: null,
@@ -32,8 +30,7 @@ export function createSourceSwitchState({
     intendsToPlay: true,
     autoplayBlocked: false,
     seekTimer: null,
-    seekVersion: 0,
-    lastSeekTarget: 0
+    seekVersion: 0
   };
 
   state.isCurrentLoad = version => version === state.loadVersion;

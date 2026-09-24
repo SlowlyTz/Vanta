@@ -68,8 +68,8 @@ describe('createPlayerUi', () => {
     expect(ui.getState()).toBe('ready-paused');
     expect(root.setAttribute).toHaveBeenLastCalledWith('data-ui-state', 'ready-paused');
 
-    ui.setState('error');
-    expect(ui.getState()).toBe('error');
+    ui.setState('buffering');
+    expect(ui.getState()).toBe('buffering');
 
     ui.destroy();
   });

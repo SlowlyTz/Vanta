@@ -86,7 +86,6 @@ export function bindPlayerMount(ctx) {
           currentUserId: ctx.currentUser?.id,
           participants: ctx.party.members,
           disableQualityMenu: true,
-          serverNow: () => ctx.clock.now(),
           getSyncStatus: () => ({
             kind: ctx.syncStatusBadge.dataset.status,
             label: ctx.syncStatusBadge.textContent

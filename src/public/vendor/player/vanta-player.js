@@ -310,9 +310,7 @@ var je = 3500, Me = new Set([
 	"ready-playing-idle",
 	"seeking",
 	"buffering",
-	"switching-source",
-	"error",
-	"destroyed"
+	"switching-source"
 ]);
 function Ne(e, t = {}) {
 	let { idleTimeoutMs: n = je } = t, r = "booting", i = null, a = !1, o = /* @__PURE__ */ new Set(), s = () => {
@@ -568,7 +566,6 @@ function Ke(e, { title: t, subtitle: n, poster: r }) {
 		},
 		settingsButton: e.querySelector(".vanta-player-settings-button"),
 		volumeBubble: e.querySelector(".vanta-player-volume-bubble"),
-		partyPill: e.querySelector(".vanta-player-party-pill"),
 		backButton: e.querySelector(".vanta-player-back"),
 		loading: e.querySelector(".vanta-player-loading"),
 		loadingStatus: e.querySelector(".vanta-player-loading-status"),
@@ -619,7 +616,6 @@ async function Je(e) {
 		destroyed: !1,
 		fallbackAttempted: !1,
 		knownDuration: 0,
-		lastWheelSeekAt: 0,
 		ownerEchoSuppressionDepth: 0,
 		echoTokens: Re()
 	};
@@ -672,7 +668,7 @@ function Ye(e) {
 		try {
 			n ? (Te(t) ? we(t) : Ce(t), o()) : Oe() ? await Ae() : await ke(i);
 		} catch {}
-	}, e.shell = i, e.fullscreenButton = a, e.updateFullscreenIcon = o, e;
+	}, e.updateFullscreenIcon = o, e;
 }
 //#endregion
 //#region src/player/src/player/inlineLoading.js
@@ -891,7 +887,7 @@ function bt(e) {
 		player: r,
 		itemId: a,
 		report: i
-	}), e.isPhone = dt(), e.phoneOrientationActive = e.isPhone, e.orientationLocked = !1, e.gateActive = !1;
+	}), e.isPhone = dt(), e.phoneOrientationActive = e.isPhone, e.gateActive = !1;
 	let s = _t({
 		root: t,
 		onEnter: async () => {
@@ -899,7 +895,7 @@ function bt(e) {
 				n && Ce(t), await vt({
 					root: t,
 					onError: () => {}
-				}), e.orientationLocked = !0, ft() && e.hideOrientationGate();
+				}), ft() && e.hideOrientationGate();
 			} catch {}
 		}
 	});
@@ -921,7 +917,7 @@ function bt(e) {
 		isSwitching: () => e.sourceSwitch?.isSwitching() === !0,
 		setVisible: e.setInlineLoading,
 		setSlow: (t) => e.loadIndicator?.setSlow(t)
-	}), e.disposers.push(() => e.inlineLoading.end()), e.hideError = () => {}, e.showError = () => {
+	}), e.disposers.push(() => e.inlineLoading.end()), e.showError = () => {
 		e.sourceSwitch.clearSeekTimer(), e.inlineLoading.end(), e.setInlineLoading(!1), e.ui.setState("buffering"), e.setLoading(!0, "Stream wird geladen …");
 	}, e;
 }
@@ -1144,8 +1140,8 @@ function Lt(e, t, n, r = []) {
 }
 //#endregion
 //#region src/player/src/sourceSwitch/state.js
-function Rt({ player: e, reporter: t, ui: n, callbacks: { setLoading: r, setLoadingStatus: i, setInlineLoading: a, showError: o, hideError: s }, onBeforeSourceChange: c, shouldPreventPlayback: l }) {
-	let u = {
+function Rt({ player: e, reporter: t, ui: n, callbacks: { setLoading: r, setLoadingStatus: i, setInlineLoading: a, showError: o }, onBeforeSourceChange: s, shouldPreventPlayback: c }) {
+	let l = {
 		player: e,
 		reporter: t,
 		ui: n,
@@ -1153,9 +1149,8 @@ function Rt({ player: e, reporter: t, ui: n, callbacks: { setLoading: r, setLoad
 		setLoadingStatus: i,
 		setInlineLoading: a,
 		showError: o,
-		hideError: s,
-		onBeforeSourceChange: c,
-		shouldPreventPlayback: l,
+		onBeforeSourceChange: s,
+		shouldPreventPlayback: c,
 		currentPlayback: null,
 		switching: !1,
 		loadVersion: 0,
@@ -1163,18 +1158,17 @@ function Rt({ player: e, reporter: t, ui: n, callbacks: { setLoading: r, setLoad
 		intendsToPlay: !0,
 		autoplayBlocked: !1,
 		seekTimer: null,
-		seekVersion: 0,
-		lastSeekTarget: 0
+		seekVersion: 0
 	};
-	return u.isCurrentLoad = (e) => e === u.loadVersion, u.captureState = () => ({
-		position: Math.max(u.reporter.getPosition(), u.lastRequestedPosition),
-		shouldPlay: u.intendsToPlay,
-		volume: Number(u.player.volume),
-		muted: !!u.player.muted,
-		playbackRate: Number(u.player.playbackRate) || 1
-	}), u.restoreState = (e) => {
-		Number.isFinite(e.volume) && (u.player.volume = e.volume), Number.isFinite(e.playbackRate) && e.playbackRate > 0 && (u.player.playbackRate = e.playbackRate), u.player.muted = !!e.muted;
-	}, u;
+	return l.isCurrentLoad = (e) => e === l.loadVersion, l.captureState = () => ({
+		position: Math.max(l.reporter.getPosition(), l.lastRequestedPosition),
+		shouldPlay: l.intendsToPlay,
+		volume: Number(l.player.volume),
+		muted: !!l.player.muted,
+		playbackRate: Number(l.player.playbackRate) || 1
+	}), l.restoreState = (e) => {
+		Number.isFinite(e.volume) && (l.player.volume = e.volume), Number.isFinite(e.playbackRate) && e.playbackRate > 0 && (l.player.playbackRate = e.playbackRate), l.player.muted = !!e.muted;
+	}, l;
 }
 function zt(e) {
 	return {
@@ -1300,7 +1294,7 @@ function en(e) {
 }
 async function tn(e, t, { version: n } = {}) {
 	let { player: r } = e, i = qt(t, r, Gt);
-	e.lastSeekTarget = i, e.lastRequestedPosition = i;
+	e.lastRequestedPosition = i;
 	let a = ++e.seekVersion;
 	if (e.switching && i > 0 && e.setLoadingStatus(`Wiedergabeposition ${Xt(i)} wird wiederhergestellt …`), Math.abs(Number(r.currentTime) - i) < .35) {
 		e.switching || (e.setInlineLoading(!1), Wt(e));
@@ -1362,7 +1356,7 @@ function an(e) {
 			shouldPlay: r.shouldPlay !== !1,
 			label: r.label || "Video wird geladen …"
 		};
-		if (t.switching = !0, $t(t), t.hideError(), t.setLoading(!0, o.label), t.setInlineLoading(!1), t.ui.setState(r.isBoot ? "booting" : "switching-source"), t.currentPlayback && await t.reporter.beforeSourceSwitch(), t.isCurrentLoad(i)) {
+		if (t.switching = !0, $t(t), t.setLoading(!0, o.label), t.setInlineLoading(!1), t.ui.setState(r.isBoot ? "booting" : "switching-source"), t.currentPlayback && await t.reporter.beforeSourceSwitch(), t.isCurrentLoad(i)) {
 			t.reporter.afterSourceSwitch(), t.currentPlayback = e, t.lastRequestedPosition = o.position, t.reporter.setPlayback(e), t.setLoadingStatus(e.delivery === "hls" ? "HLS-Stream wird verbunden …" : "Direkter Videostream wird verbunden …"), t.onBeforeSourceChange?.(), t.player.src = rn(e);
 			try {
 				if (await Lt(t.player, "can-play", void 0, ["error"]), !t.isCurrentLoad(i) || (t.setLoadingStatus("Medienquelle ist bereit. Laufzeit wird geprüft …"), t.restoreState(o), await Qt(t.player, 3e3), !t.isCurrentLoad(i)) || (await tn(t, o.position, { version: i }), !t.isCurrentLoad(i)) || (await Ut(t, { shouldPlay: o.shouldPlay && !t.shouldPreventPlayback?.() }), !t.isCurrentLoad(i))) return;
@@ -1381,7 +1375,7 @@ function an(e) {
 				return;
 			}
 			let n = t.loadVersion;
-			t.switching = !0, $t(t), t.hideError(), e || (t.setLoading(!0, "Wiedergabe wird gestartet …"), t.ui.setState("booting")), t.setInlineLoading(!1);
+			t.switching = !0, $t(t), e || (t.setLoading(!0, "Wiedergabe wird gestartet …"), t.ui.setState("booting")), t.setInlineLoading(!1);
 			try {
 				if (await Ut(t, { shouldPlay: !t.shouldPreventPlayback?.() }), !t.isCurrentLoad(n)) return;
 				t.switching = !1, t.autoplayBlocked || (t.setLoading(!1), Wt(t));
@@ -1412,8 +1406,7 @@ function on(e) {
 			setInlineLoading: (t) => {
 				!t && e.inlineLoading?.isActive() ? e.inlineLoading.check() : e.setInlineLoading(t);
 			},
-			showError: e.showError,
-			hideError: e.hideError
+			showError: e.showError
 		},
 		onBeforeSourceChange: () => {
 			De().catch(() => {});
@@ -1424,7 +1417,7 @@ function on(e) {
 			await vt({
 				root: t,
 				onError: () => {}
-			}), e.orientationLocked = !0, ft() || e.showOrientationGate();
+			}), ft() || e.showOrientationGate();
 		} catch {
 			e.showOrientationGate();
 		}
@@ -2279,9 +2272,7 @@ var ur = 4, dr = 1e3, fr = {
 	participants: "<svg viewBox=\"0 0 24 24\"><path d=\"M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zM8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3zm8 0c-.31 0-.62.02-.91.06 1.18.84 1.91 1.95 1.91 3.19V18h4v-2c0-1.66-2.33-3-5-3z\"/></svg>"
 };
 function pr(e) {
-	let { root: t, player: n, reporter: r, watchParty: i, episodeBrowser: a, dom: o, ui: s } = e, c = t.querySelector(".vanta-player-shell");
-	e.menuOverlayContainer = c;
-	let l = i?.disableQualityMenu ? null : un({ onSelect: async (t) => {
+	let { root: t, player: n, reporter: r, watchParty: i, episodeBrowser: a, dom: o, ui: s } = e, c = t.querySelector(".vanta-player-shell"), l = i?.disableQualityMenu ? null : un({ onSelect: async (t) => {
 		let n = e.sourceSwitch.getCurrentPlayback();
 		if (n) try {
 			let r = await e.resolvePlayback("auto", {
@@ -2441,7 +2432,7 @@ function pr(e) {
 		});
 	}
 	let g = er();
-	e.nextEpisodeGate = g, e.nextEpisodePrompt = a?.enabled ? ir({
+	e.nextEpisodePrompt = a?.enabled ? ir({
 		root: c,
 		onConfirm: (e, { auto: t = !1 } = {}) => {
 			a.onNextEpisode?.(e, { auto: t });
@@ -21312,7 +21303,7 @@ function Lm(e) {
 			default: return !1;
 		}
 	};
-	e.runShortcut = d, r(document, "keydown", (n) => {
+	r(document, "keydown", (n) => {
 		if (n.defaultPrevented || e.destroyed || e.settingsOpen || e.helpOpen || Im(n.target)) return;
 		let r = Fm(n);
 		if (r && !(Nm.find((e) => e.id === r)?.transport && !l())) {
@@ -21599,7 +21590,7 @@ function eh(e) {
 	function l() {
 		e.helpOpen && (e.helpOpen = !1, o.classList.remove("is-open"), t.classList.remove("is-help-open"), o.hidden = !0, a && typeof a.focus == "function" && a.isConnected && a.focus({ preventScroll: !0 }));
 	}
-	return e.toggleHelp = () => e.helpOpen ? l() : c(), e.openHelp = c, e.closeHelp = l, r(o, "click", (e) => {
+	return e.toggleHelp = () => e.helpOpen ? l() : c(), e.openHelp = c, r(o, "click", (e) => {
 		e.target.closest(".vanta-help-panel") || l();
 	}), r(o, "pointerup", (e) => e.stopPropagation()), r(document, "keydown", (t) => {
 		e.helpOpen && (t.key === "Escape" || t.key === "?") && (t.preventDefault(), t.stopPropagation(), l());

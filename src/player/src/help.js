@@ -108,7 +108,6 @@ export function createHelpOverlay(context) {
 
   context.toggleHelp = () => (context.helpOpen ? close() : open());
   context.openHelp = open;
-  context.closeHelp = close;
 
   // A click on the dimmed video next to the panel closes it.
   listen(overlay, 'click', event => {

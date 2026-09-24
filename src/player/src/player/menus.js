@@ -32,7 +32,6 @@ export function bindMenus(context) {
   const { root, player, reporter, watchParty, episodeBrowser, dom, ui } = context;
 
   const shell = root.querySelector('.vanta-player-shell');
-  context.menuOverlayContainer = shell;
 
   const qualityMenu = watchParty?.disableQualityMenu
     ? null
@@ -219,7 +218,6 @@ export function bindMenus(context) {
   }
 
   const nextEpisodeGate = createNextEpisodeGate();
-  context.nextEpisodeGate = nextEpisodeGate;
 
   context.nextEpisodePrompt = episodeBrowser?.enabled
     ? createNextEpisodePrompt({

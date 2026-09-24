@@ -58,8 +58,6 @@ export function bindFullscreenControls(context) {
     }
   };
 
-  context.shell = shell;
-  context.fullscreenButton = fullscreenButton;
   context.updateFullscreenIcon = updateFullscreenIcon;
 
   return context;

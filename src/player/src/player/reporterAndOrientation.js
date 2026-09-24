@@ -19,7 +19,6 @@ export function bindReporterAndOrientation(context) {
 
   context.isPhone = isSmartphone();
   context.phoneOrientationActive = context.isPhone;
-  context.orientationLocked = false;
   context.gateActive = false;
 
   const orientationGate = createOrientationGate({
@@ -28,7 +27,6 @@ export function bindReporterAndOrientation(context) {
       try {
         if (iosLike) enterInlineFullscreen(root);
         await enterSmartphoneFullscreen({ root, onError: () => {} });
-        context.orientationLocked = true;
         if (isLandscape()) {
           context.hideOrientationGate();
         }
@@ -90,8 +88,6 @@ export function bindReporterAndOrientation(context) {
     setSlow: slow => context.loadIndicator?.setSlow(slow)
   });
   context.disposers.push(() => context.inlineLoading.end());
-
-  context.hideError = () => {};
 
   context.showError = () => {
     context.sourceSwitch.clearSeekTimer();

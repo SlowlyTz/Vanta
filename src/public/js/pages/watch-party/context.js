@@ -26,7 +26,6 @@ export function createWatchPartyContext({ partyId }) {
     selectedInviteUser: null,
     sendingInvitation: false,
     inviteResolveTimer: null,
-    syncInfo: null,
     playbackEntered: false,
     playbackEntering: null,
     scheduledStartAt: null,
@@ -53,8 +52,6 @@ export function createWatchPartyContext({ partyId }) {
 
   // --- DOM ---
   ctx.topbar = createTopbar(ctx);
-  ctx.backButton = ctx.topbar.backButton;
-  ctx.endButton = ctx.topbar.endButton;
 
   // Kept off-screen: the sync state is shown inside the player; the badge
   // only carries the current label for it and for tests.
@@ -71,10 +68,6 @@ export function createWatchPartyContext({ partyId }) {
   ctx.roster.element.appendChild(ctx.inviteBar.element);
 
   ctx.actionBar = createActionBar(ctx);
-  ctx.startButton = ctx.actionBar.startButton;
-  ctx.startHint = ctx.actionBar.hint;
-  ctx.readyButton = ctx.actionBar.readyButton;
-  ctx.readyStatus = ctx.actionBar.status;
 
   ctx.lobby = createElement('div', { className: 'watch-party-lobby', dataset: { phase: 'waiting' } },
     ctx.hero.backdrop,

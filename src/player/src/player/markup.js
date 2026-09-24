@@ -200,7 +200,6 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
     },
     settingsButton: root.querySelector('.vanta-player-settings-button'),
     volumeBubble: root.querySelector('.vanta-player-volume-bubble'),
-    partyPill: root.querySelector('.vanta-player-party-pill'),
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),
     loadingStatus: root.querySelector('.vanta-player-loading-status'),

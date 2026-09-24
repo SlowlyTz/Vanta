@@ -107,7 +107,6 @@ export function bindSync(ctx) {
   };
 
   ctx.handleSyncStatus = status => {
-    ctx.syncInfo = status;
     ctx.reportPlayerStatus(status);
     const [kind, label] = syncStatusLabel(status);
     ctx.setSyncStatus(kind, label);
