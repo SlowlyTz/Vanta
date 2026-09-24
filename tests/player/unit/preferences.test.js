@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { bindPreferences, createPreferenceStore, DEFAULT_PREFERENCES, partyPreferencesKey } from '../../../src/player/src/preferences.js';
+import { bindPreferences, createPreferenceStore, DEFAULT_PREFERENCES } from '../../../src/player/src/preferences.js';
 
 function memoryStorage(initial = {}) {
   const data = { ...initial };
@@ -25,7 +25,7 @@ describe('createPreferenceStore', () => {
   it('schreibt Änderungen gebündelt und beim Abbau sofort', () => {
     vi.useFakeTimers();
     const backend = memoryStorage();
-    const store = createPreferenceStore({ key: partyPreferencesKey('p1') }, { backend });
+    const store = createPreferenceStore({ key: 'vanta.player.party.p1' }, { backend });
     store.update({ volume: 0.4 });
     store.update({ muted: true });
     expect(backend.setItem).not.toHaveBeenCalled();
@@ -71,7 +71,7 @@ describe('bindPreferences', () => {
   it('nutzt in der Party den Sitzungsspeicher unter der Party-ID', () => {
     const player = new EventTarget();
     Object.assign(player, { volume: 0.8, muted: false });
-    const context = { player, disposers: [], listen: () => {}, preferencesConfig: { key: partyPreferencesKey('abc'), storage: 'session' } };
+    const context = { player, disposers: [], listen: () => {}, preferencesConfig: { key: 'vanta.player.party.abc', storage: 'session' } };
     vi.stubGlobal('sessionStorage', memoryStorage({ 'vanta.player.party.abc': JSON.stringify({ volume: 0.5 }) }));
     vi.stubGlobal('localStorage', memoryStorage({ 'vanta.player.prefs': JSON.stringify({ volume: 0.1 }) }));
     bindPreferences(context);

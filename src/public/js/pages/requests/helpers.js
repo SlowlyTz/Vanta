@@ -5,7 +5,6 @@ export const STATUS_MAP = {
   rejected: { label: 'abgelehnt', cls: 'rejected' }
 };
 
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const REQUEST_SEARCH_STATE_KEY = 'vanta.requests.searchState';
 
 export function loadRequestSearchState() {
@@ -33,10 +32,7 @@ export function clearRequestSearchState() {
   }
 }
 
-export function getTmdbImageUrl(path, size = 'w500') {
-  if (!path) return null;
-  return `https://image.tmdb.org/t/p/${size}${path}`;
-}
+export { getTmdbImageUrl } from '../../utils/poster.js';
 
 const REQUEST_SCOPES = ['all', 'season', 'episode'];
 

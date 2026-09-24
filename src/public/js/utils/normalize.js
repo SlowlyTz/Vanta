@@ -1,6 +1,5 @@
 import { formatTicksToDuration, formatYear } from './format.js';
 import { getItemImageUrl } from './image.js';
-import { getTmdbImageUrl } from './poster.js';
 
 export function normalizeJellyfinItem(item) {
   const isEpisode = item.Type === 'Episode';
@@ -66,103 +65,6 @@ export function normalizeJellyfinItem(item) {
     itemId: item.Id || null,
     itemType: item.Type || null,
     rawItem: item
-  };
-}
-
-export function normalizeTmdbItem(data, type) {
-  const name = data.title || data.name || 'Unbekannt';
-  const originalTitle = data.original_title || data.originalTitle || data.original_name || data.originalName || null;
-  const hasOriginal = originalTitle && originalTitle !== name;
-
-  const overview = data.overview || 'Keine Beschreibung verfügbar.';
-  const genres = Array.isArray(data.genres) ? data.genres.map(g => g.name) : [];
-
-  const dateStr = data.release_date || data.releaseDate || data.first_air_date || data.firstAirDate || '';
-  const year = dateStr ? dateStr.substring(0, 4) : null;
-
-  let duration = null;
-  if (type === 'movie' && data.runtime) {
-    const h = Math.floor(data.runtime / 60);
-    const m = data.runtime % 60;
-    duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-  } else if (type === 'tv' && (data.number_of_seasons || data.numberOfSeasons)) {
-    const seasonCount = data.number_of_seasons || data.numberOfSeasons;
-    duration = seasonCount === 1 ? '1 Staffel' : `${seasonCount} Staffeln`;
-  }
-
-  const typeLabel = type === 'tv' ? 'Serie' : 'Film';
-
-  const posterUrl = getTmdbImageUrl(data.poster_path || data.posterPath, 'w500');
-  const backdropUrl = getTmdbImageUrl(data.backdrop_path || data.backdropPath, 'w1280');
-
-  const tagline = data.tagline || null;
-
-  const directors = [];
-  if (type === 'movie' && data.credits && data.credits.crew) {
-    data.credits.crew
-      .filter(c => c.job === 'Director')
-      .forEach(c => directors.push(c.name));
-  } else if (type === 'tv' && data.created_by) {
-    data.created_by.forEach(c => directors.push(c.name));
-  }
-
-  const studios = Array.isArray(data.production_companies)
-    ? data.production_companies.map(c => c.name)
-    : [];
-
-  const actors = [];
-  if (data.credits && data.credits.cast) {
-    data.credits.cast.slice(0, 20).forEach(c => {
-      actors.push({
-        Name: c.name,
-        Role: c.character || null,
-        profileUrl: getTmdbImageUrl(c.profile_path || c.profilePath, 'w185'),
-        Id: null
-      });
-    });
-  }
-
-  const seasons = [];
-  if (type === 'tv' && Array.isArray(data.seasons)) {
-    data.seasons.forEach(s => {
-      const seasonNumber = s.season_number || s.seasonNumber;
-      if (seasonNumber > 0) {
-        seasons.push({
-          name: s.name || `Staffel ${seasonNumber}`,
-          seasonNumber,
-          episodeCount: s.episode_count || s.episodeCount || 0,
-          posterUrl: getTmdbImageUrl(s.poster_path || s.posterPath, 'w300'),
-          overview: s.overview || null
-        });
-      }
-    });
-  }
-
-  return {
-    name,
-    type: type === 'tv' ? 'series' : 'movie',
-    overview,
-    posterUrl,
-    backdropUrl,
-    genres,
-    year,
-    duration,
-    typeLabel,
-    rating: data.vote_average || null,
-    criticRating: null,
-    fsk: null,
-    originalTitle: hasOriginal ? originalTitle : null,
-    episodeTitle: null,
-    tagline,
-    directors,
-    studios,
-    actors,
-    itemId: data.id || null,
-    itemType: type,
-    tmdbType: type,
-    rawItem: data,
-    seasons,
-    mediaInfo: data.mediaInfo || null
   };
 }
 

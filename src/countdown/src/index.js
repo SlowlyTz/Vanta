@@ -3,8 +3,6 @@ import { buildDigitTargets, ensureFont } from './digits.js';
 import { createCountdownScene } from './scene.js';
 import { countdownAt, secondsIntoCountdown, withLateGather } from './timeline.js';
 
-export { countdownAt, secondsIntoCountdown };
-
 let prepared = null;
 
 // Loads the font and samples the digits ahead of time (the lobby calls this

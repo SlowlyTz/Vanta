@@ -4,7 +4,6 @@
 // that party's session (sessionStorage under the party id).
 
 export const SOLO_PREFERENCES_KEY = 'vanta.player.prefs';
-export const partyPreferencesKey = partyId => `vanta.player.party.${partyId}`;
 
 export const DEFAULT_PREFERENCES = Object.freeze({
   volume: 0.8,

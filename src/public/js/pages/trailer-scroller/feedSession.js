@@ -13,6 +13,3 @@ export function setFeedId(feedId) {
   currentFeedId = feedId || null;
 }
 
-export function clearFeedId() {
-  currentFeedId = null;
-}

@@ -3,7 +3,6 @@ import {
   normalizeRouteKey,
   saveRouteState,
   getRouteState,
-  clearRouteState,
   markReturnFromDetail,
   consumeReturnMarker
 } from '../../../src/public/js/utils/routeState.js';
@@ -24,12 +23,6 @@ describe('routeState', () => {
     saveRouteState('#/movies', { page: 3, limit: 50 });
     expect(getRouteState('#/movies')).toEqual({ page: 3, limit: 50 });
     expect(getRouteState('#/series')).toBeNull();
-  });
-
-  it('clears per-route state', () => {
-    saveRouteState('#/movies', { page: 3, limit: 50 });
-    clearRouteState('#/movies');
-    expect(getRouteState('#/movies')).toBeNull();
   });
 
   it('consumes a return marker only when the route matches', () => {

@@ -6,10 +6,7 @@ import { DetailView } from '../components/detailView.js';
 import { openTrailerModal } from '../components/trailerModal.js';
 import { mergeSeasons, buildRequestCoverage } from './requests/helpers.js';
 import { createRequestScopeSelector } from './requests/scopeSelector.js';
-
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
-const TMDB_BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
-const TMDB_PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+import { getTmdbImageUrl } from '../utils/poster.js';
 
 function normalizeRequestDetail(details, type) {
   const title = details.title || details.name || 'Unbekannt';
@@ -26,8 +23,8 @@ function normalizeRequestDetail(details, type) {
     tagline: details.tagline || null,
     overview: details.overview || 'Keine Beschreibung verfügbar.',
     genres: (details.genres || []).map(genre => genre.name).filter(Boolean),
-    posterUrl: details.poster_path ? `${TMDB_IMAGE_BASE}${details.poster_path}` : null,
-    backdropUrl: details.backdrop_path ? `${TMDB_BACKDROP_BASE}${details.backdrop_path}` : null
+    posterUrl: getTmdbImageUrl(details.poster_path),
+    backdropUrl: getTmdbImageUrl(details.backdrop_path, 'w1280')
   };
 }
 
@@ -61,7 +58,7 @@ function buildCastSection(cast) {
     const item = createElement('div', { className: 'request-detail-cast-item' });
     if (actor.profile_path) {
       item.appendChild(createElement('img', {
-        src: `${TMDB_PROFILE_BASE}${actor.profile_path}`,
+        src: getTmdbImageUrl(actor.profile_path, 'w185'),
         alt: actor.name,
         loading: 'lazy',
         onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }

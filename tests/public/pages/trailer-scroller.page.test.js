@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MediaApi } from '../../../src/public/js/api/media.api.js';
 import TrailerScrollerPage from '../../../src/public/js/pages/trailer-scroller.page.js';
 import { INTRO_SEEN_KEY } from '../../../src/public/js/pages/trailer-scroller.state.js';
-import { clearFeedId } from '../../../src/public/js/pages/trailer-scroller/feedSession.js';
+import { setFeedId } from '../../../src/public/js/pages/trailer-scroller/feedSession.js';
 
 const playerMocks = vi.hoisted(() => ({
   createPlayer: vi.fn(),
@@ -90,7 +90,7 @@ describe('TrailerScrollerPage', () => {
     vi.clearAllMocks();
     // The feed id lives in module state on purpose (it must survive SPA remounts but die on a
     // page load), so each test has to start from a fresh page load.
-    clearFeedId();
+    setFeedId(null);
     vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});

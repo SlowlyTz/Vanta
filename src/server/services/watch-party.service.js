@@ -33,8 +33,3 @@ export function startWatchPartyCleanup(intervalMs = 60_000) {
   return cleanupInterval;
 }
 
-export function stopWatchPartyCleanup() {
-  if (!cleanupInterval) return;
-  clearInterval(cleanupInterval);
-  cleanupInterval = null;
-}

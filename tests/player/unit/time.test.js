@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTicks, fromTicks, clampPosition } from '../../../src/player/src/time.js';
+import { toTicks, clampPosition } from '../../../src/player/src/time.js';
 
 describe('time helpers', () => {
   describe('toTicks', () => {
@@ -15,19 +15,6 @@ describe('time helpers', () => {
       expect(toTicks(NaN)).toBe(0);
       expect(toTicks(null)).toBe(0);
       expect(toTicks(undefined)).toBe(0);
-    });
-  });
-
-  describe('fromTicks', () => {
-    it('converts ticks to seconds', () => {
-      expect(fromTicks(0)).toBe(0);
-      expect(fromTicks(10_000_000)).toBe(1);
-      expect(fromTicks(15_000_000)).toBe(1.5);
-    });
-
-    it('clamps invalid values to 0', () => {
-      expect(fromTicks(-1)).toBe(0);
-      expect(fromTicks(NaN)).toBe(0);
     });
   });
 

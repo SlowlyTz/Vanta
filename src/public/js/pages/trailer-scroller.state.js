@@ -1,4 +1,3 @@
-export const DEFAULT_LIMIT = 8;
 export const LOAD_THRESHOLD = 3;
 export const INTRO_SEEN_KEY = 'vantaTrailerScrollerIntroSeen';
 
@@ -74,14 +73,6 @@ export function setActiveIndex(state, index) {
     ...state,
     activeIndex: clampIndex(index, state.trailers.length)
   };
-}
-
-export function goToNextTrailer(state) {
-  return setActiveIndex(state, state.activeIndex + 1);
-}
-
-export function goToPreviousTrailer(state) {
-  return setActiveIndex(state, state.activeIndex - 1);
 }
 
 export function getVisibleRange(activeIndex, totalCount, buffer = 2) {

@@ -164,28 +164,6 @@ export function createPasswordIcon() {
   `);
 }
 
-export function createPaletteIcon() {
-  return createIcon('settings-row-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 22a10 10 0 1 1 10-10c0 1.9-1.3 3-3 3h-1.5a1.5 1.5 0 0 0-1.1 2.5l.3.3c1 1 1 2.6-.1 3.4-.9.5-2 .8-3.6.8z"></path>
-      <circle cx="7.5" cy="10.5" r=".8"></circle>
-      <circle cx="10.5" cy="7.5" r=".8"></circle>
-      <circle cx="14.5" cy="7.5" r=".8"></circle>
-      <circle cx="16.5" cy="11" r=".8"></circle>
-    </svg>
-  `);
-}
-
-export function createPlaybackIcon() {
-  return createIcon('settings-row-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 4.5v15l13-7.5z"></path>
-      <path d="M4 4v16"></path>
-      <path d="M20 6v12"></path>
-    </svg>
-  `);
-}
-
 export function createAdminIcon() {
   return createIcon('settings-row-icon', `
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -244,14 +222,6 @@ export function createCloseIcon() {
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M18 6 6 18"></path>
       <path d="m6 6 12 12"></path>
-    </svg>
-  `);
-}
-
-export function createCheckIcon() {
-  return createIcon('settings-check', `
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m20 6-11 11-5-5"></path>
     </svg>
   `);
 }

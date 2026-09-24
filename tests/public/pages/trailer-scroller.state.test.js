@@ -6,8 +6,6 @@ import {
   shouldLoadMore,
   clampIndex,
   setActiveIndex,
-  goToNextTrailer,
-  goToPreviousTrailer,
   getVisibleRange,
   hasIntroBeenSeen,
   markIntroAsSeen,
@@ -176,24 +174,6 @@ describe('setActiveIndex', () => {
     });
 
     state = setActiveIndex(state, 5);
-    expect(state.activeIndex).toBe(1);
-  });
-});
-
-describe('goToNextTrailer / goToPreviousTrailer', () => {
-  it('moves to next and previous trailer', () => {
-    let state = createInitialState();
-    state = mergeTrailerPage(state, {
-      items: [createTrailer('1'), createTrailer('2'), createTrailer('3')],
-      nextCursor: null,
-      hasMore: false
-    });
-    state = setActiveIndex(state, 1);
-
-    state = goToNextTrailer(state);
-    expect(state.activeIndex).toBe(2);
-
-    state = goToPreviousTrailer(state);
     expect(state.activeIndex).toBe(1);
   });
 });

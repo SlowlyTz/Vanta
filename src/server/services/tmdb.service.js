@@ -2,7 +2,6 @@ import env from '../config/env.js';
 import db from '../db/database.js';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const TMDB_REQUEST_TIMEOUT_MS = Number(process.env.TMDB_REQUEST_TIMEOUT_MS || 2500);
 
 const cacheMovie = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, release_date, media_type, score, vote_count, cached_at) VALUES (?, 'movie', ?, ?, ?, ?, ?, 'movie', ?, ?, ?)`);
@@ -336,10 +335,6 @@ class TmdbService {
     return results.slice(0, limit);
   }
 
-  static getImageUrl(path) {
-    if (!path) return null;
-    return `${TMDB_IMAGE_BASE}${path}`;
-  }
 }
 
 export { TmdbService, findTmdbYouTubeTrailer };

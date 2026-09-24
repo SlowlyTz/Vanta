@@ -28,20 +28,6 @@ export function isInlineFullscreen(element) {
   return Boolean(element?.classList?.contains('is-ios-inline-fullscreen'));
 }
 
-export function supportsFinePointer() {
-  return window.matchMedia?.('(pointer: fine)').matches ?? false;
-}
-
-export function canRequestFullscreen() {
-  const doc = document;
-  return Boolean(
-    doc.fullscreenEnabled ||
-    doc.webkitFullscreenEnabled ||
-    document.documentElement.requestFullscreen ||
-    document.documentElement.webkitRequestFullscreen
-  );
-}
-
 export function isPictureInPictureSupported() {
   return document.pictureInPictureEnabled === true ||
     Boolean(document.createElement('video').webkitSupportsPresentationMode);

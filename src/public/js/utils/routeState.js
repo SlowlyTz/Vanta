@@ -39,10 +39,6 @@ export function getRouteState(hash) {
   return safeGet(STATE_PREFIX + normalizeRouteKey(hash));
 }
 
-export function clearRouteState(hash) {
-  safeRemove(STATE_PREFIX + normalizeRouteKey(hash));
-}
-
 export function markReturnFromDetail({ scrollY, itemId, sourceType } = {}) {
   safeSet(RETURN_MARKER_KEY, {
     fromRoute: normalizeRouteKey(window.location.hash),

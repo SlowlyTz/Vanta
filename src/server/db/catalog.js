@@ -139,4 +139,3 @@ export async function openCatalogDb(file = DB_FILE) {
   return createCatalogDb({ SQL, file, bytes });
 }
 
-export const CATALOG_DB_FILE = DB_FILE;

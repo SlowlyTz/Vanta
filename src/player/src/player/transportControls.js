@@ -1,6 +1,5 @@
 import { seekBy } from '../seek.js';
 
-export const SEEK_STEP_SECONDS = 10;
 // Presses closer together than this add up in one bubble ("−30 s").
 export const SEEK_BUBBLE_CHAIN_MS = 900;
 const SEEK_BUBBLE_VISIBLE_MS = 750;
