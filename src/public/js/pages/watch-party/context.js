@@ -87,28 +87,12 @@ export function createWatchPartyContext({ partyId }) {
 
   ctx.playerMount = createElement('div', { className: 'watch-party-player-mount' });
 
-  // Countdown: the three.js scene draws into the stage; the fallback (digit
-  // plus SVG ring) shows until the scene is up, or instead of it without WebGL
-  // or with reduced motion.
+  // Countdown: the three.js scene draws into the stage; the fallback digit
+  // shows until the scene is up, or instead of it without WebGL or with
+  // reduced motion.
   ctx.countdownStage = createElement('div', { className: 'watch-party-countdown-stage', 'aria-hidden': 'true' });
   ctx.countdownNumber = createElement('span', { className: 'watch-party-countdown-number', 'aria-hidden': 'true' });
-  ctx.countdownRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  ctx.countdownRing.setAttribute('class', 'watch-party-countdown-ring-progress');
-  ctx.countdownRing.setAttribute('cx', '50');
-  ctx.countdownRing.setAttribute('cy', '50');
-  ctx.countdownRing.setAttribute('r', '46');
-  ctx.countdownRing.setAttribute('pathLength', '1');
-  const ringTrack = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  ringTrack.setAttribute('class', 'watch-party-countdown-ring-track');
-  ringTrack.setAttribute('cx', '50');
-  ringTrack.setAttribute('cy', '50');
-  ringTrack.setAttribute('r', '46');
-  const ringSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  ringSvg.setAttribute('class', 'watch-party-countdown-ring');
-  ringSvg.setAttribute('viewBox', '0 0 100 100');
-  ringSvg.setAttribute('aria-hidden', 'true');
-  ringSvg.append(ringTrack, ctx.countdownRing);
-  const countdownFallback = createElement('div', { className: 'watch-party-countdown-fallback' }, ringSvg, ctx.countdownNumber);
+  const countdownFallback = createElement('div', { className: 'watch-party-countdown-fallback' }, ctx.countdownNumber);
 
   ctx.countdownTitle = createElement('div', { className: 'watch-party-countdown-title' });
   ctx.countdownMeta = createElement('div', { className: 'watch-party-countdown-meta' });

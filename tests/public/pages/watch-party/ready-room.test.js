@@ -276,7 +276,7 @@ describe('WatchPartyPage · Ready Room', () => {
     expect(playerMount.classList.contains('player-page')).toBe(true);
     expect(document.body.classList.contains('player-active')).toBe(true);
     expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(false);
-    expect(container.querySelector('.watch-party-countdown-ring')).toBeTruthy();
+    expect(container.querySelector('.watch-party-countdown-ring')).toBeNull();
     expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('5');
     expect(container.querySelector('.watch-party-countdown-title').textContent).toBe('Test Movie');
     expect(container.querySelector('.watch-party-countdown-position').textContent).toBe('Von Anfang an');

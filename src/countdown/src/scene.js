@@ -12,11 +12,11 @@ import {
 import { SPRITE_FRAGMENT_PREMULTIPLIED } from '../../shared/particles/sprite.js';
 
 const FOV = 40;
-// Share of the viewport height the digit takes; the ring around it is wider.
-const FIT_HEIGHT = 0.42;
-const FIT_RING_WIDTH = 0.86;
-const RING_RADIUS = 0.62;
-const RING_COUNT = 900;
+// Share of the viewport the digit may take, whichever side is tighter.
+const FIT_HEIGHT = 0.46;
+// The digit sits a little above the middle, clear of the title beneath it.
+const LIFT = 0.1;
+const FIT_WIDTH = 0.7;
 const BRIGHTNESS = 0.55;
 
 // Additive on a transparent canvas: colour and alpha both accumulate, so the
@@ -87,32 +87,6 @@ const DIGIT_VERTEX = /* glsl */`
   }
 `;
 
-// The ring's particles sit on a circle; `uRing` is the remaining share of the
-// current second, and everything past it (clockwise from twelve) fades out.
-const RING_VERTEX = /* glsl */`
-  uniform float uRing;
-  uniform float uGather;
-  uniform float uTime;
-  uniform float uSize;
-  uniform float uRadius;
-  attribute float aAngle;
-  attribute float aSeed;
-  varying vec3 vColor;
-  varying float vAlpha;
-
-  void main() {
-    float theta = 1.5707963 - aAngle * 6.2831853;
-    float wobble = sin(uTime * 3.0 + aSeed * 20.0) * 0.006;
-    vec3 p = vec3(cos(theta), sin(theta), 0.0) * (uRadius + wobble + (aSeed - 0.5) * 0.012);
-    vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    gl_PointSize = uSize * (0.7 + 0.6 * aSeed) / -mv.z;
-    gl_Position = projectionMatrix * mv;
-    float visible = smoothstep(aAngle - 0.015, aAngle + 0.015, uRing);
-    vColor = vec3(0.92, 0.94, 1.0);
-    vAlpha = visible * uGather * 0.9;
-  }
-`;
-
 const randomDirection = (random, out) => {
   const z = random() * 2 - 1;
   const r = Math.sqrt(1 - z * z);
@@ -158,23 +132,6 @@ function buildDigitGeometry(targets, random) {
   return geometry;
 }
 
-function buildRingGeometry(random) {
-  const geometry = new BufferGeometry();
-  const angle = new Float32Array(RING_COUNT);
-  const seed = new Float32Array(RING_COUNT);
-  const position = new Float32Array(RING_COUNT * 3);
-  for (let i = 0; i < RING_COUNT; i++) {
-    angle[i] = (i + random() * 0.5) / RING_COUNT;
-    seed[i] = random();
-  }
-  geometry.setAttribute('position', new BufferAttribute(position, 3));
-  geometry.setAttribute('aAngle', new BufferAttribute(angle, 1));
-  geometry.setAttribute('aSeed', new BufferAttribute(seed, 1));
-  geometry.computeBoundingSphere();
-  geometry.boundingSphere.radius = 2;
-  return geometry;
-}
-
 export function createCountdownScene({ canvas, digits, width, height, dpr = 1, random = Math.random }) {
   const renderer = new WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(dpr);
@@ -202,30 +159,11 @@ export function createCountdownScene({ canvas, digits, width, height, dpr = 1, r
     depthTest: false,
     transparent: true
   });
-  const ringMaterial = new ShaderMaterial({
-    vertexShader: RING_VERTEX,
-    fragmentShader: SPRITE_FRAGMENT_PREMULTIPLIED,
-    uniforms: {
-      uRing: { value: 1 },
-      uGather: { value: 0 },
-      uTime: { value: 0 },
-      uSize: { value: 1 },
-      uRadius: { value: RING_RADIUS * digits.height },
-      uIntensity: { value: BRIGHTNESS }
-    },
-    ...ADDITIVE_PREMULTIPLIED,
-    depthWrite: false,
-    depthTest: false,
-    transparent: true
-  });
 
   const digitGeometry = buildDigitGeometry(digits.targets, random);
-  const ringGeometry = buildRingGeometry(random);
   scene.add(new Points(digitGeometry, digitMaterial));
-  scene.add(new Points(ringGeometry, ringMaterial));
 
   const tanHalf = Math.tan((FOV / 2) * Math.PI / 180);
-  const ringDiameter = RING_RADIUS * digits.height * 2.2;
   let distance = 1;
 
   const resize = (w, h) => {
@@ -234,11 +172,10 @@ export function createCountdownScene({ canvas, digits, width, height, dpr = 1, r
     camera.updateProjectionMatrix();
     distance = Math.max(
       digits.height / (2 * tanHalf * FIT_HEIGHT),
-      ringDiameter / (2 * tanHalf * camera.aspect * FIT_RING_WIDTH)
+      digits.width / (2 * tanHalf * camera.aspect * FIT_WIDTH)
     );
     const pixelsPerUnit = (h * dpr) / (2 * tanHalf);
     digitMaterial.uniforms.uSize.value = pixelsPerUnit * digits.spacing * 2.2;
-    ringMaterial.uniforms.uSize.value = pixelsPerUnit * 0.018 * digits.height;
   };
   resize(width, height);
 
@@ -253,23 +190,17 @@ export function createCountdownScene({ canvas, digits, width, height, dpr = 1, r
     d.uTime.value = time;
     d.uIntensity.value = BRIGHTNESS * (1 - at.fade * 0.5);
 
-    const r = ringMaterial.uniforms;
-    r.uRing.value = at.ring;
-    r.uGather.value = at.gather * (1 - at.dive);
-    r.uTime.value = time;
-
     // The last second ends in a dive through the "1", like the opener.
     const dive = at.dive * at.dive * at.dive;
-    camera.position.set(0, 0, distance * (1 - dive * 0.96));
-    camera.lookAt(0, 0, 0);
+    const lift = -digits.height * LIFT * (1 - dive);
+    camera.position.set(0, lift, distance * (1 - dive * 0.96));
+    camera.lookAt(0, lift, 0);
     renderer.render(scene, camera);
   };
 
   const dispose = () => {
     digitGeometry.dispose();
-    ringGeometry.dispose();
     digitMaterial.dispose();
-    ringMaterial.dispose();
     renderer.dispose();
     renderer.forceContextLoss?.();
   };

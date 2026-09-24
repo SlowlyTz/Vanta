@@ -42,7 +42,7 @@
   height: 100%;
 }
 
-/* Fallback: a large digit inside a depleting ring */
+/* Fallback: a large digit */
 .watch-party-countdown-fallback {
   position: relative;
   width: min(46vmin, 360px);
@@ -54,32 +54,6 @@
 
 .watch-party-countdown-overlay.is-3d .watch-party-countdown-fallback {
   opacity: 0;
-}
-
-.watch-party-countdown-ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg) scaleY(-1);
-}
-
-.watch-party-countdown-ring-track,
-.watch-party-countdown-ring-progress {
-  fill: none;
-  stroke-width: 1.6;
-}
-
-.watch-party-countdown-ring-track {
-  stroke: rgb(255 255 255 / 0.1);
-}
-
-.watch-party-countdown-ring-progress {
-  stroke: rgb(var(--abyss-accent));
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.35));
 }
 
 .watch-party-countdown-number {

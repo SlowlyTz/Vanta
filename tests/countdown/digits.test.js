@@ -13,11 +13,13 @@ function fakeDraw(digit) {
 
 describe('buildDigitTargets', () => {
   it('liefert für jede Ziffer gleich viele Punkte in der Anzeigereihenfolge', () => {
-    const { targets, height, spacing } = buildDigitTargets({ count: 50, draw: fakeDraw, random: () => 0.5 });
+    const { targets, height, width, spacing } = buildDigitTargets({ count: 50, draw: fakeDraw, random: () => 0.5 });
     expect(targets.map(target => target.digit)).toEqual([5, 4, 3, 2, 1]);
     expect(targets.every(target => target.positions.length === 100)).toBe(true);
     // The tallest glyph (5 → 10 px of 20) sets the height.
     expect(height).toBeCloseTo(0.5);
+    // All fake glyphs are 4 px wide in a 20 px bitmap.
+    expect(width).toBeCloseTo(0.2);
     expect(spacing).toBeGreaterThan(0);
   });
 });

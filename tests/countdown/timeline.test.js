@@ -23,7 +23,6 @@ describe('countdownAt', () => {
     expect(countdownAt(-LEAD_SECONDS / 2).gather).toBeCloseTo(0.5);
     expect(countdownAt(0).gather).toBe(1);
     expect(countdownAt(-LEAD_SECONDS).digit).toBe(5);
-    expect(countdownAt(-1).ring).toBe(1);
   });
 
   it('morpht zu Beginn jeder Sekunde aus der vorherigen Ziffer', () => {
@@ -42,12 +41,6 @@ describe('countdownAt', () => {
     expect(countdownAt(2.3).loosen).toBe(0);
     // The last digit stays solid for the dive.
     expect(countdownAt(4.99).loosen).toBe(0);
-  });
-
-  it('leert den Ring einmal pro Sekunde', () => {
-    expect(countdownAt(3).ring).toBe(1);
-    expect(countdownAt(3.25).ring).toBeCloseTo(0.75);
-    expect(countdownAt(3.999).ring).toBeCloseTo(0.001);
   });
 
   it('taucht in der letzten Sekunde durch die 1 und blendet bis genau 5,0 s aus', () => {

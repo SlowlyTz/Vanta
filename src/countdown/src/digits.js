@@ -37,6 +37,7 @@ export function buildDigitTargets({ digits = [5, 4, 3, 2, 1], count, random = Ma
     return { digit, positions: sortByAngle(sample.positions), bounds: sample.bounds, spacing: sample.spacing };
   });
   const height = Math.max(...targets.map(target => target.bounds.maxY - target.bounds.minY));
+  const width = Math.max(...targets.map(target => target.bounds.maxX - target.bounds.minX));
   const spacing = Math.max(...targets.map(target => target.spacing));
-  return { targets, height, spacing };
+  return { targets, height, width, spacing };
 }

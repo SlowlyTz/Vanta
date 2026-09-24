@@ -38,8 +38,6 @@ export function countdownAt(s, durationMs = 5000) {
     gather,
     morph,
     loosen: Math.max(loosenOut, loosenIn),
-    // The ring empties once per second, clockwise.
-    ring: clamped < 0 ? 1 : 1 - local,
     pulse: Math.sin(Math.max(0, clamped) * Math.PI * 2) * 0.5 + 0.5,
     dive: progress(DIVE, clamped),
     fade: progress(FADE, clamped),

@@ -11,14 +11,6 @@ export function countdownDigit(remainingMs, durationMs = 5000) {
   return Math.min(maxDigit, Math.max(0, Math.ceil(remainingMs / 1000)));
 }
 
-// Share of the current second still to go (1 → 0), for the fallback ring.
-export function ringRemaining(remainingMs, durationMs = 5000) {
-  if (remainingMs >= durationMs) return 1;
-  if (remainingMs <= 0) return 0;
-  const fraction = (remainingMs % 1000) / 1000;
-  return fraction === 0 ? 1 : fraction;
-}
-
 export function overlayOpacity(remainingMs) {
   return Math.min(1, Math.max(0, remainingMs / FADE_WINDOW_MS));
 }
@@ -66,7 +58,6 @@ export function bindCountdown(ctx) {
     const draw = () => {
       const remaining = startsAtServerTimeMs - ctx.clock.now();
       ctx.countdownNumber.textContent = String(Math.max(1, countdownDigit(remaining, durationMs)));
-      ctx.countdownRing.style.strokeDashoffset = String(1 - ringRemaining(remaining, durationMs));
       if (!ctx.countdownOverlay.classList.contains('is-3d')) {
         ctx.countdownOverlay.style.opacity = String(overlayOpacity(remaining));
       }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countdownDigit, ringRemaining, overlayOpacity } from '../../../../src/public/js/pages/watch-party/countdown.js';
+import { countdownDigit, overlayOpacity } from '../../../../src/public/js/pages/watch-party/countdown.js';
 
 describe('Countdown-Fallback', () => {
   it('zeigt im Vorlauf die 5 und zählt dann jede Sekunde herunter', () => {
@@ -9,13 +9,6 @@ describe('Countdown-Fallback', () => {
     expect(countdownDigit(4000)).toBe(4);
     expect(countdownDigit(1)).toBe(1);
     expect(countdownDigit(-20)).toBe(0);
-  });
-
-  it('leert den Ring pro Sekunde', () => {
-    expect(ringRemaining(5400)).toBe(1);
-    expect(ringRemaining(3750)).toBeCloseTo(0.75);
-    expect(ringRemaining(3000)).toBe(1);
-    expect(ringRemaining(0)).toBe(0);
   });
 
   it('blendet in den letzten 400 ms aus', () => {
