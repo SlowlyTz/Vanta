@@ -13,7 +13,6 @@ export function createWatchPartyContext({ partyId }) {
     socket: null,
     controller: null,
     ownerHeartbeatTimer: null,
-    countdownTimer: null,
     watchPartyConfig: null,
     localReadyPreparing: false,
     lastAutoSyncNotificationAt: 0,
@@ -134,21 +133,39 @@ export function createWatchPartyContext({ partyId }) {
 
   ctx.playerMount = createElement('div', { className: 'watch-party-player-mount' });
 
-  ctx.countdownNumber = createElement('div', {
-    className: 'watch-party-countdown-number',
-    hidden: true,
-    'aria-hidden': 'true'
-  });
-  const countdownGraphic = createElement('div', { className: 'numero_counting_wrapper' },
-    createElement('div', { className: 'numero_shape' })
-  );
+  // Countdown: the three.js scene draws into the stage; the fallback (digit
+  // plus SVG ring) shows until the scene is up, or instead of it without WebGL
+  // or with reduced motion.
+  ctx.countdownStage = createElement('div', { className: 'watch-party-countdown-stage', 'aria-hidden': 'true' });
+  ctx.countdownNumber = createElement('span', { className: 'watch-party-countdown-number', 'aria-hidden': 'true' });
+  ctx.countdownRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  ctx.countdownRing.setAttribute('class', 'watch-party-countdown-ring-progress');
+  ctx.countdownRing.setAttribute('cx', '50');
+  ctx.countdownRing.setAttribute('cy', '50');
+  ctx.countdownRing.setAttribute('r', '46');
+  ctx.countdownRing.setAttribute('pathLength', '1');
+  const ringTrack = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  ringTrack.setAttribute('class', 'watch-party-countdown-ring-track');
+  ringTrack.setAttribute('cx', '50');
+  ringTrack.setAttribute('cy', '50');
+  ringTrack.setAttribute('r', '46');
+  const ringSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  ringSvg.setAttribute('class', 'watch-party-countdown-ring');
+  ringSvg.setAttribute('viewBox', '0 0 100 100');
+  ringSvg.setAttribute('aria-hidden', 'true');
+  ringSvg.append(ringTrack, ctx.countdownRing);
+  const countdownFallback = createElement('div', { className: 'watch-party-countdown-fallback' }, ringSvg, ctx.countdownNumber);
+
   ctx.countdownTitle = createElement('div', { className: 'watch-party-countdown-title' });
   ctx.countdownMeta = createElement('div', { className: 'watch-party-countdown-meta' });
   ctx.countdownPosition = createElement('div', { className: 'watch-party-countdown-position' });
-  const countdownModal = createElement('div', { className: 'watch-party-countdown-modal' },
-    countdownGraphic, ctx.countdownNumber, ctx.countdownTitle, ctx.countdownMeta, ctx.countdownPosition
+  ctx.countdownLive = createElement('span', { className: 'watch-party-countdown-live', role: 'status', 'aria-live': 'polite' });
+  const countdownInfo = createElement('div', { className: 'watch-party-countdown-info' },
+    ctx.countdownTitle, ctx.countdownMeta, ctx.countdownPosition
   );
-  ctx.countdownOverlay = createElement('div', { className: 'watch-party-countdown-overlay', hidden: true }, countdownModal);
+  ctx.countdownOverlay = createElement('div', { className: 'watch-party-countdown-overlay', hidden: true },
+    ctx.countdownStage, countdownFallback, countdownInfo, ctx.countdownLive
+  );
 
   const readyTitle = createElement('h2', { className: 'watch-party-ready-title' }, 'Bereit zum gemeinsamen Schauen?');
   const readySubtitle = createElement('p', { className: 'watch-party-ready-subtitle' }, 'Jeder Teilnehmer muss einmal Bereit klicken, bevor die Wiedergabe startet.');

@@ -1,6 +1,7 @@
 import { MediaApi } from '../../api/media.api.js';
 
 export const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
+export const COUNTDOWN_MODULE_URL = '/vendor/countdown/vanta-countdown.js';
 export const OWNER_SYNC_INTERVAL_MS = 5000;
 export const AUTO_SYNC_NOTIFICATION_COOLDOWN_MS = 15_000;
 

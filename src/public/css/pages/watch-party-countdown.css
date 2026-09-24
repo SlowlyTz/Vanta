@@ -1,84 +1,121 @@
+/* Watch-party countdown: a full-screen black stage for the three.js scene,
+   with a CSS/SVG fallback (no WebGL, reduced motion, or while the scene
+   loads) and the title of what is about to start. The overlay fades out over
+   its last moments and reveals the paused first frame of the video below. */
+
 .watch-party-countdown-overlay {
   position: fixed;
   inset: 0;
   z-index: 100000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  color: #aaa;
-  font-family: avenir, sans-serif;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #0d0d12 0%, #000 70%);
+  color: var(--text-primary);
   pointer-events: none;
+}
+
+/* The entrance runs on the children: an animation on the overlay itself
+   would hold its opacity and block the fade the scene drives inline. */
+.watch-party-countdown-stage,
+.watch-party-countdown-fallback {
+  animation: watch-party-countdown-in 400ms var(--abyss-ease) backwards;
 }
 
 .watch-party-countdown-overlay[hidden] {
   display: none;
 }
 
-.watch-party-countdown-modal {
-  width: min(420px, 90vw);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 24px;
-  text-align: center;
+@keyframes watch-party-countdown-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.numero_counting_wrapper {
-  position: relative;
-  width: min(300px, 70vw);
-  height: min(300px, 70vw);
-  margin: 0 auto;
-  background-color: #000;
-}
-
-.numero_shape {
-  position: relative;
-  width: 40%;
-  height: 60%;
-  margin: 0 auto;
-  background-color: #ff6622;
-  border-radius: 30px;
-  animation: numero-pulse 5s ease-in-out 0s 1 normal forwards;
-}
-
-.numero_shape::before {
-  content: " ";
+.watch-party-countdown-stage {
   position: absolute;
-  top: 16.6666667%;
-  left: 25%;
-  width: 50%;
-  height: 33.3333334%;
-  background-color: #000;
-  animation: contagem1 5s ease-in-out 0s 1 normal forwards;
+  inset: 0;
 }
 
-.numero_shape::after {
-  content: " ";
+.watch-party-countdown-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fallback: a large digit inside a depleting ring */
+.watch-party-countdown-fallback {
+  position: relative;
+  width: min(46vmin, 360px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  transition: opacity 240ms ease;
+}
+
+.watch-party-countdown-overlay.is-3d .watch-party-countdown-fallback {
+  opacity: 0;
+}
+
+.watch-party-countdown-ring {
   position: absolute;
-  top: 58.3333333%;
-  left: 25%;
-  width: 50%;
-  height: 33.3333334%;
-  background-color: #000;
-  animation: contagem2 5s ease-in-out 0s 1 normal forwards;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg) scaleY(-1);
+}
+
+.watch-party-countdown-ring-track,
+.watch-party-countdown-ring-progress {
+  fill: none;
+  stroke-width: 1.6;
+}
+
+.watch-party-countdown-ring-track {
+  stroke: rgb(255 255 255 / 0.1);
+}
+
+.watch-party-countdown-ring-progress {
+  stroke: rgb(var(--abyss-accent));
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.35));
 }
 
 .watch-party-countdown-number {
-  display: none;
+  font: 700 min(26vmin, 200px) / 1 Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 40px rgb(255 255 255 / 0.25);
+}
+
+/* What is about to play */
+.watch-party-countdown-info {
+  position: absolute;
+  left: 50%;
+  bottom: max(9vh, calc(env(safe-area-inset-bottom) + 32px));
+  width: min(560px, calc(100vw - 48px));
+  display: grid;
+  gap: 6px;
+  text-align: center;
+  transform: translateX(-50%);
+  animation: watch-party-countdown-info-in 600ms var(--abyss-ease) 150ms both;
+}
+
+@keyframes watch-party-countdown-info-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .watch-party-countdown-title {
-  max-width: 20em;
-  color: #f5f5f5;
-  font-size: clamp(1.3rem, 4vw, 2.2rem);
-  font-weight: 800;
+  font: 650 clamp(1.1rem, 2.6vw, 1.6rem) / 1.2 Outfit, system-ui, sans-serif;
+  overflow-wrap: anywhere;
 }
 
-.watch-party-countdown-meta {
-  color: #aaa;
-  font-size: 0.9rem;
+.watch-party-countdown-meta,
+.watch-party-countdown-position {
+  color: var(--text-secondary);
+  font: 500 0.88rem / 1.4 Outfit, system-ui, sans-serif;
 }
 
 .watch-party-countdown-meta[hidden] {
@@ -86,151 +123,28 @@
 }
 
 .watch-party-countdown-position {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.88rem;
+  justify-self: center;
+  margin-top: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  color: var(--text-primary);
+  font-size: 0.8rem;
 }
 
-@keyframes numero-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 18px rgba(255, 102, 34, 0.28));
-  }
-
-  50% {
-    transform: scale(1.06);
-    filter: drop-shadow(0 0 34px rgba(255, 102, 34, 0.45));
-  }
+.watch-party-countdown-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-@keyframes contagem1 {
-  0%,
-  8% {
-    top: 16.6666667%;
-    left: 25%;
-    width: 50%;
-    height: 33.3333334%;
-  }
-
-  10%,
-  28% {
-    top: 16.6666667%;
-    left: 25%;
-    width: 50%;
-    height: 25%;
-  }
-
-  30%,
-  38% {
-    top: 16.6666667%;
-    left: 0%;
-    width: 75%;
-    height: 33.3333334%;
-  }
-
-  40%,
-  48% {
-    top: 0%;
-    left: 25%;
-    width: 75%;
-    height: 41.6666667%;
-  }
-
-  50%,
-  58% {
-    top: 16.6666667%;
-    left: 25%;
-    width: 75%;
-    height: 25%;
-  }
-
-  60%,
-  68% {
-    top: 0%;
-    left: 25%;
-    width: 50%;
-    height: 41.6666667%;
-  }
-
-  70%,
-  88% {
-    top: 16.6666667%;
-    left: 0%;
-    width: 75%;
-    height: 25%;
-  }
-
-  90%,
-  100% {
-    top: 0%;
-    left: 0%;
-    width: 75%;
-    height: 50%;
-  }
-}
-
-@keyframes contagem2 {
-  0%,
-  8% {
-    top: 50%;
-    left: 25%;
-    width: 50%;
-    height: 33.3333334%;
-  }
-
-  10%,
-  18% {
-    top: 58.3333333%;
-    left: 0%;
-    width: 75%;
-    height: 41.6666667%;
-  }
-
-  20%,
-  28% {
-    top: 58.3333333%;
-    left: 25%;
-    width: 50%;
-    height: 25%;
-  }
-
-  30%,
-  38% {
-    top: 50%;
-    left: 0%;
-    width: 75%;
-    height: 50%;
-  }
-
-  40%,
-  48% {
-    top: 58.3333333%;
-    left: 25%;
-    width: 50%;
-    height: 25%;
-  }
-
-  50%,
-  78% {
-    top: 58.3333333%;
-    left: 0%;
-    width: 75%;
-    height: 25%;
-  }
-
-  80%,
-  88% {
-    top: 58.3333333%;
-    left: 25%;
-    width: 75%;
-    height: 25%;
-  }
-
-  90%,
-  100% {
-    top: 50%;
-    left: 0%;
-    width: 75%;
-    height: 50%;
+@media (prefers-reduced-motion: reduce) {
+  .watch-party-countdown-stage,
+  .watch-party-countdown-fallback,
+  .watch-party-countdown-info {
+    animation: none;
   }
 }

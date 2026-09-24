@@ -133,7 +133,7 @@ export function bindRendering(ctx) {
     ctx.controller = null;
     ctx.unlockPlayerViewport();
     ctx.playerMount.remove();
-    ctx.countdownOverlay.hidden = true;
+    ctx.hideCountdown();
     ctx.autoplayOverlay.hidden = true;
     ctx.lobby.hidden = true;
 

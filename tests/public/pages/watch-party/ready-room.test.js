@@ -53,6 +53,10 @@ const { mountVantaPlayer } = vi.hoisted(() => ({ mountVantaPlayer: vi.fn() }));
 
 vi.mock('/vendor/player/vanta-player.js', () => ({ mountVantaPlayer }));
 
+const { mountCountdown } = vi.hoisted(() => ({ mountCountdown: vi.fn() }));
+
+vi.mock('/vendor/countdown/vanta-countdown.js', () => ({ mountCountdown }));
+
 mountVantaPlayer.mockResolvedValue(fakeController);
 
 describe('WatchPartyPage · Ready Room', () => {
@@ -263,7 +267,8 @@ describe('WatchPartyPage · Ready Room', () => {
     expect(document.body.classList.contains('player-active')).toBe(true);
     expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(false);
     expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
-    expect(container.querySelector('.numero_shape')).toBeTruthy();
+    expect(container.querySelector('.watch-party-countdown-ring')).toBeTruthy();
+    expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('5');
     expect(container.querySelector('.watch-party-countdown-title').textContent).toBe('Test Movie');
     expect(container.querySelector('.watch-party-countdown-position').textContent).toBe('Von Anfang an');
     expect(fakeController.syncPlay).not.toHaveBeenCalled();
@@ -334,5 +339,38 @@ describe('WatchPartyPage · Ready Room', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('übergibt Startzeit, Dauer und Server-Uhr an die 3D-Szene und blendet den Fallback aus', async () => {
+    const destroy = vi.fn();
+    mountCountdown.mockResolvedValue({ done: Promise.resolve(), destroy });
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const startsAt = Date.now() + 5400;
+    capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: startsAt, durationMs: 5000, positionMs: 0 });
+    await flush();
+    await flush();
+
+    expect(mountCountdown).toHaveBeenCalledWith(expect.objectContaining({
+      container: container.querySelector('.watch-party-countdown-stage'),
+      fadeTarget: container.querySelector('.watch-party-countdown-overlay'),
+      startsAtServerTimeMs: startsAt,
+      durationMs: 5000,
+      now: expect.any(Function)
+    }));
+    expect(Math.abs(mountCountdown.mock.calls[0][0].now() - Date.now())).toBeLessThan(1000);
+    const overlay = container.querySelector('.watch-party-countdown-overlay');
+    expect(overlay.classList.contains('is-3d')).toBe(true);
+    expect(container.querySelector('.watch-party-countdown-live').textContent).toBe('Test Movie startet in 5 Sekunden.');
+
+    capturedOnMessage({ type: 'PARTY_ENDED', party: makeParty({ status: 'ended' }) });
+    expect(destroy).toHaveBeenCalled();
+    expect(overlay.hidden).toBe(true);
   });
 });

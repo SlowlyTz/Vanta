@@ -12,7 +12,7 @@ export function bindLifecycle(ctx) {
     ctx.drift.stop();
     ctx.cancelSyncedStart();
     ctx.resetPreload();
-    if (ctx.countdownTimer) window.clearInterval(ctx.countdownTimer);
+    ctx.hideCountdown();
     if (ctx.inviteResolveTimer) window.clearTimeout(ctx.inviteResolveTimer);
     ctx.clock.stop();
     ctx.socket?.close();

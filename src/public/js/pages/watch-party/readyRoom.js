@@ -201,7 +201,9 @@ export function bindReadyRoom(ctx) {
         deferInitialLoad: true
       });
     }
-    if (!ctx.destroyed && ctx.party?.status === 'ready-room') void ctx.startPreload();
+    if (ctx.destroyed) return;
+    ctx.preloadCountdownScene();
+    if (ctx.party?.status === 'ready-room') void ctx.startPreload();
   };
 
   return ctx;
