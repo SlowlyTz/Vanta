@@ -7,6 +7,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, isAbortError, upstreamAbortSignal, FORWARD_HEADERS } from './proxyHelpers.js';
 import { isValidQualityProfile, getQualityConstraints } from './playback.validation.js';
 import { pickAudioStreamIndex } from '../../services/playback/audioTracks.js';
+import { getTranscodeProgress } from '../../services/playback/transcodeProgress.js';
 
 const router = express.Router();
 const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended']);
@@ -117,6 +118,19 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
     return res.status(502).json({ error: 'Failed to report playback state' });
+  }
+}));
+
+// Transcoding progress before the first bytes of a stream arrive (the
+// player's loading indicator polls this while it waits).
+router.get('/:id/transcode-progress', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    return res.json(await getTranscodeProgress({ userId, token: accessToken, itemId: req.params.id }));
+  } catch (error) {
+    if (isUpstreamUnauthorized(error)) return destroyInvalidSession(req, res);
+    return res.json({ available: false, reason: 'error' });
   }
 }));
 
