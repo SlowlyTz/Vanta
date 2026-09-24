@@ -63,18 +63,6 @@ describe('WatchPartyService · Ready Room und Countdown', () => {
     expect(party.seq).toBe(seqBefore);
   });
 
-  it('setPreloadState("ready") setzt das Mitglied ready, "error" nicht', async () => {
-    const created = await createTestParty();
-    await joinAsViewer(created.id);
-
-    const readyParty = WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'ready', message: 'Bereit' });
-    expect(readyParty.members.find(m => m.userId === 'viewer-1').ready).toBe(true);
-
-    const errorParty = WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'error', message: 'Kaputt' });
-    expect(errorParty.members.find(m => m.userId === 'viewer-1').ready).toBe(false);
-    expect(errorParty.members.find(m => m.userId === 'viewer-1').preloadMessage).toBe('Kaputt');
-  });
-
   it('beginCountdownIfReady nutzt party.positionMs statt immer 0 (z.B. nach einem Resume)', async () => {
     const created = await createTestParty();
     WatchPartyService.endParty({ partyId: created.id, ownerUserId: 'owner-1', positionMs: 60_000 });
@@ -100,14 +88,6 @@ describe('WatchPartyService · Ready Room und Countdown', () => {
     expect(startsAtServerTimeMs - Date.now()).toBeGreaterThanOrEqual(5390);
     expect(startsAtServerTimeMs - Date.now()).toBeLessThanOrEqual(5400);
     expect(WatchPartyService.serializeParty(party).timeline).toMatchObject({ playing: true, anchorServerTimeMs: startsAtServerTimeMs, positionMs: 0 });
-  });
-
-  it('setPreloadState("blocked") setzt das Mitglied nicht ready, beeinflusst canStart aber nicht mehr', async () => {
-    const created = await createTestParty();
-    await joinAsViewer(created.id);
-
-    const blockedParty = WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'blocked', message: 'Autoplay blockiert' });
-    expect(blockedParty.members.find(m => m.userId === 'viewer-1').ready).toBe(false);
   });
 
   it('canStart erfordert ready-room und alle Mitglieder ready', async () => {

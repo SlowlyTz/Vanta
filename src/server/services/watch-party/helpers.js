@@ -10,7 +10,6 @@ export const COUNTDOWN_MS = 5000;
 // every client and lets the countdown scene fade in, so all five digits get a
 // full second everywhere.
 export const COUNTDOWN_LEAD_MS = 400;
-export const READY_PRELOAD_STATES = new Set(['ready']);
 export const MAX_PARTY_MEMBERS = 4;
 export const READY_ROOM_STATUS = 'ready-room';
 // Loading the next episode; everyone starts together once all are ready.

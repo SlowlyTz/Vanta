@@ -1,23 +1,12 @@
-import { SWITCHING_STATUS } from './helpers.js';
 import { ItemsService } from '../jellyfin/items.service.js';
-import { badRequest, conflict } from './errors.js';
-import { assertOwner, assertPartyAdmin, READY_ROOM_STATUS, COUNTDOWN_MS, COUNTDOWN_LEAD_MS, createItemSnapshot, setTimeline } from './helpers.js';
+import { badRequest } from './errors.js';
+import { assertPartyAdmin, READY_ROOM_STATUS, SWITCHING_STATUS, COUNTDOWN_MS, COUNTDOWN_LEAD_MS, createItemSnapshot, setTimeline } from './helpers.js';
 
 export const playbackMethods = {
   canStart(party) {
     return party.status === READY_ROOM_STATUS
       && [...party.members.values()].length > 0
       && [...party.members.values()].every(member => member.ready === true);
-  },
-
-  startParty({ partyId, ownerUserId }) {
-    const party = this.getPartyOrThrow(partyId);
-    assertOwner(party, ownerUserId);
-
-    if (party.status === 'ended') throw badRequest('Diese Watch Party wurde bereits beendet');
-    if (!this.canStart(party)) throw conflict('Not all members are ready');
-
-    return this.beginCountdownIfReady({ partyId });
   },
 
   beginCountdownIfReady({ partyId }) {

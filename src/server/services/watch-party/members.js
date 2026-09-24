@@ -1,20 +1,7 @@
 import { notFound, forbidden, badRequest, conflict } from './errors.js';
-import { assertOwner, assertPartyAdmin, assertPartyMember, PLAYBACK_STATES, READY_PRELOAD_STATES, READY_ROOM_STATUS, SWITCHING_STATUS } from './helpers.js';
+import { assertOwner, assertPartyAdmin, assertPartyMember, PLAYBACK_STATES, READY_ROOM_STATUS, SWITCHING_STATUS } from './helpers.js';
 
 export const memberMethods = {
-  setPreloadState({ partyId, userId, state, message }) {
-    const party = this.getPartyOrThrow(partyId);
-    const member = party.members.get(userId);
-    if (!member) throw forbidden('Du bist kein Mitglied dieser Watch Party');
-
-    member.preloadState = state;
-    member.preloadMessage = message || '';
-    member.ready = READY_PRELOAD_STATES.has(state);
-    member.lastSeenAt = Date.now();
-
-    return this.serializeParty(party);
-  },
-
   openReadyRoom({ partyId, ownerUserId }) {
     const party = this.getPartyOrThrow(partyId);
     assertOwner(party, ownerUserId);
@@ -55,17 +42,6 @@ export const memberMethods = {
     member.lastSeenAt = Date.now();
 
     return party;
-  },
-
-  setReady({ partyId, userId, ready }) {
-    const party = this.getPartyOrThrow(partyId);
-    const member = party.members.get(userId);
-    if (!member) throw forbidden('Du bist kein Mitglied dieser Watch Party');
-
-    member.ready = Boolean(ready);
-    member.lastSeenAt = Date.now();
-
-    return this.serializeParty(party, userId);
   },
 
   kickMember({ partyId, actorUserId, targetUserId }) {

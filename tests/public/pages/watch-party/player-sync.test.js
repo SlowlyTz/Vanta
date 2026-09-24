@@ -9,7 +9,6 @@ import { makeParty, flush, timelineMessage, createFakeController } from './helpe
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
     join: vi.fn(),
-    setReady: vi.fn(),
     kick: vi.fn(),
     create: vi.fn(),
     get: vi.fn(),

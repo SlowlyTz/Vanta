@@ -9,7 +9,6 @@ vi.mock('../../../src/server/services/watch-party.service.js', () => ({
     createParty: vi.fn(),
     getPartyOrThrow: vi.fn(),
     joinParty: vi.fn(),
-    setReady: vi.fn(),
     kickMember: vi.fn(),
     endParty: vi.fn(),
     getSuggestions: vi.fn(),

@@ -27,13 +27,10 @@ export function bindSocketHandlers(ctx) {
         });
         return;
 
+      // The server sends it only when the party moves to another episode.
       case 'LOAD_MEDIA':
-        if (message.reason === 'episode-change') {
-          if (ctx.party) ctx.party.status = 'switching';
-          void ctx.switchEpisode({ itemId: message.itemId });
-        } else {
-          ctx.mountPlayer({ itemId: message.itemId, positionMs: message.positionMs });
-        }
+        if (ctx.party) ctx.party.status = 'switching';
+        void ctx.switchEpisode({ itemId: message.itemId });
         return;
 
       case 'TIMELINE':

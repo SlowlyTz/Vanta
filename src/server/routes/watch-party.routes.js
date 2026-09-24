@@ -69,32 +69,12 @@ router.post('/resume', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
-router.get('/:partyId', requireAuth, asyncHandler(async (req, res) => {
-  const party = WatchPartyService.getPartyOrThrow(req.params.partyId);
-  return res.json({ party: WatchPartyService.serializeParty(party, req.session.userId) });
-}));
-
 router.post('/:partyId/join', requireAuth, asyncHandler(async (req, res) => {
   const party = await WatchPartyService.joinParty({
     partyId: req.params.partyId,
     userId: req.session.userId,
     username: req.session.username,
     accessToken: req.session.accessToken
-  });
-
-  watchPartySocketHub.broadcastParty(party.id, {
-    type: 'PARTY_UPDATED',
-    party
-  });
-
-  return res.json({ party });
-}));
-
-router.post('/:partyId/ready', requireAuth, asyncHandler(async (req, res) => {
-  const party = WatchPartyService.setReady({
-    partyId: req.params.partyId,
-    userId: req.session.userId,
-    ready: Boolean((req.body || {}).ready)
   });
 
   watchPartySocketHub.broadcastParty(party.id, {

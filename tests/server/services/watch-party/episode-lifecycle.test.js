@@ -30,7 +30,6 @@ describe('WatchPartyService · Episode und Lifecycle', () => {
   it('changeEpisode dürfen nur Admins ausführen und lädt die Folge für alle neu', async () => {
     const created = await createTestParty();
     await joinAsViewer(created.id);
-    WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'ready' });
 
     await expect(WatchPartyService.changeEpisode({
       partyId: created.id, userId: 'viewer-1', accessToken: 'x', itemId: 'episode-2'

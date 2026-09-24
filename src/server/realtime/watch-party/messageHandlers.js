@@ -18,10 +18,6 @@ export const messageHandlerMethods = {
 
     try {
       switch (message.type) {
-        case 'PING':
-          this.sendTo(ws, { type: 'PONG' });
-          return;
-
         case 'TIME_PING':
           this.sendTo(ws, {
             type: 'TIME_PONG',
@@ -40,23 +36,6 @@ export const messageHandlerMethods = {
         case 'OWNER_SET_WAIT_FOR_BUFFERING':
           this.setWaitForBuffering({ partyId, userId, enabled: message.enabled });
           return;
-
-        case 'READY': {
-          const party = WatchPartyService.setReady({ partyId, userId, ready: Boolean(message.ready) });
-          this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party });
-          return;
-        }
-
-        case 'PRELOAD_STATE': {
-          const party = WatchPartyService.setPreloadState({
-            partyId,
-            userId,
-            state: message.state,
-            message: message.message
-          });
-          this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party });
-          return;
-        }
 
         case 'PLAYER_READY_STATE': {
           const party = WatchPartyService.setPlayerReady({
@@ -101,15 +80,6 @@ export const messageHandlerMethods = {
         }
 
         case 'OWNER_OPEN_READY_ROOM': {
-          const party = WatchPartyService.openReadyRoom({ partyId, ownerUserId: userId });
-          this.broadcastParty(partyId, {
-            type: 'PARTY_UPDATED',
-            party: WatchPartyService.serializeParty(party)
-          });
-          return;
-        }
-
-        case 'OWNER_START': {
           const party = WatchPartyService.openReadyRoom({ partyId, ownerUserId: userId });
           this.broadcastParty(partyId, {
             type: 'PARTY_UPDATED',

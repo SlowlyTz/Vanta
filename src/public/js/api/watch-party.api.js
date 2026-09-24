@@ -8,20 +8,9 @@ export const WatchPartyApi = {
     });
   },
 
-  get(partyId) {
-    return request(`/api/watch-parties/${encodeURIComponent(partyId)}`);
-  },
-
   join(partyId) {
     return request(`/api/watch-parties/${encodeURIComponent(partyId)}/join`, {
       method: 'POST'
-    });
-  },
-
-  setReady(partyId, ready) {
-    return request(`/api/watch-parties/${encodeURIComponent(partyId)}/ready`, {
-      method: 'POST',
-      body: { ready }
     });
   },
 

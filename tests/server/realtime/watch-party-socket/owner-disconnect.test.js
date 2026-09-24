@@ -14,13 +14,10 @@ vi.mock('../../../../src/server/services/watch-party.service.js', () => ({
   WatchPartyService: {
     parties: new Map(),
     getPartyOrThrow: vi.fn(),
-    setReady: vi.fn(),
     setConnected: vi.fn(),
-    setPreloadState: vi.fn(),
     setPlayerReady: vi.fn(),
     openReadyRoom: vi.fn(),
     beginCountdownIfReady: vi.fn(),
-    startParty: vi.fn(),
     beginPlayback: vi.fn(),
     changeEpisode: vi.fn(),
     endParty: vi.fn(),

@@ -14,13 +14,10 @@ vi.mock('../../../../src/server/services/watch-party.service.js', () => ({
   WatchPartyService: {
     parties: new Map(),
     getPartyOrThrow: vi.fn(),
-    setReady: vi.fn(),
     setConnected: vi.fn(),
-    setPreloadState: vi.fn(),
     setPlayerReady: vi.fn(),
     openReadyRoom: vi.fn(),
     beginCountdownIfReady: vi.fn(),
-    startParty: vi.fn(),
     beginPlayback: vi.fn(),
     changeEpisode: vi.fn(),
     endParty: vi.fn(),
@@ -39,45 +36,6 @@ describe('WatchPartySocketHub · Ready State', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionOverride = null;
-  });
-
-  it('aktualisiert die Party und broadcastet PARTY_UPDATED bei READY', () => {
-    const hub = new WatchPartySocketHub();
-    const updatedParty = { id: 'party-1', status: 'lobby' };
-    WatchPartyService.setReady.mockReturnValue(updatedParty);
-
-    const ownerWs = createFakeWs();
-    hub.registerConnection('party-1', 'owner-1', ownerWs);
-
-    hub.handleMessage({ partyId: 'party-1', user: makeUser('viewer-1'), message: { type: 'READY', ready: true }, ws: createFakeWs() });
-
-    expect(WatchPartyService.setReady).toHaveBeenCalledWith({ partyId: 'party-1', userId: 'viewer-1', ready: true });
-    expect(ownerWs.sent).toEqual([
-      expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty })
-    ]);
-  });
-
-  it('PRELOAD_STATE ready aktualisiert die Party und broadcastet PARTY_UPDATED', () => {
-    const hub = new WatchPartySocketHub();
-    const updatedParty = { id: 'party-1', status: 'lobby' };
-    WatchPartyService.setPreloadState.mockReturnValue(updatedParty);
-
-    const ownerWs = createFakeWs();
-    hub.registerConnection('party-1', 'owner-1', ownerWs);
-
-    hub.handleMessage({
-      partyId: 'party-1',
-      user: makeUser('viewer-1'),
-      message: { type: 'PRELOAD_STATE', state: 'ready', message: 'Bereit' },
-      ws: createFakeWs()
-    });
-
-    expect(WatchPartyService.setPreloadState).toHaveBeenCalledWith({
-      partyId: 'party-1', userId: 'viewer-1', state: 'ready', message: 'Bereit'
-    });
-    expect(ownerWs.sent).toEqual([
-      expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty })
-    ]);
   });
 
   it('reicht den Ladefortschritt aus PLAYER_READY_STATE an den Service weiter', () => {

@@ -18,11 +18,6 @@ describe('WatchPartyApi', () => {
     expect(request).toHaveBeenCalledWith('/api/watch-parties', { method: 'POST', body: { itemId: 'movie-1' } });
   });
 
-  it('get lädt eine Party per GET', () => {
-    WatchPartyApi.get('party-1');
-    expect(request).toHaveBeenCalledWith('/api/watch-parties/party-1');
-  });
-
   it('join sendet POST an den Join-Endpunkt', () => {
     WatchPartyApi.join('party-1');
     expect(request).toHaveBeenCalledWith('/api/watch-parties/party-1/join', { method: 'POST' });
@@ -70,7 +65,7 @@ describe('WatchPartyApi', () => {
   });
 
   it('encoded Sonderzeichen in IDs für URL-Pfade', () => {
-    WatchPartyApi.get('party/1');
-    expect(request).toHaveBeenCalledWith('/api/watch-parties/party%2F1');
+    WatchPartyApi.join('party/1');
+    expect(request).toHaveBeenCalledWith('/api/watch-parties/party%2F1/join', { method: 'POST' });
   });
 });

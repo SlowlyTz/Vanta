@@ -32,8 +32,7 @@ export const connectionLifecycleMethods = {
 
     this.sendTo(ws, {
       type: 'PARTY_STATE',
-      party: WatchPartyService.serializeParty(party, user.userId),
-      serverTimeMs: Date.now()
+      party: WatchPartyService.serializeParty(party, user.userId)
     });
 
     if (!wasConnected) {

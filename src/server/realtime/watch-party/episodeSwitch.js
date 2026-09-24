@@ -39,8 +39,7 @@ export const episodeSwitchMethods = {
         type: 'LOAD_MEDIA',
         itemId: changed.playableItemId,
         positionMs: 0,
-        reason: 'episode-change',
-        message: `${changed.itemSnapshot.name} wird geladen`
+        reason: 'episode-change'
       });
       this.broadcastParty(partyId, {
         type: 'PARTY_UPDATED',
