@@ -61,6 +61,12 @@ export function createFakeController() {
     setSyncRate: vi.fn(),
     unlockPlayback: vi.fn(),
     getBufferedAhead: vi.fn(),
+    // Like the player: the share of four seconds buffered at the position.
+    getLoadProgress: vi.fn(position => ({
+      fraction: Math.min(1, (Number(controller.getBufferedAhead(position)) || 0) / 4),
+      etaSeconds: null,
+      approx: false
+    })),
     blockNextPlay() {
       controller.syncPlay.mockImplementationOnce(async () => {
         controller.blocked = true;

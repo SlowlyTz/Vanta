@@ -121,13 +121,14 @@ describe('WatchPartyPage · Ready Room', () => {
   });
 
   it('zeigt auf dem Bereit-Button die Restzeit, wenn der Player sie schätzen kann', async () => {
+    const original = fakeController.getLoadProgress.getMockImplementation();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
       WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
       MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
       let measured = { fraction: 0.4, etaSeconds: 3, phase: 'loading' };
-      fakeController.getLoadProgress = vi.fn(() => measured);
+      fakeController.getLoadProgress.mockImplementation(() => measured);
 
       const container = WatchPartyPage({ partyId: 'party-1' });
       await vi.advanceTimersByTimeAsync(50);
@@ -141,7 +142,7 @@ describe('WatchPartyPage · Ready Room', () => {
       await vi.advanceTimersByTimeAsync(300);
       expect(readyButton.textContent).toBe('Bereit ✓');
     } finally {
-      delete fakeController.getLoadProgress;
+      fakeController.getLoadProgress.mockImplementation(original);
       vi.useRealTimers();
     }
   });

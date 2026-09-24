@@ -1,16 +1,8 @@
 import { timelinePositionAt } from './driftController.js';
 
-// Seconds of video that must sit in the buffer at the start position before
-// a member counts as loaded: enough that the synced start never stalls.
-export const PRELOAD_TARGET_SECONDS = 4;
 export const PRELOAD_TIMEOUT_MS = 45_000;
 const PRELOAD_POLL_MS = 250;
 const PROGRESS_REPORT_STEP = 0.05;
-
-export function preloadProgress({ bufferedAhead, position, duration }) {
-  if (Number.isFinite(duration) && duration > 0 && position + bufferedAhead >= duration - 0.5) return 1;
-  return Math.min(1, Math.max(0, bufferedAhead / PRELOAD_TARGET_SECONDS));
-}
 
 export function bindReadyRoom(ctx) {
   ctx.preload = null;
@@ -93,15 +85,10 @@ export function bindReadyRoom(ctx) {
         resolve(false);
         return;
       }
-      const controller = ctx.controller;
-      // The player's measure also counts the segment still downloading and
-      // estimates the time left; older players only report the buffer.
-      const measured = controller?.getLoadProgress?.(positionSeconds);
-      const progress = measured ? measured.fraction : preloadProgress({
-        bufferedAhead: controller?.getBufferedAhead?.(positionSeconds) ?? PRELOAD_TARGET_SECONDS,
-        position: positionSeconds,
-        duration: Number(controller?.player?.duration)
-      });
+      // The player measures the load (buffer, the segment downloading,
+      // Jellyfin's transcoding) and estimates the time left.
+      const measured = ctx.controller?.getLoadProgress?.(positionSeconds);
+      const progress = measured ? measured.fraction : 1;
       preload.progress = progress;
       const eta = measured?.etaSeconds ?? null;
       const approx = Boolean(measured?.approx);
