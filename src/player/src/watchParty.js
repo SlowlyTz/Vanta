@@ -1,51 +1,40 @@
-const LOCKED_CONTROL_SELECTOR = [
-  'media-play-button',
-  'media-seek-button',
-  'media-time-slider',
-  '.vanta-player-center-play',
-  '.vanta-player-center-skip'
-].join(', ');
-
+// Viewers in a watch party do not steer playback: the transport (play,
+// seek) is hidden and inert, the timeline only shows progress, and the
+// gestures lose their actions. The top bar says who is in control instead.
+const TRANSPORT_SELECTOR = '.vanta-player-transport';
+// The timeline stays visible as a progress display. It must not get
+// aria-hidden: vidstack hides any slider carrying it with display:none.
+const TIMELINE_SELECTOR = 'media-time-slider';
 const GESTURE_SELECTOR = 'media-gesture';
 const ORIGINAL_GESTURE_ACTION_ATTRIBUTE = 'data-watch-party-original-action';
 
 export function applyWatchPartyPermissions({ root, watchParty }) {
   if (!watchParty?.enabled) return;
   const canControl = Boolean(watchParty.canControl ?? watchParty.isOwner);
-  const controls = root.querySelectorAll(LOCKED_CONTROL_SELECTOR);
-  const gestures = root.querySelectorAll(GESTURE_SELECTOR);
 
-  if (canControl) {
-    root.classList.remove('is-watch-party-viewer');
+  root.classList.toggle('is-watch-party-viewer', !canControl);
+  const pill = root.querySelector('.vanta-player-party-pill');
+  if (pill) pill.hidden = canControl;
 
-    controls.forEach(control => {
-      control.removeAttribute('aria-disabled');
-      control.removeAttribute('disabled');
-      control.disabled = false;
-      control.inert = false;
-      control.style.pointerEvents = '';
-    });
+  root.querySelectorAll(TRANSPORT_SELECTOR).forEach(control => {
+    control.inert = !canControl;
+    if (canControl) control.removeAttribute('aria-hidden');
+    else control.setAttribute('aria-hidden', 'true');
+  });
+  root.querySelectorAll(TIMELINE_SELECTOR).forEach(timeline => {
+    timeline.inert = !canControl;
+  });
 
-    gestures.forEach(gesture => {
+  root.querySelectorAll(GESTURE_SELECTOR).forEach(gesture => {
+    if (canControl) {
       const originalAction = gesture.getAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE);
       if (originalAction) {
         gesture.setAttribute('action', originalAction);
         gesture.removeAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE);
       }
       gesture.style.pointerEvents = '';
-    });
-    return;
-  }
-
-  root.classList.add('is-watch-party-viewer');
-
-  controls.forEach(control => {
-    control.setAttribute('aria-disabled', 'true');
-    control.inert = true;
-    control.style.pointerEvents = 'none';
-  });
-
-  gestures.forEach(gesture => {
+      return;
+    }
     const action = gesture.getAttribute('action');
     if (action && !gesture.getAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE)) {
       gesture.setAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE, action);

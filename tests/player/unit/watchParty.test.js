@@ -1,117 +1,83 @@
 import { describe, it, expect } from 'vitest';
 import { applyWatchPartyPermissions, computeRemoteControlTarget } from '../../../src/player/src/watchParty.js';
 
-function createFakeControl() {
-  const attributes = {};
-  return {
-    style: {},
-    setAttribute(name, value) { attributes[name] = value; },
-    getAttribute(name) { return attributes[name] ?? null; },
-    removeAttribute(name) { delete attributes[name]; }
-  };
+function createRoot() {
+  const root = document.createElement('div');
+  root.innerHTML = `
+    <div class="vanta-player-party-pill" hidden></div>
+    <div class="vanta-player-center-controls vanta-player-transport"><button class="vanta-player-play"></button></div>
+    <div class="vanta-player-transport vanta-player-transport-bar"><button class="vanta-player-seek"></button></div>
+    <media-time-slider></media-time-slider>
+    <media-mute-button></media-mute-button>
+    <media-gesture class="toggle" action="toggle:paused"></media-gesture>
+    <media-gesture class="left" action="seek:-10"></media-gesture>`;
+  return root;
 }
 
-function createFakeRoot(controls, gestures = []) {
-  const classes = new Set();
-  return {
-    classList: {
-      add: (...names) => names.forEach(name => classes.add(name)),
-      remove: (...names) => names.forEach(name => classes.delete(name)),
-      contains: (name) => classes.has(name)
-    },
-    querySelectorAll: selector => (selector === 'media-gesture' ? gestures : controls)
-  };
-}
+const transport = root => [...root.querySelectorAll('.vanta-player-transport')];
 
 describe('applyWatchPartyPermissions', () => {
-  it('lässt den Player für den Owner unverändert', () => {
-    const controls = [createFakeControl()];
-    const root = createFakeRoot(controls);
-
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: true } });
+  it('lässt den Player für Admins unverändert', () => {
+    const root = createRoot();
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, canControl: true } });
 
     expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
-    expect(controls[0].getAttribute('aria-disabled')).toBeNull();
+    expect(transport(root).every(control => !control.inert)).toBe(true);
+    expect(root.querySelector('.vanta-player-party-pill').hidden).toBe(true);
   });
 
-  it('lässt den Player unverändert, wenn kein Watch-Party-Modus aktiv ist', () => {
-    const controls = [createFakeControl()];
-    const root = createFakeRoot(controls);
-
+  it('lässt den Player außerhalb einer Watch Party unverändert', () => {
+    const root = createRoot();
     applyWatchPartyPermissions({ root, watchParty: null });
-
     expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
   });
 
-  it('deaktiviert Play-/Seek-Controls für Viewer, lässt Lautstärke aber unangetastet', () => {
-    const playControl = createFakeControl();
-    const root = createFakeRoot([playControl]);
-
+  it('blendet für Zuschauer Play, Spulen und die bedienbare Zeitleiste aus und zeigt „Admin steuert“', () => {
+    const root = createRoot();
     applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false } });
 
     expect(root.classList.contains('is-watch-party-viewer')).toBe(true);
-    expect(playControl.getAttribute('aria-disabled')).toBe('true');
-    expect(playControl.style.pointerEvents).toBe('none');
-
-    // Volume controls are intentionally excluded from the locked-control selector,
-    // so querySelectorAll (and this whole flow) never touches them.
+    expect(transport(root).every(control => control.inert && control.getAttribute('aria-hidden') === 'true')).toBe(true);
+    // The timeline stays visible as a display: inert, but never aria-hidden
+    // (vidstack would hide it entirely).
+    const timeline = root.querySelector('media-time-slider');
+    expect(timeline.inert).toBe(true);
+    expect(timeline.hasAttribute('aria-hidden')).toBe(false);
+    expect(root.querySelector('.vanta-player-party-pill').hidden).toBe(false);
+    // Volume stays with the viewer.
+    expect(root.querySelector('media-mute-button').inert).toBeFalsy();
   });
 
-  it('deaktiviert Doppeltipp-Seek-Gesten für Viewer', () => {
-    const gesture = createFakeControl();
-    gesture.setAttribute('action', 'seek:-10');
-    const root = createFakeRoot([], [gesture]);
-
+  it('nimmt Zuschauern Klick- und Doppeltipp-Gesten', () => {
+    const root = createRoot();
     applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false } });
 
-    expect(gesture.getAttribute('action')).toBeNull();
-    expect(gesture.style.pointerEvents).toBe('none');
+    root.querySelectorAll('media-gesture').forEach(gesture => {
+      expect(gesture.getAttribute('action')).toBeNull();
+      expect(gesture.style.pointerEvents).toBe('none');
+    });
   });
 
-  it('lässt Doppeltipp-Seek-Gesten für den Owner unverändert', () => {
-    const gesture = createFakeControl();
-    gesture.setAttribute('action', 'seek:-10');
-    const root = createFakeRoot([], [gesture]);
+  it('canControl hat Vorrang vor isOwner', () => {
+    const promoted = createRoot();
+    applyWatchPartyPermissions({ root: promoted, watchParty: { enabled: true, isOwner: false, canControl: true } });
+    expect(promoted.classList.contains('is-watch-party-viewer')).toBe(false);
 
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: true } });
-
-    expect(gesture.getAttribute('action')).toBe('seek:-10');
+    const demoted = createRoot();
+    applyWatchPartyPermissions({ root: demoted, watchParty: { enabled: true, isOwner: true, canControl: false } });
+    expect(demoted.classList.contains('is-watch-party-viewer')).toBe(true);
   });
 
-  it('canControl hat Vorrang vor isOwner: ein beförderter Admin (isOwner=false, canControl=true) bleibt uneingeschränkt', () => {
-    const playControl = createFakeControl();
-    const root = createFakeRoot([playControl]);
-
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false, canControl: true } });
+  it('gibt alles zurück, wenn ein Zuschauer während der Party zum Admin wird', () => {
+    const root = createRoot();
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, canControl: false } });
+    applyWatchPartyPermissions({ root, watchParty: { enabled: true, canControl: true } });
 
     expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
-    expect(playControl.getAttribute('aria-disabled')).toBeNull();
-  });
-
-  it('canControl=false sperrt Controls auch dann, wenn isOwner true wäre', () => {
-    const playControl = createFakeControl();
-    const root = createFakeRoot([playControl]);
-
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: true, canControl: false } });
-
-    expect(root.classList.contains('is-watch-party-viewer')).toBe(true);
-    expect(playControl.getAttribute('aria-disabled')).toBe('true');
-  });
-
-  it('hebt Viewer-Sperren wieder auf, wenn ein laufender Teilnehmer zum Admin befördert wird', () => {
-    const playControl = createFakeControl();
-    const gesture = createFakeControl();
-    gesture.setAttribute('action', 'seek:10');
-    const root = createFakeRoot([playControl], [gesture]);
-
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false, canControl: false } });
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false, canControl: true } });
-
-    expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
-    expect(playControl.getAttribute('aria-disabled')).toBeNull();
-    expect(playControl.style.pointerEvents).toBe('');
-    expect(gesture.getAttribute('action')).toBe('seek:10');
-    expect(gesture.style.pointerEvents).toBe('');
+    expect(transport(root).every(control => !control.inert && !control.hasAttribute('aria-hidden'))).toBe(true);
+    expect(root.querySelector('media-gesture.toggle').getAttribute('action')).toBe('toggle:paused');
+    expect(root.querySelector('media-gesture.left').getAttribute('action')).toBe('seek:-10');
+    expect(root.querySelector('.vanta-player-party-pill').hidden).toBe(true);
   });
 });
 

@@ -1,7 +1,6 @@
 import Hls from 'hls.js';
 import { isHLSProvider } from 'vidstack';
 import { exitPictureInPicture, supportsFinePointer } from '../platform.js';
-import { seekBy } from '../seek.js';
 import { HLS_FRAGMENT_TIMEOUT_MS, WHEEL_SEEK_DEBOUNCE_MS } from './markup.js';
 
 export function bindPlayerEvents(context) {
@@ -53,8 +52,7 @@ export function bindPlayerEvents(context) {
     if (now - context.lastWheelSeekAt < WHEEL_SEEK_DEBOUNCE_MS) return;
     context.lastWheelSeekAt = now;
     event.preventDefault();
-    const direction = event.deltaY > 0 ? 10 : -10;
-    seekBy(player, direction, { endEpsilon: 0.25 });
+    context.seekStep(event.deltaY > 0 ? 10 : -10);
   };
 
   listen(player, 'provider-change', event => {

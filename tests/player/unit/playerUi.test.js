@@ -165,4 +165,40 @@ describe('createPlayerUi', () => {
 
     expect(ui.getState()).toBe('booting');
   });
+
+  describe('holdActive', () => {
+    it('blendet die Controls nicht aus, solange ein Grund sie hält', () => {
+      vi.useFakeTimers();
+      try {
+        const root = createMockRoot();
+        const ui = createPlayerUi(root, { idleTimeoutMs: 1000 });
+        ui.setState('ready-playing-active');
+        ui.holdActive('settings');
+        ui.holdActive('hover');
+        vi.advanceTimersByTime(5000);
+        expect(ui.getState()).toBe('ready-playing-active');
+        expect(ui.isHeld()).toBe(true);
+
+        ui.releaseActive('hover');
+        vi.advanceTimersByTime(5000);
+        expect(ui.getState()).toBe('ready-playing-active');
+
+        ui.releaseActive('settings');
+        vi.advanceTimersByTime(1000);
+        expect(ui.getState()).toBe('ready-playing-idle');
+        ui.destroy();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('holt ausgeblendete Controls zurück, wenn gehalten wird', () => {
+      const root = createMockRoot();
+      const ui = createPlayerUi(root);
+      ui.setState('ready-playing-idle');
+      ui.holdActive('settings');
+      expect(ui.getState()).toBe('ready-playing-active');
+      ui.destroy();
+    });
+  });
 });

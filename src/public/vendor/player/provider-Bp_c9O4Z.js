@@ -1,6 +1,6 @@
 import { Q as e, c as t, w as n } from "./std-EJr84HPl.js";
-import { B as r, H as i, J as a, L as o, R as s, Y as c, m as l, q as u } from "./media-ui-D5tS2kPu.js";
-import { t as d } from "./provider-BAsv-5aR.js";
+import { I as r, J as i, K as a, L as o, V as s, p as c, q as l, z as u } from "./media-ui-BMhuxdgc.js";
+import { t as d } from "./provider-mj0rIKNQ.js";
 //#region node_modules/vidstack/dist/prod/providers/video/native-hls-text-tracks.js
 var f = class {
 	constructor(t, n) {
@@ -9,23 +9,23 @@ var f = class {
 	va(e) {
 		let t = e.track;
 		if (!t || p(this.qa, t)) return;
-		let n = new i({
+		let n = new s({
 			id: t.id,
 			kind: t.kind,
 			label: t.label,
 			language: t.language,
 			type: "vtt"
 		});
-		n[o] = { track: t }, n[r] = 2, n[s] = !0;
-		let a = 0, c = (e) => {
-			if (t.cues) for (let r = a; r < t.cues.length; r++) n.addCue(t.cues[r], e), a++;
+		n[r] = { track: t }, n[u] = 2, n[o] = !0;
+		let i = 0, a = (e) => {
+			if (t.cues) for (let r = i; r < t.cues.length; r++) n.addCue(t.cues[r], e), i++;
 		};
-		c(e), t.oncuechange = c, this.ph.textTracks.add(n, e), n.setMode(t.mode, e);
+		a(e), t.oncuechange = a, this.ph.textTracks.add(n, e), n.setMode(t.mode, e);
 	}
 	Eh() {
 		this.qa.textTracks.onaddtrack = null;
 		for (let e of this.ph.textTracks) {
-			let t = e[o]?.track;
+			let t = e[r]?.track;
 			t?.oncuechange && (t.oncuechange = null);
 		}
 	}
@@ -43,7 +43,7 @@ var m = class {
 		return document.pictureInPictureElement === this.qa;
 	}
 	get supported() {
-		return a(this.qa);
+		return l(this.qa);
 	}
 	async enter() {
 		return this.qa.requestPictureInPicture();
@@ -69,7 +69,7 @@ var m = class {
 	}
 	Ga = "inline";
 	get Jh() {
-		return c(this.qa);
+		return i(this.qa);
 	}
 	async Ih(e) {
 		this.Ga !== e && this.qa.webkitSetPresentationMode(e);
@@ -126,14 +126,14 @@ var m = class {
 	fullscreen;
 	pictureInPicture;
 	constructor(e, t) {
-		if (super(e), c(e)) {
+		if (super(e), i(e)) {
 			let n = new h(e, t);
 			this.fullscreen = new g(n), this.pictureInPicture = new _(n);
-		} else a(e) && (this.pictureInPicture = new m(e, t));
+		} else l(e) && (this.pictureInPicture = new m(e, t));
 	}
 	setup(t) {
-		super.setup(t), u(this.video) && new f(this.video, t), t.textRenderers[l](this.video), e(() => {
-			t.textRenderers[l](null);
+		super.setup(t), a(this.video) && new f(this.video, t), t.textRenderers[c](this.video), e(() => {
+			t.textRenderers[c](null);
 		}), this.type === "video" && t.delegate.p("provider-setup", { detail: this });
 	}
 	get video() {

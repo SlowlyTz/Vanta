@@ -1,8 +1,7 @@
 import 'vidstack/define/media-player.js';
 import 'vidstack/define/media-outlet.js';
-import 'vidstack/define/media-play-button.js';
-import 'vidstack/define/media-seek-button.js';
 import 'vidstack/define/media-time-slider.js';
+import 'vidstack/define/media-slider-value.js';
 import 'vidstack/define/media-time.js';
 import 'vidstack/define/media-mute-button.js';
 import 'vidstack/define/media-volume-slider.js';
@@ -20,6 +19,7 @@ import { bindSourceSwitchIntegration } from './player/sourceSwitchIntegration.js
 import { bindMenus } from './player/menus.js';
 import { bindPlayerEvents } from './player/eventBindings.js';
 import { bindSyncControls } from './player/syncControls.js';
+import { bindTransportControls } from './player/transportControls.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -29,6 +29,7 @@ export async function mountVantaPlayer(options) {
   bindSourceSwitchIntegration(context);
   bindMenus(context);
   bindPlayerEvents(context);
+  bindTransportControls(context);
   bindSyncControls(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);

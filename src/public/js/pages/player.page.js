@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';
 import { router } from '../router.js';
+import { playerHeading } from '../utils/playerHeading.js';
 
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 
@@ -135,7 +136,7 @@ export default function PlayerPage({ id }) {
       controller = await playerModule.mountVantaPlayer({
         root: container,
         itemId: playableId,
-        title: item.Name || item.SeriesName || '',
+        ...playerHeading(item),
         poster: getPosterUrl(item),
         resumePosition,
         resolvePlayback: (mode, options) => MediaApi.getPlayback(playableId, mode, options),

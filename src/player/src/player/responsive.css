@@ -28,46 +28,46 @@
 }
 
 
-/* Desktop: keep a prominent play affordance when autoplay is blocked or paused. */
-@media (pointer: fine) and (min-width: 769px) {
-  .vanta-player-root:not([data-ui-state="ready-paused"]) .vanta-player-center-controls {
+/* Touch: the big transport in the middle is the one to use; the bar keeps
+   only time, settings and fullscreen. */
+@media (pointer: coarse) {
+  .vanta-player-transport-bar {
+    display: none;
+  }
+
+  .vanta-player-root[data-ui-state="booting"] .vanta-player-center-controls {
     display: none;
   }
 }
 
-/* Tablets and small desktops */
-@media (max-width: 900px) {
-  .vanta-player-volume-slider {
-    width: 86px;
-  }
-}
-
-/* Mobile */
+/* Phones and small tablets */
 @media (max-width: 768px) {
-  .vanta-player-gesture {
-    width: 28%;
-  }
-
   .vanta-player-center-controls {
-    gap: 18px;
+    gap: 28px;
   }
 
-  .vanta-player-center-play {
-    --media-button-size: 64px;
-    --media-button-icon-size: 30px;
+  .vanta-player-play.is-large {
+    width: 68px;
+    height: 68px;
   }
 
-  .vanta-player-center-skip {
-    --media-button-size: 50px;
-    --media-button-icon-size: 24px;
+  .vanta-player-play.is-large svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .vanta-player-seek.is-large {
+    width: 56px;
+    height: 64px;
+  }
+
+  .vanta-player-seek.is-large svg {
+    width: 30px;
+    height: 30px;
   }
 
   .vanta-player-bottom-controls {
     padding-top: 48px;
-  }
-
-  .vanta-player-timeline-row {
-    gap: 10px;
   }
 
   .vanta-player-controls-row {
@@ -75,9 +75,11 @@
   }
 
   .vanta-player-title {
-    font-size: 0.95rem;
-    max-width: 55vw;
-    padding-top: 8px;
+    font-size: 0.98rem;
+  }
+
+  .vanta-player-subtitle {
+    font-size: 0.8rem;
   }
 
   .vanta-player-back span {
@@ -85,7 +87,7 @@
   }
 
   .vanta-player-back {
-    width: 42px;
+    width: 44px;
     padding: 0;
   }
 
@@ -98,22 +100,18 @@
     min-width: 40px;
     min-height: 44px;
   }
+
+  .vanta-player-seek-bubble {
+    min-width: 76px;
+    padding: 10px 14px;
+    font-size: 1rem;
+  }
 }
 
-/* Small mobile */
+/* Small phones */
 @media (max-width: 480px) {
   .vanta-player-center-controls {
-    gap: 12px;
-  }
-
-  .vanta-player-center-play {
-    --media-button-size: 56px;
-    --media-button-icon-size: 26px;
-  }
-
-  .vanta-player-center-skip {
-    --media-button-size: 44px;
-    --media-button-icon-size: 22px;
+    gap: 18px;
   }
 
   .vanta-media-player {
@@ -121,16 +119,18 @@
     --media-button-icon-size: 20px;
   }
 
-  .vanta-player-time-slider {
-    --media-slider-height: 44px;
-  }
-
-  .vanta-player-volume-slider {
-    width: 72px;
-  }
-
   .vanta-player-time {
     font-size: 0.78rem;
+  }
+
+  .vanta-player-party-pill span {
+    display: none;
+  }
+
+  .vanta-player-party-pill {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
@@ -143,10 +143,6 @@
   .vanta-player-controls-left,
   .vanta-player-controls-right {
     gap: 0;
-  }
-
-  .vanta-player-volume-slider {
-    width: 56px;
   }
 }
 

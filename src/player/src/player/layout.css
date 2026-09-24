@@ -1,11 +1,22 @@
-/* Gesture zones */
+/* Gesture zones: on touch, double taps on the edges seek; with a mouse a
+   click anywhere on the picture toggles playback. */
 .vanta-player-gesture {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 22%;
   z-index: 10;
   pointer-events: auto;
+}
+
+.vanta-player-gesture-toggle {
+  left: 0;
+  right: 0;
+  display: none;
+}
+
+.vanta-player-gesture-left,
+.vanta-player-gesture-right {
+  width: 30%;
 }
 
 .vanta-player-gesture-left {
@@ -14,6 +25,17 @@
 
 .vanta-player-gesture-right {
   right: 0;
+}
+
+@media (pointer: fine) {
+  .vanta-player-gesture-toggle {
+    display: block;
+  }
+
+  .vanta-player-gesture-left,
+  .vanta-player-gesture-right {
+    display: none;
+  }
 }
 
 /* Controls layer */
@@ -25,16 +47,26 @@
   flex-direction: column;
   justify-content: space-between;
   padding:
-    max(14px, env(safe-area-inset-top))
-    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
     max(14px, env(safe-area-inset-bottom))
-    max(16px, env(safe-area-inset-left));
+    max(20px, env(safe-area-inset-left));
   opacity: 1;
-  transition: opacity 220ms ease;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+.vanta-player-controls-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 160px;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.62), transparent);
   pointer-events: none;
 }
 
 .vanta-player-controls-layer > * {
+  position: relative;
   pointer-events: auto;
 }
 
@@ -45,11 +77,15 @@
   pointer-events: none;
 }
 
+.vanta-player-root[data-ui-state="ready-playing-idle"] {
+  cursor: none;
+}
+
 /* Top bar */
 .vanta-player-topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   gap: 16px;
   pointer-events: none;
 }
@@ -59,19 +95,19 @@
 }
 
 .vanta-player-back {
-  min-height: 42px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border: 1px solid rgb(255 255 255 / 0.18);
+  gap: 6px;
+  border: 1px solid rgb(255 255 255 / 0.14);
   border-radius: 999px;
-  padding: 0 16px;
+  padding: 0 16px 0 10px;
   color: #fff;
-  background: rgba(var(--abyss-glass-tint), 0.58);
+  background: rgba(var(--abyss-glass-tint), 0.5);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  font: 650 0.94rem Outfit, system-ui, sans-serif;
+  font: 600 0.92rem Outfit, system-ui, sans-serif;
   cursor: pointer;
   transition: background 160ms ease, transform 160ms ease;
 }
@@ -84,22 +120,75 @@
 
 .vanta-player-back:hover,
 .vanta-player-back:focus-visible {
-  background: rgb(30 30 34 / 0.72);
-  transform: translateY(-1px);
+  background: rgb(255 255 255 / 0.18);
+}
+
+.vanta-player-back:active {
+  transform: scale(0.96);
+}
+
+.vanta-player-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.5);
+  pointer-events: none;
 }
 
 .vanta-player-title {
-  max-width: min(520px, 60vw);
-  padding-top: 10px;
   color: #fff;
-  font: 600 1.05rem Outfit, system-ui, sans-serif;
-  text-shadow: 0 2px 12px rgb(0 0 0 / 0.5);
+  font: 650 1.08rem/1.25 Outfit, system-ui, sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Center controls */
+.vanta-player-subtitle {
+  color: rgb(255 255 255 / 0.7);
+  font: 500 0.86rem/1.3 Outfit, system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vanta-player-subtitle[hidden] {
+  display: none;
+}
+
+.vanta-player-topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vanta-player-party-pill {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px 0 11px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 999px;
+  background: rgba(var(--abyss-glass-tint), 0.5);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: rgb(255 255 255 / 0.85);
+  font: 600 0.8rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-party-pill svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+.vanta-player-party-pill[hidden] {
+  display: none;
+}
+
+/* Center transport (touch; with a mouse only the big play while paused) */
 .vanta-player-center-controls {
   position: absolute;
   top: 50%;
@@ -108,7 +197,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: clamp(24px, 6vw, 56px);
   pointer-events: none;
 }
 
@@ -116,36 +205,33 @@
   pointer-events: auto;
 }
 
-.vanta-player-center-play {
-  --media-button-size: 72px;
-  --media-button-icon-size: 34px;
-  background: rgba(var(--abyss-glass-tint), 0.72);
-  box-shadow: 0 12px 36px rgb(0 0 0 / 0.36);
-}
+@media (pointer: fine) {
+  .vanta-player-center-controls .vanta-player-seek {
+    display: none;
+  }
 
-.vanta-player-center-skip {
-  --media-button-size: 56px;
-  --media-button-icon-size: 28px;
-  background: rgba(var(--abyss-glass-tint), 0.58);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 0.3);
+  .vanta-player-root:not([data-paused]) .vanta-player-center-controls,
+  .vanta-player-root[data-ui-state="booting"] .vanta-player-center-controls {
+    display: none;
+  }
 }
 
 /* Bottom controls */
 .vanta-player-bottom-controls {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   margin:
     0
-    calc(-1 * max(16px, env(safe-area-inset-right)))
+    calc(-1 * max(20px, env(safe-area-inset-right)))
     calc(-1 * max(14px, env(safe-area-inset-bottom)))
-    calc(-1 * max(16px, env(safe-area-inset-left)));
+    calc(-1 * max(20px, env(safe-area-inset-left)));
   padding:
-    56px
-    max(16px, env(safe-area-inset-right))
+    72px
+    max(20px, env(safe-area-inset-right))
     max(14px, env(safe-area-inset-bottom))
-    max(16px, env(safe-area-inset-left));
-  background: linear-gradient(to top, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.4) 50%, transparent 100%);
+    max(20px, env(safe-area-inset-left));
+  background: linear-gradient(to top, rgb(0 0 0 / 0.82) 0%, rgb(0 0 0 / 0.45) 55%, transparent 100%);
   pointer-events: none;
 }
 

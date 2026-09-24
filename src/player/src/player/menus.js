@@ -15,7 +15,7 @@ import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 export function bindMenus(context) {
   const { root, player, reporter, watchParty, episodeBrowser } = context;
 
-  const menuButtonContainer = root.querySelector('.vanta-player-controls-right');
+  const menuButtonContainer = root.querySelector('.vanta-player-menu-slot');
   const menuOverlayContainer = root.querySelector('.vanta-player-shell');
   context.menuButtonContainer = menuButtonContainer;
   context.menuOverlayContainer = menuOverlayContainer;

@@ -1,6 +1,7 @@
 import { MediaApi } from '../../api/media.api.js';
 import { appStore } from '../../store/app.store.js';
 import { loadEpisodeContext } from '../../utils/episodeContext.js';
+import { playerHeading } from '../../utils/playerHeading.js';
 import { PLAYER_MODULE_URL, getPosterUrl } from './helpers.js';
 
 export function bindPlayerMount(ctx) {
@@ -97,7 +98,7 @@ export function bindPlayerMount(ctx) {
         ctx.controller = await playerModule.mountVantaPlayer({
           root: ctx.playerMount,
           itemId,
-          title: item.Name || item.SeriesName || '',
+          ...playerHeading(item),
           poster: getPosterUrl(item),
           resumePosition: (positionMs || 0) / 1000,
           resolvePlayback: (mode, options) => MediaApi.getPlayback(itemId, mode, options),

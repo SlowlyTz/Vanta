@@ -1,26 +1,38 @@
 .vanta-player-timeline-row {
   display: flex;
   align-items: center;
-  gap: 14px;
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
 }
 
+/* Thin at rest; thicker, with a thumb and a time preview, under the pointer. */
 .vanta-player-time-slider {
+  --media-slider-height: 36px;
+  --media-slider-track-height: 4px;
+  --media-slider-thumb-size: 0px;
+  --media-slider-track-fill-bg: #fff;
+  --media-slider-track-progress-bg: rgb(255 255 255 / 0.38);
+  --media-slider-track-bg: rgb(255 255 255 / 0.2);
+  --media-slider-preview-gap: 6px;
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.vanta-player-time {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
+.vanta-player-time-slider:hover,
+.vanta-player-time-slider[data-dragging],
+.vanta-player-time-slider[data-focus] {
+  --media-slider-track-height: 6px;
+  --media-slider-thumb-size: 14px;
 }
 
-.vanta-player-time-separator {
-  opacity: 0.6;
+.vanta-player-time-preview {
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.96);
+  color: #0b0b0e;
+  font: 650 0.8rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
 }
 
 .vanta-player-controls-row {
@@ -28,20 +40,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 52px;
+  min-height: 56px;
 }
 
 .vanta-player-controls-left,
 .vanta-player-controls-right {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 4px;
-}
-
-.vanta-player-volume-slider {
-  width: 100px;
-  margin-left: -2px;
+  min-width: 0;
 }
 
 /* Vidstack button focus */

@@ -9,6 +9,7 @@ export async function createPlayerContext(options) {
     root,
     itemId,
     title,
+    subtitle = '',
     poster,
     resumePosition = 0,
     resolvePlayback,
@@ -22,7 +23,7 @@ export async function createPlayerContext(options) {
   await customElements.whenDefined('media-player');
 
   const iosLike = isIOSLike();
-  const dom = createPlayerMarkup(root, { title, poster });
+  const dom = createPlayerMarkup(root, { title, subtitle, poster });
   const { player } = dom;
   if (iosLike) {
     const iosKeyShortcuts = { ...player.keyShortcuts };

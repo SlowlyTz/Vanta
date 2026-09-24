@@ -1,34 +1,301 @@
-.vanta-player-pip-button {
-  --media-button-size: 44px;
-  --media-button-icon-size: 22px;
+/* Transport: play/pause and the ten-second seek buttons. The seek buttons
+   stack the circular arrow over a small "10s", so the step is readable. */
+.vanta-player-transport-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
+.vanta-player-play,
+.vanta-player-seek,
+.vanta-player-settings-button,
 .vanta-player-fullscreen-button {
-  width: 44px;
-  height: 44px;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 50%;
   padding: 0;
   color: #fff;
   background: transparent;
   cursor: pointer;
   touch-action: manipulation;
-  transition: background 160ms ease, transform 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 160ms ease, transform 160ms var(--abyss-ease, ease), opacity 160ms ease;
 }
 
+.vanta-player-play svg,
+.vanta-player-seek svg,
+.vanta-player-settings-button svg,
 .vanta-player-fullscreen-button svg {
-  width: 22px;
-  height: 22px;
   fill: currentColor;
   pointer-events: none;
 }
 
-.vanta-player-fullscreen-button:hover,
+.vanta-player-play:focus-visible,
+.vanta-player-seek:focus-visible,
+.vanta-player-settings-button:focus-visible,
 .vanta-player-fullscreen-button:focus-visible {
-  background: rgb(255 255 255 / 0.14);
-  transform: scale(1.05);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
+.vanta-player-play:active,
+.vanta-player-seek:active,
+.vanta-player-settings-button:active,
+.vanta-player-fullscreen-button:active {
+  transform: scale(0.92);
+}
+
+/* Play / pause */
+.vanta-player-play-icon {
+  display: grid;
+  place-items: center;
+}
+
+.vanta-player-play[data-state="paused"] .is-pause,
+.vanta-player-play[data-state="playing"] .is-play {
+  display: none;
+}
+
+.vanta-player-play.is-small {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+}
+
+.vanta-player-play.is-small svg {
+  width: 30px;
+  height: 30px;
+}
+
+.vanta-player-play.is-small:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+
+.vanta-player-play.is-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(var(--abyss-glass-tint), 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 14px 40px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.vanta-player-play.is-large svg {
+  width: 38px;
+  height: 38px;
+}
+
+.vanta-player-play.is-large .is-play svg {
+  margin-left: 4px;
+}
+
+.vanta-player-play.is-large:hover {
+  background: rgb(255 255 255 / 0.22);
+}
+
+/* Seek ±10 s */
+.vanta-player-seek {
+  flex-direction: column;
+  gap: 0;
+  border-radius: 14px;
+}
+
+.vanta-player-seek-icon {
+  display: grid;
+  place-items: center;
+}
+
+.vanta-player-seek-label {
+  font: 700 0.64rem/1 Outfit, system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.vanta-player-seek.is-small {
+  width: 48px;
+  height: 52px;
+}
+
+.vanta-player-seek.is-small svg {
+  width: 24px;
+  height: 24px;
+}
+
+.vanta-player-seek.is-small:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.vanta-player-seek.is-large {
+  width: 64px;
+  height: 72px;
+  gap: 2px;
+  border-radius: 20px;
+}
+
+.vanta-player-seek.is-large svg {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 4px 14px rgb(0 0 0 / 0.5));
+}
+
+.vanta-player-seek.is-large .vanta-player-seek-label {
+  font-size: 0.74rem;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.6);
+}
+
+.vanta-player-seek-back.is-pressed .vanta-player-seek-icon {
+  animation: vanta-player-seek-back 380ms var(--abyss-ease, ease);
+}
+
+.vanta-player-seek-forward.is-pressed .vanta-player-seek-icon {
+  animation: vanta-player-seek-forward 380ms var(--abyss-ease, ease);
+}
+
+@keyframes vanta-player-seek-back {
+  from { transform: rotate(-50deg); }
+  to { transform: none; }
+}
+
+@keyframes vanta-player-seek-forward {
+  from { transform: rotate(50deg); }
+  to { transform: none; }
+}
+
+/* Seek bubble: "−10 s", adding up on quick repeated presses */
+.vanta-player-seek-bubble {
+  position: absolute;
+  top: 50%;
+  z-index: 25;
+  min-width: 92px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff;
+  font: 700 1.15rem Outfit, system-ui, sans-serif;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translateY(-50%) scale(0.9);
+  transition: opacity 260ms ease, transform 260ms var(--abyss-ease, ease);
+  pointer-events: none;
+}
+
+.vanta-player-seek-bubble.is-back {
+  left: 14%;
+}
+
+.vanta-player-seek-bubble.is-forward {
+  right: 14%;
+}
+
+.vanta-player-seek-bubble.is-visible {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  animation: vanta-player-bubble-pop 260ms var(--abyss-ease, ease);
+}
+
+@keyframes vanta-player-bubble-pop {
+  from { transform: translateY(-50%) scale(0.8); }
+  to { transform: translateY(-50%) scale(1); }
+}
+
+/* Time */
+.vanta-player-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 6px;
+  color: rgb(255 255 255 / 0.92);
+  font: 560 0.86rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vanta-player-time-separator {
+  opacity: 0.5;
+}
+
+/* Volume: the slider slides out while the pointer is over the group */
+.vanta-player-volume {
+  display: flex;
+  align-items: center;
+}
+
+.vanta-player-volume-slider {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width 240ms var(--abyss-ease, ease), opacity 200ms ease, margin 240ms ease;
+}
+
+.vanta-player-volume:hover .vanta-player-volume-slider,
+.vanta-player-volume:focus-within .vanta-player-volume-slider {
+  width: 92px;
+  margin: 0 8px 0 2px;
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .vanta-player-volume-slider {
+    display: none;
+  }
+}
+
+/* Settings, PiP, fullscreen */
+.vanta-player-settings-button,
+.vanta-player-fullscreen-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.vanta-player-settings-button svg,
+.vanta-player-fullscreen-button svg {
+  width: 23px;
+  height: 23px;
+}
+
+.vanta-player-settings-button svg {
+  transition: transform 420ms var(--abyss-ease, ease);
+}
+
+.vanta-player-settings-button:hover,
+.vanta-player-fullscreen-button:hover,
+.vanta-player-settings-button[aria-expanded="true"] {
+  background: rgb(255 255 255 / 0.14);
+}
+
+.vanta-player-settings-button[aria-expanded="true"] svg {
+  transform: rotate(60deg);
+}
+
+.vanta-player-settings-button[hidden] {
+  display: none;
+}
+
+.vanta-player-pip-button {
+  --media-button-size: 44px;
+  --media-button-icon-size: 22px;
+}
+
+.vanta-player-menu-slot {
+  display: contents;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vanta-player-seek-bubble,
+  .vanta-player-settings-button svg {
+    transition: none;
+  }
+
+  .vanta-player-seek-icon,
+  .vanta-player-seek-bubble.is-visible {
+    animation: none !important;
+  }
+}

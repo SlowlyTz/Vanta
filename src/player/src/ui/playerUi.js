@@ -17,6 +17,8 @@ export function createPlayerUi(root, options = {}) {
   let state = 'booting';
   let idleTimer = null;
   let destroyed = false;
+  // Reasons that keep the controls up (pointer over them, settings open).
+  const holds = new Set();
 
   const apply = () => {
     if (destroyed) return;
@@ -31,7 +33,7 @@ export function createPlayerUi(root, options = {}) {
 
   const startIdleTimer = () => {
     clearIdleTimer();
-    if (state !== 'ready-playing-active' || destroyed) return;
+    if (state !== 'ready-playing-active' || destroyed || holds.size > 0) return;
     idleTimer = window.setTimeout(() => {
       idleTimer = null;
       setState('ready-playing-idle');
@@ -62,12 +64,28 @@ export function createPlayerUi(root, options = {}) {
 
   apply();
 
+  const holdActive = reason => {
+    if (destroyed) return;
+    holds.add(reason);
+    if (state === 'ready-playing-idle') setState('ready-playing-active');
+    else clearIdleTimer();
+  };
+
+  const releaseActive = reason => {
+    if (!holds.delete(reason) || destroyed) return;
+    if (state === 'ready-playing-active') startIdleTimer();
+  };
+
   return {
     setState,
     getState: () => state,
     resetIdle,
+    holdActive,
+    releaseActive,
+    isHeld: () => holds.size > 0,
     destroy: () => {
       destroyed = true;
+      holds.clear();
       clearIdleTimer();
       events.forEach(name => root.removeEventListener(name, handler));
     }
