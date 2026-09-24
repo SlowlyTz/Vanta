@@ -137,6 +137,7 @@ export const memberMethods = {
     party.bannedUserIds ??= new Set();
     party.bannedUserIds.add(targetUserId);
     party.members.delete(targetUserId);
+    this.forgetRecentParty(targetUserId, partyId);
 
     return {
       party: this.serializeParty(party, actorUserId),

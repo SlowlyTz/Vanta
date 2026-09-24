@@ -43,6 +43,10 @@ export const WatchPartyApi = {
     return request(`/api/watch-parties/suggestions?limit=${limit}`);
   },
 
+  recent() {
+    return request('/api/watch-parties/recent');
+  },
+
   resumable() {
     return request('/api/watch-parties/resumable');
   },

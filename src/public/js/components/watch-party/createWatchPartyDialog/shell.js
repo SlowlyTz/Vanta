@@ -17,6 +17,7 @@ export function bindShell(ctx) {
       ctx.backdrop.classList.add('open');
       ctx.backdrop.setAttribute('aria-hidden', 'false');
 
+      void ctx.loadRecentParties?.();
       try {
         const { party: snapshot } = await WatchPartyApi.resumable();
         if (!ctx.open) return;

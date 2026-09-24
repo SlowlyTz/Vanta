@@ -17,6 +17,7 @@ vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
     create: vi.fn(),
     resume: vi.fn(),
     resumable: vi.fn(),
+    recent: vi.fn(),
     suggestions: vi.fn()
   }
 }));
@@ -43,7 +44,48 @@ describe('createWatchPartyDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     WatchPartyApi.resumable.mockResolvedValue({ party: null });
+    WatchPartyApi.recent.mockResolvedValue({ parties: [] });
     window.location.hash = '';
+  });
+
+  it('zeigt „Zuletzt dabei“ mit Beitreten und sperrt volle Partys', async () => {
+    WatchPartyApi.suggestions.mockResolvedValue({ items: [] });
+    WatchPartyApi.recent.mockResolvedValue({ parties: [
+      { id: 'p1', itemSnapshot: { type: 'Episode', seriesName: 'Dark', seasonNumber: 1, episodeNumber: 3, backdrop: { id: 's1', tag: 'b' } }, ownerName: 'Lena', status: 'playing', memberCount: 3, maxMembers: 4, full: false },
+      { id: 'p2', itemSnapshot: { type: 'Movie', name: 'Dune' }, ownerName: 'Tom', status: 'lobby', memberCount: 4, maxMembers: 4, full: true }
+    ] });
+
+    const dialog = createWatchPartyDialog();
+    await dialog.open();
+    await flush();
+
+    const section = dialog.element.querySelector('.watch-party-recent');
+    expect(section.hidden).toBe(false);
+    const items = [...section.querySelectorAll('.watch-party-recent-item')];
+    expect(items[0].textContent).toContain('Dark · S01E03');
+    expect(items[0].textContent).toContain('von Lena · Läuft · 3/4 Plätze');
+    expect(items[1].querySelector('button').disabled).toBe(true);
+    expect(items[1].querySelector('button').textContent).toBe('Voll');
+
+    items[0].querySelector('button').click();
+    expect(window.location.hash).toBe('#/watch-party/p1');
+    expect(dialog.isOpen()).toBe(false);
+  });
+
+  it('blendet „Zuletzt dabei“ aus, wenn es nichts gibt oder eine Episode gewählt wird', async () => {
+    WatchPartyApi.suggestions.mockResolvedValue({ items: [seriesCard()] });
+    WatchPartyApi.recent.mockResolvedValue({ parties: [{ id: 'p1', itemSnapshot: { name: 'Dune' }, status: 'lobby', memberCount: 1, maxMembers: 4, full: false }] });
+    MediaApi.getSeasons.mockResolvedValue([]);
+
+    const dialog = createWatchPartyDialog();
+    await dialog.open();
+    await flush();
+    const section = dialog.element.querySelector('.watch-party-recent');
+    expect(section.hidden).toBe(false);
+
+    dialog.element.querySelector('.watch-party-card button, button.watch-party-card').click();
+    await flush();
+    expect(section.hidden).toBe(true);
   });
 
   it('lädt Vorschläge, wenn der Dialog ohne Suche geöffnet wird', async () => {

@@ -45,6 +45,11 @@ router.get('/resumable', requireAuth, asyncHandler(async (req, res) => {
   return res.json({ party: snapshot });
 }));
 
+// Parties the user was recently in that still run (see services/watch-party/recent.js).
+router.get('/recent', requireAuth, asyncHandler(async (req, res) => {
+  return res.json({ parties: WatchPartyService.getRecentPartiesForUser(req.session.userId) });
+}));
+
 router.post('/resume', requireAuth, asyncHandler(async (req, res) => {
   const { originalPartyId } = req.body || {};
 

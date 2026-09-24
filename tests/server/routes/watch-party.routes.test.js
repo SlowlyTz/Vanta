@@ -14,6 +14,7 @@ vi.mock('../../../src/server/services/watch-party.service.js', () => ({
     endParty: vi.fn(),
     getSuggestions: vi.fn(),
     getResumableForOwner: vi.fn(),
+    getRecentPartiesForUser: vi.fn(),
     resumeEndedParty: vi.fn(),
     serializeParty: vi.fn(party => party)
   }
@@ -91,6 +92,22 @@ describe('Watch party routes', () => {
     it('returns 400 without itemId', async () => {
       const res = await request(createApp()).post('/').send({});
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('GET /recent', () => {
+    it('erfordert Auth', async () => {
+      const res = await request(createApp({ authenticated: false })).get('/recent');
+      expect(res.status).toBe(401);
+    });
+
+    it('liefert die zuletzt besuchten Partys des Nutzers', async () => {
+      WatchPartyService.getRecentPartiesForUser.mockReturnValue([{ id: 'party-9', status: 'playing' }]);
+      const res = await request(createApp()).get('/recent');
+      expect(res.status).toBe(200);
+      expect(res.body.parties).toEqual([{ id: 'party-9', status: 'playing' }]);
+      expect(WatchPartyService.getRecentPartiesForUser).toHaveBeenCalledWith('user-1');
+      expect(WatchPartyService.getPartyOrThrow).not.toHaveBeenCalled();
     });
   });
 

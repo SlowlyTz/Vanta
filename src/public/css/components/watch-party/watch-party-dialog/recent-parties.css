@@ -1,0 +1,95 @@
+/* "Zuletzt dabei": running parties the user was in */
+
+.watch-party-recent {
+  display: grid;
+  gap: 8px;
+}
+
+.watch-party-recent[hidden] {
+  display: none;
+}
+
+.watch-party-recent-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.watch-party-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.watch-party-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.watch-party-recent-thumb {
+  flex: 0 0 auto;
+  width: 72px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08) center / cover no-repeat;
+}
+
+.watch-party-recent-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.watch-party-recent-name,
+.watch-party-recent-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watch-party-recent-name {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.watch-party-recent-meta {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.watch-party-recent-join {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-color);
+  color: #fff;
+  font: 700 0.82rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: filter var(--transition-fast), opacity var(--transition-fast);
+}
+
+.watch-party-recent-join:hover {
+  filter: brightness(1.1);
+}
+
+.watch-party-recent-join:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: default;
+  filter: none;
+}

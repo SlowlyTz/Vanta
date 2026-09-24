@@ -56,6 +56,7 @@ export const lifecycleMethods = {
     });
 
     this.parties.set(id, party);
+    this.rememberRecentParty(userId, id);
     return this.serializeParty(party, userId);
   },
 
@@ -93,6 +94,7 @@ export const lifecycleMethods = {
       });
     }
 
+    this.rememberRecentParty(userId, party.id, now);
     return this.serializeParty(party, userId);
   },
 
@@ -186,6 +188,7 @@ export const lifecycleMethods = {
 
     this.endedPartiesByOwner.delete(userId);
     this.parties.set(id, party);
+    this.rememberRecentParty(userId, id);
     return this.serializeParty(party, userId);
   },
 
@@ -199,6 +202,8 @@ export const lifecycleMethods = {
         this.parties.delete(id);
       }
     }
+
+    this.pruneRecentParties();
 
     for (const [ownerId, snapshot] of this.endedPartiesByOwner) {
       if (snapshot.resumeExpiresAt < now) this.endedPartiesByOwner.delete(ownerId);

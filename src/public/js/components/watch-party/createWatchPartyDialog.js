@@ -2,6 +2,7 @@ import { createDialogContext } from './createWatchPartyDialog/context.js';
 import { bindSearch } from './createWatchPartyDialog/search.js';
 import { bindEpisodePicker } from './createWatchPartyDialog/episodePicker.js';
 import { bindPartyCreation } from './createWatchPartyDialog/partyCreation.js';
+import { bindRecentParties } from './createWatchPartyDialog/recentParties.js';
 import { bindShell } from './createWatchPartyDialog/shell.js';
 
 export function createWatchPartyDialog() {
@@ -10,6 +11,7 @@ export function createWatchPartyDialog() {
   bindSearch(ctx);
   bindEpisodePicker(ctx);
   bindPartyCreation(ctx);
+  bindRecentParties(ctx);
   bindShell(ctx);
 
   return {
