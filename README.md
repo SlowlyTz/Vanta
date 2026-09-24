@@ -36,11 +36,12 @@ COOKIE_SECURE=false
 TMDB_API_KEY=
 ```
 
-Build the player and the opening scene once:
+Build the player, the opening scene and the watch-party countdown once:
 
 ```bash
 npm run player:build
 npm run intro:build
+npm run countdown:build
 ```
 
 Start the development server:
@@ -56,7 +57,7 @@ npm run build
 npm start
 ```
 
-`npm run build` builds the player, the opening scene and the web app itself; the last step bundles `src/public/` with Vite into `dist/` (not committed). In production the server refuses to start without `dist/index.html`.
+`npm run build` builds the player, the opening scene, the watch-party countdown and the web app itself; the last step bundles `src/public/` with Vite into `dist/` (not committed). In production the server refuses to start without `dist/index.html`.
 
 VANTA runs at `http://localhost:3000` by default.
 
@@ -69,7 +70,7 @@ Which files the server hands out depends on `NODE_ENV`:
 
 In both modes text responses are gzip/brotli compressed and hashed player chunks under `/vendor/player/` are immutable, while the unhashed entries (`vanta-player.js`, `vanta-intro.js`) are revalidated so a rebuild takes effect at once. Images under `/assets/` are cached for a day.
 
-The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; the opening scene from `src/intro/` into `src/public/vendor/intro/`. Both keep fixed paths because the app loads them by URL at runtime, and both outputs are committed.
+The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; the opening scene from `src/intro/` into `src/public/vendor/intro/`; the watch-party countdown from `src/countdown/` into `src/public/vendor/countdown/`. All three keep fixed paths because the app loads them by URL at runtime, and their outputs are committed. Particle code shared by the two three.js scenes lives in `src/shared/particles/`.
 
 The Outfit font is self-hosted: the woff2 files live in `src/public/assets/fonts/`, the `@font-face` rules in `src/public/css/fonts.css`. Nothing is loaded from Google Fonts.
 
@@ -102,11 +103,11 @@ The frontend is a hash-based single page app without a framework. Pages and comp
 
 VANTA adds app-level workflows and playback features on top of Jellyfin:
 
-- **WatchTogether**: shared watch parties with a lobby, ready state, countdown, synchronized playback, owner/admin controls, participant management, reconnect handling, and in-player notifications.
+- **WatchTogether**: shared watch parties for up to four people. One lobby screen shows the title's artwork and four seats; after the host starts, everyone's player preloads a few seconds of video behind the lobby, and a three.js particle countdown (exactly five seconds, from the server clock) hands over to playback that starts on every client at the same server time. Owner/admin controls, participant management, reconnect handling and in-player notifications included; viewers without admin rights get no transport controls.
 - **WatchTogether invitations**: invite users directly inside VANTA by exact username, with persistent accept/decline invitation notifications across the app.
 - **Media requests**: search TMDB, request missing movies or series, cross-check against the Jellyfin library, and track request status.
 - **Request moderation**: admin approval/rejection flow for requested media, including local request and rejection history.
-- **Custom VANTA player**: Vite-built streaming player with custom controls, quality selection, audio/subtitle menus, episode switching, Jellyfin playback reporting, and backend-resolved HLS/playback URLs.
+- **Custom VANTA player**: Vite-built streaming player with custom controls (play/pause between labelled ten-second seek buttons, arrow keys and wheel seek the same step), one animated settings flyout behind a gear button for subtitles, quality, episodes and party members, Jellyfin playback reporting, and backend-resolved HLS/playback URLs.
 - **Mobile-first player behavior**: custom fullscreen/orientation flow intended to keep VANTA controls available instead of falling back to the native iOS video player.
 - **Opening scene**: a three.js particle animation of the VANTA logo covers every page load before anything of the app is visible. It plays at most once per ten minutes per browser (`localStorage` key `vanta.intro.lastPlayedAt`) and is skipped on `#/player/…` and `#/watch-party/…` deep links. Source in `src/intro/`, built to `src/public/vendor/intro/`.
 - **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata.
@@ -115,6 +116,18 @@ VANTA adds app-level workflows and playback features on top of Jellyfin:
 - **User rules outside Jellyfin**: local ban lists, rejected-request lists, and per-user VANTA settings stored separately from Jellyfin.
 - **Profile hub**: VANTA profile area for continue watching, watch history, favorites, and user-facing account actions.
 - **Server-side Jellyfin gateway**: browser requests go through the Express backend with HTTP-only sessions, normalized media data, image/media proxying, and playback reporting.
+
+## Watch Party Sync
+
+Playback in a watch party follows one timeline held by the server: a position, whether it is playing, the server time it was anchored at and a sequence number that grows with every change. Clients never compare server timestamps with their own clock:
+
+- **Server clock**: right after connecting (and every 30 seconds) each client exchanges `TIME_PING`/`TIME_PONG` messages and keeps the offset from the round trip with the lowest latency.
+- **Timeline messages**: play, pause and seek from an admin become a `TIMELINE` message for everyone; older sequence numbers are dropped and the sender recognises its own command instead of applying it twice.
+- **Drift loop**: every 500 ms each client compares its player with the timeline. Up to 120 ms it does nothing, up to two seconds it nudges the playback rate by 2–6 %, beyond that it seeks once (aiming ahead by the measured seek time).
+- **One heartbeat**: only the sync leader (the owner, or the longest-joined connected admin) reports its position, and the server only corrects the timeline from it when that player has been playing smoothly for ten seconds.
+- **Start**: the countdown's timeline is anchored at its end, so every client starts on its own at that server time with an already buffered stream.
+
+For debugging, `?wpSkew=3000` in the URL makes a tab pretend its clock runs three seconds ahead (the sync must absorb it), and `localStorage.setItem('vanta.debug.sync', '1')` shows drift, rate, round trip and sequence number on the watch-party page.
 
 ## Admin And Runtime Data
 
@@ -150,5 +163,5 @@ The directory is git-ignored and safe to delete at any time; missing renditions 
 - In production, `SESSION_SECRET` must be set to a long, random value.
 - If VANTA is served behind HTTPS, set `COOKIE_SECURE=true`.
 - `TMDB_API_KEY` and `JELLYFIN_API_KEY` are required; the server will not start without them. Create the Jellyfin key under Dashboard > API Keys.
-- After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date; the same goes for `src/intro/` and `npm run intro:build`.
+- After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date; the same goes for `src/intro/` and `npm run intro:build`, and for `src/countdown/` and `npm run countdown:build`.
 - VANTA is not a full Jellyfin Web replacement. Its focus is a custom, streamlined streaming and media browsing experience.
