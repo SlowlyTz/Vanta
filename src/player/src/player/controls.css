@@ -221,28 +221,36 @@
   opacity: 0.5;
 }
 
-/* Volume: the slider slides out while the pointer is over the group */
+/* Volume: the slider slides out while the pointer is over the group. Only
+   the wrapper clips, and it leaves room for the thumb on both sides, so the
+   thumb is never cut off at 0 % or 100 %. */
 .vanta-player-volume {
   display: flex;
   align-items: center;
 }
 
-.vanta-player-volume-slider {
+.vanta-player-volume-reveal {
   width: 0;
-  opacity: 0;
   overflow: hidden;
-  transition: width 240ms var(--abyss-ease, ease), opacity 200ms ease, margin 240ms ease;
+  opacity: 0;
+  transition: width 240ms var(--abyss-ease, ease), opacity 200ms ease;
 }
 
-.vanta-player-volume:hover .vanta-player-volume-slider,
-.vanta-player-volume:focus-within .vanta-player-volume-slider {
+.vanta-player-volume-slider {
+  --media-slider-thumb-size: 14px;
+  display: block;
   width: 92px;
-  margin: 0 8px 0 2px;
+  margin: 0 10px;
+}
+
+.vanta-player-volume:hover .vanta-player-volume-reveal,
+.vanta-player-volume:focus-within .vanta-player-volume-reveal {
+  width: 112px;
   opacity: 1;
 }
 
 @media (pointer: coarse) {
-  .vanta-player-volume-slider {
+  .vanta-player-volume-reveal {
     display: none;
   }
 }

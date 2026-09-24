@@ -513,7 +513,9 @@ function Ze(e, { title: t, subtitle: n, poster: r }) {
                     ${qe("volumeLow", "volume-low")}
                     ${qe("volumeHigh", "volume-high")}
                   </media-mute-button>
-                  <media-volume-slider class="vanta-player-volume-slider" aria-label="Lautstärke"></media-volume-slider>
+                  <div class="vanta-player-volume-reveal">
+                    <media-volume-slider class="vanta-player-volume-slider" aria-label="Lautstärke"></media-volume-slider>
+                  </div>
                 </div>
                 <button class="vanta-player-settings-button" type="button" aria-label="Einstellungen" aria-haspopup="dialog" aria-expanded="false" hidden>
                   ${qe("settings")}
