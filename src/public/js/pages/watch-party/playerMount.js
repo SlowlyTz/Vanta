@@ -142,6 +142,7 @@ export function bindPlayerMount(ctx) {
 
   ctx.replacePlayer = async ({ itemId, positionMs }) => {
     ctx.stopOwnerHeartbeat();
+    ctx.leavePlayback();
     try {
       // Await so the server releases the old stream-limit slot before the new
       // episode's playback is reserved (otherwise it can briefly hit the stream limit).
@@ -152,6 +153,7 @@ export function bindPlayerMount(ctx) {
     ctx.controller = null;
     ctx.playerMount.innerHTML = '';
     await ctx.mountPlayer({ itemId, positionMs, force: true });
+    await ctx.enterPlayback();
   };
 
   return ctx;

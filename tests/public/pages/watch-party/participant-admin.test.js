@@ -4,7 +4,7 @@ import { MediaApi } from '../../../../src/public/js/api/media.api.js';
 import { authStore } from '../../../../src/public/js/store/auth.store.js';
 import { appStore } from '../../../../src/public/js/store/app.store.js';
 import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-import { makeParty, flush } from './helpers.js';
+import { makeParty, flush, createFakeController } from './helpers.js';
 
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
@@ -48,13 +48,7 @@ vi.mock('../../../../src/public/js/realtime/watch-party.socket.js', () => ({
   })
 }));
 
-const fakeController = {
-  player: { currentTime: 0, paused: true, playbackRate: 1 },
-  prepareInitialPlayback: vi.fn().mockResolvedValue(undefined),
-  applyRemoteControl: vi.fn(),
-  updateWatchPartyAccess: vi.fn(),
-  destroy: vi.fn()
-};
+const fakeController = createFakeController();
 
 const { mountVantaPlayer } = vi.hoisted(() => ({ mountVantaPlayer: vi.fn() }));
 
@@ -65,12 +59,7 @@ mountVantaPlayer.mockResolvedValue(fakeController);
 describe('WatchPartyPage · Admin-Rollen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fakeController.prepareInitialPlayback.mockResolvedValue(undefined);
-    fakeController.applyRemoteControl.mockResolvedValue(undefined);
-    fakeController.updateWatchPartyAccess.mockImplementation(() => {});
-    fakeController.player.currentTime = 0;
-    fakeController.player.paused = true;
-    fakeController.player.playbackRate = 1;
+    fakeController.reset();
     capturedOnMessage = null;
     window.location.hash = '#/watch-party/party-1';
   });

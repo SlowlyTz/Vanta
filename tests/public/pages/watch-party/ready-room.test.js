@@ -3,7 +3,7 @@ import { WatchPartyApi } from '../../../../src/public/js/api/watch-party.api.js'
 import { MediaApi } from '../../../../src/public/js/api/media.api.js';
 import { authStore } from '../../../../src/public/js/store/auth.store.js';
 import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-import { makeParty, flush, timelineMessage } from './helpers.js';
+import { makeParty, flush, timelineMessage, createFakeController } from './helpers.js';
 
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
@@ -47,13 +47,7 @@ vi.mock('../../../../src/public/js/realtime/watch-party.socket.js', () => ({
   })
 }));
 
-const fakeController = {
-  player: { currentTime: 0, paused: true, playbackRate: 1 },
-  prepareInitialPlayback: vi.fn().mockResolvedValue(undefined),
-  applyRemoteControl: vi.fn(),
-  updateWatchPartyAccess: vi.fn(),
-  destroy: vi.fn()
-};
+const fakeController = createFakeController();
 
 const { mountVantaPlayer } = vi.hoisted(() => ({ mountVantaPlayer: vi.fn() }));
 
@@ -64,12 +58,7 @@ mountVantaPlayer.mockResolvedValue(fakeController);
 describe('WatchPartyPage · Ready Room', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fakeController.prepareInitialPlayback.mockResolvedValue(undefined);
-    fakeController.applyRemoteControl.mockResolvedValue(undefined);
-    fakeController.updateWatchPartyAccess.mockImplementation(() => {});
-    fakeController.player.currentTime = 0;
-    fakeController.player.paused = true;
-    fakeController.player.playbackRate = 1;
+    fakeController.reset();
     capturedOnMessage = null;
     window.location.hash = '#/watch-party/party-1';
   });
@@ -193,7 +182,7 @@ describe('WatchPartyPage · Ready Room', () => {
     expect(container.querySelector('.numero_shape')).toBeTruthy();
     expect(container.querySelector('.watch-party-countdown-title').textContent).toBe('Test Movie');
     expect(container.querySelector('.watch-party-countdown-position').textContent).toBe('Von Anfang an');
-    expect(fakeController.applyRemoteControl).not.toHaveBeenCalled();
+    expect(fakeController.syncPlay).not.toHaveBeenCalled();
   });
 
   it('revealt den Player und versteckt den Countdown erst beim Start der Zeitleiste', async () => {
@@ -205,10 +194,10 @@ describe('WatchPartyPage · Ready Room', () => {
       expect(container.querySelector('.watch-party-player-mount').classList.contains('player-page')).toBe(true);
       return Promise.resolve();
     });
-    fakeController.applyRemoteControl.mockImplementation(() => {
+    fakeController.syncPlay.mockImplementation(async () => {
       const mountOptions = mountVantaPlayer.mock.calls.at(-1)?.[0];
       expect(mountOptions.watchParty.phase).toBe('playback');
-      return Promise.resolve();
+      fakeController.player.paused = false;
     });
 
     const container = WatchPartyPage({ partyId: 'party-1' });
@@ -230,9 +219,8 @@ describe('WatchPartyPage · Ready Room', () => {
     const { position } = fakeController.prepareInitialPlayback.mock.calls.at(-1)[0];
     expect(position).toBeGreaterThanOrEqual(0);
     expect(position).toBeLessThan(0.5);
-    expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'play', playing: true })
-    );
+    expect(fakeController.syncPlay).toHaveBeenCalled();
+    expect(fakeController.player.paused).toBe(false);
   });
 
   it('startet genau einmal: PARTY_UPDATED nach dem Countdown löst keinen zweiten Start aus', async () => {
@@ -258,9 +246,8 @@ describe('WatchPartyPage · Ready Room', () => {
     await flush();
     await flush();
 
-    expect(fakeController.applyRemoteControl).toHaveBeenCalledTimes(1);
-    expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'play', playing: true, serverTimeMs })
-    );
+    expect(fakeController.prepareInitialPlayback).toHaveBeenCalledTimes(1);
+    expect(fakeController.syncPlay).toHaveBeenCalledTimes(1);
+    expect(fakeController.player.paused).toBe(false);
   });
 });

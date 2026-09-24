@@ -85,26 +85,23 @@ export function createPlayerController(context) {
       context.refreshWatchPartyControlAccess();
       context.participantsMenu?.update?.();
     },
+    getSyncState: context.getSyncState,
+    getBufferedAhead: context.getBufferedAhead,
+    setSyncRate: context.setSyncRate,
+    syncSeek: context.syncSeek,
+    syncPlay: context.syncPlay,
+    syncPause: context.syncPause,
+    unlockPlayback: context.unlockPlayback,
     applyRemoteControl: async ({ action, positionMs, serverTimeMs, playing }) => {
-      context.beginOwnerEchoSuppression();
-      try {
-        if (action === 'play') context.forcePlaybackPhase();
-        const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
-          action, positionMs, serverTimeMs, playing, currentTime: player.currentTime,
-          now: watchParty?.serverNow ? watchParty.serverNow() : Date.now()
-        });
+      if (action === 'play') context.forcePlaybackPhase();
+      const { targetSeconds, shouldSeek, shouldPlay, shouldPause } = computeRemoteControlTarget({
+        action, positionMs, serverTimeMs, playing, currentTime: player.currentTime,
+        now: watchParty?.serverNow ? watchParty.serverNow() : Date.now()
+      });
 
-        if (shouldSeek) player.currentTime = targetSeconds;
-
-        if (shouldPlay) {
-          context.sourceSwitch.setIntendsToPlay(true);
-          await context.sourceSwitch.startCurrentPlayback();
-        } else if (shouldPause) {
-          player.pause();
-        }
-      } finally {
-        context.endOwnerEchoSuppression();
-      }
+      if (shouldSeek) context.syncSeek(targetSeconds);
+      if (shouldPlay) await context.syncPlay({ quiet: false });
+      else if (shouldPause) context.syncPause();
     },
     destroy: () => {
       if (context.destroyed) return Promise.resolve();
@@ -112,6 +109,7 @@ export function createPlayerController(context) {
       context.phoneOrientationActive = false;
       context.gateActive = false;
       context.sourceSwitch.clearSeekTimer();
+      context.echoTokens.clear();
 
       // Start final reporting before tearing down reporter state so keepalive can flush.
       const stopPromise = context.reporter.stop({ keepalive: true });

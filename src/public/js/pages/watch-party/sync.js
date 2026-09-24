@@ -1,39 +1,131 @@
 import { appStore } from '../../store/app.store.js';
+import { createElement } from '../../utils/dom.js';
 import { OWNER_SYNC_INTERVAL_MS, AUTO_SYNC_NOTIFICATION_COOLDOWN_MS } from './helpers.js';
+import { createDriftController, timelinePositionAt } from './driftController.js';
 
-export function timelinePositionAt(timeline, now) {
-  const positionMs = Number(timeline?.positionMs) || 0;
-  if (!timeline?.playing) return positionMs;
-  return positionMs + Math.max(0, now - (Number(timeline.anchorServerTimeMs) || now));
-}
+export { timelinePositionAt };
 
-export function timelineToControl(timeline, reason) {
+// A local command is applied to our own timeline right away, before the
+// server confirms it; otherwise the drift loop would pull the player back
+// to the old timeline for one round trip. The guess expires if the server
+// never answers (e.g. it rejected the command).
+const LOCAL_TIMELINE_TTL_MS = 3_000;
+
+export function timelineFromParty(party) {
+  if (!party) return null;
+  if (party.timeline) return party.timeline;
   return {
-    action: reason === 'seek' ? 'seek' : (timeline.playing ? 'play' : 'pause'),
-    positionMs: timeline.positionMs,
-    serverTimeMs: timeline.anchorServerTimeMs,
-    playing: Boolean(timeline.playing)
+    positionMs: Number(party.positionMs) || 0,
+    playing: party.status === 'playing',
+    anchorServerTimeMs: Number(party.lastServerTimeMs) || 0,
+    seq: 0
   };
 }
 
+export function syncStatusLabel({ status, driftMs }) {
+  switch (status) {
+    case 'sync':
+      return ['sync', `Synchron · ±${Math.round(Math.abs(driftMs || 0))} ms`];
+    case 'paused':
+      return ['sync', 'Pausiert · synchron'];
+    case 'correcting':
+      return ['preparing', 'Synchronisiert …'];
+    case 'buffering':
+      return ['preparing', 'Puffert …'];
+    case 'blocked':
+      return ['lost', 'Wiedergabe blockiert'];
+    default:
+      return ['preparing', 'Wird vorbereitet'];
+  }
+}
+
+function debugSyncEnabled() {
+  try {
+    return window.localStorage.getItem('vanta.debug.sync') === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function bindSync(ctx) {
-  // Keeps the newest known timeline; anything older than what we hold is a
-  // late packet and dropped.
   ctx.acceptTimeline = timeline => {
     if (!timeline || !Number.isFinite(Number(timeline.seq))) return false;
-    if (ctx.timeline && timeline.seq < ctx.timeline.seq) return false;
+    const current = ctx.timeline;
+    if (current) {
+      const localGuess = current.local && ctx.clock.now() - current.anchorServerTimeMs < LOCAL_TIMELINE_TTL_MS;
+      if (timeline.seq < current.seq) return false;
+      if (timeline.seq === current.seq && localGuess) return false;
+    }
     ctx.timeline = timeline;
     return true;
   };
 
   ctx.sendOwnerControl = (type, positionMs, extra = {}) => {
-    ctx.socket?.sendJson({ type, positionMs, atServerTimeMs: ctx.clock.now(), ...extra });
+    const atServerTimeMs = ctx.clock.now();
+    ctx.socket?.sendJson({ type, positionMs, atServerTimeMs, ...extra });
+    if (type === 'OWNER_SYNC') return;
+
+    const playing = type === 'OWNER_PLAY' ? true : type === 'OWNER_PAUSE' ? false : Boolean(ctx.timeline?.playing);
+    ctx.timeline = {
+      positionMs,
+      playing,
+      anchorServerTimeMs: atServerTimeMs,
+      seq: ctx.timeline?.seq ?? 0,
+      local: true
+    };
   };
 
-  ctx.handleTimelineMessage = ({ timeline, actorUserId, reason }) => {
+  ctx.debugOverlay = debugSyncEnabled()
+    ? createElement('pre', { className: 'watch-party-sync-debug', 'aria-hidden': 'true' })
+    : null;
+  if (ctx.debugOverlay) ctx.container.appendChild(ctx.debugOverlay);
+
+  ctx.renderSyncDebug = status => {
+    if (!ctx.debugOverlay) return;
+    ctx.debugOverlay.textContent = [
+      `status  ${status.status}`,
+      `drift   ${status.driftMs === null ? '–' : `${Math.round(status.driftMs)} ms`}`,
+      `rate    ${Number(status.rate || 1).toFixed(3)}`,
+      `rtt     ${ctx.clock.rtt === null ? '–' : `${Math.round(ctx.clock.rtt)} ms`}`,
+      `offset  ${Math.round(ctx.clock.offset)} ms`,
+      `seek    ${status.seekLatencyMs} ms`,
+      `seq     ${ctx.timeline?.seq ?? '–'}${ctx.timeline?.local ? ' (lokal)' : ''}`,
+      `leader  ${ctx.isSyncLeader() ? 'ja' : 'nein'}`
+    ].join('\n');
+  };
+
+  ctx.handleSyncStatus = status => {
+    ctx.syncInfo = status;
+    const [kind, label] = syncStatusLabel(status);
+    ctx.setSyncStatus(kind, label);
+    if (status.status !== 'blocked' && !ctx.autoplayOverlay.hidden) ctx.autoplayOverlay.hidden = true;
+    ctx.renderSyncDebug(status);
+  };
+
+  ctx.drift = createDriftController({
+    getController: () => ctx.controller,
+    getTimeline: () => ctx.timeline,
+    now: () => ctx.clock.now(),
+    onStatus: ctx.handleSyncStatus,
+    onHardSeek: () => {
+      const now = Date.now();
+      if (now - ctx.lastAutoSyncNotificationAt <= AUTO_SYNC_NOTIFICATION_COOLDOWN_MS) return;
+      ctx.lastAutoSyncNotificationAt = now;
+      ctx.showWatchPartyNotification({
+        type: 'auto_sync',
+        icon: 'auto_sync',
+        message: 'Wiedergabe automatisch synchronisiert.'
+      });
+    },
+    onAutoplayBlocked: () => {
+      ctx.autoplayOverlay.hidden = false;
+    }
+  });
+
+  ctx.handleTimelineMessage = ({ timeline, actorUserId }) => {
     if (!timeline || !(timeline.seq > ctx.lastAppliedTimelineSeq)) return;
     ctx.lastAppliedTimelineSeq = timeline.seq;
-    ctx.acceptTimeline(timeline);
+    if (!ctx.acceptTimeline(timeline)) return;
     if (ctx.party) {
       ctx.party.timeline = timeline;
       ctx.party.positionMs = timeline.positionMs;
@@ -43,22 +135,51 @@ export function bindSync(ctx) {
 
     // Our own command coming back: the local player is already there.
     if (actorUserId && actorUserId === ctx.currentUser?.id) return;
+    void ctx.enterPlayback();
+  };
 
-    if (reason === 'sync') {
-      ctx.applySync({
-        positionMs: timeline.positionMs,
-        playing: timeline.playing,
-        serverTimeMs: timeline.anchorServerTimeMs
+  // Brings the player onto the timeline: mounts and loads it if needed, then
+  // hands over to the drift loop. Safe to call again at any time.
+  ctx.enterPlayback = () => {
+    if (ctx.destroyed) return Promise.resolve();
+    if (ctx.playbackEntering) return ctx.playbackEntering;
+    if (ctx.playbackEntered && ctx.controller) {
+      ctx.drift.tick();
+      return Promise.resolve();
+    }
+
+    ctx.playbackEntering = (async () => {
+      ctx.hideReadyOverlay();
+      ctx.hideCountdown();
+      ctx.showPlayerSurface();
+
+      await ctx.ensurePlayerPlayback();
+      if (ctx.destroyed || !ctx.controller) return;
+      ctx.setPlaybackPhase();
+
+      const positionMs = timelinePositionAt(ctx.timeline, ctx.clock.now());
+      await ctx.controller.prepareInitialPlayback?.({ position: positionMs / 1000 });
+      if (ctx.destroyed || !ctx.controller) return;
+
+      ctx.playbackEntered = true;
+      ctx.drift.start();
+      ctx.drift.tick();
+      ctx.maybeStartOwnerHeartbeat();
+    })()
+      .catch(error => {
+        console.error('[Watch Party Playback]', error);
+        if (!ctx.destroyed) appStore.showToast(error.message || 'Wiedergabe konnte nicht gestartet werden', 'error');
+      })
+      .finally(() => {
+        ctx.playbackEntering = null;
       });
-      return;
-    }
 
-    const payload = timelineToControl(timeline, reason);
-    if (reason === 'start' || !ctx.controller) {
-      void ctx.handleControlPlay(payload);
-      return;
-    }
-    void ctx.safeApplyRemoteControl(payload);
+    return ctx.playbackEntering;
+  };
+
+  ctx.leavePlayback = () => {
+    ctx.drift.stop();
+    ctx.playbackEntered = false;
   };
 
   ctx.isSyncLeader = () => Boolean(ctx.currentUser?.id) && ctx.party?.syncLeaderUserId === ctx.currentUser.id;
@@ -69,7 +190,7 @@ export function bindSync(ctx) {
     ctx.sendOwnerControl('OWNER_SYNC', Math.round(ctx.controller.player.currentTime * 1000), {
       playing: !ctx.controller.player.paused,
       buffering: Boolean(state?.busy),
-      stableMs: state ? state.stableMs : 0
+      stableMs: state ? Math.round(state.stableMs) : 0
     });
   };
 
@@ -95,123 +216,15 @@ export function bindSync(ctx) {
     else ctx.stopOwnerHeartbeat();
   };
 
-  ctx.applySync = ({ positionMs, playing, serverTimeMs }) => {
-    if (!ctx.controller?.player) return;
-    const elapsedMs = playing ? ctx.clock.now() - serverTimeMs : 0;
-    const targetSeconds = (positionMs + elapsedMs) / 1000;
-    const drift = ctx.controller.player.currentTime - targetSeconds;
-
-    if (Math.abs(drift) > 2.5) {
-      ctx.controller.player.currentTime = Math.max(0, targetSeconds);
-      ctx.setSyncStatus('preparing', 'Synchronisiert …');
-      const now = Date.now();
-      if (now - ctx.lastAutoSyncNotificationAt > AUTO_SYNC_NOTIFICATION_COOLDOWN_MS) {
-        ctx.lastAutoSyncNotificationAt = now;
-        ctx.showWatchPartyNotification({
-          type: 'auto_sync',
-          icon: 'auto_sync',
-          message: 'Wiedergabe automatisch synchronisiert.'
-        });
-      }
-      return;
-    }
-
-    if (playing && Math.abs(drift) > 0.35) {
-      ctx.controller.player.playbackRate = drift > 0 ? 0.98 : 1.02;
-      ctx.setSyncStatus('preparing', 'Synchronisiert …');
-      window.setTimeout(() => {
-        if (ctx.controller?.player) ctx.controller.player.playbackRate = 1;
-      }, 2500);
-      return;
-    }
-
-    ctx.setSyncStatus('sync', 'Synchron');
-  };
-
-  ctx.refreshRemotePayload = payload => {
-    if (payload.action !== 'play') return payload;
-
-    const now = ctx.clock.now();
-    const elapsedMs = Math.max(0, now - (Number(payload.serverTimeMs) || now));
-    return {
-      ...payload,
-      positionMs: Math.max(0, (Number(payload.positionMs) || 0) + elapsedMs),
-      serverTimeMs: now
-    };
-  };
-
-  ctx.safeApplyRemoteControl = async payload => {
-    if (!ctx.controller) return;
-    try {
-      await ctx.controller.applyRemoteControl(payload);
-      ctx.blockedPlayPayload = null;
-      ctx.autoplayOverlay.hidden = true;
-    } catch (error) {
-      if (payload.action === 'play') {
-        ctx.blockedPlayPayload = payload;
-        ctx.autoplayOverlay.hidden = false;
-      } else {
-        console.warn('[Watch Party Remote Control]', error);
-      }
-    }
-  };
-
-  ctx.enterLivePlayback = async ({ positionMs, serverTimeMs, playing }) => {
-    if (ctx.destroyed) return;
-
-    const startServerTimeMs = Number(serverTimeMs) || ctx.clock.now();
-    const liveJoinKey = `${startServerTimeMs}:${playing ? 'play' : 'pause'}`;
-    if (ctx.lastLiveJoinKey === liveJoinKey) return;
-    ctx.lastLiveJoinKey = liveJoinKey;
-
-    ctx.hideReadyOverlay();
-    ctx.hideCountdown();
-    ctx.showPlayerSurface();
-
-    await ctx.ensurePlayerPlayback();
-    if (ctx.destroyed) return;
-    ctx.setPlaybackPhase();
-
-    const elapsedMs = playing ? Math.max(0, ctx.clock.now() - startServerTimeMs) : 0;
-    const targetMs = Math.max(0, (Number(positionMs) || 0) + elapsedMs);
-
-    if (ctx.controller?.prepareInitialPlayback) {
-      await ctx.controller.prepareInitialPlayback({ position: targetMs / 1000 });
-    }
-    if (ctx.destroyed) return;
-
-    await ctx.safeApplyRemoteControl({
-      action: playing ? 'play' : 'pause',
-      positionMs: targetMs,
-      serverTimeMs: ctx.clock.now(),
-      playing
-    });
-
-    ctx.maybeStartOwnerHeartbeat();
-  };
-
-  ctx.handleControlPlay = async payload => {
-    try {
-      ctx.hideReadyOverlay();
-      ctx.hideCountdown();
-      await ctx.ensurePlayerPlayback();
-      ctx.showPlayerSurface();
-      if (ctx.controller?.prepareInitialPlayback) {
-        const positionMs = payload.playing
-          ? timelinePositionAt({ ...payload, anchorServerTimeMs: payload.serverTimeMs }, ctx.clock.now())
-          : payload.positionMs;
-        await ctx.controller.prepareInitialPlayback({ position: (positionMs || 0) / 1000 });
-      }
-      ctx.maybeStartOwnerHeartbeat();
-      await ctx.safeApplyRemoteControl(payload);
-    } catch (error) {
-      appStore.showToast(error.message || 'Wiedergabe konnte nicht gestartet werden', 'error');
-    }
-  };
-
-  ctx.autoplayActivateButton.addEventListener('click', async () => {
-    if (!ctx.blockedPlayPayload) return;
-    await ctx.safeApplyRemoteControl(ctx.refreshRemotePayload(ctx.blockedPlayPayload));
+  ctx.autoplayActivateButton.addEventListener('click', () => {
+    if (!ctx.controller?.syncPlay) return;
+    // Called straight from the click so the browser counts it as a gesture.
+    ctx.controller.syncPlay({ quiet: false })
+      .then(() => {
+        ctx.autoplayOverlay.hidden = true;
+        ctx.drift.tick();
+      })
+      .catch(error => console.warn('[Watch Party Autoplay]', error));
   });
 
   return ctx;

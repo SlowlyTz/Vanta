@@ -139,19 +139,19 @@ export function bindPlayerEvents(context) {
   });
 
   listen(player, 'play', () => {
-    if (context.canEmitOwnerControl()) {
+    if (context.canEmitOwnerControl('play')) {
       watchParty.onOwnerPlay?.(Math.round(player.currentTime * 1000));
     }
   });
 
   listen(player, 'pause', () => {
-    if (context.canEmitOwnerControl()) {
+    if (context.canEmitOwnerControl('pause')) {
       watchParty.onOwnerPause?.(Math.round(player.currentTime * 1000));
     }
   });
 
   listen(player, 'seeked', () => {
-    if (context.canEmitOwnerControl()) {
+    if (context.canEmitOwnerControl('seek')) {
       watchParty.onOwnerSeek?.(Math.round(player.currentTime * 1000));
     }
   });

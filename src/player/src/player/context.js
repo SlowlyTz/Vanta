@@ -1,6 +1,7 @@
 import { isIOSLike, isPictureInPictureSupported, enforceInlineVideoPlayback } from '../platform.js';
 import { createPlayerUi } from '../ui/playerUi.js';
 import { applyWatchPartyPermissions } from '../watchParty.js';
+import { createEchoTokens } from '../syncEcho.js';
 import { createPlayerMarkup } from './markup.js';
 
 export async function createPlayerContext(options) {
@@ -50,7 +51,8 @@ export async function createPlayerContext(options) {
     fallbackAttempted: false,
     knownDuration: 0,
     lastWheelSeekAt: 0,
-    ownerEchoSuppressionDepth: 0
+    ownerEchoSuppressionDepth: 0,
+    echoTokens: createEchoTokens()
   };
 
   context.listen = (target, event, handler, listenerOptions) => {
@@ -73,10 +75,14 @@ export async function createPlayerContext(options) {
     if (!watchParty?.enabled) return true;
     return Boolean(watchParty.canControl ?? watchParty.isOwner);
   };
-  context.canEmitOwnerControl = () => (
-    watchParty?.enabled && context.canControlWatchParty() && context.watchPartyPhase() === 'playback'
-      && context.ownerEchoSuppressionDepth === 0
-  );
+  // `kind` is the media event (play, pause, seek). A pending echo token for it
+  // means the sync itself caused the event, so it is consumed, not reported.
+  context.canEmitOwnerControl = kind => {
+    if (kind && context.echoTokens.consume(kind)) return false;
+    return Boolean(watchParty?.enabled) && context.canControlWatchParty()
+      && context.watchPartyPhase() === 'playback'
+      && context.ownerEchoSuppressionDepth === 0;
+  };
 
   const fullKeyShortcuts = { ...player.keyShortcuts };
   const viewerKeyShortcuts = iosLike

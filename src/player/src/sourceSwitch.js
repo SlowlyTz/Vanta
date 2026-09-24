@@ -76,7 +76,9 @@ export function createSourceSwitch(options) {
   state.loadPlayback = loadPlayback;
   const switchTo = createSwitchTo(state);
 
-  const startCurrentPlayback = async () => {
+  // `quiet` starts without the loading cover, for a watch-party start where
+  // the source is already buffered and the countdown hands over to the video.
+  const startCurrentPlayback = async ({ quiet = false } = {}) => {
     if (!state.currentPlayback) {
       await state.player.play();
       return;
@@ -86,9 +88,11 @@ export function createSourceSwitch(options) {
     state.switching = true;
     clearSeekTimer(state);
     state.hideError();
-    state.setLoading(true, 'Wiedergabe wird gestartet …');
+    if (!quiet) {
+      state.setLoading(true, 'Wiedergabe wird gestartet …');
+      state.ui.setState('booting');
+    }
     state.setInlineLoading(false);
-    state.ui.setState('booting');
 
     try {
       const shouldPlay = !state.shouldPreventPlayback?.();

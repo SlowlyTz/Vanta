@@ -124,6 +124,7 @@ export function bindRendering(ctx) {
 
   ctx.showEndedState = message => {
     ctx.stopOwnerHeartbeat();
+    ctx.leavePlayback();
     try {
       ctx.controller?.destroy();
     } catch (error) {

@@ -19,6 +19,7 @@ import { bindReporterAndOrientation } from './player/reporterAndOrientation.js';
 import { bindSourceSwitchIntegration } from './player/sourceSwitchIntegration.js';
 import { bindMenus } from './player/menus.js';
 import { bindPlayerEvents } from './player/eventBindings.js';
+import { bindSyncControls } from './player/syncControls.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -28,6 +29,7 @@ export async function mountVantaPlayer(options) {
   bindSourceSwitchIntegration(context);
   bindMenus(context);
   bindPlayerEvents(context);
+  bindSyncControls(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);
 }

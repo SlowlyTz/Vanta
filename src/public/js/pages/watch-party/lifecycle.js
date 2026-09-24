@@ -9,6 +9,7 @@ export function bindLifecycle(ctx) {
     ctx.destroyed = true;
     window.removeEventListener('hashchange', ctx.handleHashChange);
     ctx.stopOwnerHeartbeat();
+    ctx.drift.stop();
     if (ctx.countdownTimer) window.clearInterval(ctx.countdownTimer);
     if (ctx.inviteResolveTimer) window.clearTimeout(ctx.inviteResolveTimer);
     ctx.clock.stop();

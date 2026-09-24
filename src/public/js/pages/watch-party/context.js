@@ -16,7 +16,6 @@ export function createWatchPartyContext({ partyId }) {
     countdownTimer: null,
     watchPartyConfig: null,
     localReadyPreparing: false,
-    lastLiveJoinKey: null,
     lastAutoSyncNotificationAt: 0,
     destroyed: false,
     scrollLockY: 0,
@@ -24,7 +23,9 @@ export function createWatchPartyContext({ partyId }) {
     selectedInviteUser: null,
     sendingInvitation: false,
     inviteResolveTimer: null,
-    blockedPlayPayload: null,
+    syncInfo: null,
+    playbackEntered: false,
+    playbackEntering: null,
     timeline: null,
     lastAppliedTimelineSeq: -1,
     mountInFlight: null

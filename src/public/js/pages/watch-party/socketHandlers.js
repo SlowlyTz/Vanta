@@ -1,7 +1,8 @@
 import { WatchPartyApi } from '../../api/watch-party.api.js';
 import { createWatchPartySocket } from '../../realtime/watch-party.socket.js';
 import { appStore } from '../../store/app.store.js';
-import { shouldShowPlayerForParty, PLAYBACK_STATUSES } from './helpers.js';
+import { PLAYBACK_STATUSES } from './helpers.js';
+import { timelineFromParty } from './sync.js';
 
 export function bindSocketHandlers(ctx) {
   ctx.handleSocketMessage = message => {
@@ -12,42 +13,9 @@ export function bindSocketHandlers(ctx) {
         ctx.clock.handlePong(message);
         return;
 
-      case 'PARTY_STATE': {
-        ctx.party = message.party;
-        ctx.acceptTimeline(ctx.party.timeline);
-        ctx.renderParty();
-        if (ctx.party.status === 'ready-room' || ctx.party.status === 'countdown') {
-          ctx.ensurePlayerReadyRoom();
-        } else if (PLAYBACK_STATUSES.has(ctx.party.status)) {
-          void ctx.enterLivePlayback({
-            positionMs: message.effectivePositionMs ?? ctx.party.positionMs,
-            serverTimeMs: message.serverTimeMs,
-            playing: ctx.party.status === 'playing'
-          });
-        }
-        return;
-      }
-
+      case 'PARTY_STATE':
       case 'PARTY_UPDATED':
-        ctx.party = message.party;
-        ctx.acceptTimeline(ctx.party.timeline);
-        ctx.renderParty();
-        if (ctx.party.status === 'ready-room' || ctx.party.status === 'countdown') {
-          ctx.ensurePlayerReadyRoom();
-          ctx.renderReadyOverlay();
-        } else if (shouldShowPlayerForParty(ctx.party)) {
-          if (ctx.controller) {
-            ctx.showPlayerSurface();
-            ctx.setPlaybackPhase();
-            ctx.maybeStartOwnerHeartbeat();
-          } else if (ctx.party.playableItemId) {
-            ctx.mountPlayer({
-              itemId: ctx.party.playableItemId,
-              positionMs: ctx.party.positionMs,
-              phase: 'playback'
-            });
-          }
-        }
+        ctx.applyPartySnapshot(message.party);
         return;
 
       case 'COUNTDOWN':
@@ -111,6 +79,20 @@ export function bindSocketHandlers(ctx) {
     }
   };
 
+  // Every full party payload (join, reconnect, updates) goes through here: it
+  // refreshes the lobby and moves the page into the phase the party is in.
+  ctx.applyPartySnapshot = party => {
+    ctx.party = party;
+    ctx.acceptTimeline(timelineFromParty(party));
+    ctx.renderParty();
+    if (party.status === 'ready-room' || party.status === 'countdown') {
+      ctx.ensurePlayerReadyRoom();
+      ctx.renderReadyOverlay();
+    } else if (PLAYBACK_STATUSES.has(party.status)) {
+      void ctx.enterPlayback();
+    }
+  };
+
   ctx.init = async () => {
     try {
       const { party: joined } = await WatchPartyApi.join(ctx.partyId);
@@ -124,8 +106,6 @@ export function bindSocketHandlers(ctx) {
         return;
       }
 
-      ctx.renderParty();
-
       ctx.socket = createWatchPartySocket({
         partyId: ctx.partyId,
         onMessage: ctx.handleSocketMessage,
@@ -133,15 +113,7 @@ export function bindSocketHandlers(ctx) {
         onReconnecting: () => ctx.setSyncStatus('lost', 'Verbindung verloren. Reconnect läuft …')
       });
 
-      if (ctx.party.status === 'ready-room' || ctx.party.status === 'countdown') {
-        ctx.ensurePlayerReadyRoom();
-      } else if (PLAYBACK_STATUSES.has(ctx.party.status)) {
-        void ctx.enterLivePlayback({
-          positionMs: ctx.party.positionMs,
-          serverTimeMs: ctx.party.lastServerTimeMs,
-          playing: ctx.party.status === 'playing'
-        });
-      }
+      ctx.applyPartySnapshot(joined);
     } catch (error) {
       if (!ctx.destroyed) ctx.renderError(error);
     }

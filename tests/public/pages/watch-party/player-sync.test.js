@@ -4,7 +4,7 @@ import { MediaApi } from '../../../../src/public/js/api/media.api.js';
 import { authStore } from '../../../../src/public/js/store/auth.store.js';
 import { appStore } from '../../../../src/public/js/store/app.store.js';
 import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-import { makeParty, flush, timelineMessage } from './helpers.js';
+import { makeParty, flush, timelineMessage, createFakeController } from './helpers.js';
 
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
@@ -48,13 +48,7 @@ vi.mock('../../../../src/public/js/realtime/watch-party.socket.js', () => ({
   })
 }));
 
-const fakeController = {
-  player: { currentTime: 0, paused: true, playbackRate: 1 },
-  prepareInitialPlayback: vi.fn().mockResolvedValue(undefined),
-  applyRemoteControl: vi.fn(),
-  updateWatchPartyAccess: vi.fn(),
-  destroy: vi.fn()
-};
+const fakeController = createFakeController();
 
 const { mountVantaPlayer } = vi.hoisted(() => ({ mountVantaPlayer: vi.fn() }));
 
@@ -65,12 +59,7 @@ mountVantaPlayer.mockResolvedValue(fakeController);
 describe('WatchPartyPage · Player Sync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fakeController.prepareInitialPlayback.mockResolvedValue(undefined);
-    fakeController.applyRemoteControl.mockResolvedValue(undefined);
-    fakeController.updateWatchPartyAccess.mockImplementation(() => {});
-    fakeController.player.currentTime = 0;
-    fakeController.player.paused = true;
-    fakeController.player.playbackRate = 1;
+    fakeController.reset();
     capturedOnMessage = null;
     window.location.hash = '#/watch-party/party-1';
   });
@@ -92,11 +81,14 @@ describe('WatchPartyPage · Player Sync', () => {
     await flush();
 
     expect(capturedOnMessage).toBeTruthy();
-    capturedOnMessage(timelineMessage({ positionMs: 8000, playing: false, actorUserId: 'viewer-1' }));
+    expect(fakeController.player.paused).toBe(false);
 
-    expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'pause', positionMs: 8000, playing: false })
-    );
+    capturedOnMessage(timelineMessage({ positionMs: 8000, playing: false, actorUserId: 'viewer-1' }));
+    await flush();
+
+    expect(fakeController.syncPause).toHaveBeenCalled();
+    expect(fakeController.player.paused).toBe(true);
+    expect(fakeController.player.currentTime).toBe(8);
   });
 
   it('startet den Player an der berechneten Position bei einer laufenden Zeitleiste', async () => {
@@ -114,9 +106,10 @@ describe('WatchPartyPage · Player Sync', () => {
     await flush();
     await flush();
 
-    expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'play', positionMs: 12000, playing: true })
-    );
+    // A jump of twelve seconds is a hard seek, aimed a little ahead of the timeline.
+    expect(fakeController.player.currentTime).toBeGreaterThanOrEqual(12);
+    expect(fakeController.player.currentTime).toBeLessThan(12.5);
+    expect(fakeController.player.paused).toBe(false);
   });
 
   it('zerstört den Player und zeigt eine Meldung bei PARTY_ENDED', async () => {
@@ -188,13 +181,13 @@ describe('WatchPartyPage · Player Sync', () => {
     );
   });
 
-  it('zeigt beim Late Join in eine laufende Party bei blockiertem Autoplay ein lokales Popup und aktualisiert beim Klick die Zielposition', async () => {
+  it('zeigt beim Late Join in eine laufende Party bei blockiertem Autoplay ein Popup und startet beim Klick', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
     WatchPartyApi.join.mockResolvedValue({
       party: makeParty({ status: 'playing', positionMs: 5000 })
     });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
-    fakeController.applyRemoteControl.mockRejectedValueOnce(new Error('NotAllowedError'));
+    fakeController.blockNextPlay();
 
     const container = WatchPartyPage({ partyId: 'party-1' });
     await flush();
@@ -202,49 +195,35 @@ describe('WatchPartyPage · Player Sync', () => {
 
     const autoplayOverlay = container.querySelector('.watch-party-autoplay-overlay');
     expect(autoplayOverlay.hidden).toBe(false);
+    expect(fakeController.player.paused).toBe(true);
 
-    const blockedPayload = fakeController.applyRemoteControl.mock.calls[0][0];
-    expect(blockedPayload).toMatchObject({ action: 'play', playing: true });
-
-    fakeController.applyRemoteControl.mockResolvedValueOnce();
     container.querySelector('.watch-party-autoplay-button').click();
     await flush();
 
-    const retryPayload = fakeController.applyRemoteControl.mock.calls.at(-1)[0];
-    expect(retryPayload.action).toBe('play');
-    expect(retryPayload.positionMs).toBeGreaterThanOrEqual(blockedPayload.positionMs);
-    expect(retryPayload.serverTimeMs).toBeGreaterThanOrEqual(blockedPayload.serverTimeMs);
+    expect(fakeController.syncPlay).toHaveBeenLastCalledWith({ quiet: false });
+    expect(fakeController.player.paused).toBe(false);
     expect(autoplayOverlay.hidden).toBe(true);
   });
 
-  it('zeigt bei blockiertem Autoplay während einer späteren laufenden Zeitleiste ein lokales Popup und synchronisiert beim Klick auf die aktuelle Position', async () => {
-    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
-    WatchPartyApi.join.mockResolvedValue({
-      party: makeParty({ status: 'paused', positionMs: 5000 })
-    });
-    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+  it('versucht bei blockiertem Autoplay nicht ständig erneut zu starten', async () => {
+    vi.useFakeTimers();
+    try {
+      authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'paused', positionMs: 5000 }) });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
 
-    const container = WatchPartyPage({ partyId: 'party-1' });
-    await flush();
-    await flush();
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await vi.advanceTimersByTimeAsync(50);
 
-    fakeController.applyRemoteControl.mockRejectedValueOnce(new Error('NotAllowedError'));
-    const serverTimeMs = Date.now();
-    capturedOnMessage(timelineMessage({ positionMs: 5000, playing: true, anchorServerTimeMs: serverTimeMs, actorUserId: 'admin-2' }));
-    await flush();
+      fakeController.blockNextPlay();
+      capturedOnMessage(timelineMessage({ positionMs: 5000, playing: true, actorUserId: 'owner-1' }));
+      await vi.advanceTimersByTimeAsync(3000);
 
-    const autoplayOverlay = container.querySelector('.watch-party-autoplay-overlay');
-    expect(autoplayOverlay.hidden).toBe(false);
-
-    fakeController.applyRemoteControl.mockResolvedValueOnce();
-    container.querySelector('.watch-party-autoplay-button').click();
-    await flush();
-
-    const retryPayload = fakeController.applyRemoteControl.mock.calls.at(-1)[0];
-    expect(retryPayload.action).toBe('play');
-    expect(retryPayload.positionMs).toBeGreaterThanOrEqual(5000);
-    expect(retryPayload.serverTimeMs).toBeGreaterThanOrEqual(serverTimeMs);
-    expect(autoplayOverlay.hidden).toBe(true);
+      expect(container.querySelector('.watch-party-autoplay-overlay').hidden).toBe(false);
+      expect(fakeController.syncPlay).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ignoriert das Echo des eigenen Befehls und veraltete Zeitleisten', async () => {
@@ -255,13 +234,16 @@ describe('WatchPartyPage · Player Sync', () => {
     WatchPartyPage({ partyId: 'party-1' });
     await flush();
     await flush();
-    fakeController.applyRemoteControl.mockClear();
+    fakeController.player.currentTime = 9;
+    fakeController.player.paused = false;
+    fakeController.syncSeek.mockClear();
 
     capturedOnMessage(timelineMessage({ positionMs: 9000, playing: true, seq: 5, actorUserId: 'owner-1' }));
     capturedOnMessage(timelineMessage({ positionMs: 1000, playing: false, seq: 4, actorUserId: 'admin-2' }));
     await flush();
 
-    expect(fakeController.applyRemoteControl).not.toHaveBeenCalled();
+    expect(fakeController.syncSeek).not.toHaveBeenCalled();
+    expect(fakeController.syncPause).not.toHaveBeenCalled();
   });
 
   it('stempelt eigene Steuerbefehle mit der Serverzeit', async () => {

@@ -3,7 +3,7 @@ import { WatchPartyApi } from '../../../../src/public/js/api/watch-party.api.js'
 import { MediaApi } from '../../../../src/public/js/api/media.api.js';
 import { authStore } from '../../../../src/public/js/store/auth.store.js';
 import WatchPartyPage from '../../../../src/public/js/pages/watch-party.page.js';
-import { makeParty, flush } from './helpers.js';
+import { makeParty, flush, createFakeController } from './helpers.js';
 
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
@@ -47,13 +47,7 @@ vi.mock('../../../../src/public/js/realtime/watch-party.socket.js', () => ({
   })
 }));
 
-const fakeController = {
-  player: { currentTime: 0, paused: true, playbackRate: 1 },
-  prepareInitialPlayback: vi.fn().mockResolvedValue(undefined),
-  applyRemoteControl: vi.fn(),
-  updateWatchPartyAccess: vi.fn(),
-  destroy: vi.fn()
-};
+const fakeController = createFakeController();
 
 const { mountVantaPlayer } = vi.hoisted(() => ({ mountVantaPlayer: vi.fn() }));
 
@@ -64,12 +58,7 @@ mountVantaPlayer.mockResolvedValue(fakeController);
 describe('WatchPartyPage · Episode Sync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fakeController.prepareInitialPlayback.mockResolvedValue(undefined);
-    fakeController.applyRemoteControl.mockResolvedValue(undefined);
-    fakeController.updateWatchPartyAccess.mockImplementation(() => {});
-    fakeController.player.currentTime = 0;
-    fakeController.player.paused = true;
-    fakeController.player.playbackRate = 1;
+    fakeController.reset();
     capturedOnMessage = null;
     window.location.hash = '#/watch-party/party-1';
   });
@@ -175,7 +164,7 @@ describe('WatchPartyPage · Episode Sync', () => {
   });
 
   describe('Late Join in laufendes Playback', () => {
-    it('nutzt effectivePositionMs aus PARTY_STATE, zeigt kein Ready-Overlay und sendet kein PLAYER_READY', async () => {
+    it('steigt an der Position der Zeitleiste ein, zeigt kein Ready-Overlay und sendet kein PLAYER_READY', async () => {
       authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
       WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'lobby' }) });
       MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
@@ -186,12 +175,13 @@ describe('WatchPartyPage · Episode Sync', () => {
 
       expect(mountVantaPlayer).not.toHaveBeenCalled();
 
-      const serverTimeMs = Date.now();
       capturedOnMessage({
         type: 'PARTY_STATE',
-        party: makeParty({ status: 'playing', positionMs: 100_000 }),
-        effectivePositionMs: 130_000,
-        serverTimeMs
+        party: makeParty({
+          status: 'playing',
+          positionMs: 100_000,
+          timeline: { positionMs: 100_000, playing: true, anchorServerTimeMs: Date.now() - 30_000, seq: 4 }
+        })
       });
       await flush();
       await flush();
@@ -220,9 +210,9 @@ describe('WatchPartyPage · Episode Sync', () => {
 
       expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(true);
       expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
-      expect(fakeController.applyRemoteControl).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'pause', playing: false })
-      );
+      expect(fakeController.syncPlay).not.toHaveBeenCalled();
+      expect(fakeController.player.paused).toBe(true);
+      expect(fakeController.player.currentTime).toBe(42);
     });
 
     it('mountet den Player nur einmal, wenn init() und eine sofort folgende PARTY_STATE beide enterLivePlayback auslösen (Race-Regression)', async () => {
@@ -267,23 +257,17 @@ describe('WatchPartyPage · Episode Sync', () => {
       await flush();
       await flush();
 
-      expect(fakeController.applyRemoteControl).toHaveBeenLastCalledWith(
-        expect.objectContaining({ action: 'pause', playing: false })
-      );
+      expect(fakeController.player.paused).toBe(true);
 
-      const serverTimeMs = Date.now() + 1000;
       capturedOnMessage({
         type: 'PARTY_STATE',
-        party: makeParty({ status: 'playing', positionMs: 6000 }),
-        effectivePositionMs: 6000,
-        serverTimeMs
+        party: makeParty({ status: 'playing', positionMs: 6000 })
       });
       await flush();
       await flush();
 
-      expect(fakeController.applyRemoteControl).toHaveBeenLastCalledWith(
-        expect.objectContaining({ action: 'play', playing: true })
-      );
+      expect(fakeController.syncPlay).toHaveBeenCalled();
+      expect(fakeController.player.paused).toBe(false);
     });
   });
 });
