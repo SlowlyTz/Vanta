@@ -2,7 +2,7 @@ import { createQualityController } from '../quality.js';
 import { createSubtitleController } from '../subtitles.js';
 import { formatEpisodeCode, findEpisode } from '../episodes.js';
 import { createSettingsFlyout } from '../settings/flyout.js';
-import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage } from '../settings/pages.js';
+import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSubtitlesPage } from '../settings/pages.js';
 import {
   findNextEpisode,
   shouldShowNextEpisodePrompt,
@@ -129,12 +129,29 @@ export function bindMenus(context) {
     }
   ]);
 
+  // Size and background of the subtitles, on the player root so the caption
+  // styles can pick them up; remembered with the other preferences.
+  const subtitleStyle = () => {
+    const prefs = context.preferences?.get() || {};
+    return { size: prefs.subtitleSize || 'medium', background: prefs.subtitleBackground || 'semi' };
+  };
+  context.applySubtitleStyle = (patch = {}) => {
+    const next = { ...subtitleStyle(), ...patch };
+    root.dataset.subtitleSize = next.size;
+    root.dataset.subtitleBackground = next.background;
+    if (Object.keys(patch).length) {
+      context.preferences?.update({ subtitleSize: next.size, subtitleBackground: next.background });
+    }
+  };
+  context.applySubtitleStyle();
+
   settings.registerPage('subtitles', {
     title: 'Untertitel',
-    render: (body, flyout) => renderOptionsPage(body, {
+    render: (body, flyout) => renderSubtitlesPage(body, {
       options: context.subtitleMenu.getOptions(),
       onSelect: id => context.selectSubtitle(id),
-      emptyLabel: 'Keine Untertitel verfügbar'
+      style: subtitleStyle(),
+      onStyleChange: patch => context.applySubtitleStyle(patch)
     }, flyout)
   });
 

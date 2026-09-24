@@ -91,4 +91,18 @@ describe('bindMenus', () => {
     env.context.toggleSubtitles();
     expect(env.context.preferences.update).toHaveBeenLastCalledWith({ subtitleLanguage: null });
   });
+
+  it('setzt die Untertitel-Darstellung am Player und merkt sie sich', () => {
+    env = setup();
+    const update = vi.fn();
+    env.context.preferences = { get: () => ({ subtitleSize: 'small', subtitleBackground: 'solid' }), update };
+    env.context.applySubtitleStyle();
+    expect(env.root.dataset.subtitleSize).toBe('small');
+    expect(env.root.dataset.subtitleBackground).toBe('solid');
+    expect(update).not.toHaveBeenCalled();
+
+    env.context.applySubtitleStyle({ size: 'large' });
+    expect(env.root.dataset.subtitleSize).toBe('large');
+    expect(update).toHaveBeenCalledWith({ subtitleSize: 'large', subtitleBackground: 'solid' });
+  });
 });

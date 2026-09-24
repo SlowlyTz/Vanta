@@ -3,7 +3,7 @@
    (landscape) or a bottom sheet (portrait). */
 
 .vanta-settings {
-  --settings-width: 340px;
+  --settings-width: 380px;
   --settings-ease: var(--abyss-ease, cubic-bezier(0.16, 1, 0.3, 1));
   position: absolute;
   right: max(20px, env(safe-area-inset-right));
@@ -50,7 +50,7 @@
 }
 
 .vanta-settings.is-wide {
-  --settings-width: 420px;
+  --settings-width: 460px;
 }
 
 .vanta-settings-viewport {
@@ -230,6 +230,65 @@
 .vanta-settings-hint {
   padding: 0 12px 8px;
   font-size: 0.8rem;
+}
+
+/* Sections with segmented choices (subtitle look) */
+.vanta-settings-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 12px 12px 6px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.vanta-settings-section-title {
+  color: rgb(255 255 255 / 0.55);
+  font: 700 0.72rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.vanta-settings-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.vanta-settings-field-label {
+  font: 600 0.9rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.08);
+}
+
+.vanta-settings-segment {
+  min-height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.75);
+  font: 600 0.8rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.vanta-settings-segment:hover,
+.vanta-settings-segment:focus-visible {
+  color: #fff;
+  outline: none;
+}
+
+.vanta-settings-segment[aria-checked="true"] {
+  background: #fff;
+  color: #0b0b0e;
 }
 
 /* Watch-party sync line */

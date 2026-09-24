@@ -47,6 +47,65 @@ export function renderOptionsPage(body, { options, onSelect, emptyLabel = 'Keine
   body.appendChild(list);
 }
 
+export const SUBTITLE_SIZES = [
+  { id: 'small', label: 'Klein' },
+  { id: 'medium', label: 'Mittel' },
+  { id: 'large', label: 'Groß' }
+];
+
+export const SUBTITLE_BACKGROUNDS = [
+  { id: 'none', label: 'Aus' },
+  { id: 'semi', label: 'Halb' },
+  { id: 'solid', label: 'Deckend' }
+];
+
+function segmented({ label, options, value, onChange }) {
+  const section = document.createElement('div');
+  section.className = 'vanta-settings-field';
+  const title = document.createElement('span');
+  title.className = 'vanta-settings-field-label';
+  title.textContent = label;
+  const group = document.createElement('div');
+  group.className = 'vanta-settings-segmented';
+  group.setAttribute('role', 'radiogroup');
+  group.setAttribute('aria-label', label);
+  options.forEach(option => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'vanta-settings-segment vanta-settings-focusable';
+    button.dataset.value = option.id;
+    button.setAttribute('role', 'radio');
+    button.setAttribute('aria-checked', option.id === value ? 'true' : 'false');
+    button.textContent = option.label;
+    button.addEventListener('click', () => {
+      group.querySelectorAll('.vanta-settings-segment').forEach(other => {
+        other.setAttribute('aria-checked', other === button ? 'true' : 'false');
+      });
+      onChange(option.id);
+    });
+    group.appendChild(button);
+  });
+  section.append(title, group);
+  return section;
+}
+
+// Track choice on top, how subtitles look below. The look applies right away
+// and keeps the page open, so the effect can be seen on the running video.
+export function renderSubtitlesPage(body, { options, onSelect, style, onStyleChange }, flyout) {
+  renderOptionsPage(body, { options, onSelect, emptyLabel: 'Keine Untertitel verfügbar' }, flyout);
+  const section = document.createElement('div');
+  section.className = 'vanta-settings-section';
+  const heading = document.createElement('div');
+  heading.className = 'vanta-settings-section-title';
+  heading.textContent = 'Darstellung';
+  section.append(
+    heading,
+    segmented({ label: 'Größe', options: SUBTITLE_SIZES, value: style.size, onChange: size => onStyleChange({ size }) }),
+    segmented({ label: 'Hintergrund', options: SUBTITLE_BACKGROUNDS, value: style.background, onChange: background => onStyleChange({ background }) })
+  );
+  body.appendChild(section);
+}
+
 // Season chips on top, the episodes of the chosen season below. Viewers in a
 // watch party can look but not switch.
 export function renderEpisodesPage(body, { context, readonly, onSelectEpisode }, flyout) {

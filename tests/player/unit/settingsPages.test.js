@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage } from '../../../src/player/src/settings/pages.js';
+import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSubtitlesPage } from '../../../src/player/src/settings/pages.js';
 
 const flyout = () => ({ back: vi.fn(), close: vi.fn(), refresh: vi.fn() });
 
@@ -131,5 +131,30 @@ describe('renderParticipantsPage', () => {
     confirm.click();
     expect(party.onBanMember).toHaveBeenCalledWith('viewer-1');
     expect(pendingBan.userId).toBeNull();
+  });
+});
+
+describe('renderSubtitlesPage', () => {
+  it('zeigt Spuren und darunter Größe und Hintergrund, die sofort wirken ohne die Seite zu schließen', () => {
+    const body = document.createElement('div');
+    const api = flyout();
+    const onStyleChange = vi.fn();
+    renderSubtitlesPage(body, {
+      options: [{ id: 'off', label: 'Aus', selected: true }],
+      onSelect: vi.fn(),
+      style: { size: 'medium', background: 'semi' },
+      onStyleChange
+    }, api);
+
+    const sizes = body.querySelectorAll('[aria-label="Größe"] .vanta-settings-segment');
+    expect([...sizes].map(button => button.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false']);
+    sizes[2].click();
+    expect(onStyleChange).toHaveBeenCalledWith({ size: 'large' });
+    expect(sizes[2].getAttribute('aria-checked')).toBe('true');
+    expect(sizes[1].getAttribute('aria-checked')).toBe('false');
+    expect(api.back).not.toHaveBeenCalled();
+
+    body.querySelector('[aria-label="Hintergrund"] [data-value="none"]').click();
+    expect(onStyleChange).toHaveBeenLastCalledWith({ background: 'none' });
   });
 });

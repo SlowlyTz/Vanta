@@ -78,13 +78,31 @@
 
 .vanta-player-captions {
   --media-captions-padding: 2%;
-  --media-cue-font-size: 1.05rem;
+  --media-cue-font-size: clamp(1rem, 2.2vw, 1.6rem);
   --media-cue-line-height: 1.25;
-  --media-cue-bg: rgb(0 0 0 / 0.72);
+  --media-cue-bg: rgb(0 0 0 / 0.62);
   --media-cue-color: #fff;
   --media-cue-border-radius: 4px;
   --cue-text-shadow: 0 1px 2px rgb(0 0 0 / 0.75);
   z-index: 12;
+}
+
+/* Subtitle look chosen in the settings (size, background). */
+.vanta-player-root[data-subtitle-size="small"] .vanta-player-captions {
+  --media-cue-font-size: clamp(0.85rem, 1.7vw, 1.25rem);
+}
+
+.vanta-player-root[data-subtitle-size="large"] .vanta-player-captions {
+  --media-cue-font-size: clamp(1.2rem, 2.9vw, 2.15rem);
+}
+
+.vanta-player-root[data-subtitle-background="none"] .vanta-player-captions {
+  --media-cue-bg: transparent;
+  --cue-text-shadow: 0 0 3px rgb(0 0 0 / 0.95), 0 2px 4px rgb(0 0 0 / 0.9);
+}
+
+.vanta-player-root[data-subtitle-background="solid"] .vanta-player-captions {
+  --media-cue-bg: rgb(0 0 0 / 0.92);
 }
 
 .vanta-media-player [data-media-button] {
