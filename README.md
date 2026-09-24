@@ -70,7 +70,7 @@ Which files the server hands out depends on `NODE_ENV`:
 
 In both modes text responses are gzip/brotli compressed and hashed player chunks under `/vendor/player/` are immutable, while the unhashed entries (`vanta-player.js`, `vanta-intro.js`) are revalidated so a rebuild takes effect at once. Images under `/assets/` are cached for a day.
 
-The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; the opening scene from `src/intro/` into `src/public/vendor/intro/`; the watch-party countdown from `src/countdown/` into `src/public/vendor/countdown/`. All three keep fixed paths because the app loads them by URL at runtime, and their outputs are committed. Particle code shared by the two three.js scenes lives in `src/shared/particles/`.
+The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; the opening scene from `src/intro/` into `src/public/vendor/intro/`; the watch-party countdown from `src/countdown/` into `src/public/vendor/countdown/`. All three keep fixed paths because the app loads them by URL at runtime, and their outputs are committed. Particle code shared by the two three.js scenes lives in `src/shared/particles/`. DOM-free helpers used by the web app, the player bundle and the server alike (clock format, member colours, party states, episode codes, request scopes, party size) live in `src/public/js/shared/`: the app loads them as they are, the player bundles them and Node imports them directly.
 
 The Outfit font is self-hosted: the woff2 files live in `src/public/assets/fonts/`, the `@font-face` rules in `src/public/css/fonts.css`. Nothing is loaded from Google Fonts.
 
