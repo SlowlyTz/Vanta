@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { activeSkipSegment, bindSegments, findOutro } from '../../../src/player/src/segments.js';
 import { computeNextEpisodeTimings, shouldShowNextEpisodePrompt } from '../../../src/player/src/nextEpisode.js';
 

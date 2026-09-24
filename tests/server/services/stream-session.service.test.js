@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { StreamSessionService } from '../../../src/server/services/stream-session.service.js';
 
 function createService(maxConcurrentStreams = 1, startTime = 1_000_000) {

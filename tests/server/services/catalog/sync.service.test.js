@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import initSqlJs from 'sql.js';
 import { createCatalogDb } from '../../../../src/server/db/catalog.js';
 import { createCatalogSync, normalizeText } from '../../../../src/server/services/catalog/sync.service.js';

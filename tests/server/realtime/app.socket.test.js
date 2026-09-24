@@ -145,5 +145,4 @@ describe('AppSocketHub', () => {
 
     expect(ws.sent).toEqual([]);
   });
-
 });
