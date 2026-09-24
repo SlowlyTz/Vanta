@@ -3,6 +3,7 @@
 @import "./player/controls.css";
 @import "./player/timeline.css";
 @import "./player/settings.css";
+@import "./player/help.css";
 @import "./player/next-episode.css";
 @import "./player/overlays.css";
 @import "./player/responsive.css";

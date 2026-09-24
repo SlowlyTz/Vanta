@@ -66,15 +66,23 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'vanta-settings-row vanta-settings-focusable';
-      item.dataset.page = row.page;
+      item.dataset.page = row.page || row.id;
       item.disabled = Boolean(row.disabled);
       item.innerHTML = `
         <span class="vanta-settings-row-icon" aria-hidden="true">${row.icon || ''}</span>
         <span class="vanta-settings-row-label">${escapeHtml(row.label)}</span>
         <span class="vanta-settings-row-value">${escapeHtml(row.value)}</span>
         <span class="vanta-settings-row-chevron">${CHEVRON_ICON}</span>`;
-      item.setAttribute('aria-label', `${row.label}: ${row.value}`);
-      item.addEventListener('click', () => navigate(row.page));
+      item.setAttribute('aria-label', row.value ? `${row.label}: ${row.value}` : row.label);
+      // A row either opens its page or, like "Hilfe", runs an action.
+      item.addEventListener('click', () => {
+        if (row.onSelect) {
+          close({ returnFocus: false });
+          row.onSelect();
+        } else {
+          navigate(row.page);
+        }
+      });
       list.appendChild(item);
     });
     page.appendChild(list);

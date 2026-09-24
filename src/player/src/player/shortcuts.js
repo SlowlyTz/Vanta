@@ -25,10 +25,10 @@ export const KEYBOARD_SHORTCUTS = [
 export const POINTER_SHORTCUTS = [
   { id: 'click', input: 'Klick aufs Bild', label: 'Wiedergabe / Pause', transport: true, pointer: 'mouse' },
   { id: 'dblclick', input: 'Doppelklick aufs Bild', label: 'Vollbild', pointer: 'mouse' },
-  { id: 'wheel-volume', input: 'Mausrad auf dem Lautsprecher', label: 'Lautstärke', pointer: 'mouse' },
-  { id: 'wheel-timeline', input: 'Mausrad auf der Zeitleiste', label: '10 Sekunden vor / zurück', transport: true, pointer: 'mouse' },
+  { id: 'wheel-volume', input: 'Mausrad am Lautsprecher', label: 'Lautstärke', pointer: 'mouse' },
+  { id: 'wheel-timeline', input: 'Mausrad an der Zeitleiste', label: '± 10 Sekunden', transport: true, pointer: 'mouse' },
   { id: 'tap', input: 'Tippen aufs Bild', label: 'Steuerung ein- / ausblenden', pointer: 'touch' },
-  { id: 'double-tap', input: 'Doppeltippen links / rechts', label: '10 Sekunden zurück / vor, weiteres Tippen spult weiter', transport: true, pointer: 'touch' }
+  { id: 'double-tap', input: 'Doppeltippen links / rechts', label: '± 10 s, weiteres Tippen spult weiter', transport: true, pointer: 'touch' }
 ];
 
 // Maps a key event to a shortcut id (or null). Letters ignore case.

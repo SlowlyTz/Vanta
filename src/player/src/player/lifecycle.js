@@ -112,6 +112,7 @@ export function createPlayerController(context) {
       context.subtitleMenu.destroy();
       context.settings?.destroy();
       context.mediaSession?.destroy();
+      context.help?.destroy();
       context.nextEpisodePrompt?.destroy();
       context.ui.destroy();
       context.disposers.splice(0).forEach(dispose => dispose());

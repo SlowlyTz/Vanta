@@ -1,0 +1,202 @@
+/* Help overlay: the video keeps playing under a half-transparent layer. */
+.vanta-help {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  overflow-y: auto;
+  background: rgb(6 6 8 / 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-family: Outfit, system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.vanta-help[hidden] {
+  display: none;
+}
+
+.vanta-help.is-open {
+  opacity: 1;
+}
+
+.vanta-player-root.is-help-open .vanta-player-controls-layer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vanta-help-panel {
+  width: min(1080px, 100%);
+  display: grid;
+  gap: 22px;
+  transform: translateY(12px) scale(0.98);
+  transition: transform 320ms var(--abyss-ease, ease);
+}
+
+.vanta-help.is-open .vanta-help-panel {
+  transform: none;
+}
+
+.vanta-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vanta-help-head h2 {
+  font: 750 1.6rem Outfit, system-ui, sans-serif;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 0.6);
+}
+
+.vanta-help-close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.vanta-help-close svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.vanta-help-close:hover,
+.vanta-help-close:focus-visible {
+  background: rgb(255 255 255 / 0.22);
+  outline: none;
+}
+
+.vanta-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  gap: 16px;
+  align-items: start;
+}
+
+/* The keyboard list is the long one: it takes the left column, the others
+   stack on the right. */
+.vanta-help-section[data-section="keyboard"] {
+  grid-row: span 3;
+}
+
+@media (max-width: 760px) {
+  .vanta-help-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vanta-help-section[data-section="keyboard"] {
+    grid-row: auto;
+  }
+}
+
+.vanta-help-section {
+  padding: 18px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 20px;
+  background: rgb(18 18 22 / 0.62);
+}
+
+.vanta-help-section h3 {
+  margin-bottom: 12px;
+  color: rgb(255 255 255 / 0.6);
+  font: 700 0.74rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.vanta-help-section ul {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.vanta-help-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.vanta-help-section:not([data-section="keyboard"]) .vanta-help-row {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+}
+
+.vanta-help-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: rgb(255 255 255 / 0.8);
+  font: 600 0.84rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-help kbd {
+  min-width: 26px;
+  padding: 3px 8px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-bottom-width: 2px;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  font: 650 0.78rem Outfit, system-ui, sans-serif;
+  text-align: center;
+}
+
+.vanta-help-or {
+  color: rgb(255 255 255 / 0.45);
+  font-size: 0.72rem;
+}
+
+.vanta-help-label {
+  font: 550 0.9rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-help-label em {
+  display: inline-block;
+  margin-left: 8px;
+  white-space: nowrap;
+  vertical-align: 1px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: rgb(255 255 255 / 0.7);
+  font: 700 0.62rem Outfit, system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vanta-help-row.is-locked .vanta-help-input,
+.vanta-help-row.is-locked .vanta-help-label {
+  opacity: 0.6;
+}
+
+.vanta-help-note {
+  color: rgb(255 255 255 / 0.85);
+  font: 500 0.88rem/1.45 Outfit, system-ui, sans-serif;
+}
+
+.vanta-help-foot {
+  color: rgb(255 255 255 / 0.65);
+  font: 500 0.84rem Outfit, system-ui, sans-serif;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vanta-help,
+  .vanta-help-panel {
+    transition: none;
+  }
+}

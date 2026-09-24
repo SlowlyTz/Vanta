@@ -47,7 +47,7 @@ describe('bindMenus', () => {
     env.context.updateMenus({ quality: { profiles: [{ id: 'auto' }, { id: '720p', label: '720p' }], current: 'auto' }, subtitles: [] });
     env.dom.settingsButton.click();
     const labels = [...env.root.querySelectorAll('.vanta-settings-row-label')].map(label => label.textContent);
-    expect(labels).toEqual(['Untertitel', 'Qualität', 'Folgen']);
+    expect(labels).toEqual(['Untertitel', 'Qualität', 'Folgen', 'Hilfe']);
   });
 
   it('zeigt in der Watch Party Sync-Status und Teilnehmer, aber keine Qualität', () => {
@@ -62,7 +62,7 @@ describe('bindMenus', () => {
     env = setup({ watchParty });
     env.dom.settingsButton.click();
 
-    expect([...env.root.querySelectorAll('.vanta-settings-row-label')].map(label => label.textContent)).toEqual(['Untertitel', 'Teilnehmer']);
+    expect([...env.root.querySelectorAll('.vanta-settings-row-label')].map(label => label.textContent)).toEqual(['Untertitel', 'Teilnehmer', 'Hilfe']);
     expect(env.root.querySelector('.vanta-settings-sync-label').textContent).toBe('Synchron · ±40 ms');
     env.root.querySelector('.vanta-settings-sync-button').click();
     expect(watchParty.onResync).toHaveBeenCalled();
