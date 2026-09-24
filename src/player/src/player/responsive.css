@@ -91,16 +91,6 @@
     padding: 0;
   }
 
-  .vanta-player-menu-button > span {
-    display: none;
-  }
-
-  .vanta-player-menu-button {
-    padding: 0;
-    min-width: 40px;
-    min-height: 44px;
-  }
-
   .vanta-player-seek-bubble {
     min-width: 76px;
     padding: 10px 14px;

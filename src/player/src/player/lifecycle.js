@@ -83,7 +83,7 @@ export function createPlayerController(context) {
       if (!watchParty?.enabled) return;
       Object.assign(watchParty, nextState || {});
       context.refreshWatchPartyControlAccess();
-      context.participantsMenu?.update?.();
+      context.settings?.refresh();
     },
     getSyncState: context.getSyncState,
     getBufferedAhead: context.getBufferedAhead,
@@ -121,8 +121,7 @@ export function createPlayerController(context) {
       exitInlineFullscreen(root);
       context.reporter.destroy();
       context.subtitleMenu.destroy();
-      context.participantsMenu?.destroy();
-      context.episodeBrowserMenu?.destroy();
+      context.settings?.destroy();
       context.nextEpisodePrompt?.destroy();
       context.ui.destroy();
       context.disposers.splice(0).forEach(dispose => dispose());

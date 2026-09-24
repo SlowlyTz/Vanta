@@ -1,27 +1,5 @@
-import {
-  CLOSE_PLAYER_MENUS_EVENT,
-  requestClosePlayerMenus,
-  shouldCloseForMenuRequest,
-  stopPlayerMenuClick,
-  stopPlayerMenuPointerEvent
-} from './menuEvents.js';
-
-function svgIcon(path) {
-  return `<svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>`;
-}
-
-const SUBTITLE_ICON = '<path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM10 11H8.5v-.5h-2v3h2V13H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm9 0h-1.5v-.5h-2v3h2V13H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z"/>';
 const OFF_ID = 'off';
 export const NO_SUBTITLES_LABEL = 'Keine Untertitel verfügbar';
-
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 function normalizeLanguage(language) {
   return String(language || '').trim();
@@ -65,33 +43,12 @@ export function buildSubtitleMenuItems(tracks) {
   ];
 }
 
-export function createSubtitleMenu({
-  buttonContainer,
-  menuContainer = buttonContainer,
-  player,
-  reporter
-}) {
+// Keeps the subtitle tracks of the current source registered with the player
+// and switches between them. The settings flyout renders the choices.
+export function createSubtitleController({ player, reporter, onChange = () => {} }) {
   let currentId = OFF_ID;
   let tracks = [];
   let registeredIds = new Set();
-  let isOpen = false;
-
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'vanta-player-menu-button vanta-player-subtitle-button';
-  button.setAttribute('aria-label', 'Untertitel');
-  button.setAttribute('aria-haspopup', 'true');
-  button.setAttribute('aria-expanded', 'false');
-  button.innerHTML = svgIcon(SUBTITLE_ICON);
-
-  const menu = document.createElement('div');
-  menu.className = 'vanta-player-menu vanta-player-subtitle-menu';
-  menu.setAttribute('role', 'menu');
-  menu.setAttribute('aria-label', 'Untertitel wählen');
-  menu.hidden = true;
-
-  buttonContainer.insertBefore(button, buttonContainer.firstChild);
-  menuContainer.appendChild(menu);
 
   const findRegisteredTrack = id => player.textTracks?.getById?.(id) || null;
 
@@ -136,31 +93,7 @@ export function createSubtitleMenu({
     });
   };
 
-  const close = () => {
-    if (!isOpen) return;
-    isOpen = false;
-    menu.hidden = true;
-    button.setAttribute('aria-expanded', 'false');
-    menu.querySelectorAll('[role="menuitem"]').forEach(item => item.setAttribute('tabindex', '-1'));
-  };
-
-  const open = () => {
-    if (isOpen) return;
-    requestClosePlayerMenus(menu);
-    isOpen = true;
-    menu.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
-    const items = menu.querySelectorAll('[role="menuitem"]');
-    items.forEach((item, index) => item.setAttribute('tabindex', index === 0 ? '0' : '-1'));
-    items[0]?.focus();
-  };
-
-  const toggle = () => {
-    if (isOpen) close();
-    else open();
-  };
-
-  const applySelection = nextId => {
+  const select = nextId => {
     const selected = tracks.find(track => getSubtitleTrackId(track) === nextId);
     currentId = selected ? nextId : OFF_ID;
 
@@ -169,37 +102,7 @@ export function createSubtitleMenu({
     });
 
     reporter.setSubtitleStreamIndex(selected ? selected.index : null);
-    render();
-  };
-
-  const render = () => {
-    const options = buildSubtitleMenuItems(tracks);
-
-    menu.innerHTML = options.map(option => {
-      const selected = option.id === currentId;
-      if (option.disabled) {
-        return `
-          <div
-            class="vanta-player-menu-empty"
-            role="menuitem"
-            aria-disabled="true"
-            tabindex="-1"
-          >${escapeHtml(option.label)}</div>`;
-      }
-
-      return `
-        <button
-          type="button"
-          class="vanta-player-menu-item${selected ? ' is-selected' : ''}"
-          role="menuitem"
-          data-subtitle-track="${escapeHtml(option.id)}"
-          tabindex="-1"
-          aria-checked="${selected ? 'true' : 'false'}"
-        >
-          <span class="vanta-player-menu-item-label">${escapeHtml(option.label)}</span>
-          ${selected ? '<span class="vanta-player-menu-item-check" aria-hidden="true">✓</span>' : ''}
-        </button>`;
-    }).join('');
+    onChange();
   };
 
   const update = (playback, { preserveSelection = true } = {}) => {
@@ -213,86 +116,19 @@ export function createSubtitleMenu({
       && previousId !== OFF_ID
       && tracks.some(track => getSubtitleTrackId(track) === previousId);
 
-    applySelection(shouldPreserve ? previousId : OFF_ID);
+    select(shouldPreserve ? previousId : OFF_ID);
   };
-
-  const handleKeyDown = event => {
-    if (!isOpen) return;
-    const items = [...menu.querySelectorAll('[role="menuitem"]')];
-    const currentIndex = items.findIndex(item => document.activeElement === item);
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      close();
-      button.focus();
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-      items[nextIndex]?.focus();
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-      items[prevIndex]?.focus();
-    }
-  };
-
-  const handleMenuClick = event => {
-    const item = event.target.closest('[data-subtitle-track]');
-    if (!item) return;
-    stopPlayerMenuClick(event);
-    applySelection(item.dataset.subtitleTrack);
-    close();
-  };
-
-  const handleButtonClick = event => {
-    stopPlayerMenuClick(event);
-    toggle();
-  };
-
-  const handleCloseRequest = event => {
-    if (shouldCloseForMenuRequest(event, menu)) close();
-  };
-
-  const handleDocumentClick = event => {
-    if (!isOpen) return;
-    if (!menu.contains(event.target) && !button.contains(event.target)) {
-      close();
-    }
-  };
-
-  button.addEventListener('click', handleButtonClick);
-  button.addEventListener('pointerdown', stopPlayerMenuPointerEvent);
-  menu.addEventListener('click', handleMenuClick);
-  menu.addEventListener('pointerdown', stopPlayerMenuPointerEvent);
-  menu.addEventListener('keydown', handleKeyDown);
-  document.addEventListener(CLOSE_PLAYER_MENUS_EVENT, handleCloseRequest);
-  document.addEventListener('click', handleDocumentClick);
-
-  render();
 
   return {
-    button,
     update,
-    open,
-    close,
-    destroy: () => {
-      close();
-      removeRegisteredTracks();
-      button.removeEventListener('click', handleButtonClick);
-      button.removeEventListener('pointerdown', stopPlayerMenuPointerEvent);
-      menu.removeEventListener('click', handleMenuClick);
-      menu.removeEventListener('pointerdown', stopPlayerMenuPointerEvent);
-      menu.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener(CLOSE_PLAYER_MENUS_EVENT, handleCloseRequest);
-      document.removeEventListener('click', handleDocumentClick);
-      button.remove();
-      menu.remove();
-    }
+    select,
+    getOptions: () => buildSubtitleMenuItems(tracks).map(option => ({ ...option, selected: option.id === currentId })),
+    getCurrentLabel: () => {
+      if (!tracks.length) return 'Keine';
+      const selected = tracks.find(track => getSubtitleTrackId(track) === currentId);
+      return selected ? formatSubtitleLabel(selected) : 'Aus';
+    },
+    getCurrentId: () => currentId,
+    destroy: removeRegisteredTracks
   };
 }

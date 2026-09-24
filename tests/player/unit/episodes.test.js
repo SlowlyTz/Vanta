@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createEpisodeBrowser, formatEpisodeCode, findEpisode } from '../../../src/player/src/episodes.js';
+import { describe, it, expect } from 'vitest';
+import { formatEpisodeCode, findEpisode, findSeasonIdOfEpisode } from '../../../src/player/src/episodes.js';
 
 function makeContext(overrides = {}) {
   return {
@@ -32,73 +32,14 @@ describe('findEpisode', () => {
   });
 });
 
-describe('createEpisodeBrowser', () => {
-  let buttonContainer;
-  let menuContainer;
-
-  beforeEach(() => {
-    buttonContainer = document.createElement('div');
-    menuContainer = document.createElement('div');
-    document.body.appendChild(buttonContainer);
-    document.body.appendChild(menuContainer);
-  });
-
-  it('zeigt den Button erscheint bei Serienkontext und öffnet das Panel per Klick', () => {
-    const browser = createEpisodeBrowser({
-      buttonContainer,
-      menuContainer,
-      context: makeContext(),
-      readonly: false,
-      onSelectEpisode: vi.fn()
+describe('findSeasonIdOfEpisode', () => {
+  it('findet die Staffel der laufenden Folge und fällt sonst auf die erste zurück', () => {
+    const context = makeContext({
+      seasons: [{ Id: 'season-1' }, { Id: 'season-2' }],
+      episodesBySeason: { 'season-1': [{ Id: 'ep-1' }], 'season-2': [{ Id: 'ep-9' }] }
     });
-
-    expect(buttonContainer.querySelector('.vanta-player-episodes-button')).toBeTruthy();
-    const panel = menuContainer.querySelector('.vanta-player-episodes-panel');
-    expect(panel.hidden).toBe(true);
-
-    browser.button.click();
-    expect(panel.hidden).toBe(false);
-
-    browser.destroy();
-  });
-
-  it('markiert die aktuelle Episode und ruft onSelectEpisode beim Klick auf', () => {
-    const onSelectEpisode = vi.fn();
-    const browser = createEpisodeBrowser({
-      buttonContainer,
-      menuContainer,
-      context: makeContext(),
-      readonly: false,
-      onSelectEpisode
-    });
-
-    const currentRow = menuContainer.querySelector('[data-episode-id="ep-1"]');
-    expect(currentRow.classList.contains('is-current')).toBe(true);
-
-    const otherRow = menuContainer.querySelector('[data-episode-id="ep-2"]');
-    otherRow.click();
-
-    expect(onSelectEpisode).toHaveBeenCalledWith(expect.objectContaining({ Id: 'ep-2', Name: 'Folge 2' }));
-
-    browser.destroy();
-  });
-
-  it('deaktiviert den Episoden-Wechsel im readonly-Modus (Viewer)', () => {
-    const onSelectEpisode = vi.fn();
-    const browser = createEpisodeBrowser({
-      buttonContainer,
-      menuContainer,
-      context: makeContext(),
-      readonly: true,
-      onSelectEpisode
-    });
-
-    const row = menuContainer.querySelector('[data-episode-id="ep-2"]');
-    expect(row.disabled).toBe(true);
-
-    row.click();
-    expect(onSelectEpisode).not.toHaveBeenCalled();
-
-    browser.destroy();
+    expect(findSeasonIdOfEpisode(context, 'ep-9')).toBe('season-2');
+    expect(findSeasonIdOfEpisode(context, 'unknown')).toBe('season-1');
+    expect(findSeasonIdOfEpisode(null, 'ep-1')).toBeNull();
   });
 });

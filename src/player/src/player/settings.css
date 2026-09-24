@@ -1,0 +1,577 @@
+/* Settings flyout: grows out of the gear button, pages slide sideways while
+   the panel animates to the new page's size. On phones it is a side sheet
+   (landscape) or a bottom sheet (portrait). */
+
+.vanta-settings {
+  --settings-width: 340px;
+  --settings-ease: var(--abyss-ease, cubic-bezier(0.16, 1, 0.3, 1));
+  position: absolute;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 104px);
+  z-index: 40;
+  width: var(--settings-width);
+  max-width: calc(100vw - 32px);
+  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 22px;
+  background: rgb(20 20 24 / 0.86);
+  backdrop-filter: blur(30px) saturate(1.3);
+  -webkit-backdrop-filter: blur(30px) saturate(1.3);
+  box-shadow: 0 28px 80px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  color: #fff;
+  font-family: Outfit, system-ui, sans-serif;
+  opacity: 0;
+  transform: translateY(12px) scale(0.94);
+  transform-origin: calc(100% - 96px) 100%;
+  transition:
+    opacity 200ms ease,
+    transform 260ms var(--settings-ease),
+    width 280ms var(--settings-ease);
+  pointer-events: none;
+}
+
+.vanta-settings[hidden] {
+  display: none;
+}
+
+.vanta-settings[data-state="open"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.vanta-settings[data-state="closing"] {
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transition-duration: 160ms;
+}
+
+.vanta-settings.is-wide {
+  --settings-width: 420px;
+}
+
+.vanta-settings-viewport {
+  position: relative;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+  transition: height 280ms var(--settings-ease);
+}
+
+/* Pages; the sideways slide between them is animated from script. */
+.vanta-settings-page {
+  padding: 10px;
+}
+
+.vanta-settings-page.is-leaving {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.vanta-settings-title {
+  padding: 6px 10px 10px;
+  color: rgb(255 255 255 / 0.55);
+  font: 700 0.74rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.vanta-settings-page-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 6px;
+}
+
+.vanta-settings-page-head .vanta-settings-title {
+  padding: 0;
+  color: #fff;
+  font: 700 1rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.vanta-settings-back {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.vanta-settings-back svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.vanta-settings-back:hover,
+.vanta-settings-back:focus-visible {
+  background: rgb(255 255 255 / 0.12);
+  outline: none;
+}
+
+.vanta-settings-list {
+  display: grid;
+  gap: 2px;
+}
+
+/* Start page rows */
+.vanta-settings-row,
+.vanta-settings-option {
+  width: 100%;
+  min-height: 50px;
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.vanta-settings-row {
+  grid-template-columns: 24px auto minmax(0, 1fr) 18px;
+}
+
+.vanta-settings-row:hover,
+.vanta-settings-row:focus-visible,
+.vanta-settings-option:hover,
+.vanta-settings-option:focus-visible {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
+.vanta-settings-row:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.vanta-settings-row-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: currentColor;
+  opacity: 0.85;
+}
+
+.vanta-settings-row-label {
+  font: 600 0.95rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-row-value {
+  justify-self: end;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(255 255 255 / 0.6);
+  font: 500 0.88rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-row-chevron svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: currentColor;
+  opacity: 0.45;
+}
+
+/* Choice lists */
+.vanta-settings-option {
+  grid-template-columns: minmax(0, 1fr) 22px;
+  min-height: 46px;
+  font: 550 0.93rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-option.is-selected {
+  background: rgb(255 255 255 / 0.08);
+  font-weight: 650;
+}
+
+.vanta-settings-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vanta-settings-option-check svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  fill: #fff;
+}
+
+.vanta-settings-empty,
+.vanta-settings-hint {
+  padding: 12px;
+  color: rgb(255 255 255 / 0.55);
+  font: 500 0.88rem/1.4 Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-hint {
+  padding: 0 12px 8px;
+  font-size: 0.8rem;
+}
+
+/* Watch-party sync line */
+.vanta-settings-sync {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 2px 10px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.vanta-settings-sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8ab4ff;
+  box-shadow: 0 0 0 3px rgb(138 180 255 / 0.18);
+}
+
+.vanta-settings-sync[data-status="sync"] .vanta-settings-sync-dot {
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgb(74 222 128 / 0.18);
+}
+
+.vanta-settings-sync[data-status="lost"] .vanta-settings-sync-dot {
+  background: #ff7a7a;
+  box-shadow: 0 0 0 3px rgb(255 122 122 / 0.18);
+}
+
+.vanta-settings-sync-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 0.86rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-settings-sync-button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font: 650 0.76rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.vanta-settings-sync-button:hover,
+.vanta-settings-sync-button:focus-visible {
+  background: rgb(255 255 255 / 0.22);
+  outline: none;
+}
+
+/* Episodes */
+.vanta-settings-seasons {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 4px 10px;
+  scrollbar-width: none;
+}
+
+.vanta-settings-seasons::-webkit-scrollbar {
+  display: none;
+}
+
+.vanta-settings-season {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.8);
+  font: 600 0.82rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.vanta-settings-season:hover,
+.vanta-settings-season:focus-visible {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
+.vanta-settings-season.is-active {
+  border-color: transparent;
+  background: #fff;
+  color: #0b0b0e;
+}
+
+.vanta-settings-episodes {
+  display: grid;
+  gap: 2px;
+}
+
+.vanta-settings-episode {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.vanta-settings-episode:hover:not(:disabled),
+.vanta-settings-episode:focus-visible {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
+.vanta-settings-episode.is-current {
+  background: rgb(255 255 255 / 0.09);
+}
+
+.vanta-settings-episode:disabled {
+  cursor: default;
+}
+
+.vanta-settings-episode:disabled:not(.is-current) {
+  opacity: 0.6;
+}
+
+.vanta-settings-episode-code {
+  color: rgb(255 255 255 / 0.55);
+  font: 700 0.76rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-settings-episode-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 0.9rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-episode-now {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0b0b0e;
+  font: 700 0.66rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Participants */
+.vanta-settings-participants {
+  display: grid;
+  gap: 4px;
+}
+
+.vanta-settings-participant {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-areas:
+    'avatar main'
+    'avatar actions';
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.05);
+}
+
+.vanta-settings-avatar {
+  grid-area: avatar;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.14);
+  font: 750 0.86rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-participant-main {
+  grid-area: main;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.vanta-settings-participant-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vanta-settings-participant-name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 650 0.9rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-tag {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: rgb(255 255 255 / 0.75);
+  font: 700 0.6rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vanta-settings-tag.is-role {
+  background: rgb(255 255 255 / 0.9);
+  color: #0b0b0e;
+}
+
+.vanta-settings-participant-status {
+  flex: 0 0 auto;
+  color: rgb(255 255 255 / 0.5);
+  font: 650 0.74rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-participant-status.is-connected {
+  color: #4ade80;
+}
+
+.vanta-settings-participant-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vanta-settings-participant-actions:empty {
+  display: none;
+}
+
+.vanta-settings-action {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font: 650 0.76rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.vanta-settings-action:hover,
+.vanta-settings-action:focus-visible {
+  background: rgb(255 255 255 / 0.2);
+  outline: none;
+}
+
+.vanta-settings-action.is-danger {
+  background: rgb(255 122 122 / 0.14);
+  color: #ff8a8a;
+}
+
+.vanta-settings-action.is-danger.is-confirming {
+  background: #ff7a7a;
+  color: #1a0505;
+}
+
+/* Phones in landscape and short screens: a side sheet from the right that
+   follows a swipe back out. */
+@media (max-height: 520px), (max-width: 768px) and (pointer: coarse) {
+  .vanta-settings {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(var(--settings-width), 52vw);
+    max-width: none;
+    max-height: none;
+    padding: max(8px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) 0;
+    border-width: 0 0 0 1px;
+    border-radius: 22px 0 0 22px;
+    transform: translateX(calc(100% + 24px));
+    transform-origin: right center;
+  }
+
+  .vanta-settings[data-state="open"] {
+    transform: translateX(var(--swipe, 0px));
+  }
+
+  .vanta-settings[data-state="closing"] {
+    transform: translateX(calc(100% + 24px));
+  }
+
+  .vanta-settings-viewport {
+    flex: 1 1 auto;
+  }
+}
+
+/* Portrait phones: a bottom sheet. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .vanta-settings {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 78vh;
+    padding: 6px 0 max(10px, env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 22px 22px 0 0;
+    transform: translateY(100%);
+    transform-origin: center bottom;
+  }
+
+  .vanta-settings[data-state="open"] {
+    transform: none;
+  }
+
+  .vanta-settings[data-state="closing"] {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vanta-settings,
+  .vanta-settings-viewport,
+  .vanta-settings-page {
+    transition: opacity 120ms ease;
+  }
+
+  .vanta-settings,
+  .vanta-settings[data-state="closing"] {
+    transform: none;
+  }
+}

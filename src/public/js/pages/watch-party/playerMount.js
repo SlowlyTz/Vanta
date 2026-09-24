@@ -88,6 +88,11 @@ export function bindPlayerMount(ctx) {
           participants: ctx.party.members,
           disableQualityMenu: true,
           serverNow: () => ctx.clock.now(),
+          getSyncStatus: () => ({
+            kind: ctx.syncStatusBadge.dataset.status,
+            label: ctx.syncStatusBadge.textContent
+          }),
+          onResync: () => ctx.drift.resync(),
           onOwnerPlay: ownerPositionMs => ctx.sendOwnerControl('OWNER_PLAY', ownerPositionMs),
           onOwnerPause: ownerPositionMs => ctx.sendOwnerControl('OWNER_PAUSE', ownerPositionMs),
           onOwnerSeek: ownerPositionMs => ctx.sendOwnerControl('OWNER_SEEK', ownerPositionMs),

@@ -2,9 +2,7 @@
 @import "./player/layout.css";
 @import "./player/controls.css";
 @import "./player/timeline.css";
-@import "./player/menus.css";
-@import "./player/episodes.css";
-@import "./player/watch-party.css";
+@import "./player/settings.css";
 @import "./player/next-episode.css";
 @import "./player/overlays.css";
 @import "./player/responsive.css";

@@ -284,10 +284,6 @@
   --media-button-icon-size: 22px;
 }
 
-.vanta-player-menu-slot {
-  display: contents;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .vanta-player-seek-bubble,
   .vanta-player-settings-button svg {

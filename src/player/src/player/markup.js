@@ -129,7 +129,6 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
                   </media-mute-button>
                   <media-volume-slider class="vanta-player-volume-slider" aria-label="Lautstärke"></media-volume-slider>
                 </div>
-                <div class="vanta-player-menu-slot"></div>
                 <button class="vanta-player-settings-button" type="button" aria-label="Einstellungen" aria-haspopup="dialog" aria-expanded="false" hidden>
                   ${svgIcon('settings')}
                 </button>
