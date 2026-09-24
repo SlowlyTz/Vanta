@@ -57,6 +57,54 @@
   font: 650 0.96rem Outfit, system-ui, sans-serif;
 }
 
+.vanta-player-loading-progress {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  width: min(260px, 70vw);
+}
+
+.vanta-player-loading-progress[hidden] {
+  display: none;
+}
+
+.vanta-player-loading-track {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+}
+
+.vanta-player-loading-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 240ms linear;
+}
+
+/* Before the first byte there is nothing to measure: a soft sweep instead. */
+.vanta-player-loading-progress.is-preparing .vanta-player-loading-bar {
+  width: 35%;
+  transform: none !important;
+  animation: vanta-player-loading-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes vanta-player-loading-sweep {
+  from { translate: -100% 0; }
+  to { translate: 290% 0; }
+}
+
+.vanta-player-loading-progress-text {
+  color: rgb(255 255 255 / 0.86);
+  font: 600 0.84rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
 .vanta-player-loading-log {
   display: flex;
   align-items: baseline;

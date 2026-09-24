@@ -161,6 +161,10 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
         <div class="vanta-player-loading-inner">
           <div class="vanta-player-spinner" aria-hidden="true"></div>
           <span class="vanta-player-loading-label">Video wird vorbereitet</span>
+          <span class="vanta-player-loading-progress" hidden>
+            <span class="vanta-player-loading-track" aria-hidden="true"><span class="vanta-player-loading-bar"></span></span>
+            <span class="vanta-player-loading-progress-text"></span>
+          </span>
           <span class="vanta-player-loading-log">
             <span aria-hidden="true">›</span>
             <span class="vanta-player-loading-status">Wiedergabequelle wird angefragt …</span>
@@ -208,6 +212,9 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
     loading: root.querySelector('.vanta-player-loading'),
     loadingStatus: root.querySelector('.vanta-player-loading-status'),
     inlineLoading: root.querySelector('.vanta-player-inline-loading'),
-    inlineLabel: root.querySelector('.vanta-player-inline-label')
+    inlineLabel: root.querySelector('.vanta-player-inline-label'),
+    loadingProgress: root.querySelector('.vanta-player-loading-progress'),
+    loadingProgressBar: root.querySelector('.vanta-player-loading-bar'),
+    loadingProgressText: root.querySelector('.vanta-player-loading-progress-text')
   };
 }

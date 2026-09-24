@@ -14,6 +14,7 @@ import './player.css';
 import { createPlayerContext } from './player/context.js';
 import { bindFullscreenControls } from './player/fullscreenControls.js';
 import { bindReporterAndOrientation } from './player/reporterAndOrientation.js';
+import { bindLoadIndicator } from './player/loadIndicator.js';
 import { bindSourceSwitchIntegration } from './player/sourceSwitchIntegration.js';
 import { bindMenus } from './player/menus.js';
 import { bindPlayerEvents } from './player/eventBindings.js';
@@ -31,6 +32,7 @@ export async function mountVantaPlayer(options) {
   const context = await createPlayerContext(options);
   bindPreferences(context);
   bindFullscreenControls(context);
+  bindLoadIndicator(context);
   bindReporterAndOrientation(context);
   bindSourceSwitchIntegration(context);
   bindMenus(context);

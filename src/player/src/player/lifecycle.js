@@ -89,6 +89,7 @@ export function createPlayerController(context) {
     cancelNextEpisode: () => context.cancelNextEpisode?.(),
     getSyncState: context.getSyncState,
     getBufferedAhead: context.getBufferedAhead,
+    getLoadProgress: context.getLoadProgress,
     setSyncRate: context.setSyncRate,
     syncSeek: context.syncSeek,
     syncPlay: context.syncPlay,

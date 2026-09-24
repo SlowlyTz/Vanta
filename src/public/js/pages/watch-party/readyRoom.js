@@ -37,7 +37,9 @@ export function bindReadyRoom(ctx) {
     } else if (preload?.sentReady) {
       readyButton.textContent = 'Bereit ✓';
     } else if (ctx.readyRequested) {
-      readyButton.textContent = `Wird geladen … ${percent} %`;
+      readyButton.textContent = preload?.etaSeconds
+        ? `Wird geladen … ${percent} % · noch ca. ${preload.etaSeconds} s`
+        : `Wird geladen … ${percent} %`;
     } else {
       readyButton.textContent = 'Bereit';
     }
@@ -91,12 +93,20 @@ export function bindReadyRoom(ctx) {
         return;
       }
       const controller = ctx.controller;
-      const progress = preloadProgress({
+      // The player's measure also counts the segment still downloading and
+      // estimates the time left; older players only report the buffer.
+      const measured = controller?.getLoadProgress?.(positionSeconds);
+      const progress = measured ? measured.fraction : preloadProgress({
         bufferedAhead: controller?.getBufferedAhead?.(positionSeconds) ?? PRELOAD_TARGET_SECONDS,
         position: positionSeconds,
         duration: Number(controller?.player?.duration)
       });
       preload.progress = progress;
+      const eta = measured?.etaSeconds ?? null;
+      if (eta !== preload.etaSeconds) {
+        preload.etaSeconds = eta;
+        ctx.renderReadyOverlay();
+      }
       if (progress >= 1) {
         resolve(true);
         return;

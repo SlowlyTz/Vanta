@@ -69,6 +69,7 @@ export function bindReporterAndOrientation(context) {
   context.setLoading = (visible, status) => {
     if (status) dom.loadingStatus.textContent = status;
     dom.loading.classList.toggle('is-hidden', !visible);
+    context.loadIndicator?.setCoverVisible(visible);
   };
 
   context.setLoadingStatus = status => {
@@ -78,6 +79,7 @@ export function bindReporterAndOrientation(context) {
   context.setInlineLoading = visible => {
     if (visible && !dom.loading.classList.contains('is-hidden')) return;
     dom.inlineLoading.hidden = !visible;
+    context.loadIndicator?.setInlineVisible(visible);
   };
 
   context.inlineLoading = createInlineLoadingWatch({
@@ -85,11 +87,7 @@ export function bindReporterAndOrientation(context) {
     getBufferedAhead: () => context.getBufferedAhead?.(),
     isSwitching: () => context.sourceSwitch?.isSwitching() === true,
     setVisible: context.setInlineLoading,
-    setSlow: slow => {
-      if (!dom.inlineLabel) return;
-      dom.inlineLabel.textContent = slow ? 'Lädt länger als üblich …' : '';
-      dom.inlineLabel.hidden = !slow;
-    }
+    setSlow: slow => context.loadIndicator?.setSlow(slow)
   });
   context.disposers.push(() => context.inlineLoading.end());
 
