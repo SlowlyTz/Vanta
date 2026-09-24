@@ -314,4 +314,20 @@ describe('WatchPartyPage · Player Sync', () => {
     expect(fakeSocket.sendJson).toHaveBeenCalledWith(expect.objectContaining({ type: 'OWNER_SEEK', positionMs: 30_000, step: -10 }));
     delete fakeController.showSeekFeedback;
   });
+
+  it('meldet den eigenen Player-Zustand und übernimmt den der anderen', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'playing', positionMs: 5000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLAYER_STATUS', state: expect.any(String) }));
+
+    capturedOnMessage({ type: 'PRESENCE', members: [{ userId: 'owner-1', connected: true, playbackState: 'buffering', driftMs: 0 }] });
+    const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
+    expect(watchParty.participants.find(member => member.userId === 'owner-1').playbackState).toBe('buffering');
+  });
 });

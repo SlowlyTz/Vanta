@@ -291,6 +291,79 @@
   color: #0b0b0e;
 }
 
+/* Watch-party card: who is watching and how in sync they are */
+.vanta-settings-party {
+  display: grid;
+  gap: 8px;
+  margin: 0 2px 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.vanta-settings-party-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vanta-settings-party-title {
+  font: 700 0.92rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-settings-party-avatars {
+  display: flex;
+  padding-left: 8px;
+}
+
+.vanta-settings-party-avatar,
+.vanta-settings-avatar {
+  --member-hue: 230;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, hsl(var(--member-hue) 55% 58%), hsl(calc(var(--member-hue) + 40) 50% 36%));
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.vanta-settings-party-avatar {
+  width: 30px;
+  height: 30px;
+  margin-left: -8px;
+  border: 2px solid rgb(28 28 33);
+  font: 750 0.74rem Outfit, system-ui, sans-serif;
+}
+
+/* Status dot on the avatar's corner */
+.vanta-settings-party-avatar::after,
+.vanta-settings-avatar::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgb(28 28 33);
+  border-radius: 50%;
+  background: #6b6b75;
+}
+
+[data-state="sync"]::after { background: #4ade80; }
+[data-state="correcting"]::after { background: #8ab4ff; }
+[data-state="buffering"]::after { background: #facc15; }
+[data-state="paused"]::after { background: #cbd5e1; }
+[data-state="blocked"]::after { background: #ff7a7a; }
+[data-state="unknown"]::after { background: #4ade80; opacity: 0.6; }
+
+.vanta-settings-party .vanta-settings-sync {
+  margin: 0;
+  padding: 8px 8px 8px 12px;
+  background: rgb(0 0 0 / 0.2);
+}
+
 /* Watch-party sync line */
 .vanta-settings-sync {
   display: grid;
@@ -472,10 +545,6 @@
   grid-area: avatar;
   width: 36px;
   height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.14);
   font: 750 0.86rem Outfit, system-ui, sans-serif;
 }
 
@@ -524,9 +593,14 @@
   font: 650 0.74rem Outfit, system-ui, sans-serif;
 }
 
-.vanta-settings-participant-status.is-connected {
+.vanta-settings-participant-status.is-sync,
+.vanta-settings-participant-status.is-unknown {
   color: #4ade80;
 }
+
+.vanta-settings-participant-status.is-correcting { color: #8ab4ff; }
+.vanta-settings-participant-status.is-buffering { color: #facc15; }
+.vanta-settings-participant-status.is-blocked { color: #ff8a8a; }
 
 .vanta-settings-participant-actions {
   grid-area: actions;

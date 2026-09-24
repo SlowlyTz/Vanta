@@ -30,6 +30,12 @@ export const messageHandlerMethods = {
           });
           return;
 
+        case 'PLAYER_STATUS': {
+          const party = WatchPartyService.setPlaybackStatus({ partyId, userId, state: message.state, driftMs: message.driftMs });
+          this.broadcastParty(partyId, { type: 'PRESENCE', members: WatchPartyService.serializePresence(party) });
+          return;
+        }
+
         case 'READY': {
           const party = WatchPartyService.setReady({ partyId, userId, ready: Boolean(message.ready) });
           this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party });

@@ -1,5 +1,6 @@
 import { formatEpisodeCode, findEpisode, findSeasonIdOfEpisode } from '../episodes.js';
 import { canBan, canPromote, roleLabel } from '../watchPartyParticipants.js';
+import { memberHue, memberStatus } from '../partyStatus.js';
 
 const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>';
 
@@ -188,18 +189,17 @@ export function renderParticipantsPage(body, { watchParty, pendingBan }) {
     const ban = canBan({ viewerRole, member, currentUserId: watchParty.currentUserId });
     const confirming = pendingBan.userId === member.userId;
     const isSelf = member.userId === watchParty.currentUserId;
+    const status = memberStatus(member);
     return `
       <div class="vanta-settings-participant" data-user-id="${escapeHtml(member.userId)}">
-        <span class="vanta-settings-avatar">${escapeHtml((member.username || '?').slice(0, 1).toUpperCase())}</span>
+        <span class="vanta-settings-avatar" data-state="${status.key}" style="--member-hue:${memberHue(member.userId)}">${escapeHtml((member.username || '?').slice(0, 1).toUpperCase())}</span>
         <span class="vanta-settings-participant-main">
           <span class="vanta-settings-participant-name">
             <strong>${escapeHtml(member.username || 'Unbekannt')}</strong>
             ${isSelf ? '<span class="vanta-settings-tag">Du</span>' : ''}
             ${badge ? `<span class="vanta-settings-tag is-role">${badge}</span>` : ''}
           </span>
-          <span class="vanta-settings-participant-status ${member.connected ? 'is-connected' : 'is-offline'}">
-            ${member.connected ? 'Verbunden' : 'Offline'}
-          </span>
+          <span class="vanta-settings-participant-status is-${status.key}">${escapeHtml(status.label)}</span>
         </span>
         <span class="vanta-settings-participant-actions">
           ${promote ? `<button type="button" class="vanta-settings-action vanta-settings-focusable" data-action="promote" data-user-id="${escapeHtml(member.userId)}">Admin machen</button>` : ''}

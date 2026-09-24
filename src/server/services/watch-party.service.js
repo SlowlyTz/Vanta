@@ -2,7 +2,7 @@ import { publicApiMethods } from './watch-party/publicApi.js';
 import { lifecycleMethods } from './watch-party/lifecycle.js';
 import { memberMethods } from './watch-party/members.js';
 import { playbackMethods } from './watch-party/playback.js';
-import { serializeParty } from './watch-party/serialization.js';
+import { serializeParty, serializePresence } from './watch-party/serialization.js';
 import { isPartyAdmin, MAX_PARTY_MEMBERS } from './watch-party/helpers.js';
 
 export { isPartyAdmin, MAX_PARTY_MEMBERS };
@@ -18,7 +18,7 @@ Object.assign(
   lifecycleMethods,
   memberMethods,
   playbackMethods,
-  { serializeParty }
+  { serializeParty, serializePresence }
 );
 
 let cleanupInterval = null;

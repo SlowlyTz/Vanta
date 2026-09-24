@@ -3,6 +3,7 @@ import { createSubtitleController } from '../subtitles.js';
 import { createAudioController } from '../audio.js';
 import { formatEpisodeCode, findEpisode } from '../episodes.js';
 import { createSettingsFlyout } from '../settings/flyout.js';
+import { createPartyCard } from '../settings/partyCard.js';
 import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSubtitlesPage } from '../settings/pages.js';
 import {
   findNextEpisode,
@@ -26,31 +27,6 @@ const ROW_ICONS = {
   help: '<svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg>',
   participants: '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zM8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3zm8 0c-.31 0-.62.02-.91.06 1.18.84 1.91 1.95 1.91 3.19V18h4v-2c0-1.66-2.33-3-5-3z"/></svg>'
 };
-
-// Sync status line at the top of the flyout in a watch party, kept current
-// while the flyout is open.
-function createSyncHeader(watchParty) {
-  const element = document.createElement('div');
-  element.className = 'vanta-settings-sync';
-  element.innerHTML = `
-    <span class="vanta-settings-sync-dot" aria-hidden="true"></span>
-    <span class="vanta-settings-sync-label" role="status"></span>`;
-  if (watchParty.onResync) {
-    const resync = document.createElement('button');
-    resync.type = 'button';
-    resync.className = 'vanta-settings-sync-button vanta-settings-focusable';
-    resync.textContent = 'Neu synchronisieren';
-    resync.addEventListener('click', () => watchParty.onResync());
-    element.appendChild(resync);
-  }
-  const update = () => {
-    const status = watchParty.getSyncStatus?.() || { kind: 'preparing', label: 'Wird vorbereitet' };
-    element.dataset.status = status.kind;
-    element.querySelector('.vanta-settings-sync-label').textContent = status.label;
-  };
-  update();
-  return { element, update };
-}
 
 export function bindMenus(context) {
   const { root, player, reporter, watchParty, episodeBrowser, dom, ui } = context;
@@ -138,7 +114,7 @@ export function bindMenus(context) {
 
   settings.setHeader(() => {
     if (!watchParty?.enabled) return null;
-    syncHeader = createSyncHeader(watchParty);
+    syncHeader = createPartyCard(watchParty);
     return syncHeader.element;
   });
 

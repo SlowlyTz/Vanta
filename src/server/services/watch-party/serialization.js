@@ -1,5 +1,14 @@
 import { serializeTimeline, getSyncLeaderUserId } from './helpers.js';
 
+export function serializePresence(party) {
+  return [...party.members.values()].map(member => ({
+    userId: member.userId,
+    connected: Boolean(member.connected),
+    playbackState: member.connected ? member.playbackState || null : null,
+    driftMs: member.connected && Number.isFinite(member.driftMs) ? member.driftMs : null
+  }));
+}
+
 export function serializeParty(party, currentUserId = null) {
   const members = [...party.members.values()].map(member => ({
     userId: member.userId,
@@ -10,7 +19,9 @@ export function serializeParty(party, currentUserId = null) {
     joinedAt: member.joinedAt,
     preloadState: member.preloadState || 'waiting',
     preloadMessage: member.preloadMessage || '',
-    preloadProgress: Number(member.preloadProgress) || 0
+    preloadProgress: Number(member.preloadProgress) || 0,
+    playbackState: member.playbackState || null,
+    driftMs: Number.isFinite(member.driftMs) ? member.driftMs : null
   }));
 
   return {

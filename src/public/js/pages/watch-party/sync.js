@@ -10,6 +10,9 @@ export { timelinePositionAt };
 // to the old timeline for one round trip. The guess expires if the server
 // never answers (e.g. it rejected the command).
 const LOCAL_TIMELINE_TTL_MS = 3_000;
+// How often the own player state goes to the others when nothing changes.
+export const STATUS_REPORT_MS = 2_000;
+const REPORTABLE_STATES = new Set(['sync', 'correcting', 'buffering', 'paused', 'blocked']);
 
 export function timelineFromParty(party) {
   if (!party) return null;
@@ -94,8 +97,22 @@ export function bindSync(ctx) {
     ].join('\n');
   };
 
+  let lastStatusReport = { state: null, at: 0 };
+  ctx.reportPlayerStatus = status => {
+    if (!REPORTABLE_STATES.has(status.status)) return;
+    const now = Date.now();
+    if (status.status === lastStatusReport.state && now - lastStatusReport.at < STATUS_REPORT_MS) return;
+    lastStatusReport = { state: status.status, at: now };
+    ctx.socket?.sendJson({
+      type: 'PLAYER_STATUS',
+      state: status.status,
+      driftMs: Number.isFinite(status.driftMs) ? Math.round(status.driftMs) : null
+    });
+  };
+
   ctx.handleSyncStatus = status => {
     ctx.syncInfo = status;
+    ctx.reportPlayerStatus(status);
     const [kind, label] = syncStatusLabel(status);
     ctx.setSyncStatus(kind, label);
     if (status.status !== 'blocked' && !ctx.autoplayOverlay.hidden) ctx.autoplayOverlay.hidden = true;

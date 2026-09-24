@@ -1,5 +1,5 @@
 import { notFound, forbidden, badRequest, conflict } from './errors.js';
-import { assertOwner, assertPartyAdmin, assertPartyMember, READY_PRELOAD_STATES, READY_ROOM_STATUS } from './helpers.js';
+import { assertOwner, assertPartyAdmin, assertPartyMember, PLAYBACK_STATES, READY_PRELOAD_STATES, READY_ROOM_STATUS } from './helpers.js';
 
 export const memberMethods = {
   setPreloadState({ partyId, userId, state, message }) {
@@ -130,6 +130,18 @@ export const memberMethods = {
         username: target.username
       }
     };
+  },
+
+  // What each member's player reports about itself (from its drift loop).
+  setPlaybackStatus({ partyId, userId, state, driftMs }) {
+    const party = this.getPartyOrThrow(partyId);
+    const member = party.members.get(userId);
+    if (!member) throw forbidden('Du bist kein Mitglied dieser Watch Party');
+    member.playbackState = PLAYBACK_STATES.has(state) ? state : null;
+    const drift = Number(driftMs);
+    member.driftMs = Number.isFinite(drift) ? Math.max(-600_000, Math.min(600_000, Math.round(drift))) : null;
+    member.statusAt = Date.now();
+    return party;
   },
 
   setConnected({ partyId, userId, connected }) {

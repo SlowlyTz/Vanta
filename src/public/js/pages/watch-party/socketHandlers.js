@@ -40,6 +40,10 @@ export function bindSocketHandlers(ctx) {
         ctx.handleTimelineMessage(message);
         return;
 
+      case 'PRESENCE':
+        ctx.applyPresence(message.members);
+        return;
+
       case 'NOTIFICATION':
         ctx.showWatchPartyNotification(message.notification || {});
         return;
@@ -96,6 +100,20 @@ export function bindSocketHandlers(ctx) {
       if (ctx.scheduledStartAt && ctx.clock.now() < ctx.scheduledStartAt) return;
       void ctx.enterPlayback();
     }
+  };
+
+  // Light updates of who is connected and how their player is doing; the
+  // player's party card and member list pick them up.
+  ctx.applyPresence = members => {
+    if (!ctx.party || !Array.isArray(members)) return;
+    members.forEach(update => {
+      const member = ctx.party.members.find(candidate => candidate.userId === update.userId);
+      if (!member) return;
+      member.connected = update.connected;
+      member.playbackState = update.playbackState;
+      member.driftMs = update.driftMs;
+    });
+    ctx.syncWatchPartyConfig();
   };
 
   ctx.enterCountdown = ({ startsAtServerTimeMs, durationMs = 5000, positionMs, timeline }) => {

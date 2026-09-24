@@ -92,3 +92,24 @@ describe('createItemSnapshot', () => {
     expect(createItemSnapshot({ Id: 'x', Type: 'Movie', Name: 'X' }, { Id: 'x' })).toMatchObject({ backdrop: null, logo: null });
   });
 });
+
+describe('Player-Zustand der Mitglieder', () => {
+  it('speichert nur bekannte Zustände und begrenzt die Abweichung', async () => {
+    const { WatchPartyService } = await import('../../../../src/server/services/watch-party.service.js');
+    const party = {
+      id: 'p-status',
+      members: new Map([['u1', { userId: 'u1', username: 'Lena', connected: true }], ['u2', { userId: 'u2', username: 'Jo', connected: false, playbackState: 'sync', driftMs: 5 }]])
+    };
+    WatchPartyService.parties.set('p-status', party);
+    WatchPartyService.setPlaybackStatus({ partyId: 'p-status', userId: 'u1', state: 'buffering', driftMs: 99_999_999 });
+    expect(party.members.get('u1')).toMatchObject({ playbackState: 'buffering', driftMs: 600_000 });
+    WatchPartyService.setPlaybackStatus({ partyId: 'p-status', userId: 'u1', state: 'hacked', driftMs: 'x' });
+    expect(party.members.get('u1')).toMatchObject({ playbackState: null, driftMs: null });
+
+    expect(WatchPartyService.serializePresence(party)).toEqual([
+      { userId: 'u1', connected: true, playbackState: null, driftMs: null },
+      { userId: 'u2', connected: false, playbackState: null, driftMs: null }
+    ]);
+    WatchPartyService.parties.delete('p-status');
+  });
+});

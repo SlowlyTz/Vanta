@@ -12,6 +12,8 @@ vi.mock('../../../../src/server/config/session.js', () => ({
 
 vi.mock('../../../../src/server/services/watch-party.service.js', () => ({
   WatchPartyService: {
+    setPlaybackStatus: vi.fn(),
+    serializePresence: vi.fn(() => [{ userId: 'viewer-1', connected: true, playbackState: 'buffering', driftMs: 0 }]),
     parties: new Map(),
     getPartyOrThrow: vi.fn(),
     setReady: vi.fn(),
@@ -243,5 +245,20 @@ describe('WatchPartySocketHub · Playback Control', () => {
     expect(party.lastServerTimeMs).toBeLessThanOrEqual(Date.now());
     expect(party.status).toBe('playing');
     expect(party.seq).toBe(6);
+  });
+
+  it('verteilt den gemeldeten Player-Zustand als PRESENCE an alle', () => {
+    const hub = new WatchPartySocketHub();
+    const party = { id: 'party-1' };
+    WatchPartyService.setPlaybackStatus.mockReturnValue(party);
+    const ownerWs = createFakeWs();
+    const viewerWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+    hub.registerConnection('party-1', 'viewer-1', viewerWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('viewer-1'), message: { type: 'PLAYER_STATUS', state: 'buffering', driftMs: 12 }, ws: viewerWs });
+
+    expect(WatchPartyService.setPlaybackStatus).toHaveBeenCalledWith({ partyId: 'party-1', userId: 'viewer-1', state: 'buffering', driftMs: 12 });
+    expect(ownerWs.sent).toEqual([expect.objectContaining({ type: 'PRESENCE', members: [expect.objectContaining({ playbackState: 'buffering' })] })]);
   });
 });
