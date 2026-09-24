@@ -1,16 +1,39 @@
+import crypto from 'crypto';
 import env from '../../config/env.js';
 
 export const JELLYFIN_BASE_URL = env.JELLYFIN_BASE_URL;
 
-export function getAuthHeader(token = null) {
-  let header = 'MediaBrowser Client="VANTA", Device="Web Browser", DeviceId="vanta-web-client-id", Version="1.0.0"';
+// Each login gets a device id of its own, so Jellyfin keeps one session per
+// browser (its transcoding progress is reported per device). Sessions from
+// before that keep the shared id.
+export const SHARED_DEVICE_ID = 'vanta-web-client-id';
+const deviceIdsByToken = new Map();
+
+export function createDeviceId() {
+  return `vanta-${crypto.randomUUID()}`;
+}
+
+export function registerTokenDevice(token, deviceId) {
+  if (token && deviceId) deviceIdsByToken.set(token, deviceId);
+}
+
+export function forgetTokenDevice(token) {
+  deviceIdsByToken.delete(token);
+}
+
+export function deviceIdForToken(token) {
+  return (token && deviceIdsByToken.get(token)) || SHARED_DEVICE_ID;
+}
+
+export function getAuthHeader(token = null, deviceId = deviceIdForToken(token)) {
+  let header = `MediaBrowser Client="VANTA", Device="Web Browser", DeviceId="${deviceId}", Version="1.0.0"`;
   if (token) {
     header += `, Token="${token}"`;
   }
   return header;
 }
 
-export async function jellyfinRawFetch(path, { token, method = 'GET', body = null, headers = {}, query = {} } = {}) {
+export async function jellyfinRawFetch(path, { token, deviceId, method = 'GET', body = null, headers = {}, query = {} } = {}) {
   const url = new URL(path, JELLYFIN_BASE_URL);
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -21,7 +44,7 @@ export async function jellyfinRawFetch(path, { token, method = 'GET', body = nul
   const fetchOptions = {
     method,
     headers: {
-      'X-Emby-Authorization': getAuthHeader(token),
+      'X-Emby-Authorization': getAuthHeader(token, deviceId || deviceIdForToken(token)),
       ...headers
     }
   };

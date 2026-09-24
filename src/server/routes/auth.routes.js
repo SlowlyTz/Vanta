@@ -3,6 +3,7 @@ import { AuthService } from '../services/jellyfin/auth.service.js';
 import { UserBanService } from '../services/user-ban.service.js';
 import { KnownUsersService } from '../services/known-users.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { createDeviceId, forgetTokenDevice, registerTokenDevice } from '../services/jellyfin/client.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -21,7 +22,8 @@ router.post('/login', asyncHandler(async (req, res) => {
   }
 
   try {
-    const data = await AuthService.login(username, password || '');
+    const deviceId = createDeviceId();
+    const data = await AuthService.login(username, password || '', { deviceId });
 
     const ban = UserBanService.getBan(data.User.Id);
     if (ban) {
@@ -31,6 +33,8 @@ router.post('/login', asyncHandler(async (req, res) => {
     const isAdmin = AuthService.isAdministrator(data.User);
 
     req.session.accessToken = data.AccessToken;
+    req.session.deviceId = deviceId;
+    registerTokenDevice(data.AccessToken, deviceId);
     req.session.userId = data.User.Id;
     req.session.username = data.User.Name;
     req.session.isAdmin = isAdmin;
@@ -107,6 +111,7 @@ router.post('/password', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.post('/logout', (req, res) => {
+  forgetTokenDevice(req.session?.accessToken);
   req.session.destroy((err) => {
     if (err) {
       console.error('[Logout Error]', err);

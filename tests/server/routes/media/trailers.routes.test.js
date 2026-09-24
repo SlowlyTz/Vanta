@@ -10,7 +10,8 @@ vi.mock('../../../../src/server/services/jellyfin/library.service.js', () => ({
 }));
 
 vi.mock('../../../../src/server/services/jellyfin/client.js', () => ({
-  jellyfinJson: vi.fn()
+  jellyfinJson: vi.fn(),
+  registerTokenDevice: vi.fn()
 }));
 
 import { LibraryService } from '../../../../src/server/services/jellyfin/library.service.js';

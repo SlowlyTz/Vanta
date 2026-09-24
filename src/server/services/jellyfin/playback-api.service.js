@@ -1,4 +1,4 @@
-import { JELLYFIN_BASE_URL, jellyfinFetch, jellyfinJson } from './client.js';
+import { JELLYFIN_BASE_URL, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
@@ -44,7 +44,7 @@ export class PlaybackApiService {
     const url = new URL(pathOrUrl, JELLYFIN_BASE_URL);
     url.searchParams.set('api_key', token);
 
-    const headers = { 'X-Emby-Authorization': `MediaBrowser Client="VANTA", Device="Web Browser", DeviceId="vanta-web-client-id", Version="1.0.0", Token="${token}"` };
+    const headers = { 'X-Emby-Authorization': getAuthHeader(token) };
     if (rangeHeader) headers.Range = rangeHeader;
 
     return fetch(url, { method: 'GET', headers, signal });

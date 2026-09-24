@@ -1,9 +1,10 @@
 import { jellyfinJson } from './client.js';
 
 export class AuthService {
-  static async login(username, password) {
+  static async login(username, password, { deviceId } = {}) {
     return jellyfinJson('/Users/AuthenticateByName', {
       method: 'POST',
+      deviceId,
       body: {
         Username: username,
         Pw: password

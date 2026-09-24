@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
+import { registerTokenDevice } from '../services/jellyfin/client.js';
 import { startWatchPartyCleanup } from '../services/watch-party.service.js';
 import { connectionRegistryMethods } from './watch-party/connectionRegistry.js';
 import { countdownMethods } from './watch-party/countdowns.js';
@@ -40,6 +41,7 @@ export class WatchPartySocketHub {
     this.wss.on('connection', (ws, req) => {
       const url = new URL(req.url, 'http://localhost');
       const partyId = url.pathname.split('/').pop();
+      registerTokenDevice(req.session.accessToken, req.session.deviceId);
       const user = {
         userId: req.session.userId,
         username: req.session.username,

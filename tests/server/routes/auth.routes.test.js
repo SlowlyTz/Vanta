@@ -82,6 +82,18 @@ describe('Auth Routes', () => {
       expect(session.cookie.maxAge).toBe(REMEMBER_ME_MAX_AGE_MS);
     });
 
+    it('gibt jedem Login eine eigene Geräte-ID für Jellyfin', async () => {
+      AuthService.login.mockResolvedValue({
+        AccessToken: 'token-1',
+        User: { Id: 'user-1', Name: 'alice', Policy: { IsAdministrator: false } }
+      });
+      let session;
+      await request(createApp({ onSession: s => { session = s; } })).post('/login').send({ username: 'alice', password: 'pw' });
+
+      expect(session.deviceId).toMatch(/^vanta-[0-9a-f-]{36}$/);
+      expect(AuthService.login).toHaveBeenCalledWith('alice', 'pw', { deviceId: session.deviceId });
+    });
+
     it('returns a generic 401 for wrong credentials', async () => {
       AuthService.login.mockRejectedValue(new Error('Invalid'));
 

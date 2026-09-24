@@ -1,3 +1,4 @@
+import { registerTokenDevice } from '../services/jellyfin/client.js';
 import { AuthService } from '../services/jellyfin/auth.service.js';
 
 export const isUpstreamUnauthorized = (error) => error?.status === 401;
@@ -20,6 +21,8 @@ export const requireAuth = (req, res, next) => {
   if (!req.session || !req.session.accessToken || !req.session.userId) {
     return res.status(401).json({ error: 'Unauthorized: Session invalid or expired' });
   }
+  // After a restart the token's device is known again from the session.
+  registerTokenDevice(req.session.accessToken, req.session.deviceId);
   next();
 };
 
