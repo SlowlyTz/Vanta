@@ -135,32 +135,63 @@ describe('WatchPartyPage · Player Sync', () => {
       .toContain('Die Watch Party wurde vom Owner beendet.');
   });
 
-  it('ersetzt den Player und zeigt einen Toast bei LOAD_MEDIA mit reason=episode-change', async () => {
-    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+  it('lädt bei einem Folgenwechsel ohne Klick vor, meldet sich bereit und startet mit allen gleichzeitig', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
     WatchPartyApi.join.mockResolvedValue({
       party: makeParty({ status: 'playing', positionMs: 1000 })
     });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
 
-    WatchPartyPage({ partyId: 'party-1' });
+    const container = WatchPartyPage({ partyId: 'party-1' });
     await flush();
     await flush();
 
     const firstMountCount = mountVantaPlayer.mock.calls.length;
-
-    capturedOnMessage({
-      type: 'LOAD_MEDIA',
-      itemId: 'episode-2',
+    const switching = makeParty({
+      status: 'switching',
+      playableItemId: 'episode-2',
+      itemSnapshot: { name: 'Episode 2', type: 'Episode' },
       positionMs: 0,
-      reason: 'episode-change',
-      message: 'Episode 2 wird abgespielt'
+      timeline: { positionMs: 0, playing: false, anchorServerTimeMs: Date.now(), seq: 5 }
     });
+    capturedOnMessage({ type: 'LOAD_MEDIA', itemId: 'episode-2', positionMs: 0, reason: 'episode-change' });
+    capturedOnMessage({ type: 'PARTY_UPDATED', party: switching });
+    for (let i = 0; i < 6; i += 1) await flush();
+
+    expect(appStore.showToast).not.toHaveBeenCalled();
+    expect(fakeController.destroy).toHaveBeenCalledTimes(1);
+    expect(mountVantaPlayer.mock.calls.length).toBe(firstMountCount + 1);
+    expect(mountVantaPlayer.mock.calls.at(-1)[0].itemId).toBe('episode-2');
+    expect(fakeController.prepareInitialPlayback).toHaveBeenCalledWith({ position: 0 });
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'PLAYER_READY' });
+
+    const pill = container.querySelector('.watch-party-waiting');
+    expect(pill.hidden).toBe(false);
+    expect(pill.textContent).toContain('Episode 2 wird geladen …');
+    expect(pill.textContent).toContain('von 2 bereit');
+
+    fakeController.syncPlay.mockClear();
+    capturedOnMessage(timelineMessage({ positionMs: 0, playing: true, seq: 6, reason: 'episode-start', anchorServerTimeMs: Date.now() - 5 }));
+    await flush();
+    expect(fakeController.syncPlay).toHaveBeenCalledWith({ quiet: true });
+  });
+
+  it('schließt das Nächste-Folge-Popup bei allen, wenn ein Admin abbricht', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'playing', positionMs: 1000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+    fakeController.cancelNextEpisode = vi.fn();
+
+    WatchPartyPage({ partyId: 'party-1' });
     await flush();
     await flush();
 
-    expect(appStore.showToast).toHaveBeenCalledWith('Episode 2 wird abgespielt', 'success');
-    expect(fakeController.destroy).toHaveBeenCalled();
-    expect(mountVantaPlayer.mock.calls.length).toBeGreaterThan(firstMountCount);
+    const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
+    expect(watchParty.isNextEpisodeCancelled()).toBe(false);
+    capturedOnMessage({ type: 'NEXT_EPISODE_CANCELLED', itemId: 'movie-1' });
+    expect(fakeController.cancelNextEpisode).toHaveBeenCalled();
+    expect(watchParty.isNextEpisodeCancelled()).toBe(true);
+    delete fakeController.cancelNextEpisode;
   });
 
   it('zeigt den Player sofort bei status=playing', async () => {

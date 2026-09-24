@@ -59,6 +59,7 @@ const NOTIFICATION_ICON_PATHS = {
   owner_seek: 'M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z',
   auto_sync: 'M12 4V1L8 5l4 4V6a6 6 0 0 1 5.2 9l1.5 1.5A8 8 0 0 0 12 4zm0 14a6 6 0 0 1-5.2-9L5.3 7.5A8 8 0 0 0 12 20v3l4-4-4-4v3z',
   member_promoted: 'M12 17.3 18.2 21l-1.7-7L22 9.2l-7.2-.6L12 2 9.2 8.6 2 9.2 7.5 14l-1.7 7z',
+  next_episode_cancelled: 'M18.3 5.7 17 4.3l-5 5-5-5-1.4 1.4 5 5-5 5L7 17.1l5-5 5 5 1.4-1.4-5-5z',
   member_banned: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM4 12a8 8 0 0 1 12.9-6.3L5.7 16.9A7.9 7.9 0 0 1 4 12zm8 8a7.9 7.9 0 0 1-4.9-1.7L18.3 7.1A8 8 0 0 1 12 20z'
 };
 const INFO_ICON_PATH = 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20z';

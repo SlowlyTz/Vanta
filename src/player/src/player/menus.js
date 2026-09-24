@@ -216,20 +216,29 @@ export function bindMenus(context) {
   context.nextEpisodePrompt = episodeBrowser?.enabled
     ? createNextEpisodePrompt({
         root: shell,
-        onConfirm: next => {
-          episodeBrowser.onNextEpisode?.(next);
+        onConfirm: (next, { auto = false } = {}) => {
+          episodeBrowser.onNextEpisode?.(next, { auto });
         },
-        onDismiss: () => {
+        onDismiss: next => {
           nextEpisodeGate.markDismissed(episodeBrowser.context?.currentEpisodeId);
+          // In a watch party an admin's cancel closes the prompt for everyone.
+          if (canStartNextEpisode(watchParty)) episodeBrowser.onDismissNextEpisode?.(next);
         }
       })
     : null;
+
+  // The party cancelled the prompt (an admin pressed "Abbrechen").
+  context.cancelNextEpisode = () => {
+    nextEpisodeGate.markDismissed(episodeBrowser?.context?.currentEpisodeId);
+    context.nextEpisodePrompt?.hide();
+  };
 
   context.maybeShowNextEpisodePrompt = () => {
     if (!context.nextEpisodePrompt || !episodeBrowser?.context) return;
 
     const currentEpisodeId = episodeBrowser.context.currentEpisodeId;
     if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
+    if (watchParty?.enabled && watchParty.isNextEpisodeCancelled?.()) return;
 
     const duration = context.knownDuration || player.duration;
     const outro = findOutro(context.segments);
@@ -239,10 +248,10 @@ export function bindMenus(context) {
     if (!next) return;
 
     nextEpisodeGate.markShown(currentEpisodeId);
-    const interactive = canStartNextEpisode(watchParty);
+    const controls = canStartNextEpisode(watchParty);
     context.nextEpisodePrompt.show(next, {
-      interactive,
-      message: interactive ? null : NEXT_EPISODE_VIEWER_MESSAGE,
+      controls,
+      message: controls ? null : NEXT_EPISODE_VIEWER_MESSAGE,
       skipAt: computeNextEpisodeTimings({ duration, outro })?.skipAt,
       getCurrentTime: () => player.currentTime
     });

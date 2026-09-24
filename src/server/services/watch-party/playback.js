@@ -1,6 +1,7 @@
+import { SWITCHING_STATUS } from './helpers.js';
 import { ItemsService } from '../jellyfin/items.service.js';
 import { badRequest, conflict } from './errors.js';
-import { assertOwner, READY_ROOM_STATUS, COUNTDOWN_MS, COUNTDOWN_LEAD_MS, createItemSnapshot, setTimeline } from './helpers.js';
+import { assertOwner, assertPartyAdmin, READY_ROOM_STATUS, COUNTDOWN_MS, COUNTDOWN_LEAD_MS, createItemSnapshot, setTimeline } from './helpers.js';
 
 export const playbackMethods = {
   canStart(party) {
@@ -45,11 +46,14 @@ export const playbackMethods = {
     return party;
   },
 
-  async changeEpisode({ partyId, ownerUserId, accessToken, itemId }) {
+  // Any admin may switch; the party then loads the episode everywhere and
+  // starts once all members are ready (see realtime/watch-party/episodeSwitch.js).
+  async changeEpisode({ partyId, userId, accessToken, itemId }) {
     const party = this.getPartyOrThrow(partyId);
-    assertOwner(party, ownerUserId);
+    assertPartyAdmin(party, userId);
+    if (party.status === 'ended') throw badRequest('Diese Watch Party wurde bereits beendet');
 
-    const item = await ItemsService.getItemDetails(ownerUserId, accessToken, itemId);
+    const item = await ItemsService.getItemDetails(userId, accessToken, itemId);
     if (item.Type !== 'Episode') {
       throw badRequest('Nur Episoden können direkt gewechselt werden');
     }
@@ -58,10 +62,14 @@ export const playbackMethods = {
     party.playableItemId = item.Id;
     party.itemSnapshot = createItemSnapshot(item, item);
     setTimeline(party, { positionMs: 0, playing: false });
+    party.status = SWITCHING_STATUS;
+    party.waiting = null;
+    party.nextEpisodeCancelledFor = null;
 
     for (const member of party.members.values()) {
       member.preloadState = 'waiting';
       member.preloadMessage = '';
+      member.preloadProgress = 0;
       member.ready = false;
     }
 

@@ -43,6 +43,7 @@ export function serializeParty(party, currentUserId = null) {
     resumeFrom: party.resumeFrom || null,
     timeline: serializeTimeline(party),
     waitForBuffering: party.waitForBuffering !== false,
+    nextEpisodeCancelledFor: party.nextEpisodeCancelledFor || null,
     waiting: party.waiting
       ? {
           since: party.waiting.since,

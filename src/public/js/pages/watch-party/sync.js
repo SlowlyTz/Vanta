@@ -153,6 +153,14 @@ export function bindSync(ctx) {
       ctx.party.status = timeline.playing ? 'playing' : 'paused';
     }
 
+    // The next episode starts for everyone at the same moment, slightly
+    // ahead, exactly like the end of the countdown.
+    if (reason === 'episode-start') {
+      ctx.switchingItemId = null;
+      ctx.scheduleSyncedStart(timeline.anchorServerTimeMs);
+      return;
+    }
+
     // Our own command coming back: the local player is already there.
     if (actorUserId && actorUserId === ctx.currentUser?.id) return;
     if (reason === 'seek' && Number.isFinite(Number(step)) && Number(step) !== 0) {

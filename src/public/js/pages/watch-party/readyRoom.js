@@ -77,7 +77,7 @@ export function bindReadyRoom(ctx) {
   const sendReadyIfDue = () => {
     const preload = ctx.preload;
     if (!ctx.readyRequested || preload?.status !== 'loaded' || preload.sentReady) return;
-    if (ctx.party?.status !== 'ready-room') return;
+    if (!['ready-room', 'switching'].includes(ctx.party?.status)) return;
     preload.sentReady = true;
     ctx.socket?.sendJson({ type: 'PLAYER_READY' });
   };

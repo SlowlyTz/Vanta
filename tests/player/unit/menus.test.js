@@ -139,4 +139,54 @@ describe('bindMenus', () => {
     expect(env.context.sourceSwitch.switchTo).toHaveBeenCalledWith(switched, expect.objectContaining({ position: 42, shouldPlay: true }));
     expect(env.context.preferences.update).toHaveBeenCalledWith({ audioLanguage: 'ger' });
   });
+
+  describe('Nächste Folge in der Watch Party', () => {
+    const episodeContext = {
+      currentEpisodeId: 'e1',
+      seasons: [{ Id: 's1', IndexNumber: 1 }],
+      episodesBySeason: { s1: [{ Id: 'e1', IndexNumber: 1, Name: 'Pilot' }, { Id: 'e2', IndexNumber: 2, Name: 'Zwei' }] }
+    };
+    const partySetup = (watchParty, callbacks = {}) => {
+      env = setup({
+        watchParty: { enabled: true, disableQualityMenu: true, currentUserId: 'u1', participants: [], ...watchParty },
+        episodeBrowser: { enabled: true, readonly: false, context: episodeContext, onSelectEpisode: vi.fn(), ...callbacks }
+      });
+      env.context.knownDuration = 1000;
+      Object.defineProperty(env.dom.player, 'currentTime', { value: 990, configurable: true });
+      return env.context.nextEpisodePrompt;
+    };
+
+    it('zeigt Zuschauern dasselbe Fenster mit Countdown, aber ohne Buttons', () => {
+      const prompt = partySetup({ canControl: false });
+      env.context.maybeShowNextEpisodePrompt();
+      expect(prompt.isVisible()).toBe(true);
+      expect(prompt.confirmButton.hidden).toBe(true);
+      expect(prompt.dismissButton.hidden).toBe(true);
+      expect(prompt.element.textContent).toContain('nur Admins');
+    });
+
+    it('meldet das Abbrechen eines Admins nach außen', () => {
+      const onDismissNextEpisode = vi.fn();
+      const prompt = partySetup({ canControl: true }, { onDismissNextEpisode });
+      env.context.maybeShowNextEpisodePrompt();
+      prompt.dismissButton.click();
+      expect(onDismissNextEpisode).toHaveBeenCalled();
+    });
+
+    it('schließt auf Zuruf der Party und öffnet nach einem Abbruch nicht erneut', () => {
+      const watchParty = { canControl: false, isNextEpisodeCancelled: () => false };
+      const prompt = partySetup(watchParty);
+      env.context.maybeShowNextEpisodePrompt();
+      env.context.cancelNextEpisode();
+      expect(prompt.isVisible()).toBe(false);
+      env.context.maybeShowNextEpisodePrompt();
+      expect(prompt.isVisible()).toBe(false);
+    });
+
+    it('zeigt nichts, wenn die Party die nächste Folge schon abgebrochen hat', () => {
+      const prompt = partySetup({ canControl: true, isNextEpisodeCancelled: () => true });
+      env.context.maybeShowNextEpisodePrompt();
+      expect(prompt.isVisible()).toBe(false);
+    });
+  });
 });

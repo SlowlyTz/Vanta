@@ -17,6 +17,7 @@ export const WATCH_PARTY_HELP = [
   'Admins steuern Wiedergabe, Pause und Spulen für alle. Zuschauer sehen oben „Admin steuert“.',
   'Springt jemand 10 Sekunden, zeigen alle Bildschirme eine Blase mit dem Namen.',
   'Im Zahnrad-Menü siehst du, wer synchron ist, und kannst dich mit „Neu synchronisieren“ zurückholen.',
+  'Am Ende einer Folge sehen alle dasselbe „Nächste Folge“-Fenster. Admins können abbrechen oder sofort starten; die nächste Folge beginnt bei allen gleichzeitig.',
   'Hängt jemand beim Laden, pausiert die Party, bis alle wieder bereit sind. Der Gastgeber kann das im Zahnrad-Menü abschalten.',
   'Lautstärke, Untertitel, Tonspur und Vollbild stellt jeder für sich ein.'
 ];

@@ -1,5 +1,5 @@
 import { notFound, forbidden, badRequest, conflict } from './errors.js';
-import { assertOwner, assertPartyAdmin, assertPartyMember, PLAYBACK_STATES, READY_PRELOAD_STATES, READY_ROOM_STATUS } from './helpers.js';
+import { assertOwner, assertPartyAdmin, assertPartyMember, PLAYBACK_STATES, READY_PRELOAD_STATES, READY_ROOM_STATUS, SWITCHING_STATUS } from './helpers.js';
 
 export const memberMethods = {
   setPreloadState({ partyId, userId, state, message }) {
@@ -40,7 +40,7 @@ export const memberMethods = {
 
   setPlayerReady({ partyId, userId, ready, state = null, message = '', progress = null }) {
     const party = this.getPartyOrThrow(partyId);
-    if (![READY_ROOM_STATUS, 'countdown'].includes(party.status)) {
+    if (![READY_ROOM_STATUS, 'countdown', SWITCHING_STATUS].includes(party.status)) {
       throw conflict('Die Watch Party ist nicht im Bereit-Modus.');
     }
 

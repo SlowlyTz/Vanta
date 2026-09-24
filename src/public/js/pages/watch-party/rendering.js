@@ -63,6 +63,14 @@ export function bindRendering(ctx) {
   };
 
   ctx.renderWaiting = () => {
+    if (ctx.party?.status === 'switching') {
+      const connected = (ctx.party.members || []).filter(member => member.connected);
+      const ready = connected.filter(member => member.ready).length;
+      ctx.waitingPill.hidden = false;
+      ctx.waitingTitle.textContent = `${ctx.party.itemSnapshot?.name || 'Nächste Folge'} wird geladen …`;
+      ctx.waitingHint.textContent = `${ready} von ${connected.length} bereit – startet bei allen gleichzeitig.`;
+      return;
+    }
     const waiting = ctx.party?.waiting;
     ctx.waitingPill.hidden = !waiting;
     if (!waiting) return;

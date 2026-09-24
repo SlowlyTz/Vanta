@@ -1,5 +1,5 @@
 export const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
-export const NEXT_EPISODE_VIEWER_MESSAGE = 'Die nächste Folge kann von einem WatchTogether-Admin gestartet werden.';
+export const NEXT_EPISODE_VIEWER_MESSAGE = 'Startet automatisch. Abbrechen oder sofort starten können nur Admins.';
 
 const POSTER_FALLBACK_GRADIENT = 'radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)';
 

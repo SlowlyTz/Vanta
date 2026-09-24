@@ -80,6 +80,7 @@ export const messageHandlerMethods = {
             message: 'Bereit'
           });
           this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
+          if (this.startEpisodeIfReady(partyId)) return;
 
           const countdown = WatchPartyService.beginCountdownIfReady({ partyId });
           if (countdown) {
@@ -121,6 +122,10 @@ export const messageHandlerMethods = {
           this.handleChangeEpisode({ partyId, user, itemId: message.itemId });
           return;
 
+        case 'NEXT_EPISODE_CANCEL':
+          this.handleNextEpisodeCancel({ partyId, user });
+          return;
+
         case 'OWNER_PLAY':
         case 'OWNER_PAUSE':
         case 'OWNER_SEEK':
@@ -141,32 +146,6 @@ export const messageHandlerMethods = {
       }
     } catch (error) {
       this.sendTo(ws, { type: 'ERROR', message: error.message });
-    }
-  },
-
-  async handleChangeEpisode({ partyId, user, itemId }) {
-    try {
-      const party = await WatchPartyService.changeEpisode({
-        partyId,
-        ownerUserId: user.userId,
-        accessToken: user.accessToken,
-        itemId
-      });
-
-      this.broadcastParty(partyId, {
-        type: 'LOAD_MEDIA',
-        itemId: party.playableItemId,
-        positionMs: 0,
-        reason: 'episode-change',
-        message: `${party.itemSnapshot.name} wird abgespielt`
-      });
-
-      this.broadcastParty(partyId, {
-        type: 'PARTY_UPDATED',
-        party: WatchPartyService.serializeParty(party)
-      });
-    } catch (error) {
-      this.sendToUser(partyId, user.userId, { type: 'ERROR', message: error.message });
     }
   },
 

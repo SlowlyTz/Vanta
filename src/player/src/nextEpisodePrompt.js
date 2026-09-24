@@ -1,7 +1,7 @@
 import { formatEpisodeCode } from './episodes.js';
 
 const DEFAULT_COUNTDOWN_MS = 10_000;
-const VIEWER_MESSAGE = 'Die nächste Folge kann von einem WatchTogether-Admin gestartet werden.';
+const VIEWER_MESSAGE = 'Startet automatisch. Abbrechen oder sofort starten können nur Admins.';
 
 function escapeHtml(text) {
   return String(text)
@@ -18,6 +18,10 @@ function episodeImageUrl(episode) {
   return `/api/media/image/${episode.Id}?type=Primary&tag=${encodeURIComponent(tag)}&maxWidth=200`;
 }
 
+// `onConfirm(next, { auto })` fires on the button (auto: false) and when the
+// countdown runs out (auto: true). Without `controls` (watch-party viewers)
+// both buttons are hidden, but the countdown still runs, so everyone sees the
+// same prompt; the embedder decides who actually switches.
 export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownMs = DEFAULT_COUNTDOWN_MS }) {
   let timeoutId = null;
   let animationFrameId = null;
@@ -26,7 +30,7 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   let countdownTo = 0;
   let readCurrentTime = null;
   let active = null;
-  let interactive = true;
+  let controls = true;
   let lastInputWasKeyboard = false;
   let previouslyFocused = null;
 
@@ -61,9 +65,9 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   countdown.setAttribute('aria-live', 'off');
   countdown.hidden = true;
 
-  const message = document.createElement('p');
-  message.className = 'vanta-player-next-episode-message';
-  message.hidden = true;
+  const messageEl = document.createElement('p');
+  messageEl.className = 'vanta-player-next-episode-message';
+  messageEl.hidden = true;
 
   const actions = document.createElement('div');
   actions.className = 'vanta-player-next-episode-actions';
@@ -78,7 +82,7 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   dismissButton.textContent = 'Abbrechen';
 
   actions.append(dismissButton, confirmButton);
-  body.append(kicker, code, titleEl, seriesEl, countdown, message, actions);
+  body.append(kicker, code, titleEl, seriesEl, countdown, messageEl, actions);
   element.append(media, body);
   root.appendChild(element);
 
@@ -102,7 +106,7 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
     setRemaining((countdownMs - elapsed) / 1000);
 
     if (elapsed / countdownMs >= 1) {
-      confirm();
+      finish({ auto: true });
       return;
     }
 
@@ -117,7 +121,7 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
     setRemaining(remaining);
 
     if (Number.isFinite(remaining) && remaining <= 0) {
-      confirm();
+      finish({ auto: true });
       return;
     }
 
@@ -131,11 +135,22 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
     animationFrameId = null;
   }
 
-  function confirm() {
-    if (!active || !interactive) return;
+  function finish({ auto }) {
+    if (!active) return;
     const next = active;
     hide();
-    onConfirm?.(next);
+    onConfirm?.(next, { auto });
+  }
+
+  function confirm() {
+    if (controls) finish({ auto: false });
+  }
+
+  function applyControls(message = null) {
+    confirmButton.hidden = !controls;
+    dismissButton.hidden = !controls;
+    messageEl.textContent = controls ? '' : (message || VIEWER_MESSAGE);
+    messageEl.hidden = controls;
   }
 
   function hide() {
@@ -178,14 +193,14 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
 
   function show(next, options = {}) {
     const {
-      interactive: nextInteractive = true,
+      controls: withControls = true,
       message: infoMessage = null,
       skipAt = null,
       getCurrentTime = null
     } = options;
     clearTimers();
     active = next;
-    interactive = nextInteractive;
+    controls = withControls;
     previouslyFocused = document.activeElement;
     element.hidden = false;
 
@@ -212,21 +227,11 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
 
     confirmButton.textContent = isNextSeason ? 'Nächste Staffel starten' : 'Nächste Folge starten';
 
-    if (interactive) {
-      message.hidden = true;
-      confirmButton.hidden = false;
-      setProgress(0);
-      startCountdown(skipAt, getCurrentTime);
-    } else {
-      confirmButton.hidden = true;
-      setRemaining(NaN);
-      message.textContent = infoMessage || VIEWER_MESSAGE;
-      message.hidden = false;
-    }
+    applyControls(infoMessage);
+    setProgress(0);
+    startCountdown(skipAt, getCurrentTime);
 
-    if (lastInputWasKeyboard) {
-      (interactive ? confirmButton : dismissButton).focus();
-    }
+    if (lastInputWasKeyboard && controls) confirmButton.focus();
   }
 
   dismissButton.addEventListener('click', () => {
@@ -258,6 +263,11 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
     dismissButton,
     show,
     hide,
+    // Admin rights can change while the prompt is open.
+    setControls(value, message) {
+      controls = Boolean(value);
+      if (active) applyControls(message);
+    },
     isVisible: () => !element.hidden,
     destroy: () => {
       hide();

@@ -29,7 +29,8 @@ export function createNotification(type, { userId = null, username, positionMs }
     owner_pause: `${name} hat pausiert.`,
     owner_seek: `${name} ist zu ${formatNotificationPosition(positionMs)} gesprungen.`,
     member_promoted: `${name} ist jetzt Admin.`,
-    member_banned: `${name} wurde aus der Watch Party gebannt.`
+    member_banned: `${name} wurde aus der Watch Party gebannt.`,
+    next_episode_cancelled: `${name} hat die nächste Folge abgebrochen.`
   };
 
   return {

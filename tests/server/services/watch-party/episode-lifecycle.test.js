@@ -27,26 +27,36 @@ describe('WatchPartyService · Episode und Lifecycle', () => {
     ItemsService.getItemDetails.mockResolvedValue(movieItem());
   });
 
-  it('changeEpisode darf nur der Owner ausführen und aktualisiert playableItemId/positionMs', async () => {
+  it('changeEpisode dürfen nur Admins ausführen und lädt die Folge für alle neu', async () => {
     const created = await createTestParty();
     await joinAsViewer(created.id);
     WatchPartyService.setPreloadState({ partyId: created.id, userId: 'viewer-1', state: 'ready' });
 
     await expect(WatchPartyService.changeEpisode({
-      partyId: created.id, ownerUserId: 'viewer-1', accessToken: 'x', itemId: 'episode-2'
+      partyId: created.id, userId: 'viewer-1', accessToken: 'x', itemId: 'episode-2'
     })).rejects.toMatchObject({ status: 403 });
 
     ItemsService.getItemDetails.mockResolvedValueOnce(episodeItem({ Id: 'episode-2', Name: 'Episode 2' }));
+    WatchPartyService.parties.get(created.id).nextEpisodeCancelledFor = created.playableItemId;
 
     const party = await WatchPartyService.changeEpisode({
-      partyId: created.id, ownerUserId: 'owner-1', accessToken: 'owner-token', itemId: 'episode-2'
+      partyId: created.id, userId: 'owner-1', accessToken: 'owner-token', itemId: 'episode-2'
     });
 
     expect(party.playableItemId).toBe('episode-2');
     expect(party.itemSnapshot.name).toBe('Episode 2');
     expect(party.positionMs).toBe(0);
+    expect(party.status).toBe('switching');
+    expect(party.nextEpisodeCancelledFor).toBeNull();
     expect(party.members.get('viewer-1').ready).toBe(false);
     expect(party.members.get('viewer-1').preloadState).toBe('waiting');
+
+    WatchPartyService.promoteMember({ partyId: created.id, actorUserId: 'owner-1', targetUserId: 'viewer-1' });
+    ItemsService.getItemDetails.mockResolvedValueOnce(episodeItem({ Id: 'episode-3', Name: 'Episode 3' }));
+    const byAdmin = await WatchPartyService.changeEpisode({
+      partyId: created.id, userId: 'viewer-1', accessToken: 'x', itemId: 'episode-3'
+    });
+    expect(byAdmin.playableItemId).toBe('episode-3');
   });
 
   it('speichert beim Beenden einen Snapshot mit finalPositionMs, der 48h fortsetzbar ist', async () => {

@@ -69,7 +69,7 @@ describe('createNextEpisodePrompt', () => {
 
     prompt.confirmButton.click();
 
-    expect(onConfirm).toHaveBeenCalledWith(next);
+    expect(onConfirm).toHaveBeenCalledWith(next, { auto: false });
     expect(prompt.element.hidden).toBe(true);
     prompt.destroy();
   });
@@ -98,7 +98,7 @@ describe('createNextEpisodePrompt', () => {
     expect(prompt.confirmButton.style.getPropertyValue('--next-episode-progress')).toBe('0.5');
 
     flushFrame(1000);
-    expect(onConfirm).toHaveBeenCalledWith(next);
+    expect(onConfirm).toHaveBeenCalledWith(next, { auto: true });
     expect(prompt.element.hidden).toBe(true);
 
     prompt.destroy();
@@ -137,13 +137,13 @@ describe('createNextEpisodePrompt', () => {
     prompt.destroy();
   });
 
-  it('verschiebt den Fokus auf Abbrechen, wenn nicht-interaktiv und letzte Eingabe Tastatur war', () => {
+  it('verschiebt den Fokus nicht, wenn keine Buttons sichtbar sind', () => {
     const prompt = createNextEpisodePrompt({ root, onConfirm: vi.fn(), onDismiss: vi.fn() });
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
 
-    prompt.show(makeNext(), { interactive: false });
+    prompt.show(makeNext(), { controls: false });
 
-    expect(document.activeElement).toBe(prompt.dismissButton);
+    expect(prompt.element.contains(document.activeElement)).toBe(false);
     prompt.destroy();
   });
 
@@ -179,17 +179,36 @@ describe('createNextEpisodePrompt', () => {
     playerButton.remove();
   });
 
-  it('zeigt im nicht-interaktiven Modus nur eine Info ohne Bestätigen-Button', () => {
+  it('zeigt Zuschauern Countdown und Info, aber keine Buttons, und meldet das Ablaufen', () => {
     const onConfirm = vi.fn();
     const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn(), countdownMs: 1000 });
-    prompt.show(makeNext(), { interactive: false, message: 'Warten auf Admin' });
+    prompt.show(makeNext(), { controls: false, message: 'Nur Admins' });
 
     expect(prompt.confirmButton.hidden).toBe(true);
-    expect(prompt.element.textContent).toContain('Warten auf Admin');
+    expect(prompt.dismissButton.hidden).toBe(true);
+    expect(prompt.element.textContent).toContain('Nur Admins');
+    expect(prompt.element.textContent).toContain('Startet in 1 s');
 
-    flushFrame(2000);
+    prompt.confirmButton.click();
     expect(onConfirm).not.toHaveBeenCalled();
 
+    flushFrame(2000);
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ kind: 'next-episode' }), { auto: true });
+    expect(prompt.element.hidden).toBe(true);
+
+    prompt.destroy();
+  });
+
+  it('meldet einen Klick als manuellen Start und kann Buttons nachträglich freigeben', () => {
+    const onConfirm = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn(), countdownMs: 1000 });
+    prompt.show(makeNext(), { controls: false });
+    prompt.setControls(true);
+    expect(prompt.confirmButton.hidden).toBe(false);
+    expect(prompt.dismissButton.hidden).toBe(false);
+
+    prompt.confirmButton.click();
+    expect(onConfirm).toHaveBeenCalledWith(expect.anything(), { auto: false });
     prompt.destroy();
   });
 
@@ -270,7 +289,7 @@ describe('createNextEpisodePrompt – Countdown auf Medienzeit', () => {
     expect(countdownText(prompt).textContent).toBe('Startet in 13 s');
 
     advanceTo(100);
-    expect(onConfirm).toHaveBeenCalledWith(next);
+    expect(onConfirm).toHaveBeenCalledWith(next, { auto: true });
     expect(prompt.element.hidden).toBe(true);
 
     prompt.destroy();

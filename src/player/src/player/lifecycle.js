@@ -1,5 +1,6 @@
 import { exitPictureInPicture, exitInlineFullscreen } from '../platform.js';
 import { exitSmartphoneFullscreen } from '../orientation.js';
+import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 
 export async function preparePlayerInitialPlayback(context) {
   const { watchParty, resumePosition } = context;
@@ -83,7 +84,9 @@ export function createPlayerController(context) {
       Object.assign(watchParty, nextState || {});
       context.refreshWatchPartyControlAccess();
       context.settings?.refresh();
+      context.nextEpisodePrompt?.setControls(Boolean(watchParty.canControl ?? watchParty.isOwner), NEXT_EPISODE_VIEWER_MESSAGE);
     },
+    cancelNextEpisode: () => context.cancelNextEpisode?.(),
     getSyncState: context.getSyncState,
     getBufferedAhead: context.getBufferedAhead,
     setSyncRate: context.setSyncRate,

@@ -93,6 +93,8 @@ export function bindPlayerMount(ctx) {
             label: ctx.syncStatusBadge.textContent
           }),
           onResync: () => ctx.drift.resync(),
+          isNextEpisodeCancelled: () => Boolean(ctx.party?.nextEpisodeCancelledFor)
+            && ctx.party.nextEpisodeCancelledFor === ctx.party.playableItemId,
           isHost: ctx.isOwner(),
           waitForBuffering: ctx.party.waitForBuffering !== false,
           onSetWaitForBuffering: enabled => ctx.socket?.sendJson({ type: 'OWNER_SET_WAIT_FOR_BUFFERING', enabled: Boolean(enabled) }),
@@ -126,9 +128,14 @@ export function bindPlayerMount(ctx) {
               if (!ctx.isPartyAdmin()) return;
               ctx.socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
             },
+            // Everyone sees the same prompt; when it runs out, every admin
+            // asks for the switch and the server carries it out once.
             onNextEpisode: ({ episode }) => {
               if (!ctx.isPartyAdmin()) return;
               ctx.socket?.sendJson({ type: 'OWNER_CHANGE_EPISODE', itemId: episode.Id, positionMs: 0 });
+            },
+            onDismissNextEpisode: () => {
+              if (ctx.isPartyAdmin()) ctx.socket?.sendJson({ type: 'NEXT_EPISODE_CANCEL' });
             }
           } : null
         });
@@ -169,7 +176,14 @@ export function bindPlayerMount(ctx) {
     ctx.setPlaybackPhase();
   };
 
-  ctx.replacePlayer = async ({ itemId, positionMs }) => {
+  // Next episode in the party: the new player loads right away, paused at
+  // the start and without a click, and reports ready on its own. The server
+  // starts everyone together once all are ready (TIMELINE 'episode-start').
+  ctx.switchEpisode = async ({ itemId }) => {
+    if (!itemId || ctx.switchingItemId === itemId) return;
+    ctx.switchingItemId = itemId;
+    ctx.cancelSyncedStart();
+    ctx.localPlaybackStarted = false;
     ctx.stopOwnerHeartbeat();
     ctx.leavePlayback();
     ctx.resetPreload();
@@ -182,8 +196,10 @@ export function bindPlayerMount(ctx) {
     }
     ctx.controller = null;
     ctx.playerMount.innerHTML = '';
-    await ctx.mountPlayer({ itemId, positionMs, force: true });
-    await ctx.enterPlayback();
+    await ctx.mountPlayer({ itemId, positionMs: 0, force: true, deferInitialLoad: true });
+    if (ctx.destroyed || ctx.switchingItemId !== itemId || ctx.party?.status !== 'switching') return;
+    ctx.readyRequested = true;
+    await ctx.startPreload();
   };
 
   return ctx;

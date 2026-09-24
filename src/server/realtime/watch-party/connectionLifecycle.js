@@ -66,6 +66,8 @@ export const connectionLifecycleMethods = {
       const currentParty = WatchPartyService.parties.get(partyId);
       if (!currentParty) return;
       if (currentParty.waiting?.userIds.includes(user.userId)) this.finishWaitingFor(partyId, user.userId);
+      // A member who drops out while the next episode loads is not waited for.
+      this.startEpisodeIfReady(partyId);
 
       if (currentParty.ownerUserId === user.userId && currentParty.status !== 'ended') {
         this.scheduleOwnerDisconnectEnd(partyId, user.userId);

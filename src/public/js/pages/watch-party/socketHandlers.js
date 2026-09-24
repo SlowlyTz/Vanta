@@ -29,8 +29,8 @@ export function bindSocketHandlers(ctx) {
 
       case 'LOAD_MEDIA':
         if (message.reason === 'episode-change') {
-          appStore.showToast(message.message || 'Folge gewechselt', 'success');
-          ctx.replacePlayer({ itemId: message.itemId, positionMs: message.positionMs });
+          if (ctx.party) ctx.party.status = 'switching';
+          void ctx.switchEpisode({ itemId: message.itemId });
         } else {
           ctx.mountPlayer({ itemId: message.itemId, positionMs: message.positionMs });
         }
@@ -38,6 +38,11 @@ export function bindSocketHandlers(ctx) {
 
       case 'TIMELINE':
         ctx.handleTimelineMessage(message);
+        return;
+
+      case 'NEXT_EPISODE_CANCELLED':
+        if (ctx.party) ctx.party.nextEpisodeCancelledFor = message.itemId;
+        ctx.controller?.cancelNextEpisode?.();
         return;
 
       case 'PRESENCE':
@@ -88,7 +93,12 @@ export function bindSocketHandlers(ctx) {
     ctx.party = party;
     ctx.acceptTimeline(timelineFromParty(party));
     ctx.renderParty();
-    if (party.status === 'ready-room') {
+    if (party.nextEpisodeCancelledFor && party.nextEpisodeCancelledFor === party.playableItemId) {
+      ctx.controller?.cancelNextEpisode?.();
+    }
+    if (party.status === 'switching') {
+      void ctx.switchEpisode({ itemId: party.playableItemId });
+    } else if (party.status === 'ready-room') {
       ctx.ensurePlayerReadyRoom();
       ctx.renderReadyOverlay();
     } else if (party.status === 'countdown') {
