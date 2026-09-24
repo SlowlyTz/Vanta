@@ -88,31 +88,35 @@ describe('WatchPartySocketHub · Admin-Rollen', () => {
     expect(party.status).toBe('paused');
   });
 
-  it('ADMIN_PROMOTE_MEMBER broadcastet PARTY_UPDATED und eine member_promoted Notification', () => {
+  it('ADMIN_PROMOTE_MEMBER meldet es nur der neuen Admin-Person und dem, der ernannt hat', () => {
     const hub = new WatchPartySocketHub();
     const updatedParty = { id: 'party-1', members: [{ userId: 'viewer-1', username: 'Bob', role: 'admin' }] };
     WatchPartyService.promoteMember.mockReturnValue(updatedParty);
 
-    const ws = createFakeWs();
-    hub.registerConnection('party-1', 'owner-1', ws);
+    const ownerWs = createFakeWs();
+    const bobWs = createFakeWs();
+    const otherWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+    hub.registerConnection('party-1', 'viewer-1', bobWs);
+    hub.registerConnection('party-1', 'viewer-2', otherWs);
 
     hub.handleMessage({
       partyId: 'party-1',
       user: makeUser('owner-1'),
       message: { type: 'ADMIN_PROMOTE_MEMBER', targetUserId: 'viewer-1' },
-      ws
+      ws: ownerWs
     });
 
     expect(WatchPartyService.promoteMember).toHaveBeenCalledWith({
       partyId: 'party-1', actorUserId: 'owner-1', targetUserId: 'viewer-1'
     });
-    expect(ws.sent).toEqual([
-      expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty }),
-      expect.objectContaining({
-        type: 'NOTIFICATION',
-        notification: expect.objectContaining({ type: 'member_promoted', message: 'Bob ist jetzt Admin.' })
-      })
-    ]);
+    const notes = ws => ws.sent.filter(message => message.type === 'NOTIFICATION').map(message => message.notification);
+    expect(notes(bobWs)).toEqual([expect.objectContaining({ type: 'member_promoted_self', icon: 'member_promoted', message: 'Du bist jetzt Admin.' })]);
+    expect(notes(ownerWs)).toEqual([expect.objectContaining({ type: 'member_promoted', message: 'Bob ist jetzt Admin.' })]);
+    expect(notes(otherWs)).toEqual([]);
+    [ownerWs, bobWs, otherWs].forEach(ws => {
+      expect(ws.sent).toContainEqual(expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty }));
+    });
   });
 
   it('ADMIN_BAN_MEMBER sendet BANNED_FROM_PARTY an das Ziel, schließt dessen Verbindungen und broadcastet PARTY_UPDATED + Notification', () => {

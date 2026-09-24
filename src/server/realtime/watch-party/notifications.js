@@ -17,6 +17,13 @@ function formatNotificationPosition(positionMs) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+// Notifications addressed to the person themselves share the icon of the
+// version the others see.
+const ICON_ALIASES = {
+  member_rejoined: 'member_joined',
+  member_promoted_self: 'member_promoted'
+};
+
 // `userId`/`username` name who the notification is about (who pressed play,
 // who joined); clients show that person's avatar next to the text.
 export function createNotification(type, { userId = null, username, positionMs } = {}) {
@@ -29,6 +36,7 @@ export function createNotification(type, { userId = null, username, positionMs }
     owner_pause: `${name} hat pausiert.`,
     owner_seek: `${name} ist zu ${formatNotificationPosition(positionMs)} gesprungen.`,
     member_promoted: `${name} ist jetzt Admin.`,
+    member_promoted_self: 'Du bist jetzt Admin.',
     member_banned: `${name} wurde aus der Watch Party gebannt.`,
     next_episode_cancelled: `${name} hat die nächste Folge abgebrochen.`
   };
@@ -38,7 +46,7 @@ export function createNotification(type, { userId = null, username, positionMs }
     notification: {
       id: crypto.randomUUID(),
       type,
-      icon: type === 'member_rejoined' ? 'member_joined' : type,
+      icon: ICON_ALIASES[type] || type,
       message: messages[type] || 'Watch Party aktualisiert.',
       actor: username ? { userId, username } : null,
       createdAt: Date.now()

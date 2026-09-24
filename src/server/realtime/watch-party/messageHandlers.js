@@ -163,10 +163,13 @@ export const messageHandlerMethods = {
       party
     });
 
-    this.broadcastParty(partyId, createNotification('member_promoted', {
-      userId: message.targetUserId,
-      username: promoted?.username
-    }));
+    // Only the two people involved hear about it: the new admin and whoever
+    // made them one.
+    const subject = { userId: message.targetUserId, username: promoted?.username };
+    this.sendToUser(partyId, message.targetUserId, createNotification('member_promoted_self', subject));
+    if (user.userId !== message.targetUserId) {
+      this.sendToUser(partyId, user.userId, createNotification('member_promoted', subject));
+    }
   },
 
   handleAdminBanMember({ partyId, user, message }) {
