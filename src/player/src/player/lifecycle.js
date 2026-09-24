@@ -39,6 +39,10 @@ export async function preparePlayerInitialPlayback(context) {
       await initialPlaybackPromise;
     } catch (error) {
       initialPlaybackPromise = null;
+      if (!context.destroyed && context.handleFatalPlaybackError(error)) {
+        if (suppressOwnerEcho) context.endOwnerEchoSuppression();
+        throw error;
+      }
       if (!context.destroyed) {
         if (context.sourceSwitch.getCurrentPlayback()?.delivery !== 'hls') {
           await context.switchToHls(error, { silent: context.isDeferredReadyRoom() });

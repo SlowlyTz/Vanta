@@ -4,6 +4,10 @@ import { applyWatchPartyPermissions } from '../watchParty.js';
 import { createEchoTokens } from '../syncEcho.js';
 import { createPlayerMarkup } from './markup.js';
 
+export function isStreamLimitError(error) {
+  return error?.code === 'STREAM_LIMIT_REACHED' || error?.status === 429;
+}
+
 export async function createPlayerContext(options) {
   const {
     root,
@@ -19,6 +23,7 @@ export async function createPlayerContext(options) {
     episodeBrowser = null,
     preferences = null,
     loadSegments = null,
+    onPlaybackError = null,
     deferInitialLoad = false
   } = options;
 
@@ -48,6 +53,7 @@ export async function createPlayerContext(options) {
     episodeBrowser,
     preferencesConfig: preferences,
     loadSegments,
+    onPlaybackError,
     deferInitialLoad,
     iosLike,
     dom,
@@ -60,6 +66,14 @@ export async function createPlayerContext(options) {
     lastWheelSeekAt: 0,
     ownerEchoSuppressionDepth: 0,
     echoTokens: createEchoTokens()
+  };
+
+  // Errors the player cannot recover from itself (the stream limit is
+  // reached) go to the page, which tells the viewer and leaves the player.
+  context.handleFatalPlaybackError = error => {
+    if (!isStreamLimitError(error) || typeof context.onPlaybackError !== 'function') return false;
+    context.onPlaybackError(error);
+    return true;
   };
 
   context.streamSelection = () => {

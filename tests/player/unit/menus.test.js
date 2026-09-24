@@ -189,4 +189,47 @@ describe('bindMenus', () => {
       expect(prompt.isVisible()).toBe(false);
     });
   });
+
+  describe('Tonspurwechsel', () => {
+    const switchSetup = ({ resolvePlayback, onPlaybackError }) => {
+      env = setup();
+      const current = { playSessionId: 'old-session', audioTracks: [], audioStreamIndex: 1 };
+      Object.assign(env.context, {
+        resolvePlayback,
+        onPlaybackError,
+        handleFatalPlaybackError: error => {
+          if (error?.status !== 429) return false;
+          onPlaybackError(error);
+          return true;
+        },
+        updateMenus: vi.fn(),
+        sourceSwitch: {
+          getCurrentPlayback: () => current,
+          captureState: () => ({ position: 42 }),
+          getIntendsToPlay: () => true,
+          switchTo: vi.fn().mockResolvedValue(undefined)
+        }
+      });
+      return env.context;
+    };
+
+    it('ersetzt die laufende Session statt einen zweiten Stream zu öffnen', async () => {
+      const resolvePlayback = vi.fn().mockResolvedValue({ playSessionId: 'new-session' });
+      const context = switchSetup({ resolvePlayback, onPlaybackError: vi.fn() });
+      context.audioMenu.select(2);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(resolvePlayback).toHaveBeenCalledWith('auto', { audioStreamIndex: 2, replacesPlaySessionId: 'old-session' });
+    });
+
+    it('meldet ein erreichtes Stream-Limit an die Seite statt still hängen zu bleiben', async () => {
+      const limit = Object.assign(new Error('Stream-Limit erreicht. Maximal erlaubt: 1'), { status: 429, code: 'STREAM_LIMIT_REACHED' });
+      const onPlaybackError = vi.fn();
+      const context = switchSetup({ resolvePlayback: vi.fn().mockRejectedValue(limit), onPlaybackError });
+      context.audioMenu.select(2);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(onPlaybackError).toHaveBeenCalledWith(limit);
+      expect(context.showError).not.toHaveBeenCalled();
+    });
+  });
 });

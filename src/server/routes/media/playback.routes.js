@@ -127,6 +127,9 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const requestedQualityProfile = String(req.query.qualityProfile || 'auto').toLowerCase();
   const audioIndexParam = req.query.audioStreamIndex;
   const requestedAudioStreamIndex = audioIndexParam !== undefined && /^\d+$/.test(String(audioIndexParam)) ? Number(audioIndexParam) : null;
+  const replacesPlaySessionId = typeof req.query.replacesPlaySessionId === 'string' && /^[\w-]{1,128}$/.test(req.query.replacesPlaySessionId)
+    ? req.query.replacesPlaySessionId
+    : null;
   const requestedAudioLanguage = typeof req.query.audioLanguage === 'string' && /^[a-z]{2,3}$/i.test(req.query.audioLanguage)
     ? req.query.audioLanguage.toLowerCase()
     : null;
@@ -176,7 +179,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
     });
 
     try {
-      streamSessionService.reserve({ userId, username, itemId: id, playSessionId: playback.playSessionId });
+      streamSessionService.reserve({ userId, username, itemId: id, playSessionId: playback.playSessionId, replacesPlaySessionId });
     } catch (limitError) {
       if (limitError.code === 'STREAM_LIMIT_REACHED') {
         return res.status(429).json({

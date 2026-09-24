@@ -41,7 +41,10 @@ export function bindMenus(context) {
           const currentPlayback = context.sourceSwitch.getCurrentPlayback();
           if (!currentPlayback) return;
           try {
-            const playback = await context.resolvePlayback('auto', { qualityProfile: profileId });
+            const playback = await context.resolvePlayback('auto', {
+              qualityProfile: profileId,
+              replacesPlaySessionId: currentPlayback.playSessionId
+            });
             if (context.destroyed) return;
             await context.sourceSwitch.switchTo(playback, {
               position: context.sourceSwitch.captureState().position,
@@ -51,7 +54,7 @@ export function bindMenus(context) {
             if (context.destroyed) return;
             context.updateMenus(playback);
           } catch (error) {
-            if (!context.destroyed) context.showError(error.message);
+            if (!context.destroyed && !context.handleFatalPlaybackError(error)) context.showError(error.message);
           }
         }
       });
@@ -61,9 +64,13 @@ export function bindMenus(context) {
   // position (in a watch party the drift loop pulls it back onto the timeline).
   context.audioMenu = createAudioController({
     onSelect: async audioStreamIndex => {
-      if (!context.sourceSwitch.getCurrentPlayback()) return;
+      const currentPlayback = context.sourceSwitch.getCurrentPlayback();
+      if (!currentPlayback) return;
       try {
-        const playback = await context.resolvePlayback('auto', { audioStreamIndex });
+        const playback = await context.resolvePlayback('auto', {
+          audioStreamIndex,
+          replacesPlaySessionId: currentPlayback.playSessionId
+        });
         if (context.destroyed) return;
         await context.sourceSwitch.switchTo(playback, {
           position: context.sourceSwitch.captureState().position,
@@ -74,7 +81,7 @@ export function bindMenus(context) {
         context.updateMenus(playback);
         context.preferences?.update({ audioLanguage: context.audioMenu.getCurrentLanguage() });
       } catch (error) {
-        if (!context.destroyed) context.showError(error.message);
+        if (!context.destroyed && !context.handleFatalPlaybackError(error)) context.showError(error.message);
       }
     }
   });

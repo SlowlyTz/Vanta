@@ -115,6 +115,10 @@ export function bindPlayerMount(ctx) {
           resolvePlayback: (mode, options) => MediaApi.getPlayback(itemId, mode, options),
           reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
           onBack: ctx.goHome,
+          onPlaybackError: error => {
+            appStore.showToast(error.message || 'Stream-Limit erreicht.', 'error');
+            ctx.goHome();
+          },
           watchParty: ctx.watchPartyConfig,
           deferInitialLoad,
           loadSegments: () => MediaApi.getSegments(itemId),

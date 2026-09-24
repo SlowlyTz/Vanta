@@ -3,6 +3,7 @@ import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';
 import { router } from '../router.js';
 import { playerHeading } from '../utils/playerHeading.js';
+import { appStore } from '../store/app.store.js';
 
 const PLAYER_MODULE_URL = '/vendor/player/vanta-player.js';
 
@@ -142,6 +143,12 @@ export default function PlayerPage({ id }) {
         resolvePlayback: (mode, options) => MediaApi.getPlayback(playableId, mode, options),
         reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
         onBack: goBack,
+        // Only the stream limit ends up here: say so and go home.
+        onPlaybackError: error => {
+          appStore.showToast(error.message || 'Stream-Limit erreicht.', 'error');
+          cleanup();
+          window.location.hash = '#/home';
+        },
         loadSegments: () => MediaApi.getSegments(playableId),
         episodeBrowser: episodeContext ? {
           enabled: true,

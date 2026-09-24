@@ -194,6 +194,21 @@ describe('WatchPartyPage · Player Sync', () => {
     delete fakeController.cancelNextEpisode;
   });
 
+  it('zeigt bei erreichtem Stream-Limit ein Popup und geht zur Startseite', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'playing', positionMs: 1000 }) });
+    MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+    WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+    await flush();
+
+    const { onPlaybackError } = mountVantaPlayer.mock.calls.at(-1)[0];
+    onPlaybackError(Object.assign(new Error('Stream-Limit erreicht. Maximal erlaubt: 1'), { status: 429 }));
+    expect(appStore.showToast).toHaveBeenCalledWith('Stream-Limit erreicht. Maximal erlaubt: 1', 'error');
+    expect(window.location.hash).toBe('#/home');
+  });
+
   it('zeigt den Player sofort bei status=playing', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({

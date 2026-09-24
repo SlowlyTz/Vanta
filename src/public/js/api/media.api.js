@@ -112,6 +112,9 @@ export const MediaApi = {
     } else if (options.audioLanguage) {
       params.set('audioLanguage', options.audioLanguage);
     }
+    if (options.replacesPlaySessionId) {
+      params.set('replacesPlaySessionId', options.replacesPlaySessionId);
+    }
     return request(`/api/media/playback/${id}?${params.toString()}`);
   },
 

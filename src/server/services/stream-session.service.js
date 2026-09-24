@@ -40,7 +40,10 @@ export class StreamSessionService {
     return this.sessionsByUser.get(userId)?.size || 0;
   }
 
-  reserve({ userId, username, itemId, playSessionId }) {
+  // `replacesPlaySessionId`: the session this one takes over (the player
+  // switching audio track or quality); it is released first, so a running
+  // stream is not counted twice.
+  reserve({ userId, username, itemId, playSessionId, replacesPlaySessionId = null }) {
     if (!playSessionId) {
       const error = new Error('Playback session could not be tracked');
       error.status = 500;
@@ -51,6 +54,7 @@ export class StreamSessionService {
 
     const limit = this.getLimit(userId);
     const sessions = this.sessionsByUser.get(userId) || new Map();
+    if (replacesPlaySessionId && replacesPlaySessionId !== playSessionId) sessions.delete(replacesPlaySessionId);
 
     if (!sessions.has(playSessionId) && sessions.size >= limit) {
       const replaceable = this.findReplaceableQualitySwitchSession(sessions, itemId);

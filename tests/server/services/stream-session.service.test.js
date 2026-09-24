@@ -25,6 +25,21 @@ describe('StreamSessionService', () => {
       .toThrow(expect.objectContaining({ status: 429, code: 'STREAM_LIMIT_REACHED' }));
   });
 
+  it('ersetzt beim Tonspurwechsel die laufende Session, statt einen zweiten Stream zu zählen', () => {
+    const { service, advance } = createService(1);
+    service.reserve({ userId: 'u1', itemId: 'item-a', playSessionId: 'p1' });
+    service.markStarted('u1', 'p1');
+    advance(5_000);
+
+    expect(() => service.reserve({ userId: 'u1', itemId: 'item-a', playSessionId: 'p2' }))
+      .toThrow(expect.objectContaining({ code: 'STREAM_LIMIT_REACHED' }));
+    expect(() => service.reserve({ userId: 'u1', itemId: 'item-a', playSessionId: 'p2', replacesPlaySessionId: 'p1' })).not.toThrow();
+    expect(service.getActiveCount('u1')).toBe(1);
+    // Eine fremde Session lässt sich so nicht verdrängen.
+    expect(() => service.reserve({ userId: 'u2', itemId: 'item-a', playSessionId: 'p3', replacesPlaySessionId: 'p2' })).not.toThrow();
+    expect(service.getActiveCount('u1')).toBe(1);
+  });
+
   it('allows exactly maxConcurrentStreams=2 streams and blocks the third', () => {
     const { service } = createService(2);
 

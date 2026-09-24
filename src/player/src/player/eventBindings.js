@@ -25,7 +25,9 @@ export function bindPlayerEvents(context) {
     context.setLoading(true, 'HLS-Fallback wird beim Server angefragt …');
 
     try {
-      const hlsPlayback = await context.resolvePlayback('hls');
+      const hlsPlayback = await context.resolvePlayback('hls', {
+        replacesPlaySessionId: context.sourceSwitch.getCurrentPlayback()?.playSessionId || null
+      });
       if (context.destroyed) return;
       await context.sourceSwitch.loadPlayback(hlsPlayback, {
         position: state.position,
@@ -34,7 +36,7 @@ export function bindPlayerEvents(context) {
       });
       context.updateMenus(hlsPlayback);
     } catch (error) {
-      if (context.destroyed) return;
+      if (context.destroyed || context.handleFatalPlaybackError(error)) return;
       if (!silent) context.showError(error.message);
     }
   };
