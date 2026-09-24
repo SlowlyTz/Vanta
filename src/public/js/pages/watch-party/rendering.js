@@ -105,6 +105,7 @@ export function bindRendering(ctx) {
       currentUserId: ctx.currentUser?.id
     });
     ctx.watchPartyConfig.onParticipantsChange?.();
+    ctx.maybeStartOwnerHeartbeat();
   };
 
   ctx.renderError = error => {
@@ -122,10 +123,7 @@ export function bindRendering(ctx) {
   };
 
   ctx.showEndedState = message => {
-    if (ctx.ownerHeartbeatTimer) {
-      window.clearInterval(ctx.ownerHeartbeatTimer);
-      ctx.ownerHeartbeatTimer = null;
-    }
+    ctx.stopOwnerHeartbeat();
     try {
       ctx.controller?.destroy();
     } catch (error) {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getEffectivePosition,
+  getSyncLeaderUserId,
   resolveAnchorTime,
   serializeTimeline,
   setTimeline
@@ -36,5 +37,31 @@ describe('Watch-Party-Zeitleiste', () => {
     const party = { status: 'playing', positionMs: 5000, lastServerTimeMs: 20_000 };
     expect(getEffectivePosition(party, 18_000)).toBe(5000);
     expect(getEffectivePosition(party, 21_000)).toBe(6000);
+  });
+});
+
+describe('getSyncLeaderUserId', () => {
+  const party = members => ({ ownerUserId: 'owner', members: new Map(members.map(member => [member.userId, member])) });
+
+  it('wählt den Owner, solange er verbunden ist', () => {
+    expect(getSyncLeaderUserId(party([
+      { userId: 'owner', role: 'owner', connected: true },
+      { userId: 'a', role: 'admin', connected: true, joinedAt: 1 }
+    ]))).toBe('owner');
+  });
+
+  it('fällt auf den am längsten dabei gewesenen verbundenen Admin zurück', () => {
+    expect(getSyncLeaderUserId(party([
+      { userId: 'owner', role: 'owner', connected: false },
+      { userId: 'late', role: 'admin', connected: true, joinedAt: 9 },
+      { userId: 'early', role: 'admin', connected: true, joinedAt: 2 },
+      { userId: 'gone', role: 'admin', connected: false, joinedAt: 1 },
+      { userId: 'v', role: 'viewer', connected: true, joinedAt: 0 }
+    ]))).toBe('early');
+  });
+
+  it('liefert null ohne verbundene Admins', () => {
+    expect(getSyncLeaderUserId(party([{ userId: 'owner', role: 'owner', connected: false }]))).toBeNull();
+    expect(getSyncLeaderUserId({ ownerUserId: 'x' })).toBeNull();
   });
 });

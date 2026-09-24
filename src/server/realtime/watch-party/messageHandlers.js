@@ -1,6 +1,14 @@
 import { WatchPartyService, isPartyAdmin } from '../../services/watch-party.service.js';
 import { ownerError, isPlaybackControlAllowed, createNotification } from './notifications.js';
-import { resolveAnchorTime, serializeTimeline, setTimeline } from '../../services/watch-party/helpers.js';
+import {
+  getEffectivePosition,
+  getSyncLeaderUserId,
+  resolveAnchorTime,
+  serializeTimeline,
+  setTimeline,
+  SYNC_CORRECTION_THRESHOLD_MS,
+  SYNC_STABLE_MIN_MS
+} from '../../services/watch-party/helpers.js';
 
 export const messageHandlerMethods = {
   handleMessage({ partyId, user, message, ws }) {
@@ -229,9 +237,24 @@ export const messageHandlerMethods = {
     }
 
     if (message.type === 'OWNER_SYNC') {
-      setTimeline(party, { positionMs, playing: Boolean(message.playing), anchorServerTimeMs });
-      this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'sync' }, { skipUserId: userId });
+      this.handleLeaderHeartbeat({ partyId, party, userId, message, positionMs, anchorServerTimeMs });
     }
+  },
+
+  // The server timeline is authoritative and advances on its own. A heartbeat
+  // only pulls it back when the leader has been playing smoothly for a while
+  // and still disagrees by more than a second; a buffering or freshly seeked
+  // leader must never drag everyone else along.
+  handleLeaderHeartbeat({ partyId, party, userId, message, positionMs, anchorServerTimeMs }) {
+    if (getSyncLeaderUserId(party) !== userId) return;
+    if (party.status !== 'playing' || !message.playing || message.buffering) return;
+    if (!(Number(message.stableMs) >= SYNC_STABLE_MIN_MS)) return;
+
+    const expectedMs = getEffectivePosition(party, anchorServerTimeMs);
+    if (Math.abs(positionMs - expectedMs) <= SYNC_CORRECTION_THRESHOLD_MS) return;
+
+    setTimeline(party, { positionMs, anchorServerTimeMs });
+    this.broadcastTimeline(partyId, party, { actorUserId: userId, reason: 'sync' });
   },
 
   broadcastTimeline(partyId, party, { actorUserId = null, reason }, options) {

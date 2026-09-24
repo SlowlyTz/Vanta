@@ -282,4 +282,32 @@ describe('WatchPartyPage · Player Sync', () => {
       atServerTimeMs: expect.any(Number)
     }));
   });
+
+  it('sendet Heartbeats nur als Sync-Leader und hört beim Leader-Wechsel auf', async () => {
+    vi.useFakeTimers();
+    try {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({
+        party: makeParty({ status: 'playing', positionMs: 5000, syncLeaderUserId: 'owner-1' })
+      });
+      MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
+
+      WatchPartyPage({ partyId: 'party-1' });
+      await vi.advanceTimersByTimeAsync(50);
+
+      const heartbeats = () => fakeSocket.sendJson.mock.calls.filter(([message]) => message.type === 'OWNER_SYNC');
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(heartbeats()).toHaveLength(1);
+      expect(heartbeats()[0][0]).toMatchObject({ buffering: false, stableMs: 0 });
+
+      capturedOnMessage({
+        type: 'PARTY_UPDATED',
+        party: makeParty({ status: 'playing', positionMs: 5000, syncLeaderUserId: 'admin-2' })
+      });
+      await vi.advanceTimersByTimeAsync(15_000);
+      expect(heartbeats()).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

@@ -66,6 +66,21 @@ export function setTimeline(party, { positionMs, playing, anchorServerTimeMs = D
   return party;
 }
 
+export const SYNC_CORRECTION_THRESHOLD_MS = 1_000;
+export const SYNC_STABLE_MIN_MS = 10_000;
+
+// Exactly one member reports heartbeats: the owner while connected, otherwise
+// the connected admin who joined first. Everyone else only follows.
+export function getSyncLeaderUserId(party) {
+  const members = [...(party.members?.values?.() || [])];
+  const owner = members.find(member => member.userId === party.ownerUserId);
+  if (owner?.connected) return owner.userId;
+  const admin = members
+    .filter(member => member.role === 'admin' && member.connected)
+    .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0))[0];
+  return admin?.userId || null;
+}
+
 // Clients stamp commands with their estimate of the server time at which the
 // position was read; that removes the one-way latency from the anchor. Stamps
 // from the future or far past (a broken clock) fall back to the arrival time.

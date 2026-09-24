@@ -104,24 +104,102 @@ describe('WatchPartySocketHub · Playback Control', () => {
     expect(ownerWs.sent).toEqual([]);
   });
 
-  it('OWNER_SYNC in playing aktualisiert die Position und broadcastet TIMELINE an die anderen', () => {
-    const hub = new WatchPartySocketHub();
-    const party = { id: 'party-1', ownerUserId: 'owner-1', status: 'playing', positionMs: 0, lastServerTimeMs: 0 };
-    WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+  describe('Heartbeat des Sync-Leaders', () => {
+    const makePlayingParty = (overrides = {}) => ({
+      id: 'party-1',
+      ownerUserId: 'owner-1',
+      status: 'playing',
+      positionMs: 10_000,
+      lastServerTimeMs: Date.now(),
+      seq: 3,
+      members: new Map([
+        ['owner-1', { userId: 'owner-1', role: 'owner', connected: true, joinedAt: 1 }],
+        ['admin-1', { userId: 'admin-1', role: 'admin', connected: true, joinedAt: 2 }],
+        ['viewer-1', { userId: 'viewer-1', role: 'viewer', connected: true, joinedAt: 3 }]
+      ]),
+      ...overrides
+    });
 
-    const ownerWs = createFakeWs();
-    const viewerWs = createFakeWs();
-    hub.registerConnection('party-1', 'owner-1', ownerWs);
-    hub.registerConnection('party-1', 'viewer-1', viewerWs);
+    const setup = party => {
+      const hub = new WatchPartySocketHub();
+      WatchPartyService.getPartyOrThrow.mockReturnValue(party);
+      const sockets = { owner: createFakeWs(), admin: createFakeWs(), viewer: createFakeWs() };
+      hub.registerConnection('party-1', 'owner-1', sockets.owner);
+      hub.registerConnection('party-1', 'admin-1', sockets.admin);
+      hub.registerConnection('party-1', 'viewer-1', sockets.viewer);
+      const beat = (userId, message) => hub.handleMessage({
+        partyId: 'party-1',
+        user: makeUser(userId),
+        message: { type: 'OWNER_SYNC', playing: true, stableMs: 20_000, atServerTimeMs: party.lastServerTimeMs, ...message },
+        ws: sockets.owner
+      });
+      return { hub, sockets, beat };
+    };
 
-    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'OWNER_SYNC', positionMs: 7000, playing: true }, ws: ownerWs });
+    it('korrigiert die Zeitleiste, wenn der stabile Leader mehr als 1 s abweicht', () => {
+      const party = makePlayingParty();
+      const { sockets, beat } = setup(party);
 
-    expect(party.status).toBe('playing');
-    expect(party.positionMs).toBe(7000);
-    expect(viewerWs.sent).toEqual([
-      expect.objectContaining({ type: 'TIMELINE', reason: 'sync', timeline: expect.objectContaining({ positionMs: 7000, playing: true }) })
-    ]);
-    expect(ownerWs.sent).toEqual([]);
+      beat('owner-1', { positionMs: 12_500 });
+
+      expect(party.positionMs).toBe(12_500);
+      expect(party.seq).toBe(4);
+      expect(sockets.viewer.sent).toEqual([
+        expect.objectContaining({ type: 'TIMELINE', reason: 'sync', actorUserId: 'owner-1', timeline: expect.objectContaining({ positionMs: 12_500, seq: 4 }) })
+      ]);
+    });
+
+    it('ignoriert kleine Abweichungen, ohne etwas zu senden', () => {
+      const party = makePlayingParty();
+      const { sockets, beat } = setup(party);
+
+      beat('owner-1', { positionMs: 10_600 });
+
+      expect(party.seq).toBe(3);
+      expect(sockets.viewer.sent).toEqual([]);
+    });
+
+    it('ignoriert Heartbeats von Admins, die nicht Leader sind', () => {
+      const party = makePlayingParty();
+      const { sockets, beat } = setup(party);
+
+      beat('admin-1', { positionMs: 50_000 });
+
+      expect(party.positionMs).toBe(10_000);
+      expect(sockets.viewer.sent).toEqual([]);
+    });
+
+    it('lässt sich nicht von einem puffernden oder frisch gespulten Leader ziehen', () => {
+      const party = makePlayingParty();
+      const { sockets, beat } = setup(party);
+
+      beat('owner-1', { positionMs: 4_000, buffering: true });
+      beat('owner-1', { positionMs: 4_000, stableMs: 2_000 });
+      beat('owner-1', { positionMs: 4_000, stableMs: undefined });
+
+      expect(party.positionMs).toBe(10_000);
+      expect(sockets.viewer.sent).toEqual([]);
+    });
+
+    it('ändert über den Heartbeat nie den Play-/Pause-Zustand', () => {
+      const party = makePlayingParty();
+      const { beat } = setup(party);
+
+      beat('owner-1', { positionMs: 30_000, playing: false });
+
+      expect(party.status).toBe('playing');
+      expect(party.positionMs).toBe(10_000);
+    });
+
+    it('übergibt die Leader-Rolle an den ersten verbundenen Admin, wenn der Owner fehlt', () => {
+      const party = makePlayingParty();
+      party.members.get('owner-1').connected = false;
+      const { beat } = setup(party);
+
+      beat('admin-1', { positionMs: 15_000 });
+
+      expect(party.positionMs).toBe(15_000);
+    });
   });
 
   it('liefert ERROR, wenn ein Nicht-Owner OWNER_PLAY sendet', () => {

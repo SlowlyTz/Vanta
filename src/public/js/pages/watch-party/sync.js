@@ -61,23 +61,38 @@ export function bindSync(ctx) {
     void ctx.safeApplyRemoteControl(payload);
   };
 
+  ctx.isSyncLeader = () => Boolean(ctx.currentUser?.id) && ctx.party?.syncLeaderUserId === ctx.currentUser.id;
+
+  ctx.sendHeartbeat = () => {
+    if (!ctx.isSyncLeader() || !ctx.controller?.player) return;
+    const state = ctx.controller.getSyncState?.();
+    ctx.sendOwnerControl('OWNER_SYNC', Math.round(ctx.controller.player.currentTime * 1000), {
+      playing: !ctx.controller.player.paused,
+      buffering: Boolean(state?.busy),
+      stableMs: state ? state.stableMs : 0
+    });
+  };
+
   ctx.startOwnerHeartbeat = () => {
     if (ctx.ownerHeartbeatTimer) return;
-    ctx.ownerHeartbeatTimer = window.setInterval(() => {
-      if (!ctx.isPartyAdmin() || !ctx.controller?.player) return;
-      ctx.sendOwnerControl('OWNER_SYNC', Math.round(ctx.controller.player.currentTime * 1000), {
-        playing: !ctx.controller.player.paused
-      });
-    }, OWNER_SYNC_INTERVAL_MS);
+    ctx.ownerHeartbeatTimer = window.setInterval(ctx.sendHeartbeat, OWNER_SYNC_INTERVAL_MS);
+  };
+
+  ctx.stopOwnerHeartbeat = () => {
+    if (!ctx.ownerHeartbeatTimer) return;
+    window.clearInterval(ctx.ownerHeartbeatTimer);
+    ctx.ownerHeartbeatTimer = null;
   };
 
   ctx.shouldRunOwnerHeartbeat = () => {
-    return ctx.isPartyAdmin() && Boolean(ctx.controller?.player) && ['playing', 'paused'].includes(ctx.party?.status);
+    return ctx.isSyncLeader() && Boolean(ctx.controller?.player) && ['playing', 'paused'].includes(ctx.party?.status);
   };
 
+  // Leadership moves when the owner drops out or comes back, so this runs on
+  // every party update and stops a heartbeat that is no longer ours.
   ctx.maybeStartOwnerHeartbeat = () => {
-    if (!ctx.shouldRunOwnerHeartbeat()) return;
-    ctx.startOwnerHeartbeat();
+    if (ctx.shouldRunOwnerHeartbeat()) ctx.startOwnerHeartbeat();
+    else ctx.stopOwnerHeartbeat();
   };
 
   ctx.applySync = ({ positionMs, playing, serverTimeMs }) => {
