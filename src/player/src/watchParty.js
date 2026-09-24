@@ -1,12 +1,10 @@
 // Viewers in a watch party do not steer playback: the transport (play,
-// seek) is hidden and inert, the timeline only shows progress, and the
-// gestures lose their actions. The top bar says who is in control instead.
+// seek) is hidden and inert and the timeline only shows progress (clicks,
+// taps and keys check the same rights). The top bar says who is in control.
 const TRANSPORT_SELECTOR = '.vanta-player-transport';
 // The timeline stays visible as a progress display. It must not get
 // aria-hidden: vidstack hides any slider carrying it with display:none.
 const TIMELINE_SELECTOR = 'media-time-slider';
-const GESTURE_SELECTOR = 'media-gesture';
-const ORIGINAL_GESTURE_ACTION_ATTRIBUTE = 'data-watch-party-original-action';
 
 export function applyWatchPartyPermissions({ root, watchParty }) {
   if (!watchParty?.enabled) return;
@@ -23,23 +21,5 @@ export function applyWatchPartyPermissions({ root, watchParty }) {
   });
   root.querySelectorAll(TIMELINE_SELECTOR).forEach(timeline => {
     timeline.inert = !canControl;
-  });
-
-  root.querySelectorAll(GESTURE_SELECTOR).forEach(gesture => {
-    if (canControl) {
-      const originalAction = gesture.getAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE);
-      if (originalAction) {
-        gesture.setAttribute('action', originalAction);
-        gesture.removeAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE);
-      }
-      gesture.style.pointerEvents = '';
-      return;
-    }
-    const action = gesture.getAttribute('action');
-    if (action && !gesture.getAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE)) {
-      gesture.setAttribute(ORIGINAL_GESTURE_ACTION_ATTRIBUTE, action);
-    }
-    gesture.removeAttribute('action');
-    gesture.style.pointerEvents = 'none';
   });
 }

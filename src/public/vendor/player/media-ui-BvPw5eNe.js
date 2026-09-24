@@ -488,7 +488,7 @@ var Gt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 		return "audio";
 	}
 	async load() {
-		return new (await (import("./provider-C4XJhBh_.js"))).AudioProvider(this.kh);
+		return new (await (import("./provider-CO1aWrkB.js"))).AudioProvider(this.kh);
 	}
 	render(e) {
 		return (() => {
@@ -505,7 +505,7 @@ var Gt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 		return "video";
 	}
 	async load(e) {
-		return new (await (import("./provider-Bp_c9O4Z.js"))).VideoProvider(this.qa, e);
+		return new (await (import("./provider-D19mdC2y.js"))).VideoProvider(this.qa, e);
 	}
 	render(e) {
 		let t = u(() => e.poster() && e.controls() ? e.poster() : null);
@@ -523,7 +523,7 @@ var Gt = /* @__PURE__ */ E("<!$><audio preload=\"none\" aria-hidden=\"true\"></a
 		return e.supported && S(t) && (Vt.test(t) || Ht.has(n));
 	}
 	async load(e) {
-		return new (await (import("./provider-XbnpLiyI.js"))).HLSProvider(this.qa, e);
+		return new (await (import("./provider-B2nRiVbM.js"))).HLSProvider(this.qa, e);
 	}
 }, Xt = Symbol(0), Zt = Symbol(0), Qt = Symbol(0), $t = Symbol(0), en = Symbol(0), tn = Symbol(0), nn = Symbol(0), rn = Symbol(0), an = Symbol(0), on = class extends ye {
 	a = [];
@@ -3252,7 +3252,7 @@ var wi = {
 	lb = null;
 	ub() {
 		this.lb = this.el.querySelector("[slot=\"preview\"]"), this.lb && (g(this.Eb.bind(this)), Promise.resolve().then(function() {
-			return Ua;
+			return Ha;
 		}).then(({ setupPreviewStyles: e }) => {
 			e(this.lb, this.nb);
 		}));
@@ -4739,8 +4739,7 @@ var Na = "<path d=\"M18.6669 10.4001C18.6669 10.7683 18.3684 11.0667 18.0002 11.
 			iconPaths: Na
 		});
 	}
-});
-var Pa = class extends w {
+}), class extends w {
 	static el = P({
 		tagName: "media-gesture",
 		props: {
@@ -4806,7 +4805,8 @@ var Pa = class extends w {
 		let [i, a] = t.replace(/:([a-z])/, "-$1").split(":");
 		t.includes(":fullscreen") ? this.j.remote.toggleFullscreen("prefer-media", n) : t.includes("seek:") ? this.j.remote.seek(e(this.j.$store.currentTime) + (+a || 0), n) : this.j.remote[r(i)](n);
 	}
-}, Fa = /* @__PURE__ */ E("<!$><svg part=\"icon\" fill=\"none\" viewBox=\"0 0 120 120\" aria-hidden=\"true\"><circle part=\"track\" cx=\"60\" cy=\"60\" r=\"54\" stroke=\"currentColor\"></circle><circle part=\"track-fill\" cx=\"60\" cy=\"60\" r=\"54\" stroke=\"currentColor\" pathLength=\"100\"></circle></svg>");
+};
+var Pa = /* @__PURE__ */ E("<!$><svg part=\"icon\" fill=\"none\" viewBox=\"0 0 120 120\" aria-hidden=\"true\"><circle part=\"track\" cx=\"60\" cy=\"60\" r=\"54\" stroke=\"currentColor\"></circle><circle part=\"track-fill\" cx=\"60\" cy=\"60\" r=\"54\" stroke=\"currentColor\" pathLength=\"100\"></circle></svg>");
 (class extends w {
 	static el = P({ tagName: "media-buffering-indicator" });
 	j;
@@ -4818,10 +4818,10 @@ var Pa = class extends w {
 		return !e() || t();
 	}
 	render() {
-		return Ze(Fa);
+		return Ze(Pa);
 	}
 });
-var Ia = class {
+var Fa = class {
 	constructor(e) {
 		this.Sd = e;
 	}
@@ -4848,7 +4848,7 @@ var Ia = class {
 			regions: [...e.regions]
 		});
 	}
-}, La = class extends w {
+}, Ia = class extends w {
 	static el = P({
 		tagName: "media-captions",
 		props: { textDir: "ltr" }
@@ -4860,7 +4860,7 @@ var Ia = class {
 		this.j = H(), this.setAttributes({ "aria-hidden": Z(this.jb.bind(this)) });
 	}
 	onConnect(e) {
-		this.Sd = new Me(e), this.Rd = new Ia(this.Sd), g(this.Ud.bind(this));
+		this.Sd = new Me(e), this.Rd = new Fa(this.Sd), g(this.Ud.bind(this));
 	}
 	onDisconnect() {
 		this.Rd && (this.Rd.detach(), this.j.textRenderers.remove(this.Rd)), this.Sd?.destroy();
@@ -4908,7 +4908,7 @@ var Ia = class {
 		let { currentTime: e } = this.j.$store;
 		this.Sd.currentTime = e();
 	}
-}, Ra = /* @__PURE__ */ E("<!$><div part=\"container\"><div part=\"text\">LIVE</div></div>");
+}, La = /* @__PURE__ */ E("<!$><div part=\"container\"><div part=\"text\">LIVE</div></div>");
 (class extends w {
 	static el = P({ tagName: "media-live-indicator" });
 	j;
@@ -4945,10 +4945,10 @@ var Ia = class {
 		t() || this.j.remote.seekToLiveEdge(e);
 	}
 	render() {
-		return Ze(Ra);
+		return Ze(La);
 	}
 });
-var za = /* @__PURE__ */ E("<!$><img part=\"img\" />");
+var Ra = /* @__PURE__ */ E("<!$><img part=\"img\" />");
 (class extends w {
 	static el = P({
 		tagName: "media-poster",
@@ -4995,12 +4995,12 @@ var za = /* @__PURE__ */ E("<!$><img part=\"img\" />");
 	render() {
 		let { crossorigin: e } = this.j.$store;
 		return (() => {
-			let [t, n] = D(za);
+			let [t, n] = D(Ra);
 			return M(() => A(t, "src", this.ce())), M(() => A(t, "alt", this.de())), M(() => A(t, "crossorigin", e())), j(t, "load", this.he.bind(this)), j(t, "error", this.Wb.bind(this)), t;
 		})();
 	}
 });
-var Ba = /* @__PURE__ */ E("<!$><span><!$></span>"), Va = class extends w {
+var za = /* @__PURE__ */ E("<!$><span><!$></span>"), Ba = class extends w {
 	static el = P({
 		tagName: "media-time",
 		props: {
@@ -5032,12 +5032,12 @@ var Ba = /* @__PURE__ */ E("<!$><span><!$></span>"), Va = class extends w {
 	}
 	render() {
 		return (() => {
-			let [e, t] = D(Ba);
+			let [e, t] = D(za);
 			return O(t.nextNode(), this.ie), e;
 		})();
 	}
 };
-function Ha(e, t) {
+function Va(e, t) {
 	let n = e.getBoundingClientRect(), r = {
 		"--computed-width": n.width + "px",
 		"--computed-height": n.height + "px",
@@ -5059,9 +5059,9 @@ function Ha(e, t) {
 	};
 	for (let t of Object.keys(r)) e.style.setProperty(t, r[t]);
 }
-var Ua = /*#__PURE__*/ Object.freeze({
+var Ha = /*#__PURE__*/ Object.freeze({
 	__proto__: null,
-	setupPreviewStyles: Ha
+	setupPreviewStyles: Va
 });
 //#endregion
-export { Pn as $, qn as A, Fr as B, Bn as C, or as D, jr as E, U as F, fn as G, Ir as H, G as I, Cn as J, xn as K, vr as L, Br as M, Qn as N, sr as O, kn as P, wr as Q, _r as R, Fn as S, nr as T, Mr as U, kr as V, er as W, Dn as X, ir as Y, K as Z, _n as _, pi as a, Nt as at, Zt as b, Va as c, Mt as ct, Wr as d, Un as et, Ur as f, vn as g, $n as h, Pa as i, Wt as it, xr as j, br as k, qi as l, jt as lt, Nr as m, Y as n, z as nt, gi as o, w as ot, mr as p, Sn as q, li as r, Ut as rt, Vi as s, P as st, La as t, Sr as tt, Hi as u, Je as ut, yn as v, tr as w, $t as x, Xt as y, W as z };
+export { Un as $, xr as A, kr as B, tr as C, sr as D, or as E, G as F, xn as G, Mr as H, vr as I, ir as J, Sn as K, _r as L, Qn as M, kn as N, br as O, U as P, Pn as Q, W as R, Bn as S, jr as T, er as U, Ir as V, fn as W, K as X, Dn as Y, wr as Z, yn as _, gi as a, w as at, $t as b, qi as c, jt as ct, Ur as d, Sr as et, mr as f, _n as g, vn as h, pi as i, Nt as it, Br as j, qn as k, Hi as l, Je as lt, $n as m, Y as n, Ut as nt, Vi as o, P as ot, Nr as p, Cn as q, li as r, Wt as rt, Ba as s, Mt as st, Ia as t, z as tt, Wr as u, Xt as v, nr as w, Fn as x, Zt as y, Fr as z };

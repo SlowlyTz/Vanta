@@ -201,6 +201,71 @@
   to { transform: translateY(-50%) scale(1); }
 }
 
+/* Volume bubble: shown at the top centre while the volume changes by key
+   or wheel, with a level bar. */
+.vanta-player-volume-bubble {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 200ms ease, transform 240ms var(--abyss-ease, ease);
+  pointer-events: none;
+}
+
+.vanta-player-volume-bubble.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.vanta-player-volume-bubble-icon svg {
+  display: none;
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.vanta-player-volume-bubble[data-level="mute"] .vanta-player-volume-bubble-icon svg:nth-child(1),
+.vanta-player-volume-bubble[data-level="low"] .vanta-player-volume-bubble-icon svg:nth-child(2),
+.vanta-player-volume-bubble[data-level="high"] .vanta-player-volume-bubble-icon svg:nth-child(3) {
+  display: block;
+}
+
+.vanta-player-volume-bubble-bar {
+  position: relative;
+  width: 120px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.25);
+}
+
+.vanta-player-volume-bubble-bar i {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform-origin: left;
+  transform: scaleX(var(--level, 0));
+  transition: transform 140ms ease;
+}
+
+.vanta-player-volume-bubble-value {
+  min-width: 48px;
+  font: 650 0.84rem Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 /* Time */
 .vanta-player-time {
   display: flex;

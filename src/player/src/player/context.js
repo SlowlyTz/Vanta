@@ -25,16 +25,12 @@ export async function createPlayerContext(options) {
   const iosLike = isIOSLike();
   const dom = createPlayerMarkup(root, { title, subtitle, poster });
   const { player } = dom;
-  if (iosLike) {
-    const iosKeyShortcuts = { ...player.keyShortcuts };
-    delete iosKeyShortcuts.toggleFullscreen;
-    player.keyShortcuts = iosKeyShortcuts;
-  }
 
   const context = {
     root,
     itemId,
     title,
+    subtitle,
     poster,
     resumePosition,
     resolvePlayback,
@@ -85,15 +81,10 @@ export async function createPlayerContext(options) {
       && context.ownerEchoSuppressionDepth === 0;
   };
 
-  const fullKeyShortcuts = { ...player.keyShortcuts };
-  const viewerKeyShortcuts = iosLike
-    ? { toggleMuted: 'm' }
-    : { toggleMuted: 'm', toggleFullscreen: 'f' };
-
   context.refreshWatchPartyControlAccess = () => {
     if (!watchParty?.enabled) return;
-    player.keyShortcuts = context.canControlWatchParty() ? fullKeyShortcuts : viewerKeyShortcuts;
     applyWatchPartyPermissions({ root, watchParty });
+    context.mediaSession?.refresh();
   };
   if (watchParty?.enabled) {
     watchParty.onParticipantsChange = context.refreshWatchPartyControlAccess;

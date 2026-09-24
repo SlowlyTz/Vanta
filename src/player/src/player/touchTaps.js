@@ -1,6 +1,9 @@
-// Touch gestures on the picture, like the common streaming apps: a double
+import { createClickRecognizer } from './shortcuts.js';
+
+// Gestures on the picture. Touch, like the common streaming apps: a double
 // tap on the left or right third seeks ten seconds, every further tap while
 // the streak runs seeks again, and a single tap shows or hides the controls.
+// Mouse: a click toggles playback, a double click goes fullscreen.
 
 export const DOUBLE_TAP_MS = 300;
 export const SEEK_STREAK_MS = 650;
@@ -74,11 +77,23 @@ export function bindTouchTaps(context) {
     }
   });
 
+  const clicks = createClickRecognizer({
+    onClick: () => context.togglePlay(),
+    onDoubleClick: () => context.toggleFullscreen?.()
+  });
+
   listen(layer, 'pointerup', event => {
-    if (event.pointerType === 'mouse') return;
+    if (event.button > 0) return;
+    if (event.pointerType === 'mouse') {
+      clicks.click();
+      return;
+    }
     const rect = layer.getBoundingClientRect();
     recognizer.tap({ x: event.clientX - rect.left, y: event.clientY - rect.top, width: rect.width });
   });
-  context.disposers.push(() => recognizer.destroy());
+  context.disposers.push(() => {
+    recognizer.destroy();
+    clicks.destroy();
+  });
   return context;
 }

@@ -1,7 +1,4 @@
-/* On touch a tap layer takes the gestures (double tap on the sides seeks,
-   a single tap shows or hides the controls); with a mouse a click anywhere
-   on the picture toggles playback. */
-.vanta-player-gesture,
+/* The tap layer takes the gestures on the picture (see touchTaps.js). */
 .vanta-player-tap-layer {
   position: absolute;
   inset: 0;
@@ -9,24 +6,11 @@
   pointer-events: auto;
 }
 
-.vanta-player-gesture-toggle {
-  display: none;
-}
-
 .vanta-player-tap-layer {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-@media (pointer: fine) {
-  .vanta-player-gesture-toggle {
-    display: block;
-  }
-
-  .vanta-player-tap-layer {
-    display: none;
-  }
-}
 
 /* Controls layer */
 .vanta-player-controls-layer {

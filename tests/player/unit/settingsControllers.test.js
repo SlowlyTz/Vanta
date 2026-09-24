@@ -50,6 +50,21 @@ describe('createSubtitleController', () => {
   });
 });
 
+describe('createSubtitleController · toggle', () => {
+  it('schaltet mit C zwischen aus und der zuletzt gezeigten Spur um', () => {
+    const controller = createSubtitleController({ player: { textTracks: fakeTextTracks() }, reporter: { setSubtitleStreamIndex: vi.fn() } });
+    controller.update({ subtitles: [{ index: 3, label: 'Deutsch' }, { index: 4, label: 'English' }] });
+
+    controller.toggle();
+    expect(controller.getCurrentId()).toBe('vanta-subtitle-3');
+    controller.select('vanta-subtitle-4');
+    controller.toggle();
+    expect(controller.getCurrentId()).toBe('off');
+    controller.toggle();
+    expect(controller.getCurrentId()).toBe('vanta-subtitle-4');
+  });
+});
+
 describe('createQualityController', () => {
   it('sortiert Profile, beschriftet die aktuelle Wahl und meldet nur echte Wechsel', () => {
     const onSelect = vi.fn();

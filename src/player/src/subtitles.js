@@ -47,6 +47,7 @@ export function buildSubtitleMenuItems(tracks) {
 // and switches between them. The settings flyout renders the choices.
 export function createSubtitleController({ player, reporter, onChange = () => {} }) {
   let currentId = OFF_ID;
+  let lastShownId = null;
   let tracks = [];
   let registeredIds = new Set();
 
@@ -96,6 +97,7 @@ export function createSubtitleController({ player, reporter, onChange = () => {}
   const select = nextId => {
     const selected = tracks.find(track => getSubtitleTrackId(track) === nextId);
     currentId = selected ? nextId : OFF_ID;
+    if (selected) lastShownId = currentId;
 
     registeredIds.forEach(id => {
       setTrackMode(findRegisteredTrack(id), id === currentId ? 'showing' : 'disabled');
@@ -119,9 +121,21 @@ export function createSubtitleController({ player, reporter, onChange = () => {}
     select(shouldPreserve ? previousId : OFF_ID);
   };
 
+  // C key: off → the last shown track (or the first), on → off.
+  const toggle = () => {
+    if (!tracks.length) return;
+    if (currentId !== OFF_ID) {
+      select(OFF_ID);
+      return;
+    }
+    const fallback = getSubtitleTrackId(tracks[0]);
+    select(tracks.some(track => getSubtitleTrackId(track) === lastShownId) ? lastShownId : fallback);
+  };
+
   return {
     update,
     select,
+    toggle,
     getOptions: () => buildSubtitleMenuItems(tracks).map(option => ({ ...option, selected: option.id === currentId })),
     getCurrentLabel: () => {
       if (!tracks.length) return 'Keine';

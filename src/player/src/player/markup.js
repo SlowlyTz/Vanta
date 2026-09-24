@@ -1,5 +1,4 @@
 export const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
-export const WHEEL_SEEK_DEBOUNCE_MS = 320;
 export const NEXT_EPISODE_VIEWER_MESSAGE = 'Die nächste Folge kann von einem WatchTogether-Admin gestartet werden.';
 
 const POSTER_FALLBACK_GRADIENT = 'radial-gradient(circle at 50% 50%, #1a1a20 0%, #050505 100%)';
@@ -68,9 +67,15 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
         <media-outlet></media-outlet>
         <media-captions class="vanta-player-captions"></media-captions>
 
-        <media-gesture class="vanta-player-gesture vanta-player-gesture-toggle" event="pointerup" action="toggle:paused" aria-hidden="true"></media-gesture>
         <div class="vanta-player-tap-layer" aria-hidden="true"></div>
 
+        <div class="vanta-player-volume-bubble" aria-hidden="true">
+          <span class="vanta-player-volume-bubble-icon">
+            ${svgIcon('volumeMute')}${svgIcon('volumeLow')}${svgIcon('volumeHigh')}
+          </span>
+          <span class="vanta-player-volume-bubble-bar"><i></i></span>
+          <span class="vanta-player-volume-bubble-value"></span>
+        </div>
         <div class="vanta-player-seek-bubble is-back" aria-hidden="true"></div>
         <div class="vanta-player-seek-bubble is-forward" aria-hidden="true"></div>
 
@@ -172,14 +177,8 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
   player.load = 'eager';
   player.preload = 'auto';
   player.volume = 0.8;
-  player.keyTarget = 'document';
-  // The arrow keys are handled by the transport controls (ten-second steps
-  // with the seek bubble), not by vidstack.
-  player.keyShortcuts = {
-    togglePaused: 'k Space',
-    toggleMuted: 'm',
-    toggleFullscreen: 'f'
-  };
+  // Keyboard control lives in shortcuts.js; vidstack's own is switched off.
+  player.keyShortcuts = {};
 
   const backdrop = root.querySelector('.vanta-player-loading-backdrop');
   if (poster) {
@@ -197,6 +196,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
       forward: root.querySelector('.vanta-player-seek-bubble.is-forward')
     },
     settingsButton: root.querySelector('.vanta-player-settings-button'),
+    volumeBubble: root.querySelector('.vanta-player-volume-bubble'),
     partyPill: root.querySelector('.vanta-player-party-pill'),
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),

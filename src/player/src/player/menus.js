@@ -83,7 +83,6 @@ export function bindMenus(context) {
     onChange: () => context.settings?.refresh()
   });
 
-  let savedShortcuts = null;
   let syncHeader = null;
   let syncTimer = null;
   const pendingBan = { userId: null, refresh: () => context.settings?.refresh() };
@@ -95,16 +94,11 @@ export function bindMenus(context) {
       context.settingsOpen = open;
       if (open) {
         ui.holdActive('settings');
-        savedShortcuts = player.keyShortcuts;
-        player.keyShortcuts = {};
         syncTimer = window.setInterval(() => syncHeader?.update(), SYNC_REFRESH_MS);
       } else {
         ui.releaseActive('settings');
         window.clearInterval(syncTimer);
         pendingBan.userId = null;
-        if (savedShortcuts) player.keyShortcuts = savedShortcuts;
-        savedShortcuts = null;
-        context.refreshWatchPartyControlAccess();
       }
     }
   });

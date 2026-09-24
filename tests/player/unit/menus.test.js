@@ -68,18 +68,14 @@ describe('bindMenus', () => {
     expect(watchParty.onResync).toHaveBeenCalled();
   });
 
-  it('sperrt die Tastenkürzel des Players und hält die Controls, solange das Flyout offen ist', () => {
+  it('meldet das offene Flyout (für die Tastenkürzel) und hält die Controls', () => {
     env = setup();
-    const shortcuts = env.context.player.keyShortcuts;
     env.dom.settingsButton.click();
-
-    expect(env.context.player.keyShortcuts).toEqual({});
-    expect(env.context.ui.isHeld()).toBe(true);
     expect(env.context.settingsOpen).toBe(true);
+    expect(env.context.ui.isHeld()).toBe(true);
 
     env.dom.settingsButton.click();
-    expect(env.context.player.keyShortcuts).toBe(shortcuts);
+    expect(env.context.settingsOpen).toBe(false);
     expect(env.context.ui.isHeld()).toBe(false);
-    expect(env.context.refreshWatchPartyControlAccess).toHaveBeenCalled();
   });
 });

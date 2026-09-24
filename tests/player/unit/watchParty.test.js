@@ -9,8 +9,7 @@ function createRoot() {
     <div class="vanta-player-transport vanta-player-transport-bar"><button class="vanta-player-seek"></button></div>
     <media-time-slider></media-time-slider>
     <media-mute-button></media-mute-button>
-    <media-gesture class="toggle" action="toggle:paused"></media-gesture>
-    <media-gesture class="left" action="seek:-10"></media-gesture>`;
+`;
   return root;
 }
 
@@ -48,16 +47,6 @@ describe('applyWatchPartyPermissions', () => {
     expect(root.querySelector('media-mute-button').inert).toBeFalsy();
   });
 
-  it('nimmt Zuschauern Klick- und Doppeltipp-Gesten', () => {
-    const root = createRoot();
-    applyWatchPartyPermissions({ root, watchParty: { enabled: true, isOwner: false } });
-
-    root.querySelectorAll('media-gesture').forEach(gesture => {
-      expect(gesture.getAttribute('action')).toBeNull();
-      expect(gesture.style.pointerEvents).toBe('none');
-    });
-  });
-
   it('canControl hat Vorrang vor isOwner', () => {
     const promoted = createRoot();
     applyWatchPartyPermissions({ root: promoted, watchParty: { enabled: true, isOwner: false, canControl: true } });
@@ -75,8 +64,6 @@ describe('applyWatchPartyPermissions', () => {
 
     expect(root.classList.contains('is-watch-party-viewer')).toBe(false);
     expect(transport(root).every(control => !control.inert && !control.hasAttribute('aria-hidden'))).toBe(true);
-    expect(root.querySelector('media-gesture.toggle').getAttribute('action')).toBe('toggle:paused');
-    expect(root.querySelector('media-gesture.left').getAttribute('action')).toBe('seek:-10');
     expect(root.querySelector('.vanta-player-party-pill').hidden).toBe(true);
   });
 });

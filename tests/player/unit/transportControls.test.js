@@ -109,18 +109,6 @@ describe('bindTransportControls', () => {
     expect(bubble.classList.contains('is-visible')).toBe(false);
   });
 
-  it('springt mit den Pfeiltasten ebenfalls 10 s, aber nicht beim Tippen in Feldern', () => {
-    env = setup();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-    expect(env.player.currentTime).toBe(110);
-
-    const input = document.createElement('input');
-    document.body.appendChild(input);
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
-    expect(env.player.currentTime).toBe(110);
-    input.remove();
-  });
-
   it('schaltet Play/Pause um und hält alle Play-Buttons im selben Zustand', async () => {
     env = setup();
     const [large, small] = env.root.querySelectorAll('.vanta-player-play');
@@ -142,7 +130,6 @@ describe('bindTransportControls', () => {
     env = setup({ watchParty: { enabled: true }, canControl: false });
     env.root.querySelector('.vanta-player-seek-forward').click();
     env.root.querySelector('.vanta-player-play').click();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
 
     expect(env.player.currentTime).toBe(100);
     expect(env.player.play).not.toHaveBeenCalled();

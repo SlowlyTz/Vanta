@@ -27,11 +27,6 @@ export function formatSeekBubble(direction, seconds, by = null) {
   return by ? `${text} · ${by}` : text;
 }
 
-function isTypingTarget(target) {
-  if (!target || typeof target.closest !== 'function') return false;
-  return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]'));
-}
-
 export function bindTransportControls(context) {
   const { player, dom, listen, root, ui } = context;
   const tally = createSeekTally();
@@ -113,16 +108,6 @@ export function bindTransportControls(context) {
     event.stopPropagation();
     context.seekStep(Number(button.dataset.seek) || 0);
   }));
-
-  // The arrow keys jump the same ten seconds as the buttons and show the
-  // same bubble (vidstack's own seek keys are switched off for this).
-  listen(document, 'keydown', event => {
-    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    if (isTypingTarget(event.target) || context.settingsOpen) return;
-    event.preventDefault();
-    context.seekStep(event.key === 'ArrowLeft' ? -SEEK_STEP_SECONDS : SEEK_STEP_SECONDS);
-  });
 
   ['play', 'pause', 'playing', 'ended', 'source-change'].forEach(event => listen(player, event, syncPlayState));
   syncPlayState();

@@ -42,6 +42,22 @@ export function bindFullscreenControls(context) {
     context.disposers.push(() => document.removeEventListener(event, updateFullscreenIcon));
   });
 
+  context.toggleFullscreen = async () => {
+    try {
+      if (iosLike) {
+        if (isInlineFullscreen(root)) exitInlineFullscreen(root);
+        else enterInlineFullscreen(root);
+        updateFullscreenIcon();
+      } else if (isFullscreen()) {
+        await exitFullscreen();
+      } else {
+        await enterFullscreen(shell);
+      }
+    } catch {
+      // ignore fullscreen errors
+    }
+  };
+
   context.shell = shell;
   context.fullscreenButton = fullscreenButton;
   context.updateFullscreenIcon = updateFullscreenIcon;

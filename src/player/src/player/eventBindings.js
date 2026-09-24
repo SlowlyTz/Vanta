@@ -1,7 +1,7 @@
 import Hls from 'hls.js';
 import { isHLSProvider } from 'vidstack';
-import { exitPictureInPicture, supportsFinePointer } from '../platform.js';
-import { HLS_FRAGMENT_TIMEOUT_MS, WHEEL_SEEK_DEBOUNCE_MS } from './markup.js';
+import { exitPictureInPicture } from '../platform.js';
+import { HLS_FRAGMENT_TIMEOUT_MS } from './markup.js';
 
 export function bindPlayerEvents(context) {
   const { player, dom, listen, watchParty, onBack } = context;
@@ -43,16 +43,6 @@ export function bindPlayerEvents(context) {
     if (context.sourceSwitch.isSwitching() || context.destroyed) return;
     context.ui.setState('buffering');
     context.setInlineLoading(true);
-  };
-
-  const handleWheel = event => {
-    if (watchParty?.enabled && !context.canControlWatchParty()) return;
-    if (!supportsFinePointer() || Math.abs(event.deltaY) < 4) return;
-    const now = performance.now();
-    if (now - context.lastWheelSeekAt < WHEEL_SEEK_DEBOUNCE_MS) return;
-    context.lastWheelSeekAt = now;
-    event.preventDefault();
-    context.seekStep(event.deltaY > 0 ? 10 : -10);
   };
 
   listen(player, 'provider-change', event => {
@@ -159,7 +149,6 @@ export function bindPlayerEvents(context) {
     exitPictureInPicture().catch(() => {});
     context.reporter.stop({ ended: true });
   });
-  listen(player, 'wheel', handleWheel, { passive: false });
   listen(dom.backButton, 'click', onBack);
 
   context.switchToHls = switchToHls;
