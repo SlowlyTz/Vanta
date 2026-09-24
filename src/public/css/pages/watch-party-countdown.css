@@ -63,7 +63,11 @@
   opacity: 0;
 }
 
+/* While the scene loads the digit must not show at all: its entrance
+   animation would otherwise override the opacity for 400 ms. */
 .watch-party-countdown-overlay.is-awaiting-3d .watch-party-countdown-fallback {
+  visibility: hidden;
+  animation: none;
   transition: none;
 }
 

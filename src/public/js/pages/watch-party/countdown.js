@@ -5,8 +5,6 @@ import { COUNTDOWN_MODULE_URL, countdownMetaParts, formatPosition } from './help
 const FRAME_PRECISION_WINDOW_MS = 40;
 // Matches the scene: the overlay fades out over the last 0.4 s.
 const FADE_WINDOW_MS = 400;
-// The plain digit only stands in when the 3D scene is not up by then.
-export const SCENE_GRACE_MS = 1_200;
 
 export function countdownDigit(remainingMs, durationMs = 5000) {
   const maxDigit = Math.round(durationMs / 1000);
@@ -56,10 +54,8 @@ export function bindCountdown(ctx) {
     return ctx.countdownModule;
   };
 
-  let graceTimer = null;
+  // Only when the 3D scene cannot run at all (no module, no WebGL).
   const showFallbackDigit = () => {
-    window.clearTimeout(graceTimer);
-    graceTimer = null;
     ctx.countdownOverlay.classList.remove('is-awaiting-3d');
   };
 
@@ -82,8 +78,6 @@ export function bindCountdown(ctx) {
   };
 
   const destroyScene = () => {
-    window.clearTimeout(graceTimer);
-    graceTimer = null;
     ctx.countdownOverlay.classList.remove('is-awaiting-3d');
     sceneToken += 1;
     scene?.destroy();
@@ -112,7 +106,6 @@ export function bindCountdown(ctx) {
         return;
       }
       scene = mounted;
-      window.clearTimeout(graceTimer);
       ctx.countdownOverlay.classList.remove('is-awaiting-3d');
       ctx.countdownOverlay.classList.add('is-3d');
     } catch (error) {
@@ -137,10 +130,9 @@ export function bindCountdown(ctx) {
 
     runFallback({ startsAtServerTimeMs, durationMs });
     if (!prefersReducedMotion()) {
-      // Until the scene is up only the backdrop and the title show; the plain
-      // digit appears only if the scene is late or fails.
+      // Until the scene is up only the backdrop and the title show, however
+      // long it takes; the plain digit appears only if the scene fails.
       ctx.countdownOverlay.classList.add('is-awaiting-3d');
-      graceTimer = window.setTimeout(showFallbackDigit, SCENE_GRACE_MS);
       void mountScene({ startsAtServerTimeMs, durationMs });
     }
   };
