@@ -15,8 +15,8 @@ import {
 import { createNextEpisodePrompt } from '../nextEpisodePrompt.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 import { findOutro } from '../segments.js';
+import { MAX_PARTY_MEMBERS } from '../../../public/js/shared/watchParty.js';
 
-const MAX_PARTY_MEMBERS = 4;
 const SYNC_REFRESH_MS = 1_000;
 
 const ROW_ICONS = {

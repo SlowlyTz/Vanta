@@ -1,8 +1,8 @@
 import { createElement } from '../../../utils/dom.js';
 import { memberHue, memberInitial } from '../../../shared/members.js';
+import { MAX_PARTY_MEMBERS } from '../../../shared/watchParty.js';
 import { icon } from './icons.js';
 
-export const MAX_PARTY_MEMBERS = 4;
 
 // What a member's chip says, depending on the phase the party is in.
 export function memberState(member, { phase, selfPreload = null } = {}) {
