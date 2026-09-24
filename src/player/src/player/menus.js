@@ -13,6 +13,7 @@ import {
 } from '../nextEpisode.js';
 import { createNextEpisodePrompt } from '../nextEpisodePrompt.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
+import { findOutro } from '../segments.js';
 
 const MAX_PARTY_MEMBERS = 4;
 const SYNC_REFRESH_MS = 1_000;
@@ -255,7 +256,8 @@ export function bindMenus(context) {
     if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
 
     const duration = context.knownDuration || player.duration;
-    if (!shouldShowNextEpisodePrompt({ currentTime: player.currentTime, duration })) return;
+    const outro = findOutro(context.segments);
+    if (!shouldShowNextEpisodePrompt({ currentTime: player.currentTime, duration, outro })) return;
 
     const next = findNextEpisode(episodeBrowser.context, currentEpisodeId);
     if (!next) return;
@@ -265,7 +267,7 @@ export function bindMenus(context) {
     context.nextEpisodePrompt.show(next, {
       interactive,
       message: interactive ? null : NEXT_EPISODE_VIEWER_MESSAGE,
-      skipAt: computeNextEpisodeTimings({ duration })?.skipAt,
+      skipAt: computeNextEpisodeTimings({ duration, outro })?.skipAt,
       getCurrentTime: () => player.currentTime
     });
   };

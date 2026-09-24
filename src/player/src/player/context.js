@@ -18,6 +18,7 @@ export async function createPlayerContext(options) {
     watchParty = null,
     episodeBrowser = null,
     preferences = null,
+    loadSegments = null,
     deferInitialLoad = false
   } = options;
 
@@ -46,6 +47,7 @@ export async function createPlayerContext(options) {
     watchParty,
     episodeBrowser,
     preferencesConfig: preferences,
+    loadSegments,
     deferInitialLoad,
     iosLike,
     dom,
@@ -103,6 +105,7 @@ export async function createPlayerContext(options) {
     if (!watchParty?.enabled) return;
     applyWatchPartyPermissions({ root, watchParty });
     context.mediaSession?.refresh();
+    context.refreshSegmentButton?.();
   };
   if (watchParty?.enabled) {
     watchParty.onParticipantsChange = context.refreshWatchPartyControlAccess;

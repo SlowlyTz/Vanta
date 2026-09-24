@@ -266,6 +266,57 @@
   text-align: right;
 }
 
+/* Skip intro / recap: bottom right above the controls, visible even while
+   the controls are hidden. */
+.vanta-player-skip-segment {
+  position: absolute;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 118px);
+  z-index: 24;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 18px 0 22px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+  background: rgb(18 18 22 / 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #fff;
+  font: 650 0.95rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 260ms ease, transform 300ms var(--abyss-ease, ease), background 160ms ease;
+}
+
+.vanta-player-skip-segment[hidden] {
+  display: none;
+}
+
+.vanta-player-skip-segment.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.vanta-player-skip-segment svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.vanta-player-skip-segment:hover,
+.vanta-player-skip-segment:focus-visible {
+  background: #fff;
+  color: #0b0b0e;
+  outline: none;
+}
+
+.vanta-player-root[data-ui-state="ready-playing-idle"] .vanta-player-skip-segment {
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 24px);
+}
+
 /* Time */
 .vanta-player-time {
   display: flex;

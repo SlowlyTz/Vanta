@@ -24,6 +24,7 @@ import { bindShortcuts } from './player/shortcuts.js';
 import { createMediaSession } from './mediaSession.js';
 import { bindPreferences } from './preferences.js';
 import { createHelpOverlay } from './help.js';
+import { bindSegments } from './segments.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -39,6 +40,7 @@ export async function mountVantaPlayer(options) {
   bindShortcuts(context);
   context.mediaSession = createMediaSession(context);
   context.help = createHelpOverlay(context);
+  bindSegments(context, { loadSegments: context.loadSegments });
   bindSyncControls(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);

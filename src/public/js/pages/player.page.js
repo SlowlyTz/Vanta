@@ -142,6 +142,7 @@ export default function PlayerPage({ id }) {
         resolvePlayback: (mode, options) => MediaApi.getPlayback(playableId, mode, options),
         reportPlayback: (event, payload, options) => MediaApi.reportPlayback(event, payload, options),
         onBack: goBack,
+        loadSegments: () => MediaApi.getSegments(playableId),
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,

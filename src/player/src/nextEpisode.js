@@ -7,18 +7,32 @@ export const NEXT_EPISODE_SKIP_THRESHOLD = 0.985;
 // the overlay is pulled forward rather than the skip being pushed back.
 export const NEXT_EPISODE_MIN_PROMPT_SECONDS = 25;
 
+// With an outro segment the prompt appears when the credits begin and the
+// next episode starts when they end, at least this long after the prompt.
+export const OUTRO_MIN_PROMPT_SECONDS = 10;
+
 export function computeNextEpisodeTimings({
   duration,
+  outro = null,
   promptThreshold = NEXT_EPISODE_PROMPT_THRESHOLD,
   skipThreshold = NEXT_EPISODE_SKIP_THRESHOLD,
   minPromptSeconds = NEXT_EPISODE_MIN_PROMPT_SECONDS
 } = {}) {
   if (!Number.isFinite(duration) || duration <= 0) return null;
 
+  // Only an outro in the second half is trusted as the credits.
+  const outroStart = Number(outro?.startMs) / 1000;
+  const outroEnd = Number(outro?.endMs) / 1000;
+  if (Number.isFinite(outroStart) && Number.isFinite(outroEnd) && outroStart >= duration * 0.5 && outroStart < duration) {
+    const promptAt = outroStart;
+    const skipAt = Math.min(duration - 0.5, Math.max(outroEnd, promptAt + OUTRO_MIN_PROMPT_SECONDS));
+    return { promptAt, skipAt: Math.max(promptAt, skipAt), source: 'outro' };
+  }
+
   const skipAt = duration * skipThreshold;
   const promptAt = Math.max(0, Math.min(duration * promptThreshold, skipAt - minPromptSeconds));
 
-  return { promptAt, skipAt };
+  return { promptAt, skipAt, source: 'runtime' };
 }
 
 export function shouldShowNextEpisodePrompt({ currentTime, duration, ...thresholds }) {
