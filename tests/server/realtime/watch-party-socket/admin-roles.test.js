@@ -25,6 +25,7 @@ vi.mock('../../../../src/server/services/watch-party.service.js', () => ({
     changeEpisode: vi.fn(),
     endParty: vi.fn(),
     promoteMember: vi.fn(),
+    demoteMember: vi.fn(),
     banMember: vi.fn(),
     serializeParty: vi.fn(party => party)
   },
@@ -117,6 +118,27 @@ describe('WatchPartySocketHub · Admin-Rollen', () => {
     [ownerWs, bobWs, otherWs].forEach(ws => {
       expect(ws.sent).toContainEqual(expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty }));
     });
+  });
+
+  it('ADMIN_DEMOTE_MEMBER aktualisiert alle und meldet es nur der Person und dem Gastgeber', () => {
+    const hub = new WatchPartySocketHub();
+    const updatedParty = { id: 'party-1', members: [{ userId: 'viewer-1', username: 'Bob', role: 'viewer' }] };
+    WatchPartyService.demoteMember.mockReturnValue(updatedParty);
+    const ownerWs = createFakeWs();
+    const bobWs = createFakeWs();
+    const otherWs = createFakeWs();
+    hub.registerConnection('party-1', 'owner-1', ownerWs);
+    hub.registerConnection('party-1', 'viewer-1', bobWs);
+    hub.registerConnection('party-1', 'viewer-2', otherWs);
+
+    hub.handleMessage({ partyId: 'party-1', user: makeUser('owner-1'), message: { type: 'ADMIN_DEMOTE_MEMBER', targetUserId: 'viewer-1' }, ws: ownerWs });
+
+    expect(WatchPartyService.demoteMember).toHaveBeenCalledWith({ partyId: 'party-1', actorUserId: 'owner-1', targetUserId: 'viewer-1' });
+    const notes = ws => ws.sent.filter(message => message.type === 'NOTIFICATION').map(message => message.notification.message);
+    expect(notes(bobWs)).toEqual(['Du bist kein Admin mehr.']);
+    expect(notes(ownerWs)).toEqual(['Bob ist kein Admin mehr.']);
+    expect(notes(otherWs)).toEqual([]);
+    expect(otherWs.sent).toContainEqual(expect.objectContaining({ type: 'PARTY_UPDATED', party: updatedParty }));
   });
 
   it('ADMIN_BAN_MEMBER sendet BANNED_FROM_PARTY an das Ziel, schließt dessen Verbindungen und broadcastet PARTY_UPDATED + Notification', () => {

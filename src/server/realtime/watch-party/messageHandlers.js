@@ -137,6 +137,10 @@ export const messageHandlerMethods = {
           this.handleAdminPromoteMember({ partyId, user, message });
           return;
 
+        case 'ADMIN_DEMOTE_MEMBER':
+          this.handleAdminDemoteMember({ partyId, user, message });
+          return;
+
         case 'ADMIN_BAN_MEMBER':
           this.handleAdminBanMember({ partyId, user, message });
           return;
@@ -170,6 +174,21 @@ export const messageHandlerMethods = {
     if (user.userId !== message.targetUserId) {
       this.sendToUser(partyId, user.userId, createNotification('member_promoted', subject));
     }
+  },
+
+  handleAdminDemoteMember({ partyId, user, message }) {
+    const party = WatchPartyService.demoteMember({
+      partyId,
+      actorUserId: user.userId,
+      targetUserId: message.targetUserId
+    });
+    const demoted = party.members.find(member => member.userId === message.targetUserId);
+
+    this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party });
+
+    const subject = { userId: message.targetUserId, username: demoted?.username };
+    this.sendToUser(partyId, message.targetUserId, createNotification('member_demoted_self', subject));
+    this.sendToUser(partyId, user.userId, createNotification('member_demoted', subject));
   },
 
   handleAdminBanMember({ partyId, user, message }) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canBan, canPromote, roleLabel } from '../../../src/player/src/watchPartyParticipants.js';
+import { canBan, canDemote, canPromote, roleLabel } from '../../../src/player/src/watchPartyParticipants.js';
 
 describe('roleLabel', () => {
   it('labels owner and admin, and returns empty string for viewer', () => {
@@ -44,5 +44,14 @@ describe('canBan', () => {
   it('nur der Owner darf einen anderen Admin bannen', () => {
     expect(canBan({ viewerRole: 'admin', member: { userId: 'u2', role: 'admin' }, currentUserId: 'u1' })).toBe(false);
     expect(canBan({ viewerRole: 'owner', member: { userId: 'u2', role: 'admin' }, currentUserId: 'u1' })).toBe(true);
+  });
+});
+
+describe('canDemote', () => {
+  it('erlaubt nur dem Gastgeber, anderen Admins die Rechte zu entziehen', () => {
+    expect(canDemote({ viewerRole: 'owner', member: { userId: 'u2', role: 'admin' }, currentUserId: 'u1' })).toBe(true);
+    expect(canDemote({ viewerRole: 'admin', member: { userId: 'u2', role: 'admin' }, currentUserId: 'u1' })).toBe(false);
+    expect(canDemote({ viewerRole: 'owner', member: { userId: 'u2', role: 'viewer' }, currentUserId: 'u1' })).toBe(false);
+    expect(canDemote({ viewerRole: 'owner', member: { userId: 'u1', role: 'owner' }, currentUserId: 'u1' })).toBe(false);
   });
 });

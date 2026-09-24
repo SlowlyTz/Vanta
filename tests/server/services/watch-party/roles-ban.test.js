@@ -40,6 +40,23 @@ describe('WatchPartyService · Rollen und Ban', () => {
     expect(updated.members.find(m => m.userId === 'viewer-1').role).toBe('admin');
   });
 
+  it('demoteMember: nur der Gastgeber entzieht Admin-Rechte wieder', async () => {
+    const created = await createTestParty();
+    await joinAsViewer(created.id, 'viewer-1', 'Bob');
+    await joinAsViewer(created.id, 'viewer-2', 'Carl');
+    WatchPartyService.promoteMember({ partyId: created.id, actorUserId: 'owner-1', targetUserId: 'viewer-1' });
+    WatchPartyService.promoteMember({ partyId: created.id, actorUserId: 'owner-1', targetUserId: 'viewer-2' });
+
+    expect(() => WatchPartyService.demoteMember({ partyId: created.id, actorUserId: 'viewer-2', targetUserId: 'viewer-1' }))
+      .toThrow(expect.objectContaining({ status: 403 }));
+    expect(() => WatchPartyService.demoteMember({ partyId: created.id, actorUserId: 'owner-1', targetUserId: 'owner-1' }))
+      .toThrow(expect.objectContaining({ status: 400 }));
+
+    const updated = WatchPartyService.demoteMember({ partyId: created.id, actorUserId: 'owner-1', targetUserId: 'viewer-1' });
+    expect(updated.members.find(m => m.userId === 'viewer-1').role).toBe('viewer');
+    expect(updated.members.find(m => m.userId === 'viewer-2').role).toBe('admin');
+  });
+
   it('promoteMember scheitert, wenn ein Viewer versucht zu befördern', async () => {
     const created = await createTestParty();
     await joinAsViewer(created.id, 'viewer-1', 'Bob');

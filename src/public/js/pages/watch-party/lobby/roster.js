@@ -63,6 +63,16 @@ export function createRoster(ctx) {
     const state = memberState(member, { phase, selfPreload: isSelf ? ctx.preload : null });
 
     const actions = createElement('span', { className: 'watch-party-member-actions' });
+    // The host hands out admin rights and takes them back.
+    if (ctx.isOwner() && !isSelf && (member.role === 'viewer' || member.role === 'admin')) {
+      const promote = member.role === 'viewer';
+      actions.appendChild(createElement('button', {
+        className: 'watch-party-role-button',
+        type: 'button',
+        'aria-label': promote ? `${member.username} zum Admin machen` : `${member.username} die Admin-Rechte entziehen`,
+        onClick: () => ctx.socket?.sendJson({ type: promote ? 'ADMIN_PROMOTE_MEMBER' : 'ADMIN_DEMOTE_MEMBER', targetUserId: member.userId })
+      }, promote ? 'Admin machen' : 'Admin entziehen'));
+    }
     if (phase === 'waiting' && ctx.isOwner() && !isSelf) {
       actions.appendChild(createElement('button', {
         className: 'watch-party-kick-button',

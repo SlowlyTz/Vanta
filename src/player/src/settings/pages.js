@@ -1,5 +1,5 @@
 import { formatEpisodeCode, findEpisode, findSeasonIdOfEpisode } from '../episodes.js';
-import { canBan, canPromote, roleLabel } from '../watchPartyParticipants.js';
+import { canBan, canDemote, canPromote, roleLabel } from '../watchPartyParticipants.js';
 import { memberHue, memberStatus } from '../partyStatus.js';
 
 const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>';
@@ -175,8 +175,9 @@ export function renderEpisodesPage(body, { context, readonly, onSelectEpisode },
   renderList();
 }
 
-// Party members with their role and connection; admins can promote viewers
-// and ban (a ban takes a second, confirming click).
+// Party members with their role and connection; admins can promote viewers,
+// the host can take admin rights back, and admins can ban (a ban takes a
+// second, confirming click).
 export function renderParticipantsPage(body, { watchParty, pendingBan }) {
   const participants = watchParty.participants || [];
   const viewerRole = participants.find(member => member.userId === watchParty.currentUserId)?.role || 'viewer';
@@ -186,6 +187,7 @@ export function renderParticipantsPage(body, { watchParty, pendingBan }) {
   list.innerHTML = participants.map(member => {
     const badge = roleLabel(member.role);
     const promote = canPromote({ viewerRole, member, currentUserId: watchParty.currentUserId });
+    const demote = canDemote({ viewerRole, member, currentUserId: watchParty.currentUserId });
     const ban = canBan({ viewerRole, member, currentUserId: watchParty.currentUserId });
     const confirming = pendingBan.userId === member.userId;
     const isSelf = member.userId === watchParty.currentUserId;
@@ -203,6 +205,7 @@ export function renderParticipantsPage(body, { watchParty, pendingBan }) {
         </span>
         <span class="vanta-settings-participant-actions">
           ${promote ? `<button type="button" class="vanta-settings-action vanta-settings-focusable" data-action="promote" data-user-id="${escapeHtml(member.userId)}">Admin machen</button>` : ''}
+          ${demote ? `<button type="button" class="vanta-settings-action vanta-settings-focusable" data-action="demote" data-user-id="${escapeHtml(member.userId)}">Admin entziehen</button>` : ''}
           ${ban ? `<button type="button" class="vanta-settings-action vanta-settings-focusable is-danger${confirming ? ' is-confirming' : ''}" data-action="${confirming ? 'confirm-ban' : 'ban'}" data-user-id="${escapeHtml(member.userId)}">${confirming ? 'Wirklich bannen?' : 'Bannen'}</button>` : ''}
         </span>
       </div>`;
@@ -214,6 +217,8 @@ export function renderParticipantsPage(body, { watchParty, pendingBan }) {
     const userId = action.dataset.userId;
     if (action.dataset.action === 'promote') {
       watchParty.onPromoteMember?.(userId);
+    } else if (action.dataset.action === 'demote') {
+      watchParty.onDemoteMember?.(userId);
     } else if (action.dataset.action === 'ban') {
       pendingBan.userId = userId;
       pendingBan.refresh();

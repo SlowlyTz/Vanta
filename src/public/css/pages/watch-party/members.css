@@ -248,7 +248,8 @@
   50% { opacity: 0.3; }
 }
 
-.watch-party-kick-button {
+.watch-party-kick-button,
+.watch-party-role-button {
   min-height: 26px;
   padding: 0 10px;
   border: 0;
@@ -262,8 +263,17 @@
 }
 
 .watch-party-member:hover .watch-party-kick-button,
-.watch-party-kick-button:focus-visible {
+.watch-party-kick-button:focus-visible,
+.watch-party-member:hover .watch-party-role-button,
+.watch-party-role-button:focus-visible {
   opacity: 1;
+}
+
+.watch-party-role-button:hover,
+.watch-party-role-button:focus-visible {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text-primary, #fff);
+  outline: none;
 }
 
 .watch-party-kick-button:hover,
@@ -274,7 +284,8 @@
 }
 
 @media (hover: none) {
-  .watch-party-kick-button {
+  .watch-party-kick-button,
+  .watch-party-role-button {
     opacity: 1;
   }
 }

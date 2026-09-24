@@ -134,6 +134,28 @@ describe('renderParticipantsPage', () => {
   });
 });
 
+describe('renderParticipantsPage · Admin entziehen', () => {
+  const participants = [
+    { userId: 'owner-1', username: 'Alice', role: 'owner', connected: true },
+    { userId: 'admin-1', username: 'Lena', role: 'admin', connected: true },
+    { userId: 'admin-2', username: 'Tom', role: 'admin', connected: true }
+  ];
+
+  it('gibt nur dem Gastgeber „Admin entziehen“ und meldet den Klick', () => {
+    const onDemoteMember = vi.fn();
+    const body = document.createElement('div');
+    renderParticipantsPage(body, { watchParty: { currentUserId: 'owner-1', participants, onDemoteMember }, pendingBan: { userId: null, refresh: vi.fn() } });
+    const button = body.querySelector('[data-user-id="admin-1"] [data-action="demote"]');
+    expect(button.textContent).toBe('Admin entziehen');
+    button.click();
+    expect(onDemoteMember).toHaveBeenCalledWith('admin-1');
+
+    const asAdmin = document.createElement('div');
+    renderParticipantsPage(asAdmin, { watchParty: { currentUserId: 'admin-2', participants }, pendingBan: { userId: null, refresh: vi.fn() } });
+    expect(asAdmin.querySelector('[data-action="demote"]')).toBeNull();
+  });
+});
+
 describe('renderSubtitlesPage', () => {
   it('zeigt Spuren und darunter Größe und Hintergrund, die sofort wirken ohne die Seite zu schließen', () => {
     const body = document.createElement('div');

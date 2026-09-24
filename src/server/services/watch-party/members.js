@@ -103,6 +103,21 @@ export const memberMethods = {
     return this.serializeParty(party, actorUserId);
   },
 
+  // Only the host takes admin rights away again.
+  demoteMember({ partyId, actorUserId, targetUserId }) {
+    const party = this.getPartyOrThrow(partyId);
+    assertOwner(party, actorUserId);
+
+    const target = assertPartyMember(party, targetUserId);
+    if (target.role === 'owner') throw badRequest('Der Gastgeber bleibt Admin.');
+    if (target.role !== 'admin') return this.serializeParty(party, actorUserId);
+
+    target.role = 'viewer';
+    target.lastSeenAt = Date.now();
+
+    return this.serializeParty(party, actorUserId);
+  },
+
   banMember({ partyId, actorUserId, targetUserId }) {
     const party = this.getPartyOrThrow(partyId);
     assertPartyAdmin(party, actorUserId);

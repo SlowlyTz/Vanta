@@ -102,6 +102,7 @@ export function bindPlayerMount(ctx) {
           onOwnerPause: ownerPositionMs => ctx.sendOwnerControl('OWNER_PAUSE', ownerPositionMs),
           onOwnerSeek: (ownerPositionMs, { step } = {}) => ctx.sendOwnerControl('OWNER_SEEK', ownerPositionMs, step ? { step } : {}),
           onPromoteMember: targetUserId => ctx.socket?.sendJson({ type: 'ADMIN_PROMOTE_MEMBER', targetUserId }),
+          onDemoteMember: targetUserId => ctx.socket?.sendJson({ type: 'ADMIN_DEMOTE_MEMBER', targetUserId }),
           onBanMember: targetUserId => ctx.socket?.sendJson({ type: 'ADMIN_BAN_MEMBER', targetUserId })
         };
 

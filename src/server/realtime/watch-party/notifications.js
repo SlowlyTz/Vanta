@@ -21,7 +21,8 @@ function formatNotificationPosition(positionMs) {
 // version the others see.
 const ICON_ALIASES = {
   member_rejoined: 'member_joined',
-  member_promoted_self: 'member_promoted'
+  member_promoted_self: 'member_promoted',
+  member_demoted_self: 'member_demoted'
 };
 
 // `userId`/`username` name who the notification is about (who pressed play,
@@ -37,6 +38,8 @@ export function createNotification(type, { userId = null, username, positionMs }
     owner_seek: `${name} ist zu ${formatNotificationPosition(positionMs)} gesprungen.`,
     member_promoted: `${name} ist jetzt Admin.`,
     member_promoted_self: 'Du bist jetzt Admin.',
+    member_demoted: `${name} ist kein Admin mehr.`,
+    member_demoted_self: 'Du bist kein Admin mehr.',
     member_banned: `${name} wurde aus der Watch Party gebannt.`,
     next_episode_cancelled: `${name} hat die nächste Folge abgebrochen.`
   };

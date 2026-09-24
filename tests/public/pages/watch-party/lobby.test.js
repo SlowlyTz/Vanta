@@ -116,6 +116,23 @@ describe('WatchPartyPage · Lobby', () => {
     expect(kickButton.compareDocumentPosition(status) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('lässt den Gastgeber in der Lobby Admin-Rechte vergeben und entziehen', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    const party = makeParty();
+    party.members.push({ userId: 'admin-1', username: 'Lena', role: 'admin', ready: false, connected: true });
+    WatchPartyApi.join.mockResolvedValue({ party });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    const buttons = [...container.querySelectorAll('.watch-party-role-button')];
+    expect(buttons.map(button => button.textContent)).toEqual(['Admin machen', 'Admin entziehen']);
+    buttons[1].click();
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'ADMIN_DEMOTE_MEMBER', targetUserId: 'admin-1' });
+    buttons[0].click();
+    expect(fakeSocket.sendJson).toHaveBeenCalledWith({ type: 'ADMIN_PROMOTE_MEMBER', targetUserId: 'viewer-1' });
+  });
+
   it('zeigt keine Kick-Buttons für Viewer', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
     WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
