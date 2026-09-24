@@ -134,7 +134,8 @@ describe('WatchPartyPage · Lobby', () => {
     const container = WatchPartyPage({ partyId: 'party-1' });
     await flush();
 
-    expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
+    expect(container.querySelector('.watch-party-ready-button').hidden).toBe(true);
+    expect(container.querySelector('.watch-party-lobby').dataset.phase).toBe('waiting');
   });
 
   it('behält die sichtbare Lobby bei status=lobby und mountet keinen Player (Bug-Fix)', async () => {
@@ -171,7 +172,7 @@ describe('WatchPartyPage · Lobby', () => {
     await flush();
 
     const startButton = container.querySelector('.watch-party-start-button');
-    expect(startButton.textContent).toBe('Starten');
+    expect(startButton.textContent).toBe('Party starten');
     expect(startButton.disabled).toBe(false);
 
     startButton.click();
@@ -202,5 +203,113 @@ describe('WatchPartyPage · Lobby', () => {
     const waitingStatus = container.querySelector('.watch-party-member-status.is-waiting');
     expect(waitingStatus).not.toBeNull();
     expect(waitingStatus.textContent).toBe('Verbindet …');
+  });
+
+  it('zeigt Titel, Meta, Backdrop und den Fortsetzen-Punkt aus dem Snapshot, ohne das Item zu laden', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({
+      party: makeParty({
+        positionMs: 65_000,
+        itemSnapshot: {
+          name: 'Pilot', type: 'Episode', seriesName: 'Dark', seasonNumber: 1, episodeNumber: 3,
+          productionYear: 2017, officialRating: 'FSK 16', communityRating: 8.44, runtimeTicks: 30_000_000_000,
+          backdrop: { id: 'series-1', tag: 'bd' }
+        }
+      })
+    });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    expect(container.querySelector('.watch-party-hero-title').textContent).toBe('Dark');
+    expect(container.querySelector('.watch-party-hero-subtitle').textContent).toBe('S1 · F3 · Pilot');
+    expect([...container.querySelectorAll('.watch-party-hero-meta li')].map(li => li.textContent))
+      .toEqual(['2017', 'FSK 16', '★ 8.4', '50 Min.']);
+    expect(container.querySelector('.watch-party-hero-resume').textContent).toBe('Fortsetzen bei 1:05');
+    expect(container.querySelector('.watch-party-hero-eyebrow').textContent).toBe('Watch Party von Alice');
+    expect(MediaApi.getImageUrl).toHaveBeenCalledWith('series-1', 'Backdrop', 1920, { tag: 'bd', quality: 90 });
+    expect(container.querySelector('.watch-party-backdrop').classList.contains('has-image')).toBe(true);
+    expect(MediaApi.getItem).not.toHaveBeenCalled();
+  });
+
+  it('zeigt vier Plätze; freie Plätze laden nur den Gastgeber zum Einladen ein', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    expect(container.querySelectorAll('.watch-party-member')).toHaveLength(4);
+    const invites = container.querySelectorAll('.watch-party-member-invite');
+    expect(invites).toHaveLength(2);
+    expect(container.querySelector('.watch-party-member-count').textContent).toBe('2/4');
+
+    invites[0].click();
+    expect(container.querySelector('.watch-party-invite-menu-overlay').hidden).toBe(false);
+  });
+
+  it('zeigt Zuschauern statt eines Start-Buttons einen Wartehinweis', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'viewer-1', name: 'Bob' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    await flush();
+
+    expect(container.querySelector('.watch-party-start-button').hidden).toBe(true);
+    expect(container.querySelector('.watch-party-member-invite')).toBeNull();
+    expect(container.querySelector('.watch-party-start-hint').textContent).toBe('Warte, bis Alice die Party startet.');
+    expect(container.querySelector('.watch-party-waiting-dots').hidden).toBe(false);
+    expect(container.querySelector('.watch-party-owner-menu-button').hidden).toBe(true);
+  });
+
+  it('beendet die Party erst nach einer Bestätigung im Gastgeber-Menü', async () => {
+    authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+    WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+    WatchPartyApi.end.mockResolvedValue({});
+
+    const container = WatchPartyPage({ partyId: 'party-1' });
+    document.body.appendChild(container);
+    await flush();
+
+    const menuButton = container.querySelector('.watch-party-owner-menu-button');
+    expect(menuButton.hidden).toBe(false);
+    menuButton.click();
+    const menu = container.querySelector('.watch-party-owner-menu');
+    expect(menu.hidden).toBe(false);
+
+    const endButton = container.querySelector('.watch-party-end-button');
+    endButton.click();
+    expect(WatchPartyApi.end).not.toHaveBeenCalled();
+    expect(endButton.textContent).toBe('Wirklich für alle beenden?');
+
+    endButton.click();
+    expect(WatchPartyApi.end).toHaveBeenCalledWith('party-1', 0);
+    expect(menu.hidden).toBe(true);
+    container.remove();
+  });
+
+  it('bestätigt das Kopieren des Links direkt am Button', async () => {
+    vi.useFakeTimers();
+    try {
+      authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
+      WatchPartyApi.join.mockResolvedValue({ party: makeParty() });
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn().mockResolvedValue() }, configurable: true });
+
+      const container = WatchPartyPage({ partyId: 'party-1' });
+      await vi.advanceTimersByTimeAsync(10);
+
+      const copyButton = container.querySelector('.watch-party-invite-copy');
+      copyButton.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('#/watch-party/party-1'));
+      expect(copyButton.classList.contains('is-copied')).toBe(true);
+      expect(copyButton.textContent).toBe('Kopiert');
+
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(copyButton.classList.contains('is-copied')).toBe(false);
+      expect(copyButton.textContent).toBe('Link kopieren');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

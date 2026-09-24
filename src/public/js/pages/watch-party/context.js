@@ -1,6 +1,11 @@
 import { createElement } from '../../utils/dom.js';
 import { authStore } from '../../store/auth.store.js';
 import { createServerClock, readSkewFromLocation } from '../../realtime/serverClock.js';
+import { createTopbar } from './lobby/topbar.js';
+import { createLobbyHero } from './lobby/hero.js';
+import { createRoster } from './lobby/roster.js';
+import { createInviteBar } from './lobby/inviteBar.js';
+import { createActionBar } from './lobby/actionBar.js';
 
 export function createWatchPartyContext({ partyId }) {
   const container = createElement('div', { className: 'watch-party-page' });
@@ -14,7 +19,6 @@ export function createWatchPartyContext({ partyId }) {
     controller: null,
     ownerHeartbeatTimer: null,
     watchPartyConfig: null,
-    localReadyPreparing: false,
     lastAutoSyncNotificationAt: 0,
     destroyed: false,
     scrollLockY: 0,
@@ -48,87 +52,37 @@ export function createWatchPartyContext({ partyId }) {
   };
 
   // --- DOM ---
-  ctx.backButton = createElement('button', {
-    className: 'watch-party-back',
-    type: 'button',
-    onClick: () => ctx.goHome()
-  }, '← Zurück');
+  ctx.topbar = createTopbar(ctx);
+  ctx.backButton = ctx.topbar.backButton;
+  ctx.endButton = ctx.topbar.endButton;
 
+  // Kept off-screen: the sync state is shown inside the player; the badge
+  // only carries the current label for it and for tests.
   ctx.syncStatusBadge = createElement('span', {
     className: 'watch-party-sync-status',
     dataset: { status: 'preparing' }
   }, 'Wird vorbereitet');
 
-  ctx.endButton = createElement('button', {
-    className: 'watch-party-end-button',
-    type: 'button',
-    hidden: true,
-    onClick: () => ctx.handleEnd()
-  }, 'Party beenden');
+  ctx.hero = createLobbyHero();
+  ctx.roster = createRoster(ctx);
+  ctx.inviteBar = createInviteBar(ctx);
+  ctx.inviteInput = ctx.inviteBar.input;
+  ctx.inviteUserButton = ctx.inviteBar.userButton;
+  ctx.roster.element.appendChild(ctx.inviteBar.element);
 
-  const header = createElement('div', { className: 'watch-party-header' },
-    ctx.backButton,
-    createElement('h1', { className: 'watch-party-title' }, 'Watch Party'),
-    ctx.syncStatusBadge,
-    ctx.endButton
-  );
+  ctx.actionBar = createActionBar(ctx);
+  ctx.startButton = ctx.actionBar.startButton;
+  ctx.startHint = ctx.actionBar.hint;
+  ctx.readyButton = ctx.actionBar.readyButton;
+  ctx.readyStatus = ctx.actionBar.status;
 
-  ctx.mediaSummary = createElement('div', { className: 'watch-party-media-summary' });
-
-  ctx.inviteInput = createElement('input', {
-    className: 'watch-party-invite-input',
-    type: 'text',
-    readonly: true,
-    'aria-label': 'Invite-Link'
-  });
-  const copyButton = createElement('button', {
-    className: 'watch-party-invite-copy',
-    type: 'button',
-    onClick: () => ctx.handleCopyInvite()
-  }, 'Kopieren');
-  ctx.inviteUserButton = createElement('button', {
-    className: 'watch-party-invite-user',
-    type: 'button',
-    hidden: true,
-    onClick: () => ctx.openInviteUserMenu()
-  }, 'User');
-  const inviteRow = createElement('div', { className: 'watch-party-invite' }, ctx.inviteInput, copyButton, ctx.inviteUserButton);
-
-  ctx.membersList = createElement('ul', { className: 'watch-party-members' });
-  ctx.memberCount = createElement('span', { className: 'watch-party-member-count' });
-
-  ctx.startButton = createElement('button', {
-    className: 'watch-party-start-button',
-    type: 'button',
-    hidden: true,
-    onClick: () => ctx.handleStart()
-  }, 'Starten');
-
-  ctx.startHint = createElement('div', { className: 'watch-party-start-hint' });
-
-  const sessionSection = createElement('section', { className: 'watch-party-session' },
-    createElement('div', { className: 'watch-party-session-kicker' }, 'Watch Party'),
-    ctx.mediaSummary
-  );
-  const inviteSection = createElement('section', { className: 'watch-party-invite-section' },
-    createElement('div', { className: 'watch-party-section-label' }, 'Einladen'),
-    inviteRow
-  );
-  const membersSection = createElement('section', { className: 'watch-party-members-section' },
-    createElement('div', { className: 'watch-party-section-head' },
-      createElement('span', {}, 'Teilnehmer'),
-      ctx.memberCount
+  ctx.lobby = createElement('div', { className: 'watch-party-lobby', dataset: { phase: 'waiting' } },
+    ctx.hero.backdrop,
+    createElement('div', { className: 'watch-party-lobby-inner' },
+      ctx.hero.element,
+      ctx.roster.element
     ),
-    ctx.membersList
-  );
-  const lobbyFooter = createElement('div', { className: 'watch-party-lobby-footer' }, ctx.startHint, ctx.startButton);
-  ctx.lobby = createElement('div', { className: 'watch-party-lobby' },
-    createElement('div', { className: 'watch-party-lobby-main' },
-      sessionSection,
-      inviteSection,
-      membersSection,
-      lobbyFooter
-    )
+    ctx.actionBar.element
   );
 
   ctx.playerMount = createElement('div', { className: 'watch-party-player-mount' });
@@ -165,25 +119,6 @@ export function createWatchPartyContext({ partyId }) {
   );
   ctx.countdownOverlay = createElement('div', { className: 'watch-party-countdown-overlay', hidden: true },
     ctx.countdownStage, countdownFallback, countdownInfo, ctx.countdownLive
-  );
-
-  const readyTitle = createElement('h2', { className: 'watch-party-ready-title' }, 'Bereit zum gemeinsamen Schauen?');
-  const readySubtitle = createElement('p', { className: 'watch-party-ready-subtitle' }, 'Jeder Teilnehmer muss einmal Bereit klicken, bevor die Wiedergabe startet.');
-  ctx.readyMembersList = createElement('ul', { className: 'watch-party-ready-members' });
-  ctx.readyButton = createElement('button', {
-    className: 'watch-party-ready-button',
-    type: 'button',
-    onClick: () => ctx.handleReadyClick()
-  }, 'Bereit');
-  ctx.readyStatus = createElement('p', { className: 'watch-party-ready-status' });
-  ctx.readyOverlay = createElement('div', { className: 'watch-party-ready-overlay', hidden: true },
-    createElement('div', { className: 'watch-party-ready-panel' },
-      readyTitle,
-      readySubtitle,
-      ctx.readyMembersList,
-      ctx.readyButton,
-      ctx.readyStatus
-    )
   );
 
   ctx.autoplayActivateButton = createElement('button', {
@@ -249,10 +184,9 @@ export function createWatchPartyContext({ partyId }) {
     }
   }, inviteMenuPanel);
 
-  container.appendChild(header);
+  container.appendChild(ctx.topbar.element);
   container.appendChild(ctx.lobby);
   container.appendChild(ctx.inviteUserOverlay);
-  container.appendChild(ctx.readyOverlay);
   container.appendChild(ctx.countdownOverlay);
   container.appendChild(ctx.autoplayOverlay);
   container.appendChild(ctx.endedState);

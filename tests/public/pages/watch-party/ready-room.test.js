@@ -92,7 +92,9 @@ describe('WatchPartyPage · Ready Room', () => {
       const container = WatchPartyPage({ partyId: 'party-1' });
       await vi.advanceTimersByTimeAsync(50);
 
-      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(false);
+      const lobby = container.querySelector('.watch-party-lobby');
+      expect(lobby.hidden).toBe(false);
+      expect(lobby.dataset.phase).toBe('ready');
       expect(mountVantaPlayer).toHaveBeenCalledWith(expect.objectContaining({ deferInitialLoad: true }));
       // The source loads as soon as the ready phase opens, before anyone clicks.
       expect(fakeController.prepareInitialPlayback).toHaveBeenCalledWith({ position: 0 });
@@ -176,7 +178,10 @@ describe('WatchPartyPage · Ready Room', () => {
       const overlay = container.querySelector('.watch-party-countdown-overlay');
       const digit = container.querySelector('.watch-party-countdown-number');
       expect(overlay.hidden).toBe(false);
-      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      // Beneath the countdown the lobby has given way to the paused player.
+      expect(container.querySelector('.watch-party-lobby').hidden).toBe(true);
+      expect(container.querySelector('.watch-party-player-mount').classList.contains('player-page')).toBe(true);
       // The lead-in before the counted seconds still shows a five.
       expect(digit.textContent).toBe('5');
 
@@ -220,7 +225,7 @@ describe('WatchPartyPage · Ready Room', () => {
     }
   });
 
-  it('öffnet den Player-Raum bei ready-room ohne Playback-Quelle zu laden', async () => {
+  it('bleibt in der Bereit-Phase in der Lobby und lädt den Player unsichtbar dahinter', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'lobby' }) });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
@@ -241,13 +246,16 @@ describe('WatchPartyPage · Ready Room', () => {
 
     const lobby = container.querySelector('.watch-party-lobby');
     const playerMount = container.querySelector('.watch-party-player-mount');
-    expect(lobby.hidden).toBe(true);
-    expect(playerMount.classList.contains('player-page')).toBe(true);
-    expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(false);
-    expect(document.body.classList.contains('player-active')).toBe(true);
+    expect(lobby.hidden).toBe(false);
+    expect(lobby.dataset.phase).toBe('ready');
+    expect(container.querySelector('.watch-party-ready-button').hidden).toBe(false);
+    expect(playerMount.classList.contains('is-preloading')).toBe(true);
+    expect(playerMount.classList.contains('player-page')).toBe(false);
+    expect(playerMount.getAttribute('aria-hidden')).toBe('true');
+    expect(document.body.classList.contains('player-active')).toBe(false);
   });
 
-  it('zeigt beim COUNTDOWN das Popup im Ready-Room ohne play aufzurufen', async () => {
+  it('zeigt beim COUNTDOWN das Overlay und legt den Player darunter, ohne play aufzurufen', async () => {
     authStore.getState.mockReturnValue({ user: { id: 'owner-1', name: 'Alice' } });
     WatchPartyApi.join.mockResolvedValue({ party: makeParty({ status: 'ready-room' }) });
     MediaApi.getItem.mockResolvedValue({ Id: 'movie-1', Name: 'Test Movie' });
@@ -257,16 +265,17 @@ describe('WatchPartyPage · Ready Room', () => {
     await flush();
 
     const lobby = container.querySelector('.watch-party-lobby');
-    expect(lobby.hidden).toBe(true);
+    expect(lobby.hidden).toBe(false);
 
     const startsAt = Date.now() + 5000;
     capturedOnMessage({ type: 'COUNTDOWN', startsAtServerTimeMs: startsAt, positionMs: 0 });
+    await flush();
 
+    expect(lobby.hidden).toBe(true);
     const playerMount = container.querySelector('.watch-party-player-mount');
     expect(playerMount.classList.contains('player-page')).toBe(true);
     expect(document.body.classList.contains('player-active')).toBe(true);
     expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(false);
-    expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
     expect(container.querySelector('.watch-party-countdown-ring')).toBeTruthy();
     expect(container.querySelector('.watch-party-countdown-number').textContent).toBe('5');
     expect(container.querySelector('.watch-party-countdown-title').textContent).toBe('Test Movie');

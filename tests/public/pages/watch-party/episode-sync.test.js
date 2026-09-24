@@ -192,7 +192,7 @@ describe('WatchPartyPage · Episode Sync', () => {
       expect(prepareCall.position).toBeGreaterThanOrEqual(130);
       expect(prepareCall.position).toBeLessThan(130.5);
 
-      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
+      expect(container.querySelector('.watch-party-ready-button').hidden).toBe(true);
       expect(container.querySelector('.watch-party-lobby').hidden).toBe(true);
       expect(fakeSocket.sendJson).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'PLAYER_READY' }));
     });
@@ -209,7 +209,7 @@ describe('WatchPartyPage · Episode Sync', () => {
       await flush();
 
       expect(container.querySelector('.watch-party-countdown-overlay').hidden).toBe(true);
-      expect(container.querySelector('.watch-party-ready-overlay').hidden).toBe(true);
+      expect(container.querySelector('.watch-party-ready-button').hidden).toBe(true);
       expect(fakeController.syncPlay).not.toHaveBeenCalled();
       expect(fakeController.player.paused).toBe(true);
       expect(fakeController.player.currentTime).toBe(42);

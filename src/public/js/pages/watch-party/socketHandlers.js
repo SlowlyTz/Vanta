@@ -108,8 +108,12 @@ export function bindSocketHandlers(ctx) {
 
     const alreadyCounting = ctx.scheduledStartAt === Number(startsAtServerTimeMs) && !ctx.countdownOverlay.hidden;
     if (!alreadyCounting) {
-      void ctx.ensurePlayerReadyRoom();
+      // The countdown covers the screen; beneath it the lobby gives way to the
+      // paused first frame, which the fade at the end reveals.
       ctx.showCountdown({ startsAtServerTimeMs, durationMs, positionMs });
+      void ctx.ensurePlayerReadyRoom().then(() => {
+        if (!ctx.destroyed && !ctx.countdownOverlay.hidden) ctx.showPlayerSurface();
+      });
       ctx.scheduleSyncedStart(startsAtServerTimeMs);
     }
     ctx.renderReadyOverlay();

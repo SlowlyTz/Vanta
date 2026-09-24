@@ -13,6 +13,8 @@ export function bindLifecycle(ctx) {
     ctx.cancelSyncedStart();
     ctx.resetPreload();
     ctx.hideCountdown();
+    ctx.topbar.destroy();
+    ctx.inviteBar.destroy();
     if (ctx.inviteResolveTimer) window.clearTimeout(ctx.inviteResolveTimer);
     ctx.clock.stop();
     ctx.socket?.close();

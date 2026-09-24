@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  createItemSnapshot,
   getEffectivePosition,
   getSyncLeaderUserId,
   resolveAnchorTime,
@@ -65,5 +66,29 @@ describe('getSyncLeaderUserId', () => {
   it('liefert null ohne verbundene Admins', () => {
     expect(getSyncLeaderUserId(party([{ userId: 'owner', role: 'owner', connected: false }]))).toBeNull();
     expect(getSyncLeaderUserId({ ownerUserId: 'x' })).toBeNull();
+  });
+});
+
+describe('createItemSnapshot', () => {
+  it('nimmt für eine Folge Backdrop und Logo der Serie und merkt sich Staffel und Folge', () => {
+    const episode = {
+      Id: 'ep-3', Type: 'Episode', Name: 'Pilot', SeriesName: 'Dark', ParentIndexNumber: 1, IndexNumber: 3,
+      ParentBackdropItemId: 'series-1', ParentBackdropImageTags: ['bd'], ParentLogoItemId: 'series-1', ParentLogoImageTag: 'lg'
+    };
+    const snapshot = createItemSnapshot(episode, { Id: 'series-1', Name: 'Dark' });
+    expect(snapshot).toMatchObject({
+      name: 'Pilot',
+      seriesName: 'Dark',
+      seasonNumber: 1,
+      episodeNumber: 3,
+      backdrop: { id: 'series-1', tag: 'bd' },
+      logo: { id: 'series-1', tag: 'lg' }
+    });
+  });
+
+  it('nutzt die eigenen Bilder eines Films und kommt ohne Bilder aus', () => {
+    const movie = { Id: 'm-1', Type: 'Movie', Name: 'Heat', BackdropImageTags: ['b1'], ImageTags: { Logo: 'l1' } };
+    expect(createItemSnapshot(movie, movie)).toMatchObject({ backdrop: { id: 'm-1', tag: 'b1' }, logo: { id: 'm-1', tag: 'l1' }, seasonNumber: null });
+    expect(createItemSnapshot({ Id: 'x', Type: 'Movie', Name: 'X' }, { Id: 'x' })).toMatchObject({ backdrop: null, logo: null });
   });
 });

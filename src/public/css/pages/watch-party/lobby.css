@@ -1,120 +1,305 @@
+/* Lobby: the title's backdrop fills the screen; the hero sits bottom-left,
+   the participants card to the right, the one action that matters in a bar
+   along the bottom. Waiting and getting ready happen on this one screen. */
+
 .watch-party-lobby {
-  width: min(720px, 100%);
-  margin: 42px auto 0;
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
-.watch-party-lobby-main {
+.watch-party-lobby[hidden] {
+  display: none;
+}
+
+/* Backdrop */
+.watch-party-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(120, 132, 190, 0.22), transparent 55%),
+    radial-gradient(circle at 12% 86%, rgba(90, 70, 150, 0.18), transparent 50%),
+    var(--bg-primary);
+  background-size: cover;
+  background-position: center 22%;
+  transform: scale(1.06);
+  transition: opacity 600ms ease;
+}
+
+.watch-party-backdrop.has-image {
+  animation: watch-party-drift 32s ease-in-out infinite alternate;
+}
+
+.watch-party-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(4, 4, 6, 0.94) 0%, rgba(4, 4, 6, 0.62) 42%, rgba(4, 4, 6, 0.25) 100%),
+    linear-gradient(to top, rgba(4, 4, 6, 0.96) 0%, rgba(4, 4, 6, 0.55) 30%, rgba(4, 4, 6, 0.1) 70%, rgba(4, 4, 6, 0.4) 100%);
+}
+
+@keyframes watch-party-drift {
+  from { transform: scale(1.06) translate3d(0, 0, 0); }
+  to { transform: scale(1.12) translate3d(-1.5%, -1%, 0); }
+}
+
+/* Content grid */
+.watch-party-lobby-inner {
+  width: min(1380px, 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  align-items: end;
+  gap: clamp(32px, 5vw, 88px);
+  padding:
+    calc(var(--wp-topbar-height) + 6vh)
+    max(clamp(20px, 5vw, 64px), env(safe-area-inset-right))
+    calc(120px + env(safe-area-inset-bottom))
+    max(clamp(20px, 5vw, 64px), env(safe-area-inset-left));
+}
+
+/* Hero */
+.watch-party-hero {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  padding-bottom: 8px;
+  animation: watch-party-rise 600ms var(--abyss-ease) both;
 }
 
-.watch-party-session,
-.watch-party-invite-section,
-.watch-party-members-section,
-.watch-party-lobby-footer {
-  padding: 22px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.watch-party-session {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.watch-party-lobby-footer {
-  padding-bottom: 0;
-}
-
-.watch-party-session-kicker,
-.watch-party-section-label {
-  margin-bottom: 8px;
+.watch-party-hero-eyebrow {
   color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 750;
+  font: 700 0.74rem Outfit, system-ui, sans-serif;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  letter-spacing: 0;
 }
 
-.watch-party-media-summary {
-  padding: 0;
-  background: transparent;
-  border: 0;
+.watch-party-hero-logo {
+  display: block;
+  max-width: min(480px, 92%);
+  max-height: clamp(90px, 16vh, 160px);
+  object-fit: contain;
+  object-position: left bottom;
+  filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.55));
+  animation: watch-party-rise 500ms var(--abyss-ease) both;
 }
 
-.watch-party-media-title {
-  font-size: 1.45rem;
-  line-height: 1.15;
-  font-weight: 800;
+.watch-party-hero-logo[hidden] {
+  display: none;
+}
+
+.watch-party-hero-title {
+  max-width: 16ch;
+  font: 800 clamp(2.3rem, 5vw, 4.2rem) / 1.02 Outfit, system-ui, sans-serif;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
   overflow-wrap: anywhere;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
 }
 
-.watch-party-media-subtitle {
-  margin-top: 6px;
+/* With a logo the title stays for screen readers only. */
+.watch-party-hero.has-logo .watch-party-hero-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.watch-party-hero-subtitle {
+  color: var(--text-primary);
+  font: 600 clamp(1rem, 1.6vw, 1.2rem) Outfit, system-ui, sans-serif;
+  opacity: 0.92;
+}
+
+.watch-party-hero-subtitle[hidden],
+.watch-party-hero-meta[hidden] {
+  display: none;
+}
+
+.watch-party-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  list-style: none;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font: 500 0.92rem Outfit, system-ui, sans-serif;
 }
 
-.watch-party-lobby-footer {
+.watch-party-hero-meta li + li::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin-right: 14px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+  opacity: 0.7;
+}
+
+.watch-party-hero-resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 14px 8px 11px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: 999px;
+  background: var(--wp-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font: 600 0.86rem Outfit, system-ui, sans-serif;
+}
+
+.watch-party-hero-resume .watch-party-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.85;
+}
+
+/* Action bar */
+.watch-party-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  padding: 0 max(clamp(12px, 3vw, 40px), env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(clamp(12px, 3vw, 40px), env(safe-area-inset-left));
+  pointer-events: none;
+  animation: watch-party-bar-in 520ms var(--abyss-ease) 120ms both;
+}
+
+@keyframes watch-party-bar-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+.watch-party-action-bar-inner {
+  width: min(1320px, 100%);
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
+  padding: 12px 12px 12px 24px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: 999px;
+  background: var(--wp-glass-strong);
+  backdrop-filter: blur(28px) saturate(1.2);
+  -webkit-backdrop-filter: blur(28px) saturate(1.2);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
 }
 
-.watch-party-start-hint {
-  margin: 0;
+.watch-party-action-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.watch-party-action-title {
+  font: 700 1rem Outfit, system-ui, sans-serif;
+}
+
+.watch-party-start-hint,
+.watch-party-ready-status {
   color: var(--text-secondary);
-  font-size: 0.86rem;
-  line-height: 1.35;
-  text-align: left;
+  font: 500 0.86rem Outfit, system-ui, sans-serif;
+  overflow-wrap: anywhere;
 }
 
-.watch-party-start-hint:empty {
+.watch-party-start-hint:empty,
+.watch-party-ready-status:empty {
   display: none;
 }
 
-.watch-party-start-button {
+.watch-party-action-buttons {
   flex: 0 0 auto;
-  min-width: 128px;
-  min-height: 42px;
-  padding: 0 20px;
-  border: 0;
-  background: rgb(var(--abyss-accent));
-  color: #111;
-  font-size: 0.9rem;
-  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.watch-party-start-button[hidden] {
-  display: none;
+/* Ready button: fills with the local preload while loading, turns into a
+   quiet confirmation once sent. */
+.watch-party-ready-button.is-loading {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  box-shadow: none;
 }
 
-.watch-party-start-button:disabled {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
+.watch-party-ready-button.is-loading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.22);
+  transform-origin: left;
+  transform: scaleX(var(--progress, 0));
+  transition: transform 300ms var(--abyss-ease);
+}
+
+.watch-party-ready-button.is-done {
+  background: rgba(74, 222, 128, 0.16);
+  color: var(--wp-green);
+  box-shadow: none;
+}
+
+.watch-party-ready-button:disabled {
   cursor: default;
 }
 
-.watch-party-error,
-.watch-party-ended-state {
-  width: min(480px, 100%);
-  margin: 60px auto 0;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+.watch-party-waiting-dots {
+  display: inline-flex;
+  gap: 5px;
+  padding: 0 14px;
 }
 
-.watch-party-error h2,
-.watch-party-ended-state h2 {
-  margin: 0;
-  font-size: 1.2rem;
+.watch-party-waiting-dots[hidden] {
+  display: none;
 }
 
-.watch-party-error p,
-.watch-party-ended-state p {
-  margin: 0;
-  color: var(--text-secondary);
+.watch-party-waiting-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  animation: watch-party-dot 1.2s ease-in-out infinite;
+}
+
+.watch-party-waiting-dots i:nth-child(2) { animation-delay: 0.15s; }
+.watch-party-waiting-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes watch-party-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* The player loads behind the lobby during the ready phase. */
+.watch-party-player-mount.is-preloading {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watch-party-backdrop.has-image,
+  .watch-party-hero,
+  .watch-party-hero-logo,
+  .watch-party-action-bar,
+  .watch-party-waiting-dots i {
+    animation: none;
+  }
 }

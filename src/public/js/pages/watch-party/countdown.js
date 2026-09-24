@@ -107,7 +107,6 @@ export function bindCountdown(ctx) {
   };
 
   ctx.showCountdown = ({ startsAtServerTimeMs, durationMs = 5000, positionMs }) => {
-    ctx.hideReadyOverlay();
     destroyScene();
     ctx.countdownOverlay.hidden = false;
     ctx.countdownOverlay.style.opacity = '';
@@ -167,7 +166,6 @@ export function bindCountdown(ctx) {
     ctx.localPlaybackStarted = true;
     ctx.setPlaybackPhase();
     ctx.hideCountdown();
-    ctx.hideReadyOverlay();
     ctx.showPlayerSurface();
 
     const started = ctx.controller?.syncPlay

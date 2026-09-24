@@ -33,7 +33,7 @@ export function bindActions(ctx) {
   ctx.handleCopyInvite = async () => {
     try {
       await navigator.clipboard.writeText(ctx.inviteInput.value);
-      appStore.showToast('Link kopiert', 'success');
+      ctx.inviteBar.showCopied();
     } catch {
       ctx.inviteInput.select();
     }

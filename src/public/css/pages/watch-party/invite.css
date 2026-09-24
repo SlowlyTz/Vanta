@@ -1,55 +1,84 @@
+/* Share row at the bottom of the participants card */
 .watch-party-invite {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 8px;
-  align-items: stretch;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--wp-hairline);
 }
 
-.watch-party-invite-input,
-.watch-party-invite-copy,
-.watch-party-invite-user {
-  min-height: 42px;
-  font-size: 0.86rem;
+.watch-party-invite-link {
+  min-width: 0;
 }
 
 .watch-party-invite-input {
-  min-width: 0;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.045);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
   color: var(--text-secondary);
+  font: 500 0.8rem ui-monospace, SFMono-Regular, Menlo, monospace;
   text-overflow: ellipsis;
 }
 
-.watch-party-invite-copy {
-  padding: 0 14px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.watch-party-invite-input:focus {
+  outline: none;
+  border-color: rgba(var(--abyss-accent), 0.4);
   color: var(--text-primary);
-  font-weight: 750;
 }
 
-.watch-party-invite-copy:hover {
+.watch-party-invite-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+
+.watch-party-invite-copy,
+.watch-party-invite-user {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font: 650 0.86rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.watch-party-invite-copy:hover,
+.watch-party-invite-user:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
-.watch-party-invite-user {
-  padding: 0 14px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: var(--text-primary);
-  font-weight: 750;
+.watch-party-invite-copy:active,
+.watch-party-invite-user:active {
+  transform: scale(0.97);
 }
 
-.watch-party-invite-user:hover {
-  background: rgba(255, 255, 255, 0.07);
+.watch-party-invite-copy:focus-visible,
+.watch-party-invite-user:focus-visible {
+  outline: 2px solid rgb(var(--abyss-accent));
+  outline-offset: 2px;
+}
+
+.watch-party-invite-copy.is-copied {
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.14);
+  color: var(--wp-green);
 }
 
 .watch-party-invite-user[hidden] {
   display: none;
 }
 
+/* Invite-by-name dialog */
 .watch-party-invite-menu-overlay {
   position: fixed;
   inset: 0;
@@ -57,9 +86,14 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.56);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: watch-party-fade 200ms ease both;
+}
+
+@keyframes watch-party-fade {
+  from { opacity: 0; }
 }
 
 .watch-party-invite-menu-overlay[hidden] {
@@ -71,12 +105,13 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 18px;
-  border-radius: 12px;
-  background: rgb(19, 20, 24);
+  padding: 22px;
+  border-radius: var(--abyss-radius-dialog);
+  background: rgba(22, 22, 27, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
   color: #fff;
+  animation: watch-party-pop 260ms var(--abyss-ease) both;
 }
 
 .watch-party-invite-menu-header {
@@ -94,9 +129,10 @@
 
 .watch-party-invite-menu-close {
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
@@ -118,9 +154,9 @@
 }
 
 .watch-party-invite-username-input {
-  min-height: 42px;
-  padding: 0 12px;
-  border-radius: 8px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.055);
   color: #fff;
@@ -194,10 +230,12 @@
 }
 
 .watch-party-invite-send {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 42px;
+  padding: 0 18px;
   border: 0;
+  border-radius: 999px;
   background: rgb(var(--abyss-accent));
+  cursor: pointer;
   color: #111;
   font-size: 0.84rem;
   font-weight: 800;
@@ -207,4 +245,11 @@
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
   cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watch-party-invite-menu-overlay,
+  .watch-party-invite-menu-panel {
+    animation: none;
+  }
 }

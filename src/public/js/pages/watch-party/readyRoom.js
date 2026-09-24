@@ -1,5 +1,3 @@
-import { createElement } from '../../utils/dom.js';
-import { memberInitial } from './helpers.js';
 import { timelinePositionAt } from './driftController.js';
 
 // Seconds of video that must sit in the buffer at the start position before
@@ -14,77 +12,59 @@ export function preloadProgress({ bufferedAhead, position, duration }) {
   return Math.min(1, Math.max(0, bufferedAhead / PRELOAD_TARGET_SECONDS));
 }
 
-export function readyStateLabel(member) {
-  if (member.ready || member.preloadState === 'ready') return 'Bereit';
-  if (member.preloadState === 'loaded') return 'Geladen';
-  if (member.preloadState === 'preparing') {
-    const percent = Math.round((Number(member.preloadProgress) || 0) * 100);
-    return percent > 0 ? `Lädt ${percent} %` : 'Wird vorbereitet …';
-  }
-  if (member.preloadState === 'error') return member.preloadMessage || 'Fehler';
-  return 'Wartet';
-}
-
-export function readyStateClass(member) {
-  if (member.ready || member.preloadState === 'ready') return 'is-ready';
-  if (member.preloadState === 'preparing' || member.preloadState === 'loaded') return 'is-preparing';
-  if (member.preloadState === 'error') return 'is-error';
-  return 'is-idle';
-}
-
 export function bindReadyRoom(ctx) {
   ctx.preload = null;
   ctx.readyRequested = false;
 
-  ctx.renderReadyOverlay = () => {
+  // Ready phase of the action bar and the member cards. The own card follows
+  // the local preload, which is ahead of what the server has echoed back.
+  ctx.renderReadyState = () => {
     if (!ctx.party) return;
-    ctx.readyMembersList.innerHTML = '';
-
-    ctx.party.members.forEach(member => {
-      ctx.readyMembersList.appendChild(createElement('li', {
-        className: `watch-party-ready-member ${readyStateClass(member)}`
-      },
-        createElement('span', { className: 'watch-party-member-avatar' }, memberInitial(member.username)),
-        createElement('span', { className: 'watch-party-ready-member-name' }, `${member.username}${member.userId === ctx.currentUser?.id ? ' (Du)' : ''}`),
-        createElement('span', { className: 'watch-party-ready-member-state' }, readyStateLabel(member))
-      ));
-    });
-
-    const allReady = ctx.party.members.length > 0 && ctx.party.members.every(member => member.ready);
+    const { title, status, readyButton } = ctx.actionBar;
+    const members = ctx.party.members || [];
+    const readyCount = members.filter(member => member.ready).length;
     const inReadyRoom = ctx.party.status === 'ready-room';
     const preload = ctx.preload;
     const percent = Math.round((preload?.progress || 0) * 100);
 
-    ctx.readyButton.hidden = !inReadyRoom;
-    ctx.readyButton.disabled = !inReadyRoom || (ctx.readyRequested && preload?.status !== 'error');
+    readyButton.hidden = !inReadyRoom;
+    readyButton.disabled = !inReadyRoom || (ctx.readyRequested && preload?.status !== 'error');
+    readyButton.classList.toggle('is-done', Boolean(preload?.sentReady));
+    readyButton.classList.toggle('is-loading', ctx.readyRequested && !preload?.sentReady && preload?.status !== 'error');
+    readyButton.style.setProperty('--progress', String(preload?.progress || 0));
     if (preload?.status === 'error') {
-      ctx.readyButton.textContent = 'Erneut versuchen';
+      readyButton.textContent = 'Erneut versuchen';
     } else if (preload?.sentReady) {
-      ctx.readyButton.textContent = 'Bereit ✓';
+      readyButton.textContent = 'Bereit ✓';
     } else if (ctx.readyRequested) {
-      ctx.readyButton.textContent = `Wird geladen … ${percent} %`;
+      readyButton.textContent = `Wird geladen … ${percent} %`;
     } else {
-      ctx.readyButton.textContent = 'Bereit';
+      readyButton.textContent = 'Bereit';
     }
 
-    if (preload?.status === 'error') {
-      ctx.readyStatus.textContent = preload.message;
-    } else if (ctx.party.status === 'countdown') {
-      ctx.readyStatus.textContent = 'Alle sind bereit. Countdown läuft.';
-    } else if (allReady) {
-      ctx.readyStatus.textContent = 'Alle sind bereit. Countdown startet gleich.';
+    if (ctx.party.status === 'countdown') {
+      title.textContent = 'Alle sind bereit';
+      status.textContent = 'Gleich geht’s los …';
+    } else if (preload?.status === 'error') {
+      title.textContent = 'Laden fehlgeschlagen';
+      status.textContent = preload.message;
     } else {
-      ctx.readyStatus.textContent = 'Warte, bis alle Teilnehmer bereit sind.';
+      title.textContent = 'Bereit machen';
+      status.textContent = readyCount === members.length && members.length > 0
+        ? 'Alle sind bereit. Der Countdown startet gleich.'
+        : `${readyCount} von ${members.length} bereit`;
     }
   };
 
-  ctx.hideReadyOverlay = () => {
-    ctx.readyOverlay.hidden = true;
+  ctx.renderReadyOverlay = () => {
+    ctx.renderMembers();
+    ctx.renderReadyState();
   };
 
+  // The ready phase stays in the lobby; the player loads unseen behind it.
   ctx.showReadyRoom = () => {
-    ctx.showPlayerSurface();
-    ctx.readyOverlay.hidden = false;
+    ctx.lobby.hidden = false;
+    ctx.lobby.dataset.phase = ctx.party?.status === 'countdown' ? 'countdown' : 'ready';
     ctx.autoplayOverlay.hidden = true;
     ctx.setSyncStatus('preparing', 'Bereitmachen');
     ctx.renderReadyOverlay();

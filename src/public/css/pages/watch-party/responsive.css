@@ -1,75 +1,113 @@
+/* Tablets: the card moves under the hero. */
+@media (max-width: 960px) {
+  .watch-party-lobby-inner {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: end;
+    gap: 28px;
+    padding-top: calc(var(--wp-topbar-height) + 22vh);
+  }
+
+  .watch-party-roster {
+    width: min(560px, 100%);
+  }
+
+  .watch-party-backdrop {
+    background-position: center 12%;
+  }
+
+  .watch-party-backdrop::after {
+    background:
+      linear-gradient(to top, var(--bg-primary) 0%, rgba(4, 4, 6, 0.88) 45%, rgba(4, 4, 6, 0.35) 78%, rgba(4, 4, 6, 0.55) 100%);
+  }
+}
+
+/* Phones: the action bar becomes a docked sheet with a full-width button. */
 @media (max-width: 620px) {
   .watch-party-page {
-    padding: 20px 16px 48px;
+    --wp-topbar-height: 56px;
   }
 
-  .watch-party-header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+  .watch-party-back {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
   }
 
-  .watch-party-end-button {
-    grid-column: 1 / -1;
-    justify-self: end;
+  .watch-party-back span {
+    display: none;
   }
 
-  .watch-party-lobby {
-    margin-top: 30px;
+  .watch-party-lobby-inner {
+    padding:
+      calc(var(--wp-topbar-height) + 18vh)
+      max(16px, env(safe-area-inset-right))
+      calc(150px + env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
   }
 
-  .watch-party-invite {
-    grid-template-columns: 1fr 1fr;
+  .watch-party-hero {
+    gap: 10px;
   }
 
-  .watch-party-invite-input {
-    grid-column: 1 / -1;
+  .watch-party-hero-logo {
+    max-height: 96px;
   }
 
-  .watch-party-member {
-    align-items: flex-start;
-    flex-wrap: wrap;
+  .watch-party-roster {
+    padding: 14px;
+    border-radius: 20px;
   }
 
-  .watch-party-member-name {
-    flex-basis: calc(100% - 42px);
+  .watch-party-member:not(.is-empty) {
+    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-areas:
+      'avatar body'
+      'avatar actions';
+    row-gap: 6px;
   }
 
-  .watch-party-member-status {
-    margin-left: 42px;
+  .watch-party-member:not(.is-empty) > .watch-party-member-avatar { grid-area: avatar; }
+  .watch-party-member:not(.is-empty) > .watch-party-member-body { grid-area: body; }
+  .watch-party-member:not(.is-empty) > .watch-party-member-actions { grid-area: actions; }
+
+  .watch-party-member-avatar {
+    width: 40px;
+    height: 40px;
   }
 
-  .watch-party-kick-button {
-    margin-left: 42px;
+  .watch-party-member-invite,
+  .watch-party-member-placeholder {
+    grid-template-columns: 40px minmax(0, 1fr);
   }
 
-  .watch-party-lobby-footer {
+  .watch-party-invite-actions {
+    grid-auto-flow: row;
+  }
+
+  .watch-party-action-bar {
+    padding: 0;
+  }
+
+  .watch-party-action-bar-inner {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+    background: rgba(14, 14, 18, 0.94);
   }
 
-  .watch-party-start-button {
-    width: 100%;
+  .watch-party-action-text {
+    text-align: center;
   }
 
-  .watch-party-invite-menu-overlay {
-    align-items: end;
-    place-items: end center;
+  .watch-party-action-buttons {
+    justify-content: center;
   }
 
-  .watch-party-invite-menu-panel {
-    width: 100%;
-  }
-
-  .watch-party-invite-menu-footer {
-    grid-template-columns: 1fr;
-  }
-
-  .watch-party-invite-send {
-    width: 100%;
-  }
-
-  .watch-party-notifications {
-    left: max(16px, env(safe-area-inset-left));
-    right: max(16px, env(safe-area-inset-right));
-    width: auto;
+  .watch-party-start-button,
+  .watch-party-ready-button {
+    flex: 1 1 auto;
   }
 }

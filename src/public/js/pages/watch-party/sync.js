@@ -149,7 +149,6 @@ export function bindSync(ctx) {
     }
 
     ctx.playbackEntering = (async () => {
-      ctx.hideReadyOverlay();
       ctx.hideCountdown();
       ctx.showPlayerSurface();
 

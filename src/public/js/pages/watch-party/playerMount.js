@@ -10,10 +10,22 @@ export function bindPlayerMount(ctx) {
     }
   };
 
+  // During the ready phase the player loads out of sight behind the lobby
+  // (kept rendered, not display:none, so the browser decodes the first frame).
+  ctx.attachHiddenPlayer = () => {
+    ctx.ensurePlayerMountAttached();
+    if (ctx.playerMount.classList.contains('player-page')) return;
+    ctx.playerMount.classList.add('vanta-player-root', 'is-preloading');
+    ctx.playerMount.setAttribute('aria-hidden', 'true');
+    ctx.playerMount.inert = true;
+  };
+
   ctx.showPlayerSurface = () => {
     ctx.lobby.hidden = true;
     ctx.ensurePlayerMountAttached();
     ctx.playerMount.removeAttribute('aria-hidden');
+    ctx.playerMount.inert = false;
+    ctx.playerMount.classList.remove('is-preloading');
     ctx.playerMount.classList.add('player-page', 'vanta-player-root');
     ctx.lockPlayerViewport();
   };
@@ -24,6 +36,7 @@ export function bindPlayerMount(ctx) {
 
   ctx.applyMountedPhase = phase => {
     if (phase === 'ready-room') {
+      ctx.attachHiddenPlayer();
       ctx.showReadyRoom();
     } else {
       ctx.showPlayerSurface();
@@ -46,9 +59,12 @@ export function bindPlayerMount(ctx) {
       return;
     }
 
-    ctx.ensurePlayerMountAttached();
-    ctx.showPlayerSurface();
-    if (phase === 'ready-room') ctx.showReadyRoom();
+    if (phase === 'ready-room') {
+      ctx.attachHiddenPlayer();
+      ctx.showReadyRoom();
+    } else {
+      ctx.showPlayerSurface();
+    }
     ctx.setSyncStatus('preparing', 'Wird vorbereitet');
 
     ctx.mountInFlight = (async () => {

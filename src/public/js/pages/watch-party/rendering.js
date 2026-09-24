@@ -1,90 +1,70 @@
 import { createElement } from '../../utils/dom.js';
-import { memberInitial, connectedMemberCount } from './helpers.js';
+import { connectedMemberCount } from './helpers.js';
+
+function stateCard({ title, message, onHome }) {
+  return createElement('div', { className: 'watch-party-state-card' },
+    createElement('h2', {}, title),
+    createElement('p', {}, message),
+    createElement('button', {
+      className: 'watch-party-primary-button',
+      type: 'button',
+      onClick: onHome
+    }, 'Zurück zur Startseite')
+  );
+}
 
 export function bindRendering(ctx) {
-  ctx.renderMediaSummary = () => {
-    ctx.mediaSummary.innerHTML = '';
-    const snapshot = ctx.party.itemSnapshot || {};
-    const subtitleParts = [];
-    if (snapshot.seriesName) subtitleParts.push(snapshot.seriesName);
-    if (snapshot.productionYear) subtitleParts.push(String(snapshot.productionYear));
-
-    ctx.mediaSummary.appendChild(createElement('div', { className: 'watch-party-media-title' }, snapshot.name || 'Unbekanntes Medium'));
-    if (subtitleParts.length) {
-      ctx.mediaSummary.appendChild(createElement('div', { className: 'watch-party-media-subtitle' }, subtitleParts.join(' · ')));
-    }
-  };
-
-  ctx.renderMemberRoleBadge = member => {
-    if (member.role === 'owner') return createElement('span', { className: 'watch-party-member-badge' }, 'Owner');
-    if (member.role === 'admin') return createElement('span', { className: 'watch-party-member-badge is-admin' }, 'Admin');
-    return null;
-  };
-
-  ctx.renderMembers = () => {
-    ctx.membersList.innerHTML = '';
-    ctx.memberCount.textContent = `${ctx.party.members.length}/4`;
-
-    ctx.party.members.forEach(member => {
-      const isSelf = member.userId === ctx.currentUser?.id;
-
-      const trailing = createElement('span', { className: 'watch-party-member-actions' });
-
-      if (ctx.isOwner() && !isSelf) {
-        trailing.appendChild(createElement('button', {
-          className: 'watch-party-kick-button',
-          type: 'button',
-          'aria-label': `${member.username} entfernen`,
-          onClick: () => ctx.handleKick(member.userId)
-        }, 'Entfernen'));
-      }
-
-      trailing.appendChild(createElement('span', {
-        className: `watch-party-member-status ${member.connected ? 'is-connected' : 'is-waiting'}`
-      },
-        createElement('span', { className: 'watch-party-member-status-dot', 'aria-hidden': 'true' }),
-        createElement('span', {}, member.connected ? 'Verbunden' : 'Verbindet …')
-      ));
-
-      const row = createElement('li', { className: 'watch-party-member' },
-        createElement('span', { className: 'watch-party-member-avatar' }, memberInitial(member.username)),
-        createElement('span', { className: 'watch-party-member-name' },
-          `${member.username}${isSelf ? ' (Du)' : ''}`,
-          ctx.renderMemberRoleBadge(member)
-        ),
-        trailing
-      );
-
-      ctx.membersList.appendChild(row);
+  ctx.renderHero = () => {
+    ctx.hero.render({
+      snapshot: ctx.party.itemSnapshot || {},
+      ownerName: ctx.party.ownerName,
+      positionMs: ctx.party.timeline?.positionMs ?? ctx.party.positionMs
     });
   };
 
+  ctx.renderMembers = () => ctx.roster.render();
+
+  // The action bar follows the party phase: the host starts from the waiting
+  // lobby, then everyone gets ready in the same place.
   ctx.renderActions = () => {
+    const { title, hint, status, startButton, readyButton, waitingDots } = ctx.actionBar;
+    const party = ctx.party;
     const owner = ctx.isOwner();
-    ctx.startButton.hidden = !owner;
-    ctx.endButton.hidden = !owner || ctx.party.status === 'ended';
-    ctx.startHint.hidden = !owner;
-    ctx.inviteUserButton.hidden = !owner || ctx.party.status === 'ended';
 
-    if (owner) {
-      const stillInLobby = ctx.party.status === 'lobby';
-      ctx.startButton.textContent = 'Starten';
-      ctx.startButton.disabled = !stillInLobby;
+    ctx.topbar.setOwnerControls(owner && party.status !== 'ended');
+    ctx.inviteUserButton.hidden = !owner || party.status !== 'lobby';
 
-      if (!stillInLobby) {
-        ctx.startHint.textContent = ctx.party.status === 'ready-room'
-          ? 'Warte auf Bereitmeldungen'
-          : (ctx.party.status === 'countdown' ? 'Startet …' : 'Party läuft');
+    startButton.hidden = true;
+    readyButton.hidden = true;
+    waitingDots.hidden = true;
+    hint.textContent = '';
+    status.textContent = '';
+
+    if (party.status === 'lobby') {
+      ctx.lobby.dataset.phase = 'waiting';
+      const connected = connectedMemberCount(party.members);
+      if (owner) {
+        title.textContent = 'Alle da?';
+        hint.textContent = connected > 1
+          ? `${connected} verbunden – starte, sobald alle da sind.`
+          : 'Du kannst auch allein starten.';
+        startButton.hidden = false;
+        startButton.disabled = false;
       } else {
-        const count = connectedMemberCount(ctx.party.members);
-        ctx.startHint.textContent = count > 1 ? 'Bereit zum Öffnen des Player-Raums' : 'Du kannst auch alleine starten';
+        title.textContent = 'Gleich geht’s los';
+        hint.textContent = `Warte, bis ${party.ownerName || 'der Gastgeber'} die Party startet.`;
+        waitingDots.hidden = false;
       }
+      return;
     }
+
+    ctx.lobby.dataset.phase = party.status === 'countdown' ? 'countdown' : 'ready';
+    ctx.renderReadyState();
   };
 
   ctx.renderParty = () => {
     if (!ctx.party) return;
-    ctx.renderMediaSummary();
+    ctx.renderHero();
     ctx.renderMembers();
     ctx.renderActions();
     ctx.syncWatchPartyConfig();
@@ -113,13 +93,11 @@ export function bindRendering(ctx) {
     ctx.lobby.hidden = true;
     ctx.errorState.hidden = false;
     ctx.errorState.innerHTML = '';
-    ctx.errorState.appendChild(createElement('h2', {}, 'Watch Party nicht verfügbar'));
-    ctx.errorState.appendChild(createElement('p', {}, error.message || 'Diese Watch Party konnte nicht geladen werden.'));
-    ctx.errorState.appendChild(createElement('button', {
-      className: 'btn-primary',
-      type: 'button',
-      onClick: () => ctx.goHome()
-    }, 'Zurück zur Startseite'));
+    ctx.errorState.appendChild(stateCard({
+      title: 'Watch Party nicht verfügbar',
+      message: error.message || 'Diese Watch Party konnte nicht geladen werden.',
+      onHome: () => ctx.goHome()
+    }));
   };
 
   ctx.showEndedState = message => {
@@ -136,16 +114,15 @@ export function bindRendering(ctx) {
     ctx.hideCountdown();
     ctx.autoplayOverlay.hidden = true;
     ctx.lobby.hidden = true;
+    ctx.topbar.setOwnerControls(false);
 
     ctx.endedState.hidden = false;
     ctx.endedState.innerHTML = '';
-    ctx.endedState.appendChild(createElement('h2', {}, 'Watch Party beendet'));
-    ctx.endedState.appendChild(createElement('p', {}, message || 'Die Watch Party wurde beendet.'));
-    ctx.endedState.appendChild(createElement('button', {
-      className: 'btn-primary',
-      type: 'button',
-      onClick: () => ctx.goHome()
-    }, 'Zurück zur Startseite'));
+    ctx.endedState.appendChild(stateCard({
+      title: 'Watch Party beendet',
+      message: message || 'Die Watch Party wurde beendet.',
+      onHome: () => ctx.goHome()
+    }));
   };
 
   return ctx;
