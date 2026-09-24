@@ -12,9 +12,13 @@ export function bindLoadIndicator(context) {
   let slow = false;
   let coverVisible = false;
   let inlineVisible = false;
+  // While the cover is up for a new source (audio track, quality), the old
+  // source's buffer says nothing about the new one until it is attached.
+  let staleBuffer = false;
 
   // vidstack re-dispatches every hls.js event on the player element.
   listen(player, 'hls-frag-loading', event => {
+    if (staleBuffer) return;
     const frag = event.detail?.frag;
     if (frag && (!frag.type || frag.type === 'main')) fragment = frag;
   });
@@ -23,10 +27,13 @@ export function bindLoadIndicator(context) {
   };
   listen(player, 'hls-frag-loaded', dropFragment);
   listen(player, 'hls-frag-load-emergency-aborted', dropFragment);
-  listen(player, 'source-change', () => { fragment = null; });
+  listen(player, 'source-change', () => {
+    fragment = null;
+    staleBuffer = false;
+  });
 
   const measure = () => tracker.update({
-    bufferedAhead: Number(context.getBufferedAhead?.()) || 0,
+    bufferedAhead: staleBuffer ? 0 : Number(context.getBufferedAhead?.()) || 0,
     fragment,
     position: Number(player.currentTime) || 0,
     duration: Number(player.duration)
@@ -67,7 +74,11 @@ export function bindLoadIndicator(context) {
 
   context.loadIndicator = {
     setCoverVisible(visible) {
-      coverVisible = Boolean(visible);
+      const next = Boolean(visible);
+      // A cover over a playing source means a new source is on its way.
+      if (next && !coverVisible && context.sourceSwitch?.getCurrentPlayback?.()) staleBuffer = true;
+      if (!next) staleBuffer = false;
+      coverVisible = next;
       sync();
     },
     setInlineVisible(visible) {

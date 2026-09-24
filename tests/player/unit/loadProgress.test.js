@@ -88,4 +88,26 @@ describe('bindLoadIndicator', () => {
 
     expect(context.getLoadProgress(60).fraction).toBe(1);
   });
+
+  it('zählt beim Quellenwechsel den alten Puffer nicht mit', () => {
+    vi.useFakeTimers();
+    root = document.createElement('div');
+    document.body.appendChild(root);
+    const dom = createPlayerMarkup(root, { title: 'T', subtitle: '', poster: '' });
+    const context = {
+      dom,
+      player: dom.player,
+      disposers: [],
+      listen: (target, event, handler) => target.addEventListener(event, handler),
+      getBufferedAhead: () => 20,
+      sourceSwitch: { getCurrentPlayback: () => ({ playSessionId: 'old' }) }
+    };
+    bindLoadIndicator(context);
+
+    context.loadIndicator.setCoverVisible(true);
+    expect(dom.loadingProgressText.textContent).toBe('Server bereitet Stream vor …');
+    dom.player.dispatchEvent(new CustomEvent('source-change'));
+    vi.advanceTimersByTime(250);
+    expect(dom.loadingProgress.hidden).toBe(true);
+  });
 });
