@@ -1,4 +1,4 @@
-/* Help overlay: the video keeps playing under a half-transparent layer. */
+/* Help overlay: a half-transparent layer over the running video. */
 .vanta-help {
   position: absolute;
   inset: 0;

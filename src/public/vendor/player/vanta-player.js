@@ -21312,7 +21312,7 @@ function Nm(e) {
 			party: t,
 			viewer: t && !e.canControlWatchParty()
 		}).map(Mm).join("")}</div>
-        <p class="vanta-help-foot">Mit <kbd>?</kbd> oder <kbd>Esc</kbd> schließen – das Video läuft weiter.</p>
+        <p class="vanta-help-foot">Mit <kbd>?</kbd> oder <kbd>Esc</kbd> schließen.</p>
       </div>`, o.querySelector(".vanta-help-close").addEventListener("click", () => l());
 	};
 	function c() {

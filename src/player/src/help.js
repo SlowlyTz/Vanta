@@ -86,7 +86,7 @@ export function createHelpOverlay(context) {
           </button>
         </div>
         <div class="vanta-help-grid">${helpSections({ party, viewer }).map(renderSection).join('')}</div>
-        <p class="vanta-help-foot">Mit <kbd>?</kbd> oder <kbd>Esc</kbd> schließen – das Video läuft weiter.</p>
+        <p class="vanta-help-foot">Mit <kbd>?</kbd> oder <kbd>Esc</kbd> schließen.</p>
       </div>`;
     overlay.querySelector('.vanta-help-close').addEventListener('click', () => close());
   };
