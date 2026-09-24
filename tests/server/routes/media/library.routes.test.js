@@ -21,10 +21,6 @@ vi.mock('../../../../src/server/services/jellyfin/playback-api.service.js', () =
   }
 }));
 
-vi.mock('../../../../src/server/services/home-categories.service.js', () => ({
-  HomeCategoriesService: {}
-}));
-
 vi.mock('../../../../src/server/services/home-sections.service.js', () => ({
   HomeSectionsService: {}
 }));

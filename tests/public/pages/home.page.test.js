@@ -6,7 +6,6 @@ import HomePage from '../../../src/public/js/pages/home.page.js';
 vi.mock('../../../src/public/js/api/media.api.js', () => ({
   MediaApi: {
     getHome: vi.fn(),
-    getHomeSections: vi.fn(),
     getHomeSectionGroup: vi.fn()
   }
 }));

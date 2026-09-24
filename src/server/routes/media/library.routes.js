@@ -2,7 +2,6 @@ import express from 'express';
 import { LibraryService } from '../../services/jellyfin/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
-import { HomeCategoriesService } from '../../services/home-categories.service.js';
 import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
@@ -20,20 +19,6 @@ router.get('/home', requireAuth, jellyfinRoute('Media Home Error', 'Failed to fe
   ]);
 
   return res.json({ resume, movies, series });
-}));
-
-router.get('/home-categories', requireAuth, jellyfinRoute('Media Home Categories Error', 'Failed to fetch home categories', async (req, res) => {
-  const { userId, accessToken } = req.session;
-
-  const categories = await HomeCategoriesService.getHomeCategories(userId, accessToken);
-  return res.json(categories);
-}));
-
-router.get('/home-sections', requireAuth, jellyfinRoute('Media Home Sections Error', 'Failed to fetch home sections', async (req, res) => {
-  const { userId, accessToken } = req.session;
-
-  const sections = await HomeSectionsService.getHomeSections(userId, accessToken);
-  return res.json(sections);
 }));
 
 router.get('/home-sections/:group', requireAuth, asyncHandler(async (req, res) => {

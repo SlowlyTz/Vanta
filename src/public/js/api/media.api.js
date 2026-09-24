@@ -5,14 +5,6 @@ export const MediaApi = {
     return request('/api/media/home');
   },
 
-  getHomeCategories() {
-    return request('/api/media/home-categories');
-  },
-
-  getHomeSections() {
-    return request('/api/media/home-sections');
-  },
-
   getHomeSectionGroup(group) {
     return request(`/api/media/home-sections/${encodeURIComponent(group)}`);
   },
@@ -96,10 +88,6 @@ export const MediaApi = {
       url += `&quality=${encodeURIComponent(imageOptions.quality)}`;
     }
     return url;
-  },
-
-  getStreamUrl(id) {
-    return `/api/media/stream/${id}`;
   },
 
   getPlayback(id, mode = 'auto', options = {}) {

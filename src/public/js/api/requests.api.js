@@ -56,12 +56,6 @@ class RequestsApiClient {
       method: 'POST'
     });
   }
-
-  static async deleteRequest(id) {
-    return request(`/api/requests/${id}`, {
-      method: 'DELETE'
-    });
-  }
 }
 
 export { RequestsApiClient as RequestsApi };

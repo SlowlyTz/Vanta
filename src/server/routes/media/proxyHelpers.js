@@ -2,13 +2,6 @@ import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
 export const FORWARD_HEADERS = {
-  stream: [
-    'content-type',
-    'content-length',
-    'content-range',
-    'accept-ranges',
-    'cache-control'
-  ],
   playback: [
     'content-type',
     'content-range',
@@ -92,11 +85,4 @@ export function getSvgPlaceholder(type) {
       <text x="50%" y="${height / 2 + 30}" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system, sans-serif" font-weight="500" font-size="12" fill="hsl(240, 5%, 65%)">Bild nicht verfügbar</text>
     </svg>
   `.trim();
-}
-
-export function ensureContentType(res, fallback = 'video/mp4') {
-  const contentType = res.getHeader('content-type');
-  if (!contentType || contentType === 'application/octet-stream') {
-    res.setHeader('content-type', fallback);
-  }
 }

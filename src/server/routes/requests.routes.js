@@ -178,28 +178,4 @@ router.post('/:id/reject', requireAuth, requireFreshAdmin, asyncHandler(async (r
   res.json(request);
 }));
 
-// Get single request
-router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
-  const request = await RequestsService.getById(req.params.id);
-  if (!request) return res.status(404).json({ error: 'Not found' });
-  res.json(request);
-}));
-
-// Delete request
-router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
-  await RequestsService.delete(req.params.id);
-  res.json({ success: true });
-}));
-
-// Update request status (admin only)
-router.patch('/:id', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
-  const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Status required' });
-  if (!['pending', 'approved', 'imported', 'rejected'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid status' });
-  }
-  await RequestsService.updateStatus(req.params.id, status);
-  res.json({ success: true });
-}));
-
 export default router;

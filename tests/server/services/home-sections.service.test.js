@@ -55,7 +55,7 @@ describe('HomeSectionsService._buildPublisherSections', () => {
       return Promise.resolve({ items: [], totalRecordCount: 0 });
     });
 
-    const { sections } = await HomeSectionsService.getHomeSections('u1', 't1');
+    const sections = await HomeSectionsService._buildPublisherSections('u1', 't1');
     const warnerSection = sections.find(s => s.title === 'Warner Bros');
 
     expect(warnerSection).toBeTruthy();
@@ -70,7 +70,7 @@ describe('HomeSectionsService._buildPublisherSections', () => {
     LibraryService.getStudios.mockResolvedValue([{ Name: 'Netflix' }]);
     LibraryService.getLibraryByStudioNames.mockResolvedValue({ items: [], totalRecordCount: 0 });
 
-    const { sections } = await HomeSectionsService.getHomeSections('u1', 't1');
+    const sections = await HomeSectionsService._buildPublisherSections('u1', 't1');
 
     expect(sections.find(s => s.title === 'Netflix')).toBeUndefined();
   });
@@ -139,14 +139,13 @@ describe('HomeSectionsService._buildNowPlayingSection', () => {
     LibraryService.getStudios.mockResolvedValue([]);
   });
 
-  it('is always returned as the first section, even with zero matches', async () => {
+  it('is always returned, even with zero matches', async () => {
     LibraryService.getAllMoviesAndSeries.mockResolvedValue([]);
     TmdbService.getNowPlaying.mockResolvedValue([
       { id: 999, title: 'Not In Library', mediaType: 'movie', releaseDate: '2026-01-01', popularity: 1 }
     ]);
 
-    const { sections } = await HomeSectionsService.getHomeSections('now-empty-user', 't1');
-    const nowPlaying = sections[0];
+    const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-empty-user', 't1', 'now-playing');
 
     expect(nowPlaying.title).toBe('Jetzt im Kino');
     expect(nowPlaying.href).toBe('#/movies');
@@ -162,8 +161,7 @@ describe('HomeSectionsService._buildNowPlayingSection', () => {
       { id: 702, title: 'Not In Library', mediaType: 'movie', releaseDate: '2026-01-02', popularity: 3 }
     ]);
 
-    const { sections } = await HomeSectionsService.getHomeSections('now-match-user', 't1');
-    const nowPlaying = sections[0];
+    const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-match-user', 't1', 'now-playing');
 
     expect(nowPlaying.items).toEqual([matched]);
   });
@@ -172,8 +170,7 @@ describe('HomeSectionsService._buildNowPlayingSection', () => {
     LibraryService.getAllMoviesAndSeries.mockResolvedValue([]);
     TmdbService.getNowPlaying.mockRejectedValue(new Error('TMDB down'));
 
-    const { sections } = await HomeSectionsService.getHomeSections('now-error-user', 't1');
-    const nowPlaying = sections[0];
+    const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-error-user', 't1', 'now-playing');
 
     expect(nowPlaying.title).toBe('Jetzt im Kino');
     expect(nowPlaying.items).toEqual([]);

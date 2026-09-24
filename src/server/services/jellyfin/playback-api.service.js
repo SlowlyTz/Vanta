@@ -2,14 +2,6 @@ import { JELLYFIN_BASE_URL, getAuthHeader, jellyfinFetch, jellyfinJson } from '.
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
-  static async fetchVideoStream(itemId, token, rangeHeader, { signal } = {}) {
-    const url = `${JELLYFIN_BASE_URL}/Videos/${itemId}/stream?container=mp4&videoCodec=h264&audioCodec=aac&audioChannels=2&maxBitrate=100000000&videoBitrate=40000000&audioBitrate=320000&api_key=${token}`;
-    const headers = {};
-    if (rangeHeader) headers.Range = rangeHeader;
-
-    return fetch(url, { method: 'GET', headers, signal });
-  }
-
   static async getPlaybackInfo(userId, token, itemId, {
     userAgent = '',
     forceHlsTranscoding = false,

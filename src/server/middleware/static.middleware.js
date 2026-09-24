@@ -13,9 +13,9 @@ const REVALIDATE = 'no-cache';
 // cached entry would import chunks a rebuild has removed.
 const HASHED_CHUNK = /^vendor\/.*-[A-Za-z0-9_-]{8}\.[a-z0-9]+$/;
 
-// The media proxies pipe upstream bodies (images, video, HLS) straight
+// The media proxies pipe upstream bodies (images, HLS) straight
 // through; compressing them would only cost CPU and break range responses.
-const PROXY_PREFIXES = ['/api/media/image', '/api/media/stream', '/api/media/playback'];
+const PROXY_PREFIXES = ['/api/media/image', '/api/media/playback'];
 
 export function cacheControlFor(relativePath, { hashedDir = false } = {}) {
   const file = relativePath.replace(/\\/g, '/');

@@ -19,7 +19,6 @@ const getRequestById = db.prepare('SELECT * FROM requests WHERE id = ?');
 const getUserRequests = db.prepare('SELECT * FROM requests WHERE user_id = ? ORDER BY created_at DESC');
 const getAllRequests = db.prepare('SELECT * FROM requests ORDER BY created_at DESC');
 const getOpenRequests = db.prepare("SELECT * FROM requests WHERE status = 'pending' ORDER BY created_at ASC");
-const deleteRequest = db.prepare('DELETE FROM requests WHERE id = ?');
 const updateRequestStatus = db.prepare('UPDATE requests SET status = ?, updated_at = ? WHERE id = ?');
 const getCachedMedia = db.prepare('SELECT * FROM tmdb_media WHERE tmdb_id = ? AND tmdb_type = ?');
 
@@ -243,10 +242,6 @@ class RequestsService {
     }
 
     return this.getById(id);
-  }
-
-  static async delete(id) {
-    deleteRequest.run(id);
   }
 
   // `media` lets a caller that already holds the TMDB payload skip the detail

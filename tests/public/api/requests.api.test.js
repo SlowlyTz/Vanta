@@ -212,12 +212,6 @@ describe('RequestsApi', () => {
       expect(sentOptions().method).toBe('POST');
     });
 
-    it('deleteRequest sendet DELETE', async () => {
-      await RequestsApi.deleteRequest('req-1');
-
-      expect(sentUrl()).toBe('/api/requests/req-1');
-      expect(sentOptions().method).toBe('DELETE');
-    });
   });
 
   describe('Fehlerpfad', () => {
