@@ -115,6 +115,10 @@ export const MediaApi = {
     return request(`/api/media/playback/${id}?${params.toString()}`);
   },
 
+  getSegments(id) {
+    return request(`/api/media/segments/${encodeURIComponent(id)}`);
+  },
+
   reportPlayback(event, payload, options = {}) {
     return request(`/api/media/playback/report/${encodeURIComponent(event)}`, {
       method: 'POST',
