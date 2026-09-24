@@ -4,7 +4,7 @@ import { PlaybackService } from '../../services/playback.service.js';
 import { streamSessionService } from '../../services/stream-session.service.js';
 import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { forwardHeaders, pipeReadable, FORWARD_HEADERS } from './proxyHelpers.js';
+import { forwardHeaders, pipeReadable, isAbortError, upstreamAbortSignal, FORWARD_HEADERS } from './proxyHelpers.js';
 import { isValidQualityProfile, getQualityConstraints } from './playback.validation.js';
 import { pickAudioStreamIndex } from '../../services/playback/audioTracks.js';
 
@@ -50,7 +50,9 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
 
   try {
     const normalizedPath = PlaybackService.normalizeJellyfinPath(targetPath);
-    const upstreamResponse = await PlaybackApiService.fetchPlaybackResource(normalizedPath, accessToken, rangeHeader);
+    const upstreamResponse = await PlaybackApiService.fetchPlaybackResource(normalizedPath, accessToken, rangeHeader, {
+      signal: upstreamAbortSignal(res)
+    });
     const contentType = upstreamResponse.headers.get('content-type') || '';
     const isPlaylist = PlaybackService.isPlaylistResponse(contentType, normalizedPath);
 
@@ -69,6 +71,8 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
 
     return pipeReadable(upstreamResponse, req, res);
   } catch (error) {
+    // The player dropped the request (seek, quality switch): nothing to report.
+    if (isAbortError(error) || res.destroyed) return;
     console.error('[Playback Proxy Error] Failed to proxy playback resource:', error.message);
     if (isUpstreamUnauthorized(error)) {
       return destroyInvalidSession(req, res);

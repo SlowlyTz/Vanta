@@ -3,7 +3,7 @@ import { PlaybackApiService } from '../../services/jellyfin/playback-api.service
 import { streamSessionService } from '../../services/stream-session.service.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { forwardHeaders, pipeReadable, ensureContentType, FORWARD_HEADERS } from './proxyHelpers.js';
+import { forwardHeaders, pipeReadable, ensureContentType, isAbortError, upstreamAbortSignal, FORWARD_HEADERS } from './proxyHelpers.js';
 
 const router = express.Router();
 const HEARTBEAT_INTERVAL_MS = 20_000;
@@ -43,7 +43,8 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   });
 
   try {
-    const streamResponse = await PlaybackApiService.fetchVideoStream(id, accessToken, rangeHeader);
+    const signal = upstreamAbortSignal(res);
+    const streamResponse = await PlaybackApiService.fetchVideoStream(id, accessToken, rangeHeader, { signal });
 
     res.status(streamResponse.status);
     forwardHeaders(streamResponse, res, FORWARD_HEADERS.stream);
@@ -51,6 +52,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
 
     return pipeReadable(streamResponse, req, res);
   } catch (error) {
+    if (isAbortError(error) || res.destroyed) return;
     console.error(`[Stream Proxy Error] Failed to stream video ${id}:`, error.message);
     if (!res.headersSent) {
       return res.status(500).json({ error: 'Failed to stream media content' });

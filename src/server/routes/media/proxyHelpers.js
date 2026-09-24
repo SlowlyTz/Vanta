@@ -26,8 +26,44 @@ export function forwardHeaders(response, res, headers) {
   });
 }
 
+// A browser that seeks drops the segment request it no longer needs. Such
+// aborts are expected on both sides: the client closing early, and the
+// upstream body failing afterwards ("terminated" from undici, an HTTP/2
+// stream reset). None of them may reach the process as an unhandled error.
+export function isAbortError(error) {
+  return error?.name === 'AbortError'
+    || error?.code === 'ERR_STREAM_PREMATURE_CLOSE'
+    || error?.code === 'ABORT_ERR'
+    || error?.message === 'terminated'
+    || error?.cause?.code === 'ERR_HTTP2_STREAM_ERROR'
+    || error?.code === 'UND_ERR_ABORTED'
+    || error?.code === 'UND_ERR_SOCKET';
+}
+
+// Aborts the upstream request once the client connection closes before the
+// response was fully sent, so Jellyfin stops producing data nobody reads.
+export function upstreamAbortSignal(res) {
+  const controller = new AbortController();
+  res.once('close', () => {
+    if (!res.writableFinished) controller.abort();
+  });
+  return controller.signal;
+}
+
+// The upstream body as a Node stream that can never raise an unhandled
+// 'error': undici errors the body with "terminated" when the HTTP/2 stream to
+// Jellyfin is reset, which can happen after pipeline() has already settled
+// and dropped its listeners (this crashed the server while seeking).
+export function toNodeReadable(body) {
+  const readable = Readable.fromWeb(body);
+  readable.on('error', error => {
+    if (!isAbortError(error)) console.warn('[Proxy Stream] Upstream error:', error.message);
+  });
+  return readable;
+}
+
 export async function pipeReadable(response, req, res) {
-  const readable = Readable.fromWeb(response.body);
+  const readable = toNodeReadable(response.body);
 
   res.on('close', () => {
     if (!res.writableEnded) {
@@ -38,7 +74,7 @@ export async function pipeReadable(response, req, res) {
   try {
     await pipeline(readable, res);
   } catch (error) {
-    if (error.code === 'ERR_STREAM_PREMATURE_CLOSE' || res.destroyed || !res.writable) {
+    if (isAbortError(error) || res.destroyed || !res.writable) {
       return;
     }
     throw error;

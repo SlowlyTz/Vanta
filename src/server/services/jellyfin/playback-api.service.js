@@ -2,12 +2,12 @@ import { JELLYFIN_BASE_URL, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
-  static async fetchVideoStream(itemId, token, rangeHeader) {
+  static async fetchVideoStream(itemId, token, rangeHeader, { signal } = {}) {
     const url = `${JELLYFIN_BASE_URL}/Videos/${itemId}/stream?container=mp4&videoCodec=h264&audioCodec=aac&audioChannels=2&maxBitrate=100000000&videoBitrate=40000000&audioBitrate=320000&api_key=${token}`;
     const headers = {};
     if (rangeHeader) headers.Range = rangeHeader;
 
-    return fetch(url, { method: 'GET', headers });
+    return fetch(url, { method: 'GET', headers, signal });
   }
 
   static async getPlaybackInfo(userId, token, itemId, {
@@ -40,14 +40,14 @@ export class PlaybackApiService {
     });
   }
 
-  static async fetchPlaybackResource(pathOrUrl, token, rangeHeader) {
+  static async fetchPlaybackResource(pathOrUrl, token, rangeHeader, { signal } = {}) {
     const url = new URL(pathOrUrl, JELLYFIN_BASE_URL);
     url.searchParams.set('api_key', token);
 
     const headers = { 'X-Emby-Authorization': `MediaBrowser Client="VANTA", Device="Web Browser", DeviceId="vanta-web-client-id", Version="1.0.0", Token="${token}"` };
     if (rangeHeader) headers.Range = rangeHeader;
 
-    return fetch(url, { method: 'GET', headers });
+    return fetch(url, { method: 'GET', headers, signal });
   }
 
   static reportPlayback(token, event, payload) {
