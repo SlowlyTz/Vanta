@@ -130,6 +130,41 @@ if (migrateRequestsTable(sqlite).length > 0) {
   persist();
 }
 
+// Problem reports about titles in the library (the Meldung page).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id TEXT NOT NULL,
+    item_type TEXT NOT NULL CHECK(item_type IN ('Movie', 'Series')),
+    title TEXT NOT NULL,
+    production_year INTEGER,
+    report_scope TEXT NOT NULL DEFAULT 'all' CHECK(report_scope IN ('all', 'season', 'episode')),
+    season_number INTEGER,
+    episode_number INTEGER,
+    episode_name TEXT,
+    problem TEXT NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'resolved', 'dismissed')),
+    user_id TEXT,
+    username TEXT,
+    handled_by TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+  CREATE INDEX IF NOT EXISTS idx_reports_user ON reports(user_id);
+
+  -- When a user last looked at their requests / reports: decisions after that
+  -- light up the dot in the menu.
+  CREATE TABLE IF NOT EXISTS notification_seen (
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    seen_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, kind)
+  );
+`);
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,

@@ -1,0 +1,232 @@
+/* ---------------------------------
+   MELDUNG (#/report) — Bausteine aus components/ui-kit.css
+   --------------------------------- */
+.report-tabs .ui-new-dot {
+  margin-left: 2px;
+}
+
+.report-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.report-step-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-step-number {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+
+.report-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-search-status:empty {
+  display: none;
+}
+
+.report-chosen {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: var(--ui-radius);
+  background: var(--ui-accent-soft);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+}
+
+.report-chosen[hidden] {
+  display: none;
+}
+
+.report-chosen-thumb {
+  width: 48px;
+  height: 72px;
+}
+
+.report-scope-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-chips[hidden],
+.report-episodes[hidden] {
+  display: none;
+}
+
+.report-chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: var(--ui-surface);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.report-chip:hover {
+  background: var(--ui-surface-hover);
+}
+
+.report-chip.is-selected {
+  background: var(--ui-accent-soft);
+  border-color: rgba(167, 139, 250, 0.55);
+  color: #fff;
+}
+
+.report-episodes {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+  overscroll-behavior: contain;
+}
+
+.report-episode-number {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-problem-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.report-problem-step .ui-field[hidden] {
+  display: none;
+}
+
+/* Sent */
+.report-success {
+  align-items: center;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.report-success-icon {
+  width: 60px;
+  height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.14);
+  color: #4ade80;
+}
+
+.report-success h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.report-success p {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--ui-muted);
+  line-height: 1.5;
+}
+
+.report-success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Meine Meldungen */
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-card {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-hairline);
+}
+
+.report-card.is-new {
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.15);
+}
+
+.report-card-thumb {
+  width: 48px;
+  height: 72px;
+}
+
+.report-card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.report-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-card-title {
+  overflow: hidden;
+  font-size: 0.96rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.report-card-message {
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}

@@ -147,3 +147,21 @@
 .settings-row-icon.settings-accent-icon {
   color: rgb(var(--abyss-accent));
 }
+
+/* Count on a row (Admin-Tools: open requests and reports) */
+.settings-option-badge {
+  min-width: 22px;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ff5a5a;
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 750;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.settings-option-badge[hidden] {
+  display: none;
+}

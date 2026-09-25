@@ -234,3 +234,19 @@ describe('discord-webhook.service', () => {
     });
   });
 });
+
+describe('buildReportEmbed', () => {
+  it('shows the problem, what it concerns and who reported it, in red', async () => {
+    const { buildReportEmbed } = await import('../../../src/server/services/discord-webhook.service.js');
+    const embed = buildReportEmbed({
+      title: 'Severance', production_year: 2022, item_type: 'Series', report_scope: 'episode',
+      season_number: 2, episode_number: 3, episode_name: 'Who Is Alive?', problem: 'no-german',
+      message: 'Nur Englisch', username: 'alice', created_at: Date.UTC(2026, 8, 25)
+    });
+
+    expect(embed.title).toBe('⚠️ Problem: Severance (2022)');
+    expect(embed.color).toBe(0xef4444);
+    expect(embed.description).toBe('Nur Englisch');
+    expect(embed.fields.map(field => field.value)).toEqual(['Keine deutsche Tonspur', 'S02E03 · Who Is Alive?', 'alice']);
+  });
+});

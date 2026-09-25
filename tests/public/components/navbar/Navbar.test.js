@@ -66,7 +66,7 @@ describe('Navbar', () => {
 
     expect(sections).toEqual([
       { label: 'Entdecken', entries: ['Home', 'Filme', 'Serien', 'Publisher', 'Scroller'] },
-      { label: 'Mehr', entries: ['Anfragen'] }
+      { label: 'Mehr', entries: ['Anfragen', 'Meldung'] }
     ]);
   });
 
@@ -317,5 +317,23 @@ describe('Navbar', () => {
 
     navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
     expect(profileLink.classList.contains('active')).toBe(false);
+  });
+});
+
+describe('Navbar · notification dots', () => {
+  it('lights the dots on Anfragen, Meldung and the gear from the notifications store', async () => {
+    const { notificationsStore } = await import('../../../../src/public/js/store/notifications.store.js');
+    notificationsStore.summary = { mine: { requests: 1, reports: 0 }, admin: { requests: 0, reports: 2 } };
+    Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+
+    const dotOf = href => document.querySelector(`#mobile-navigation a[href="${href}"] .mobile-drawer-dot`);
+    expect(dotOf('#/requests').hidden).toBe(false);
+    expect(dotOf('#/report').hidden).toBe(true);
+    expect(document.querySelector('.mobile-drawer-settings .mobile-drawer-dot').hidden).toBe(false);
+    expect(document.querySelector('.settings-option-badge').textContent).toBe('2');
+
+    notificationsStore.stop();
+    expect(document.querySelector('.mobile-drawer-settings .mobile-drawer-dot').hidden).toBe(true);
+    document.body.innerHTML = '';
   });
 });

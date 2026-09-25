@@ -7,6 +7,8 @@ import { authStore } from '../../../src/public/js/store/auth.store.js';
 import { createAdminHeader } from '../../../src/public/js/pages/admin/adminHeader.js';
 import { listAdminTools } from '../../../src/public/js/components/admin-tools/AdminToolRegistry.js';
 import AdminPage from '../../../src/public/js/pages/admin.page.js';
+import { NotificationsApi } from '../../../src/public/js/api/notifications.api.js';
+import { notificationsStore } from '../../../src/public/js/store/notifications.store.js';
 
 vi.mock('../../../src/public/js/api/auth.api.js', () => ({
   AuthApi: { getCurrentUser: vi.fn() }
@@ -39,6 +41,12 @@ vi.mock('../../../src/public/js/api/admin-settings.api.js', () => ({
     removeDiscordWebhook: vi.fn(),
     testDiscordWebhook: vi.fn()
   }
+}));
+vi.mock('../../../src/public/js/api/reports.api.js', () => ({
+  ReportsApi: { getOpen: vi.fn(async () => []), getAll: vi.fn(async () => []), resolve: vi.fn(), dismiss: vi.fn() }
+}));
+vi.mock('../../../src/public/js/api/notifications.api.js', () => ({
+  NotificationsApi: { getSummary: vi.fn(), markSeen: vi.fn() }
 }));
 vi.mock('../../../src/public/js/store/app.store.js', () => ({
   appStore: { showToast: vi.fn() }
@@ -111,6 +119,9 @@ describe('AdminPage', () => {
     AdminUsersApi.listLibraries.mockResolvedValue({ libraries: [] });
     RequestsApi.getAllRequests.mockResolvedValue([]);
     RequestsApi.getOpenRequests.mockResolvedValue([]);
+    NotificationsApi.getSummary.mockResolvedValue({ mine: { requests: 0, reports: 0 }, admin: { requests: 0, reports: 0 } });
+    // The store is shared app-wide; every test starts from an empty summary.
+    notificationsStore.stop();
   });
 
   afterEach(() => {
@@ -167,28 +178,25 @@ describe('AdminPage', () => {
       expect(window.location.hash).toBe('#/admin/users');
     });
 
-    it('shows the number of pending requests as a badge on the Anfragen card', async () => {
-      RequestsApi.getOpenRequests.mockResolvedValue([makeRequest({ id: 1 }), makeRequest({ id: 2 })]);
+    it('shows open requests and reports together as a badge on the Anfragen card', async () => {
+      NotificationsApi.getSummary.mockResolvedValue({ mine: { requests: 0, reports: 0 }, admin: { requests: 1, reports: 2 } });
 
       const container = AdminPage();
       await flush();
 
       const badge = container.querySelector('.admin-menu-badge');
       expect(badge.classList.contains('hidden')).toBe(false);
-      expect(badge.textContent).toBe('2');
+      expect(badge.textContent).toBe('3');
     });
 
-    it('renders without a badge when the pending count cannot be loaded', async () => {
-      RequestsApi.getOpenRequests.mockRejectedValue(new Error('offline'));
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('renders without a badge when nothing waits or the count cannot be loaded', async () => {
+      NotificationsApi.getSummary.mockRejectedValue(new Error('offline'));
 
       const container = AdminPage();
       await flush();
 
       expect(container.querySelectorAll('.admin-menu-card')).toHaveLength(listAdminTools().length);
       expect(container.querySelector('.admin-menu-badge').classList.contains('hidden')).toBe(true);
-      expect(consoleError).toHaveBeenCalled();
-      consoleError.mockRestore();
     });
 
     it('falls back to the menu for a section that is not registered', async () => {

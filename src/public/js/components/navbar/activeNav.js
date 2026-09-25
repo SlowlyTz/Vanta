@@ -13,7 +13,9 @@ export function isNavLinkActive(link, currentHash) {
         || currentHash.startsWith('#/publisher/')
         || currentHash.startsWith('#/publisher-group/');
     case 'requests':
-      return currentHash === '#/requests';
+      return currentHash.startsWith('#/requests') || currentHash.startsWith('#/request-detail');
+    case 'report':
+      return currentHash.startsWith('#/report');
     case 'search':
       return currentHash.startsWith('#/search');
     case 'favorites':

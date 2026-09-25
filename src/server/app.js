@@ -15,6 +15,8 @@ import watchPartyInvitationsRoutes from './routes/watch-party-invitations.routes
 import pageRoutes from './routes/page.routes.js';
 import internalRoutes from './routes/internal.routes.js';
 import versionRoutes from './routes/version.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
+import notificationsRoutes from './routes/notifications.routes.js';
 import { BUILD_ID, BUILD_HEADER } from './config/build.js';
 
 const app = express();
@@ -56,6 +58,8 @@ app.use(staticAssets);
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/requests', requestsRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/watch-parties', watchPartyRoutes);
 app.use('/api/watch-party-invitations', watchPartyInvitationsRoutes);

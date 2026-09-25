@@ -1,10 +1,12 @@
 import { AppSettingsService } from './app-settings.service.js';
 import { formatScopeLabel } from './request-scope.js';
+import { getProblemLabel, getReportScopeLabel } from '../../public/js/shared/reports.js';
 
 const DISCORD_LIMITS = { title: 256, description: 4096, fieldValue: 1024 };
 const DESCRIPTION_PREVIEW_LENGTH = 300;
 const WEBHOOK_TIMEOUT_MS = 5000;
 const EMBED_COLOR = 0x5865f2; // Discord-Blurple als fester Akzentwert
+const REPORT_COLOR = 0xef4444; // Problemmeldungen heben sich rot ab
 const TMDB_TYPE_LABEL = { movie: 'Film', tv: 'Serie' };
 
 // Verhindert, dass der Webhook-Versand für POSTs an beliebige (auch interne) Netzadressen
@@ -107,6 +109,40 @@ export async function sendRequestCreated(request, media) {
     const embed = buildRequestEmbed(request, media);
     const result = await sendWebhookEmbed(url, embed);
 
+    if (!result.ok) {
+      console.error('[Discord Webhook] Versand fehlgeschlagen:', result.status ?? result.error);
+    }
+  } catch (error) {
+    console.error('[Discord Webhook] Unerwarteter Fehler beim Versand:', error.message);
+  }
+}
+
+// Embed für eine neue Problemmeldung: rot, damit sie sich im Kanal von den
+// Anfragen abhebt. Rein und ohne Netzwerk, damit direkt testbar.
+export function buildReportEmbed(report) {
+  const year = report.production_year ? ` (${report.production_year})` : '';
+  const embed = {
+    title: truncate(`⚠️ Problem: ${report.title}${year}`, DISCORD_LIMITS.title),
+    color: REPORT_COLOR,
+    timestamp: new Date(report.created_at).toISOString(),
+    fields: [
+      { name: 'Problem', value: getProblemLabel(report.problem), inline: true },
+      { name: 'Betrifft', value: truncate(getReportScopeLabel(report), DISCORD_LIMITS.fieldValue), inline: true },
+      { name: 'Gemeldet von', value: truncate(report.username || 'Unbekannt', DISCORD_LIMITS.fieldValue), inline: true }
+    ]
+  };
+  if (report.message) embed.description = truncate(report.message, DESCRIPTION_PREVIEW_LENGTH);
+  return embed;
+}
+
+// Wie sendRequestCreated: fire-and-forget, wirft nie nach außen.
+export async function sendReportCreated(report) {
+  try {
+    const enabled = AppSettingsService.get('discord_webhook_enabled') === 'true';
+    const url = AppSettingsService.get('discord_webhook_url');
+    if (!enabled || !url) return;
+
+    const result = await sendWebhookEmbed(url, buildReportEmbed(report));
     if (!result.ok) {
       console.error('[Discord Webhook] Versand fehlgeschlagen:', result.status ?? result.error);
     }

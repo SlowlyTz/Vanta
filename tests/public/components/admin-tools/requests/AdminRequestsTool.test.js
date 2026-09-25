@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RequestsApi } from '../../../../../src/public/js/api/requests.api.js';
 import { appStore } from '../../../../../src/public/js/store/app.store.js';
+import { ReportsApi } from '../../../../../src/public/js/api/reports.api.js';
 import { createAdminRequestsTool } from '../../../../../src/public/js/components/admin-tools/requests/AdminRequestsTool.js';
 
 vi.mock('../../../../../src/public/js/api/requests.api.js', () => ({
@@ -10,6 +11,10 @@ vi.mock('../../../../../src/public/js/api/requests.api.js', () => ({
     approveRequest: vi.fn(),
     rejectRequest: vi.fn()
   }
+}));
+
+vi.mock('../../../../../src/public/js/api/reports.api.js', () => ({
+  ReportsApi: { getOpen: vi.fn(), getAll: vi.fn(), resolve: vi.fn(), dismiss: vi.fn() }
 }));
 
 vi.mock('../../../../../src/public/js/store/app.store.js', () => ({
@@ -37,6 +42,8 @@ async function flush() {
 describe('AdminRequestsTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ReportsApi.getOpen.mockResolvedValue([]);
+    ReportsApi.getAll.mockResolvedValue([]);
   });
 
   it('defaults to the "Offen" tab and loads open requests', async () => {
@@ -147,7 +154,7 @@ describe('AdminRequestsTool', () => {
     await tool.load();
     await flush();
 
-    expect(tool.element.textContent).toContain('Keine offenen Anfragen');
+    expect(tool.element.textContent).toContain('Nichts offen');
   });
 
   it('shows an error state when loading fails', async () => {
@@ -192,5 +199,45 @@ describe('AdminRequestsTool', () => {
     expect(tool.description).toBeTruthy();
     // Ein einzelner Knoten würde zwischen Menükarte und Bereichskopf wandern.
     expect(tool.icon()).not.toBe(tool.icon());
+  });
+
+  it('shows open problem reports as their own group above the requests, clearly marked', async () => {
+    RequestsApi.getOpenRequests.mockResolvedValue([makeRequest()]);
+    ReportsApi.getOpen.mockResolvedValue([{
+      id: 7, item_id: 'abc', item_type: 'Series', title: 'Severance', report_scope: 'season', season_number: 2,
+      problem: 'no-german', message: 'Nur Englisch', status: 'open', username: 'bob', created_at: Date.UTC(2026, 8, 20)
+    }]);
+
+    const tool = createAdminRequestsTool();
+    await tool.load();
+    await flush();
+
+    const groups = [...tool.element.querySelectorAll('.admin-requests-group-title')].map(el => el.textContent);
+    expect(groups).toEqual(['Problemmeldungen1', 'Medienanfragen1']);
+    const report = tool.element.querySelector('.admin-report-item');
+    expect(report.querySelector('.admin-item-kind').textContent).toBe('Problem');
+    expect(report.textContent).toContain('Keine deutsche Tonspur');
+    expect(report.textContent).toContain('Staffel 2');
+    expect(report.textContent).toContain('Nur Englisch');
+    expect(tool.element.querySelector('.admin-request-item:not(.admin-report-item) .admin-item-kind').textContent).toBe('Anfrage');
+  });
+
+  it('resolves a report and reloads', async () => {
+    RequestsApi.getOpenRequests.mockResolvedValue([]);
+    ReportsApi.getOpen.mockResolvedValueOnce([{
+      id: 7, item_id: 'abc', item_type: 'Movie', title: 'Heat', problem: 'playback', message: '', status: 'open', username: 'bob', created_at: 1
+    }]);
+    ReportsApi.resolve.mockResolvedValue({});
+
+    const tool = createAdminRequestsTool();
+    await tool.load();
+    await flush();
+
+    tool.element.querySelector('.admin-report-resolve').click();
+    await flush();
+
+    expect(ReportsApi.resolve).toHaveBeenCalledWith(7);
+    expect(appStore.showToast).toHaveBeenCalledWith(expect.stringContaining('erledigt'), 'success');
+    expect(ReportsApi.getOpen).toHaveBeenCalledTimes(2);
   });
 });

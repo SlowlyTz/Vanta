@@ -60,6 +60,12 @@ export class AppSocketHub {
     ws.send(JSON.stringify(payload));
   }
 
+  broadcast(payload) {
+    for (const sockets of this.connectionsByUser.values()) {
+      for (const ws of sockets) this.sendTo(ws, payload);
+    }
+  }
+
   sendToUser(userId, payload) {
     const sockets = this.connectionsByUser.get(userId);
     if (!sockets) return;
@@ -68,6 +74,13 @@ export class AppSocketHub {
 }
 
 export const appSocketHub = new AppSocketHub();
+
+// Something that feeds the menu dots changed (a new request or report, a
+// decision): every open app asks for its own summary again. The message
+// carries nothing, so nobody learns about other people's requests from it.
+export function notifyNotificationsChanged() {
+  appSocketHub.broadcast({ type: 'NOTIFICATIONS_CHANGED' });
+}
 
 export function attachAppSocketServer(server) {
   return appSocketHub.attach(server);

@@ -5,12 +5,13 @@ import { STATUS_MAP, getTmdbImageUrl, getScopeLabel, getRequestScope } from '../
 const TYPE_LABELS = { movie: 'Film', tv: 'Serie' };
 
 const ACTION_ICONS = {
+  request: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
   approve: '<path d="M20 6 9 17l-5-5"></path>',
   reject: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
 };
 
-function actionIcon(kind) {
-  const icon = createElement('span', { className: 'request-admin-action-icon', 'aria-hidden': 'true' });
+function actionIcon(kind, className = 'request-admin-action-icon') {
+  const icon = createElement('span', { className, 'aria-hidden': 'true' });
   icon.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ACTION_ICONS[kind]}</svg>`;
   return icon;
 }
@@ -56,6 +57,7 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
   );
 
   const info = createElement('div', { className: 'admin-request-item-info' },
+    createElement('span', { className: 'admin-item-kind admin-item-kind-request' }, actionIcon('request', 'admin-item-kind-icon'), 'Anfrage'),
     createElement('span', { className: 'admin-request-item-title' }, request.title || `TMDB: ${request.tmdb_id}`),
     meta
   );

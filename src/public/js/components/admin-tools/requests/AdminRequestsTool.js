@@ -4,6 +4,8 @@ import { RequestsApi } from '../../../api/requests.api.js';
 import { appStore } from '../../../store/app.store.js';
 import { setSectionBusy } from '../../loader.js';
 import { createAdminRequestItem } from './adminRequestItem.js';
+import { createAdminReportItem } from './adminReportItem.js';
+import { ReportsApi } from '../../../api/reports.api.js';
 
 const TABS = [
   { key: 'open', label: 'Offen' },
@@ -16,16 +18,18 @@ const TABS = [
 export const ADMIN_REQUESTS_TOOL = {
   id: 'requests',
   label: 'Anfragen',
-  description: 'Medienanfragen prüfen und beantworten',
+  description: 'Medienanfragen und Problemmeldungen bearbeiten',
   icon: () => createChatIcon()
 };
 
-// Anfragen-Bereich der Admin-Seite: Umschalter "Offen" (Standard, nur pending)
-// und "Alle" (jeder Status, mit Status-Badge je Karte). Ohne Suche: die Liste
-// der offenen Anfragen ist kurz, und "Alle" ist nach Datum sortiert.
+// Anfragen-Bereich der Admin-Seite: Medienanfragen und Problemmeldungen.
+// "Offen" zeigt beides in zwei Gruppen (Meldungen zuerst), "Alle" mischt sie
+// nach Datum, mit Status je Karte. Jede Karte trägt ihre Art ("Problem" rot,
+// "Anfrage" violett), damit man sie nicht verwechselt.
 export function createAdminRequestsTool() {
   let activeTab = 'open';
   let loadedRequests = [];
+  let loadedReports = [];
 
   const notify = (message, type = 'info') => appStore.showToast(message, type);
 
@@ -74,51 +78,66 @@ export function createAdminRequestsTool() {
     load();
   };
 
-  const renderList = () => {
-    const visible = loadedRequests;
-    listContainer.innerHTML = '';
+  const itemFor = (entry, showStatus) => entry.kind === 'report'
+    ? createAdminReportItem(entry.data, { onChange: load, onNotify: notify, showStatus })
+    : createAdminRequestItem(entry.data, { onChange: load, onNotify: notify, showStatus });
 
-    if (visible.length === 0) {
+  const group = (title, entries) => createElement('section', { className: 'admin-requests-group' },
+    createElement('h3', { className: 'admin-requests-group-title' },
+      title, createElement('span', { className: 'admin-requests-group-count' }, String(entries.length))),
+    ...entries.map(entry => itemFor(entry, false))
+  );
+
+  const renderList = () => {
+    listContainer.innerHTML = '';
+    const reports = loadedReports.map(data => ({ kind: 'report', data }));
+    const requests = loadedRequests.map(data => ({ kind: 'request', data }));
+
+    if (reports.length === 0 && requests.length === 0) {
       // While the status line is up (loading, or a load error) it owns the area.
       if (!statusElement.classList.contains('hidden')) {
         emptyElement.classList.add('hidden');
         return;
       }
 
-      emptyElement.textContent = activeTab === 'all' ? 'Keine Anfragen vorhanden' : 'Keine offenen Anfragen';
+      emptyElement.textContent = activeTab === 'all' ? 'Noch keine Anfragen oder Meldungen' : 'Nichts offen — alles erledigt.';
       emptyElement.classList.remove('hidden');
       return;
     }
 
     emptyElement.classList.add('hidden');
 
-    visible.forEach(request => {
-      listContainer.appendChild(createAdminRequestItem(request, {
-        onChange: load,
-        onNotify: notify,
-        showStatus: activeTab === 'all'
-      }));
-    });
+    if (activeTab === 'open') {
+      if (reports.length) listContainer.appendChild(group('Problemmeldungen', reports));
+      if (requests.length) listContainer.appendChild(group('Medienanfragen', requests));
+      return;
+    }
+
+    [...reports, ...requests]
+      .sort((a, b) => (b.data.created_at || 0) - (a.data.created_at || 0))
+      .forEach(entry => listContainer.appendChild(itemFor(entry, true)));
   };
 
   const load = async () => {
     try {
-      statusElement.textContent = 'Lade Anfragen...';
+      statusElement.textContent = 'Wird geladen …';
       statusElement.classList.remove('hidden');
       emptyElement.classList.add('hidden');
       setSectionBusy(listContainer, true);
       listContainer.innerHTML = '';
 
-      const requests = activeTab === 'all'
-        ? await RequestsApi.getAllRequests()
-        : await RequestsApi.getOpenRequests();
+      const [requests, reports] = await Promise.all(activeTab === 'all'
+        ? [RequestsApi.getAllRequests(), ReportsApi.getAll()]
+        : [RequestsApi.getOpenRequests(), ReportsApi.getOpen()]);
 
       statusElement.classList.add('hidden');
       loadedRequests = requests || [];
+      loadedReports = reports || [];
       renderList();
     } catch (error) {
       console.error('Failed to load admin requests:', error);
       loadedRequests = [];
+      loadedReports = [];
       listContainer.innerHTML = '';
       emptyElement.classList.add('hidden');
       statusElement.textContent = error.message || 'Fehler beim Laden der Anfragen';

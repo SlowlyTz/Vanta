@@ -5,6 +5,7 @@ import { createTopbarIcon } from './icons.js';
 import { isNavLinkActive } from './activeNav.js';
 import { createWatchPartyDialog } from '../watch-party/createWatchPartyDialog.js';
 import { createSettingsDialog } from './settingsDialog.js';
+import { notificationsStore } from '../../store/notifications.store.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -138,6 +139,17 @@ export function Navbar({ onLogout, onChangePassword }) {
   });
 
   settingsDialog.loadAdminVisibility?.();
+
+  // Dots: own requests / reports with a new answer on their entries, work
+  // waiting for an admin on the gear and on Admin-Tools.
+  notificationsStore.subscribe(({ mine, adminTotal }) => {
+    mobileDrawer.setIndicators({
+      requests: mine.requests > 0,
+      report: mine.reports > 0,
+      settings: adminTotal > 0
+    });
+    settingsDialog.setAdminBadge(adminTotal);
+  });
 
   return { element, update };
 }

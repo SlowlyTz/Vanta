@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { RequestsService } from '../services/requests.service.js';
 import { TmdbService } from '../services/tmdb.service.js';
 import { sendRequestCreated } from '../services/discord-webhook.service.js';
+import { notifyNotificationsChanged } from '../realtime/app.socket.js';
 import { normalizeScopeSelection, toScopeInteger } from '../services/request-scope.js';
 
 const router = express.Router();
@@ -138,6 +139,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const { userId, username } = req.session;
   const { request, media } = await RequestsService.create(userId, username, tmdbIdNumber, tmdbType, note, selection);
   res.status(201).json(request);
+  notifyNotificationsChanged();
 
   // Fire-and-forget: Der Nutzer wartet nie auf Discord, ein toter Webhook darf die
   // Anfragefunktion nie blockieren. Nur bei neuen Anfragen, nicht bei Approve/Reject.
@@ -169,6 +171,7 @@ router.get('/admin/all', requireAuth, requireFreshAdmin, asyncHandler(async (req
 router.post('/:id/approve', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
   const request = await RequestsService.approve(req.params.id);
   res.json(request);
+  notifyNotificationsChanged();
 }));
 
 // Reject request (admin only). Only a rejected whole title bans further requests;
@@ -176,6 +179,7 @@ router.post('/:id/approve', requireAuth, requireFreshAdmin, asyncHandler(async (
 router.post('/:id/reject', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
   const request = await RequestsService.reject(req.params.id);
   res.json(request);
+  notifyNotificationsChanged();
 }));
 
 export default router;

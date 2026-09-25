@@ -1,6 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { AuthApi } from '../api/auth.api.js';
-import { RequestsApi } from '../api/requests.api.js';
+import { notificationsStore } from '../store/notifications.store.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
 import { createSectionLoader } from '../components/loader.js';
@@ -40,6 +40,7 @@ export default function AdminPage({ section = null } = {}) {
   const container = createElement('div', { className: 'admin-page page-container content-section' });
 
   let open = null;
+  const unsubscribers = [];
   let rendered = false;
   let torndown = false;
 
@@ -60,6 +61,7 @@ export default function AdminPage({ section = null } = {}) {
     torndown = true;
     window.removeEventListener('hashchange', handleForeignHash);
     closeSection({ immediate: true });
+    unsubscribers.splice(0).forEach(unsubscribe => unsubscribe());
     // Modals live on document.body, which the router never clears — the user
     // detail view as well as the ban/delete confirmations opened out of it.
     closeAllAdminModals();
@@ -141,11 +143,11 @@ export default function AdminPage({ section = null } = {}) {
       onSelect: (id) => { window.location.hash = `#/admin/${id}`; }
     });
 
-    // /admin/open liefert genau die offenen (pending) Anfragen und ist damit
-    // billiger als die Gesamtliste. Die Zahl kommt nach, das Menü steht sofort.
-    RequestsApi.getOpenRequests()
-      .then(requests => menu.setBadge('requests', (requests || []).length))
-      .catch(error => console.error('[AdminPage] Offene Anfragen für das Menü konnten nicht geladen werden:', error));
+    // Offene Anfragen und Meldungen zusammen; die Zahl kommt aus dem
+    // Benachrichtigungs-Store und bleibt live, das Menü steht sofort.
+    const unsubscribe = notificationsStore.subscribe(({ adminTotal }) => menu.setBadge('requests', adminTotal));
+    unsubscribers.push(unsubscribe);
+    notificationsStore.refresh();
 
     return createElement('div', { className: 'admin-page-layout' },
       createAdminHeading({

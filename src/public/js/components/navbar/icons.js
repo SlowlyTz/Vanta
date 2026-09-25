@@ -50,6 +50,12 @@ export function createNavIcon(key) {
         <path d="M12 11h1"></path>
       </svg>
     `,
+    report: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 21V4"></path>
+        <path d="M5 4h11l-2 4 2 4H5"></path>
+      </svg>
+    `,
     requests: `
       <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.2-4.4A8.4 8.4 0 1 1 21 11.5Z"></path>

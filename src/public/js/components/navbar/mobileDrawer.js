@@ -59,7 +59,7 @@ function showSubmenuError(submenu, message) {
 // settings) sits in the card pinned to the bottom.
 const DRAWER_SECTIONS = [
   { label: 'Entdecken', keys: ['home', 'movies', 'series', 'publishers', 'scroller'] },
-  { label: 'Mehr', keys: ['requests'] }
+  { label: 'Mehr', keys: ['requests', 'report'] }
 ];
 
 const initialOf = name => (String(name || '').trim().charAt(0) || '?').toUpperCase();
@@ -148,14 +148,21 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     }
   }
 
+  // Red dots: something the user should look at behind that entry.
+  const entryDots = new Map();
+  const createDot = label => createElement('span', { className: 'mobile-drawer-dot', hidden: true, 'aria-label': label });
+
   const createEntry = link => {
+    const dot = createDot('Neuigkeiten');
+    entryDots.set(link.key, dot);
     const anchor = createElement('a', {
       className: ACCORDION_KEYS.has(link.key) ? 'navbar-link mobile-drawer-accordion-link' : 'navbar-link',
       href: link.href,
       onClick: () => onNavigate?.()
     },
       createNavIcon(link.key),
-      createElement('span', { className: 'mobile-nav-label' }, link.label)
+      createElement('span', { className: 'mobile-nav-label' }, link.label),
+      dot
     );
     mobileNavEntries.set(link.key, anchor);
 
@@ -232,7 +239,7 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
       onNavigate?.();
       onOpenSettings?.();
     }
-  }, createNavIcon('settings'));
+  }, createNavIcon('settings'), createDot('Offene Anfragen oder Meldungen'));
 
   const footer = fly(createElement('div', { className: 'mobile-drawer-footer' }, mobileProfileLink, mobileSettingsButton));
   mobileNavList.appendChild(footer);
@@ -265,6 +272,15 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     setActive(mobileProfileLink, isNavLinkActive({ key: 'profile' }, currentHash));
   };
 
+  // { requests, report, settings }: which dots are lit.
+  const setIndicators = ({ requests = false, report = false, settings = false } = {}) => {
+    const requestsDot = entryDots.get('requests');
+    const reportDot = entryDots.get('report');
+    if (requestsDot) requestsDot.hidden = !requests;
+    if (reportDot) reportDot.hidden = !report;
+    mobileSettingsButton.querySelector('.mobile-drawer-dot').hidden = !settings;
+  };
+
   const setUser = name => {
     userName.textContent = name || 'Profil';
     avatar.textContent = initialOf(name);
@@ -280,6 +296,7 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     mobileNavBackdrop,
     updateActive,
     setUser,
+    setIndicators,
     resetToNav
   };
 }

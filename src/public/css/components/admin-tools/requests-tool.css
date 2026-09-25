@@ -221,3 +221,108 @@
     min-height: 42px;
   }
 }
+
+/* Gruppen unter "Offen": Problemmeldungen, Medienanfragen */
+.admin-requests-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-requests-group + .admin-requests-group {
+  margin-top: 14px;
+}
+
+.admin-requests-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 4px;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-requests-group-count {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0;
+}
+
+/* Art der Karte: Problem (rot) oder Anfrage (violett) */
+.admin-item-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 6px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+
+.admin-item-kind-icon {
+  display: inline-flex;
+}
+
+.admin-item-kind-icon svg {
+  width: 11px;
+  height: 11px;
+}
+
+.admin-item-kind-report {
+  background: rgba(255, 90, 90, 0.16);
+  color: #ff9b9b;
+}
+
+.admin-item-kind-request {
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
+}
+
+.admin-report-item {
+  border-color: rgba(255, 90, 90, 0.18);
+  background:
+    linear-gradient(90deg, rgba(255, 90, 90, 0.06), transparent 40%),
+    var(--admin-surface);
+}
+
+.admin-report-problem {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 90, 90, 0.12);
+  color: #ffb4b4;
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.admin-report-message {
+  max-width: 60ch;
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(255, 90, 90, 0.45);
+  border-radius: 4px 10px 10px 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.admin-report-dismiss {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.admin-report-dismiss:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}

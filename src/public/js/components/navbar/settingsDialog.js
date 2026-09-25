@@ -46,6 +46,14 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     createElement('div', { className: 'settings-options' }, adminOption)
   );
 
+  // Open requests and reports waiting for an admin, on the Admin-Tools row.
+  const adminBadge = createElement('span', { className: 'settings-option-badge', hidden: true });
+  adminOption.querySelector('.settings-option')?.insertBefore(adminBadge, adminOption.querySelector('.settings-chevron'));
+  const setAdminBadge = count => {
+    adminBadge.textContent = String(count);
+    adminBadge.hidden = !count;
+  };
+
   const refreshAdminVisibility = async () => {
     await loadAdminVisibility();
     adminSection.hidden = adminOption.hidden;
@@ -207,6 +215,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     adminOption,
     loadAdminVisibility: refreshAdminVisibility,
     setUsername: settingsProfile.setName,
+    setAdminBadge,
     setSettingsView,
     setSettingsOpen,
     isOpen: () => settingsOpen

@@ -372,3 +372,33 @@ body.mobile-nav-open .mobile-drawer-footer {
 .mobile-drawer-settings svg {
   transition: transform 420ms var(--abyss-ease);
 }
+
+/* Red dot on an entry or the gear: new answers, or work for an admin. */
+.mobile-drawer-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #ff5a5a;
+  box-shadow: 0 0 0 3px rgba(255, 90, 90, 0.2), 0 0 10px rgba(255, 90, 90, 0.5);
+}
+
+.mobile-drawer-dot[hidden] {
+  display: none;
+}
+
+.mobile-drawer-accordion-link .mobile-drawer-dot {
+  margin-right: 30px;
+}
+
+.mobile-drawer-settings {
+  position: relative;
+}
+
+.mobile-drawer-settings .mobile-drawer-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  margin: 0;
+}
