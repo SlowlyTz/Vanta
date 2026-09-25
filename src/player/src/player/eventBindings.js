@@ -1,7 +1,7 @@
 import Hls from 'hls.js';
 import { isHLSProvider } from 'vidstack';
 import { exitPictureInPicture } from '../platform.js';
-import { HLS_FRAGMENT_TIMEOUT_MS } from './markup.js';
+import { HLS_FRAGMENT_TIMEOUT_MS, HLS_WORKER_PATH } from './markup.js';
 
 export function bindPlayerEvents(context) {
   const { player, dom, listen, watchParty, onBack } = context;
@@ -54,6 +54,7 @@ export function bindPlayerEvents(context) {
       event.detail.library = Hls;
       event.detail.config = {
         enableWorker: true,
+        workerPath: HLS_WORKER_PATH,
         backBufferLength: 30,
         manifestLoadingTimeOut: 30_000,
         levelLoadingTimeOut: 30_000,

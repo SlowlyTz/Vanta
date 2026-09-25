@@ -18,6 +18,13 @@
   visibility: hidden;
 }
 
+/* Hidden spinners stay in the layout for the fade; their endless rotation
+   would otherwise keep the page animating through the whole stream. */
+.vanta-player-loading.is-hidden .vanta-player-spinner,
+.vanta-player-inline-loading[hidden] .vanta-player-inline-spinner {
+  animation-play-state: paused;
+}
+
 .vanta-player-loading-backdrop {
   position: absolute;
   inset: 0;
