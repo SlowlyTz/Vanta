@@ -29,6 +29,8 @@ export const connectionLifecycleMethods = {
     if (party.ownerUserId === user.userId) {
       this.cancelOwnerDisconnectTimer(partyId);
     }
+    // Back in time: the party goes on waiting until their player has loaded.
+    this.cancelWaitDropout(partyId, user.userId);
 
     this.sendTo(ws, {
       type: 'PARTY_STATE',
@@ -64,7 +66,7 @@ export const connectionLifecycleMethods = {
       WatchPartyService.setConnected({ partyId, userId: user.userId, connected: false });
       const currentParty = WatchPartyService.parties.get(partyId);
       if (!currentParty) return;
-      if (currentParty.waiting?.userIds.includes(user.userId)) this.finishWaitingFor(partyId, user.userId);
+      if (currentParty.waiting?.userIds.includes(user.userId)) this.scheduleWaitDropout(partyId, user.userId);
       // A member who drops out while the next episode loads is not waited for.
       this.startEpisodeIfReady(partyId);
 

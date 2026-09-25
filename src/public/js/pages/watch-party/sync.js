@@ -94,7 +94,10 @@ export function bindSync(ctx) {
   ctx.reportPlayerStatus = status => {
     if (!REPORTABLE_STATES.has(status.status)) return;
     const now = Date.now();
-    if (status.status === lastStatusReport.state && now - lastStatusReport.at < STATUS_REPORT_MS) return;
+    // While the party waits, every tick goes out: the server resumes as soon
+    // as the report shows enough buffered video, not up to two seconds later.
+    const throttled = !ctx.party?.waiting && status.status === lastStatusReport.state;
+    if (throttled && now - lastStatusReport.at < STATUS_REPORT_MS) return;
     lastStatusReport = { state: status.status, at: now };
     const bufferedSeconds = Number(ctx.controller?.getBufferedAhead?.());
     ctx.socket?.sendJson({

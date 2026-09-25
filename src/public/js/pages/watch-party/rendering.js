@@ -80,9 +80,14 @@ export function bindRendering(ctx) {
     ctx.waitingTitle.textContent = selfWaiting && !others.length
       ? 'Alle warten auf dich – dein Video lädt …'
       : `Warte auf ${others.join(', ') || 'jemanden'} …`;
-    ctx.waitingHint.textContent = ctx.isOwner()
-      ? 'Du kannst das im Zahnrad-Menü unter Watch Party abschalten.'
-      : 'Der Gastgeber kann das im Zahnrad-Menü unter Watch Party abschalten.';
+    // The party waits without a time limit; an admin's play goes on at once.
+    if (ctx.isOwner()) {
+      ctx.waitingHint.textContent = 'Mit Play geht es sofort weiter. Abschalten im Zahnrad-Menü unter Watch Party.';
+    } else if (ctx.isPartyAdmin()) {
+      ctx.waitingHint.textContent = 'Mit Play geht es sofort weiter.';
+    } else {
+      ctx.waitingHint.textContent = 'Der Gastgeber kann das im Zahnrad-Menü unter Watch Party abschalten.';
+    }
   };
 
   ctx.renderParty = () => {

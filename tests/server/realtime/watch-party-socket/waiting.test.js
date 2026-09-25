@@ -5,7 +5,7 @@ vi.mock('../../../../src/server/config/session.js', () => ({ sessionMiddleware: 
 
 import { WatchPartyService } from '../../../../src/server/services/watch-party.service.js';
 import { WatchPartySocketHub } from '../../../../src/server/realtime/watch-party.socket.js';
-import { BUFFERING_GRACE_MS, MAX_WAIT_MS, RESUME_LEAD_MS } from '../../../../src/server/realtime/watch-party/waiting.js';
+import { BUFFERING_GRACE_MS, DISCONNECT_GRACE_MS, RESUME_LEAD_MS } from '../../../../src/server/realtime/watch-party/waiting.js';
 
 function setup() {
   const now = Date.now();
@@ -72,10 +72,49 @@ describe('Auf Puffernde warten', () => {
     expect(resume.timeline.anchorServerTimeMs - Date.now()).toBeGreaterThanOrEqual(RESUME_LEAD_MS - 5);
   });
 
-  it('gibt nach 30 s auf und spielt ohne die Wartenden weiter', () => {
+  it('wartet ohne Zeitlimit, bis die Person bereit ist', () => {
     const { party, status } = setup();
     status('lena', 'buffering');
-    vi.advanceTimersByTime(BUFFERING_GRACE_MS + MAX_WAIT_MS);
+    vi.advanceTimersByTime(BUFFERING_GRACE_MS + 10 * 60_000);
+    expect(party.waiting.userIds).toEqual(['lena']);
+    expect(party.status).toBe('paused');
+  });
+
+  it('wartet danach auch auf alle, die die Pausenstelle noch laden', () => {
+    const { party, status } = setup();
+    party.members.set('max', { userId: 'max', username: 'Max', role: 'viewer', connected: true });
+    status('lena', 'buffering');
+    vi.advanceTimersByTime(BUFFERING_GRACE_MS);
+    status('max', 'buffering', 500);
+
+    status('lena', 'paused', 3500);
+    expect(party.waiting.userIds).toEqual(['max']);
+    expect(party.status).toBe('paused');
+
+    status('max', 'paused', 4000);
+    expect(party.waiting).toBeNull();
+    expect(party.status).toBe('playing');
+  });
+
+  it('gibt Wartenden, die rausfliegen, 20 s für die Rückkehr', () => {
+    const { party, hub, status } = setup();
+    status('lena', 'buffering');
+    vi.advanceTimersByTime(BUFFERING_GRACE_MS);
+
+    const lenaWs = createFakeWs();
+    hub.handleConnection({ ws: lenaWs, partyId: 'wp', user: { userId: 'lena', username: 'Lena' } });
+    lenaWs.listeners.close();
+    vi.advanceTimersByTime(DISCONNECT_GRACE_MS - 1);
+    expect(party.waiting.userIds).toEqual(['lena']);
+
+    // Back in time: still waited for until the video has loaded.
+    const again = createFakeWs();
+    hub.handleConnection({ ws: again, partyId: 'wp', user: { userId: 'lena', username: 'Lena' } });
+    vi.advanceTimersByTime(DISCONNECT_GRACE_MS);
+    expect(party.waiting.userIds).toEqual(['lena']);
+
+    again.listeners.close();
+    vi.advanceTimersByTime(DISCONNECT_GRACE_MS);
     expect(party.waiting).toBeNull();
     expect(party.status).toBe('playing');
   });

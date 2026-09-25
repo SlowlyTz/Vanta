@@ -394,7 +394,7 @@ describe('WatchPartyPage · Player Sync', () => {
     });
     expect(pill.hidden).toBe(false);
     expect(pill.textContent).toContain('Warte auf Bob …');
-    expect(pill.textContent).toContain('Du kannst das im Zahnrad-Menü unter Watch Party abschalten.');
+    expect(pill.textContent).toContain('Mit Play geht es sofort weiter. Abschalten im Zahnrad-Menü unter Watch Party.');
 
     const { watchParty } = mountVantaPlayer.mock.calls.at(-1)[0];
     expect(watchParty.isHost).toBe(true);

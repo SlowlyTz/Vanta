@@ -3,12 +3,15 @@ import { getEffectivePosition, setTimeline } from '../../services/watch-party/he
 
 // "Wait for buffering": when a member's player has been stuck buffering for a
 // few seconds while the party plays, the whole party pauses until that member
-// has enough video buffered again, then everyone starts together. The host
-// can switch this off for the session.
+// (and anyone else still loading by then) has enough video buffered again,
+// then everyone starts together. There is no time limit; an admin can always
+// go on by hand, and the host can switch the wait off for the session.
 
 export const BUFFERING_GRACE_MS = 3_000;
 export const READY_BUFFER_MS = 3_000;
-export const MAX_WAIT_MS = 30_000;
+// A waited-for member who drops out gets this long to come back (network
+// switch, reload) before the party goes on without them.
+export const DISCONNECT_GRACE_MS = 20_000;
 // Resuming is anchored a little in the future so every client starts at once.
 export const RESUME_LEAD_MS = 1_000;
 
@@ -17,7 +20,7 @@ const timerKey = (partyId, userId) => `${partyId}:${userId}`;
 export const waitingMethods = {
   initWaiting() {
     this.bufferingTimers = new Map();
-    this.waitGiveUpTimers = new Map();
+    this.waitDropoutTimers = new Map();
   },
 
   // Called for every PLAYER_STATUS after it was stored on the member.
@@ -62,29 +65,54 @@ export const waitingMethods = {
       setTimeline(party, { positionMs: getEffectivePosition(party, now), playing: false, anchorServerTimeMs: now });
       party.waiting = { userIds: [...userIds], since: now };
       this.broadcastTimeline(partyId, party, { reason: 'wait' });
-
-      const giveUp = setTimeout(() => this.stopWaiting(partyId, { resume: true }), MAX_WAIT_MS);
-      giveUp.unref?.();
-      this.waitGiveUpTimers.set(partyId, giveUp);
     }
     this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
   },
 
+  // One member is ready (or gone for good). The party only goes on when nobody
+  // it waits for is left and no other connected member is still loading the
+  // paused position; those are waited for next instead of resuming into
+  // another stall a few seconds later.
   finishWaitingFor(partyId, userId) {
     const party = WatchPartyService.parties.get(partyId);
     if (!party?.waiting) return;
+    this.cancelWaitDropout(partyId, userId);
     party.waiting.userIds = party.waiting.userIds.filter(id => id !== userId);
+    if (party.waiting.userIds.length === 0) {
+      const stillLoading = [...party.members.values()]
+        .filter(member => member.connected && member.playbackState === 'buffering' && member.userId !== userId)
+        .map(member => member.userId);
+      if (stillLoading.length) party.waiting.userIds = stillLoading;
+    }
     if (party.waiting.userIds.length === 0) this.stopWaiting(partyId, { resume: true });
     else this.broadcastParty(partyId, { type: 'PARTY_UPDATED', party: WatchPartyService.serializeParty(party) });
+  },
+
+  // A waited-for member lost their connection: keep waiting a little while
+  // for them to come back.
+  scheduleWaitDropout(partyId, userId) {
+    this.cancelWaitDropout(partyId, userId);
+    const timer = setTimeout(() => {
+      this.waitDropoutTimers.delete(timerKey(partyId, userId));
+      const member = WatchPartyService.parties.get(partyId)?.members.get(userId);
+      if (!member?.connected) this.finishWaitingFor(partyId, userId);
+    }, DISCONNECT_GRACE_MS);
+    timer.unref?.();
+    this.waitDropoutTimers.set(timerKey(partyId, userId), timer);
+  },
+
+  cancelWaitDropout(partyId, userId) {
+    const key = timerKey(partyId, userId);
+    clearTimeout(this.waitDropoutTimers.get(key));
+    this.waitDropoutTimers.delete(key);
   },
 
   // Ends the wait. With `resume` the party plays on together; without it (an
   // admin paused or played by hand) the admin's command stands.
   stopWaiting(partyId, { resume = false } = {}) {
-    clearTimeout(this.waitGiveUpTimers.get(partyId));
-    this.waitGiveUpTimers.delete(partyId);
     const party = WatchPartyService.parties.get(partyId);
     if (!party?.waiting) return;
+    party.waiting.userIds.forEach(userId => this.cancelWaitDropout(partyId, userId));
     party.waiting = null;
 
     if (resume) {
