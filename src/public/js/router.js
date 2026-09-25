@@ -1,6 +1,7 @@
 import { authStore } from './store/auth.store.js';
 import { createElement } from './utils/dom.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
+import { checkServerBuild } from './utils/appVersion.js';
 import { Navbar } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
 
@@ -212,6 +213,9 @@ export class Router {
       this.updateShellState(hash, user);
     } catch (error) {
       console.error('[Router Navigation Error]', error);
+      // A page chunk a newer deploy has replaced fails to load; if that is
+      // the cause, the update overlay takes over.
+      checkServerBuild();
     }
   }
 }

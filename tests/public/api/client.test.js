@@ -59,4 +59,21 @@ describe('request()', () => {
       activeStreams: 1
     });
   });
+
+  it('reports the server build from the response header', async () => {
+    const listener = vi.fn();
+    window.addEventListener('vanta:server-build', listener);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: name => (name === 'X-Vanta-Build' ? 'build-b' : 'application/json') },
+      json: async () => ({})
+    });
+
+    await request('/api/media/home');
+    window.removeEventListener('vanta:server-build', listener);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0].detail).toEqual({ build: 'build-b' });
+  });
 });

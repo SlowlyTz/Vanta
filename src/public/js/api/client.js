@@ -1,3 +1,5 @@
+import { BUILD_HEADER, reportServerBuild } from '../utils/appVersion.js';
+
 const AUTH_UNAUTHORIZED_EVENT = 'vanta:auth-unauthorized';
 const NETWORK_ERROR_EVENT = 'vanta:network-error';
 
@@ -39,6 +41,8 @@ export async function request(url, options = {}) {
       }
       throw networkError;
     }
+
+    reportServerBuild(response.headers?.get?.(BUILD_HEADER));
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));

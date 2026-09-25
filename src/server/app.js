@@ -14,11 +14,22 @@ import watchPartyRoutes from './routes/watch-party.routes.js';
 import watchPartyInvitationsRoutes from './routes/watch-party-invitations.routes.js';
 import pageRoutes from './routes/page.routes.js';
 import internalRoutes from './routes/internal.routes.js';
+import versionRoutes from './routes/version.routes.js';
+import { BUILD_ID, BUILD_HEADER } from './config/build.js';
 
 const app = express();
 
 // Security Headers
 app.use(securityHeaders);
+
+// Every response names the deployed client build, so an open tab running an
+// older one notices on its next API call (see js/utils/appVersion.js)
+if (BUILD_ID) {
+  app.use((req, res, next) => {
+    res.setHeader(BUILD_HEADER, BUILD_ID);
+    next();
+  });
+}
 
 // Gzip/brotli for text responses (JS, CSS, HTML, JSON); media proxies are excluded
 app.use(compressResponses);
@@ -49,6 +60,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/watch-parties', watchPartyRoutes);
 app.use('/api/watch-party-invitations', watchPartyInvitationsRoutes);
 app.use('/api/internal', internalRoutes);
+app.use('/api/version', versionRoutes);
 app.use('/', pageRoutes);
 
 // Error Middleware

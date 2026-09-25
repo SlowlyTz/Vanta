@@ -2,6 +2,7 @@ import { router } from './router.js';
 import { initAppRealtime } from './realtime/app-realtime.js';
 import { mountWatchPartyInvitationOverlay } from './components/watch-party/WatchPartyInvitationOverlay.js';
 import { mountOfflineOverlay } from './components/offlineOverlay.js';
+import { mountUpdateOverlay } from './components/updateOverlay.js';
 import { registerServiceWorker } from './utils/service-worker.js';
 import { initDetailPrefetch } from './utils/prefetch.js';
 
@@ -34,6 +35,7 @@ router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js')
 document.addEventListener('DOMContentLoaded', () => {
   mountWatchPartyInvitationOverlay();
   mountOfflineOverlay();
+  mountUpdateOverlay();
   registerServiceWorker();
   initAppRealtime();
   router.init();

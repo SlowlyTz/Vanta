@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
+import { BUILD_ID } from '../config/build.js';
 
 export class AppSocketHub {
   constructor() {
@@ -32,7 +33,7 @@ export class AppSocketHub {
       };
 
       this.register(user.userId, ws);
-      this.sendTo(ws, { type: 'APP_SOCKET_READY', serverTimeMs: Date.now() });
+      this.sendTo(ws, { type: 'APP_SOCKET_READY', serverTimeMs: Date.now(), build: BUILD_ID });
 
       ws.on('close', () => this.unregister(user.userId, ws));
     });
