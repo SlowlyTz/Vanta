@@ -19,6 +19,7 @@ import { bindSourceSwitchIntegration } from './player/sourceSwitchIntegration.js
 import { bindMenus } from './player/menus.js';
 import { bindPlayerEvents } from './player/eventBindings.js';
 import { bindSyncControls } from './player/syncControls.js';
+import { bindTimelineWatchdog } from './player/timelineWatchdog.js';
 import { bindTransportControls } from './player/transportControls.js';
 import { bindTouchTaps } from './player/touchTaps.js';
 import { bindShortcuts } from './player/shortcuts.js';
@@ -44,6 +45,7 @@ export async function mountVantaPlayer(options) {
   context.help = createHelpOverlay(context);
   bindSegments(context, { loadSegments: context.loadSegments });
   bindSyncControls(context);
+  bindTimelineWatchdog(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);
 }
