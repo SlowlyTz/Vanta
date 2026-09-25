@@ -12,6 +12,10 @@ export const READY_BUFFER_MS = 3_000;
 // A waited-for member who drops out gets this long to come back (network
 // switch, reload) before the party goes on without them.
 export const DISCONNECT_GRACE_MS = 20_000;
+// The pause lands a little past the server position: the message reaches the
+// players a moment later, and a pause slightly ahead of them costs a small
+// step forward instead of a jump back for everyone.
+export const WAIT_PAUSE_LEAD_MS = 250;
 // Resuming is anchored a little in the future so every client starts at once.
 export const RESUME_LEAD_MS = 1_000;
 
@@ -62,7 +66,7 @@ export const waitingMethods = {
       party.waiting.userIds = [...new Set([...party.waiting.userIds, ...userIds])];
     } else {
       const now = Date.now();
-      setTimeline(party, { positionMs: getEffectivePosition(party, now), playing: false, anchorServerTimeMs: now });
+      setTimeline(party, { positionMs: getEffectivePosition(party, now) + WAIT_PAUSE_LEAD_MS, playing: false, anchorServerTimeMs: now });
       party.waiting = { userIds: [...userIds], since: now };
       this.broadcastTimeline(partyId, party, { reason: 'wait' });
     }

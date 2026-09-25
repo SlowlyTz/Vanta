@@ -5,7 +5,7 @@ vi.mock('../../../../src/server/config/session.js', () => ({ sessionMiddleware: 
 
 import { WatchPartyService } from '../../../../src/server/services/watch-party.service.js';
 import { WatchPartySocketHub } from '../../../../src/server/realtime/watch-party.socket.js';
-import { BUFFERING_GRACE_MS, DISCONNECT_GRACE_MS, RESUME_LEAD_MS } from '../../../../src/server/realtime/watch-party/waiting.js';
+import { BUFFERING_GRACE_MS, DISCONNECT_GRACE_MS, RESUME_LEAD_MS, WAIT_PAUSE_LEAD_MS } from '../../../../src/server/realtime/watch-party/waiting.js';
 
 function setup() {
   const now = Date.now();
@@ -78,6 +78,14 @@ describe('Auf Puffernde warten', () => {
     vi.advanceTimersByTime(BUFFERING_GRACE_MS + 10 * 60_000);
     expect(party.waiting.userIds).toEqual(['lena']);
     expect(party.status).toBe('paused');
+  });
+
+  it('hält ein Stück vor der Serverposition an, damit niemand zurückspringt', () => {
+    const { party, status } = setup();
+    party.lastServerTimeMs = Date.now();
+    status('lena', 'buffering');
+    vi.advanceTimersByTime(BUFFERING_GRACE_MS);
+    expect(party.positionMs).toBe(60_000 + BUFFERING_GRACE_MS + WAIT_PAUSE_LEAD_MS);
   });
 
   it('wartet danach auch auf alle, die die Pausenstelle noch laden', () => {
