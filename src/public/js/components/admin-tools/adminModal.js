@@ -1,5 +1,6 @@
 import { createElement } from '../../utils/dom.js';
 import { createCloseIcon } from '../navbar/icons.js';
+import { bindSheetSwipe } from '../../utils/sheetSwipe.js';
 
 // Einziger Modal-Helfer des Admin-Bereichs: Overlay, Schließen-Button, Escape
 // und Backdrop-Klick. Wird sowohl von den Bestätigungsdialogen (Sperren,
@@ -27,9 +28,12 @@ export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
     className: `admin-user-dialog-overlay${variant ? ` ${variant}` : ''}`
   });
 
+  let unbindSwipe = null;
+
   const close = () => {
     if (closed) return;
     closed = true;
+    unbindSwipe?.();
     openModals.delete(handle);
     document.removeEventListener('keydown', handleKeydown);
     overlay.remove();
@@ -56,6 +60,8 @@ export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
   }, closeBtn, contentEl);
 
   overlay.appendChild(card);
+  // On a phone the dialog is a sheet: swiping it down closes it.
+  unbindSwipe = bindSheetSwipe({ sheet: card, onDismiss: close });
   overlay.addEventListener('click', (event) => {
     if (event.target === overlay) close();
   });

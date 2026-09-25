@@ -1,4 +1,5 @@
 import { createElement } from '../../utils/dom.js';
+import { bindSheetSwipe } from '../../utils/sheetSwipe.js';
 import { createBackIcon, createCloseIcon, createPasswordIcon, createProfileIcon, createLogoutIcon } from './icons.js';
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
@@ -118,6 +119,13 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   },
     settingsDialog
   );
+
+  // Phones show the dialog as a sheet: swiping it down closes it.
+  bindSheetSwipe({
+    sheet: settingsDialog,
+    getScrollElement: () => settingsDialog.querySelector('.settings-panel:not([hidden])'),
+    onDismiss: () => setSettingsOpen(false)
+  });
 
   let settingsOpen = false;
   let settingsView = 'root';
