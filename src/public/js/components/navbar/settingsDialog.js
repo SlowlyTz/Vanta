@@ -57,7 +57,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
   },
     settingsProfile.element,
     createElement('section', { className: 'settings-section' },
-      sectionTitle('Deine Bibliothek'),
+      sectionTitle('Bibliothek'),
       settingsOverview.element
     ),
     createElement('section', { className: 'settings-section' },
