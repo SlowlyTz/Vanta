@@ -254,3 +254,43 @@
   flex-wrap: nowrap;
   margin: 2px 0 4px;
 }
+
+/* Report a problem / request missing seasons: quiet, below the facts. */
+.detail-help-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.detail-help-link svg {
+  flex-shrink: 0;
+}
+
+.detail-help-link:hover,
+.detail-help-link:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--text-primary);
+}
+
+.detail-help-report:hover,
+.detail-help-report:focus-visible {
+  color: #ff8a8a;
+  border-color: rgba(255, 90, 90, 0.4);
+}

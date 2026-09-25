@@ -6,7 +6,7 @@ import { createMetaIcon, metaIconFor } from './metaIcons.js';
 // Two lines on phones, a little more room on wide screens.
 const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
 
-export function DetailView({ item, actions, favoriteButton, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null }) {
+export function DetailView({ item, actions, favoriteButton, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null, helpLinks = null }) {
   const container = createElement('div', { className: 'page-container' });
 
   const genreTags = (item.genres || []).map(genre =>
@@ -130,7 +130,8 @@ export function DetailView({ item, actions, favoriteButton, playedButton = null,
           item.overview
             ? createExpandableText({ text: item.overview, lines: overviewLines(), className: 'detail-overview' })
             : null,
-          crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null
+          crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null,
+          helpLinks
         )
       )
     )

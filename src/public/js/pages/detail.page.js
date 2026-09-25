@@ -9,6 +9,7 @@ import { DetailView } from '../components/detailView.js';
 import { createActorModal } from './detail/actorModal.js';
 import { buildSeasonsSection } from './detail/seasonsSection.js';
 import { loadDetailData } from './detail/detailData.js';
+import { buildHelpLinks } from './detail/helpLinks.js';
 import { extractYouTubeVideoId, openTrailerModal } from '../components/trailerModal.js';
 
 function getYouTubeTrailerId(item) {
@@ -138,7 +139,8 @@ export default function DetailPage({ id }) {
         playedButton,
         castSection,
         seasonsSection,
-        similarSection
+        similarSection,
+        helpLinks: buildHelpLinks(item)
       });
 
       container.innerHTML = '';

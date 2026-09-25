@@ -229,3 +229,48 @@ describe('DetailPage prefetch cache', () => {
     expect(MediaApi.getItem).toHaveBeenCalledWith('item-1');
   });
 });
+
+describe('DetailPage help links', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MediaApi.getSimilar.mockResolvedValue([]);
+    MediaApi.getSeasons.mockResolvedValue([]);
+  });
+
+  it('offers to report a problem with a movie', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem());
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    const links = [...container.querySelectorAll('.detail-help-link')];
+    expect(links.map(link => link.textContent)).toEqual(['Problem melden']);
+    expect(links[0].getAttribute('href')).toBe('#/report?item=item-1');
+  });
+
+  it('also offers to request missing seasons of a series with a TMDB id', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Id: 'series-1', Type: 'Series', ProviderIds: { Tmdb: '95396' } }));
+    const container = DetailPage({ id: 'series-1' });
+    await flush();
+
+    const links = [...container.querySelectorAll('.detail-help-link')];
+    expect(links.map(link => link.textContent)).toEqual(['Weitere Staffeln anfragen', 'Problem melden']);
+    expect(links[0].getAttribute('href')).toBe('#/request-detail/tv/95396');
+    expect(links[1].getAttribute('href')).toBe('#/report?item=series-1');
+  });
+
+  it('leaves the season request out when the series has no TMDB id', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Id: 'series-1', Type: 'Series' }));
+    const container = DetailPage({ id: 'series-1' });
+    await flush();
+
+    expect([...container.querySelectorAll('.detail-help-link')].map(link => link.textContent)).toEqual(['Problem melden']);
+  });
+
+  it('shows no help links for an episode', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Type: 'Episode' }));
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(container.querySelector('.detail-help-links')).toBeNull();
+  });
+});
