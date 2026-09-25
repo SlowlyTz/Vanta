@@ -6,10 +6,11 @@ export class PlaybackApiService {
     userAgent = '',
     forceHlsTranscoding = false,
     maxStreamingBitrate = null,
+    maxHeight = null,
     audioStreamIndex = null,
     mediaSourceId = null
   } = {}) {
-    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding });
+    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding, maxHeight });
 
     const baseBody = {
       UserId: userId,
@@ -18,8 +19,11 @@ export class PlaybackApiService {
       EnableDirectPlay: !forceHlsTranscoding,
       EnableDirectStream: !forceHlsTranscoding,
       EnableTranscoding: true,
-      AllowVideoStreamCopy: !forceHlsTranscoding,
-      AllowAudioStreamCopy: !forceHlsTranscoding,
+      // Even when every stream goes out as HLS, a browser-ready video or audio
+      // stream is copied into the segments rather than re-encoded: encoding
+      // on the CPU is what makes streaming expensive.
+      AllowVideoStreamCopy: true,
+      AllowAudioStreamCopy: true,
       AutoOpenLiveStream: true,
       DeviceProfile: deviceProfile
     };

@@ -172,6 +172,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       userAgent,
       forceHlsTranscoding: shouldForceHls,
       maxStreamingBitrate: qualityConstraints?.maxStreamingBitrate ?? null,
+      maxHeight: qualityConstraints?.maxHeight ?? null,
       audioStreamIndex: requestedAudioStreamIndex,
       mediaSourceId
     };

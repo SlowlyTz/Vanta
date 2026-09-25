@@ -19,4 +19,16 @@ describe('PlaybackApiService.getPlaybackInfo', () => {
     await PlaybackApiService.getPlaybackInfo('u1', 't', 'item-1');
     expect(jellyfinJson.mock.calls.at(-1)[1].body).not.toHaveProperty('MediaSourceId');
   });
+
+  it('erlaubt Stream-Copy auch bei erzwungenem HLS, damit H.264 nicht neu kodiert wird', async () => {
+    await PlaybackApiService.getPlaybackInfo('u1', 't', 'item-1', { forceHlsTranscoding: true, maxHeight: 720 });
+    const body = jellyfinJson.mock.calls.at(-1)[1].body;
+    expect(body).toMatchObject({
+      EnableDirectPlay: false,
+      EnableDirectStream: false,
+      AllowVideoStreamCopy: true,
+      AllowAudioStreamCopy: true
+    });
+    expect(body.DeviceProfile.CodecProfiles[0].Conditions).toContainEqual(expect.objectContaining({ Property: 'Height', Value: '720' }));
+  });
 });

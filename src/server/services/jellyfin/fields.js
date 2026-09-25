@@ -42,7 +42,27 @@ export const TRAILER_ITEM_FIELDS = [
   'OriginalTitle'
 ].join(',');
 
-export function buildBrowserDeviceProfile({ forceHlsTranscoding = false } = {}) {
+// H.264 the browser decodes itself: Jellyfin copies such a video stream into
+// the HLS segments instead of re-encoding it. Anything outside these limits
+// (10-bit, HDR, interlaced, level > 5.2) is still transcoded. A quality
+// profile's height cap applies to both, so a copy only happens when the
+// source already fits.
+function buildH264CodecProfile(maxHeight) {
+  const conditions = [
+    { Condition: 'NotEquals', Property: 'IsAnamorphic', Value: 'true', IsRequired: false },
+    { Condition: 'EqualsAny', Property: 'VideoProfile', Value: 'high|main|baseline|constrained baseline', IsRequired: false },
+    { Condition: 'EqualsAny', Property: 'VideoRangeType', Value: 'SDR', IsRequired: false },
+    { Condition: 'LessThanEqual', Property: 'VideoBitDepth', Value: '8', IsRequired: false },
+    { Condition: 'LessThanEqual', Property: 'VideoLevel', Value: '52', IsRequired: false },
+    { Condition: 'NotEquals', Property: 'IsInterlaced', Value: 'true', IsRequired: false }
+  ];
+  if (Number.isInteger(maxHeight) && maxHeight > 0) {
+    conditions.push({ Condition: 'LessThanEqual', Property: 'Height', Value: String(maxHeight), IsRequired: false });
+  }
+  return { Type: 'Video', Codec: 'h264', Conditions: conditions };
+}
+
+export function buildBrowserDeviceProfile({ forceHlsTranscoding = false, maxHeight = null } = {}) {
   const hlsProfile = {
     Type: 'Video',
     Container: 'ts',
@@ -85,7 +105,7 @@ export function buildBrowserDeviceProfile({ forceHlsTranscoding = false } = {}) 
     ],
     TranscodingProfiles: forceHlsTranscoding ? [hlsProfile] : [httpProfile, hlsProfile],
     ContainerProfiles: [],
-    CodecProfiles: [],
+    CodecProfiles: [buildH264CodecProfile(maxHeight)],
     SubtitleProfiles: subtitleProfiles
   };
 }
