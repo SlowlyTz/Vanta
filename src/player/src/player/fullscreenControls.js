@@ -7,6 +7,10 @@ export function bindFullscreenControls(context) {
   const { root, iosLike, listen } = context;
 
   const shell = root.querySelector('.vanta-player-shell');
+  // A page can hand in a larger element (the watch party its whole page), so
+  // its own overlays (notifications, the waiting pill) stay visible in
+  // fullscreen; only the fullscreen element and its children are shown.
+  const fullscreenElement = () => context.fullscreenTarget?.() || shell;
   const fullscreenButton = root.querySelector('.vanta-player-fullscreen-button');
 
   const updateFullscreenIcon = () => {
@@ -26,7 +30,7 @@ export function bindFullscreenControls(context) {
         } else if (isFullscreen()) {
           await exitFullscreen();
         } else {
-          await enterFullscreen(shell);
+          await enterFullscreen(fullscreenElement());
         }
       } catch {
         // ignore fullscreen errors
@@ -51,7 +55,7 @@ export function bindFullscreenControls(context) {
       } else if (isFullscreen()) {
         await exitFullscreen();
       } else {
-        await enterFullscreen(shell);
+        await enterFullscreen(fullscreenElement());
       }
     } catch {
       // ignore fullscreen errors

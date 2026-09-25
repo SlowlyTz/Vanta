@@ -16,6 +16,12 @@
   isolation: isolate;
 }
 
+/* In fullscreen the whole page is the fullscreen element (the player hands
+   it in), so the party overlays above the player stay visible. */
+.watch-party-page:fullscreen {
+  background: #000;
+}
+
 .watch-party-icon {
   width: 18px;
   height: 18px;

@@ -582,15 +582,15 @@ function Je(e) {
 	return e?.code === "STREAM_LIMIT_REACHED" || e?.status === 429;
 }
 async function Ye(e) {
-	let { root: t, itemId: n, title: r, subtitle: i = "", poster: a, resumePosition: o = 0, resolvePlayback: s, reportPlayback: c, onBack: l, watchParty: u = null, episodeBrowser: d = null, preferences: f = null, loadSegments: p = null, onPlaybackError: m = null, loadTranscodeProgress: h = null, deferInitialLoad: g = !1 } = e;
+	let { root: t, itemId: n, title: r, subtitle: i = "", poster: a, resumePosition: o = 0, resolvePlayback: s, reportPlayback: c, onBack: l, watchParty: u = null, episodeBrowser: d = null, preferences: f = null, loadSegments: p = null, onPlaybackError: m = null, loadTranscodeProgress: h = null, deferInitialLoad: g = !1, fullscreenTarget: _ = null } = e;
 	await customElements.whenDefined("media-player");
-	let _ = xe(), v = qe(t, {
+	let v = xe(), y = qe(t, {
 		title: r,
 		subtitle: i,
 		poster: a
-	}), { player: y } = v;
-	u?.enabled && (y.autoplay = !1);
-	let b = {
+	}), { player: b } = y;
+	u?.enabled && (b.autoplay = !1);
+	let x = {
 		root: t,
 		itemId: n,
 		title: r,
@@ -598,7 +598,7 @@ async function Ye(e) {
 		poster: a,
 		resumePosition: o,
 		resolvePlayback: (e, t = {}) => s(e, {
-			...b.streamSelection(),
+			...x.streamSelection(),
 			...t
 		}),
 		reportPlayback: c,
@@ -610,9 +610,10 @@ async function Ye(e) {
 		onPlaybackError: m,
 		loadTranscodeProgress: h,
 		deferInitialLoad: g,
-		iosLike: _,
-		dom: v,
-		player: y,
+		fullscreenTarget: _,
+		iosLike: v,
+		dom: y,
+		player: b,
 		disposers: [],
 		ui: Ne(t),
 		destroyed: !1,
@@ -621,43 +622,43 @@ async function Ye(e) {
 		ownerEchoSuppressionDepth: 0,
 		echoTokens: Re()
 	};
-	return b.handleFatalPlaybackError = (e) => !Je(e) || typeof b.onPlaybackError != "function" ? !1 : (b.onPlaybackError(e), !0), b.streamSelection = () => {
-		let e = {}, t = b.audioMenu?.getCurrentIndex?.(), n = b.sourceSwitch?.getCurrentPlayback?.();
-		Number.isInteger(t) && n ? (e.audioStreamIndex = t, n.mediaSourceId && (e.mediaSourceId = n.mediaSourceId)) : b.preferences?.get().audioLanguage && (e.audioLanguage = b.preferences.get().audioLanguage);
-		let r = b.qualityMenu?.getCurrentId?.();
+	return x.handleFatalPlaybackError = (e) => !Je(e) || typeof x.onPlaybackError != "function" ? !1 : (x.onPlaybackError(e), !0), x.streamSelection = () => {
+		let e = {}, t = x.audioMenu?.getCurrentIndex?.(), n = x.sourceSwitch?.getCurrentPlayback?.();
+		Number.isInteger(t) && n ? (e.audioStreamIndex = t, n.mediaSourceId && (e.mediaSourceId = n.mediaSourceId)) : x.preferences?.get().audioLanguage && (e.audioLanguage = x.preferences.get().audioLanguage);
+		let r = x.qualityMenu?.getCurrentId?.();
 		return r && r !== "auto" && (e.qualityProfile = r), e;
-	}, b.listen = (e, t, n, r) => {
-		e.addEventListener(t, n, r), b.disposers.push(() => e.removeEventListener(t, n, r));
-	}, b.beginOwnerEchoSuppression = () => {
-		b.ownerEchoSuppressionDepth += 1;
-	}, b.endOwnerEchoSuppression = (e = 250) => {
+	}, x.listen = (e, t, n, r) => {
+		e.addEventListener(t, n, r), x.disposers.push(() => e.removeEventListener(t, n, r));
+	}, x.beginOwnerEchoSuppression = () => {
+		x.ownerEchoSuppressionDepth += 1;
+	}, x.endOwnerEchoSuppression = (e = 250) => {
 		window.setTimeout(() => {
-			b.ownerEchoSuppressionDepth = Math.max(0, b.ownerEchoSuppressionDepth - 1);
+			x.ownerEchoSuppressionDepth = Math.max(0, x.ownerEchoSuppressionDepth - 1);
 		}, e);
-	}, b.watchPartyPhase = () => u?.phase || (u?.enabled ? "playback" : null), b.isDeferredReadyRoom = () => b.watchPartyPhase() === "ready-room", b.canControlWatchParty = () => u?.enabled ? !!u.canControl : !0, b.canEmitOwnerControl = (e) => e && b.echoTokens.consume(e) ? !1 : !!u?.enabled && b.canControlWatchParty() && b.watchPartyPhase() === "playback" && b.ownerEchoSuppressionDepth === 0, b.refreshWatchPartyControlAccess = () => {
+	}, x.watchPartyPhase = () => u?.phase || (u?.enabled ? "playback" : null), x.isDeferredReadyRoom = () => x.watchPartyPhase() === "ready-room", x.canControlWatchParty = () => u?.enabled ? !!u.canControl : !0, x.canEmitOwnerControl = (e) => e && x.echoTokens.consume(e) ? !1 : !!u?.enabled && x.canControlWatchParty() && x.watchPartyPhase() === "playback" && x.ownerEchoSuppressionDepth === 0, x.refreshWatchPartyControlAccess = () => {
 		u?.enabled && (Ie({
 			root: t,
 			watchParty: u
-		}), b.mediaSession?.refresh(), b.refreshSegmentButton?.());
-	}, u?.enabled && (u.onParticipantsChange = b.refreshWatchPartyControlAccess), b.refreshWatchPartyControlAccess(), b.syncInlinePlayback = () => {
-		_ && Se(t);
-	}, _ && (t.classList.add("is-ios", "supports-ios-inline-fullscreen"), b.syncInlinePlayback()), Ee() || t.classList.add("no-pip"), b;
+		}), x.mediaSession?.refresh(), x.refreshSegmentButton?.());
+	}, u?.enabled && (u.onParticipantsChange = x.refreshWatchPartyControlAccess), x.refreshWatchPartyControlAccess(), x.syncInlinePlayback = () => {
+		v && Se(t);
+	}, v && (t.classList.add("is-ios", "supports-ios-inline-fullscreen"), x.syncInlinePlayback()), Ee() || t.classList.add("no-pip"), x;
 }
 //#endregion
 //#region src/player/src/player/fullscreenControls.js
 function Xe(e) {
-	let { root: t, iosLike: n, listen: r } = e, i = t.querySelector(".vanta-player-shell"), a = t.querySelector(".vanta-player-fullscreen-button"), o = () => {
-		if (!a) return;
+	let { root: t, iosLike: n, listen: r } = e, i = t.querySelector(".vanta-player-shell"), a = () => e.fullscreenTarget?.() || i, o = t.querySelector(".vanta-player-fullscreen-button"), s = () => {
+		if (!o) return;
 		let e = n ? Te(t) : Oe();
-		a.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), a.innerHTML = We(e ? "fullscreenExit" : "fullscreenEnter");
+		o.setAttribute("aria-label", e ? "Vollbild beenden" : "Vollbild"), o.innerHTML = We(e ? "fullscreenExit" : "fullscreenEnter");
 	};
-	if (a) {
+	if (o) {
 		let r = async () => {
 			try {
-				n ? (Te(t) ? we(t) : Ce(t), o()) : Oe() ? await Ae() : await ke(i);
+				n ? (Te(t) ? we(t) : Ce(t), s()) : Oe() ? await Ae() : await ke(a());
 			} catch {}
 		};
-		a.addEventListener("click", r), e.disposers.push(() => a.removeEventListener("click", r));
+		o.addEventListener("click", r), e.disposers.push(() => o.removeEventListener("click", r));
 	}
 	return [
 		"fullscreenchange",
@@ -665,12 +666,12 @@ function Xe(e) {
 		"mozfullscreenchange",
 		"MSFullscreenChange"
 	].forEach((t) => {
-		document.addEventListener(t, o), e.disposers.push(() => document.removeEventListener(t, o));
+		document.addEventListener(t, s), e.disposers.push(() => document.removeEventListener(t, s));
 	}), e.toggleFullscreen = async () => {
 		try {
-			n ? (Te(t) ? we(t) : Ce(t), o()) : Oe() ? await Ae() : await ke(i);
+			n ? (Te(t) ? we(t) : Ce(t), s()) : Oe() ? await Ae() : await ke(a());
 		} catch {}
-	}, e.updateFullscreenIcon = o, e;
+	}, e.updateFullscreenIcon = s, e;
 }
 //#endregion
 //#region src/player/src/player/inlineLoading.js

@@ -110,6 +110,9 @@ export function bindPlayerMount(ctx) {
           onBack: ctx.goHome,
           watchParty: ctx.watchPartyConfig,
           deferInitialLoad,
+          // Fullscreen takes the whole party page along, so notifications,
+          // the waiting pill and the other party overlays stay on screen.
+          fullscreenTarget: () => ctx.container,
           // Party sessions start from the defaults and remember choices only
           // for this party (see preferences.js in the player).
           preferences: { key: `vanta.player.party.${ctx.partyId}`, storage: 'session' },
