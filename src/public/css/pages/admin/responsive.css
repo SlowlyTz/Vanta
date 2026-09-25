@@ -1,21 +1,18 @@
 /* ---------------------------------
    ADMIN PAGE — Responsive
-   Das Menü läuft auf schmalen Breiten einspaltig; ein Bereich füllt in jeder
-   Breite die ganze Seite, der Zurück-Button steht immer links darüber.
    --------------------------------- */
-@media (max-width: 899px) {
-  .admin-menu-grid {
-    gap: var(--spacing-sm);
-  }
-}
-
 @media (max-width: 640px) {
+  .admin-page-layout {
+    gap: 16px;
+  }
+
   .admin-menu-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .admin-menu-card {
     min-height: 0;
-    padding: var(--spacing-md);
+    padding: 14px;
   }
 }

@@ -1,4 +1,5 @@
 import { createElement } from '../../utils/dom.js';
+import { createCloseIcon } from '../navbar/icons.js';
 
 // Einziger Modal-Helfer des Admin-Bereichs: Overlay, Schließen-Button, Escape
 // und Backdrop-Klick. Wird sowohl von den Bestätigungsdialogen (Sperren,
@@ -45,7 +46,7 @@ export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
     type: 'button',
     'aria-label': 'Schließen',
     onClick: close
-  }, '×');
+  }, createCloseIcon());
 
   const card = createElement('div', {
     className: 'admin-user-dialog',

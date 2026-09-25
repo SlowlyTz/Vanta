@@ -1,12 +1,21 @@
 /* ---------------------------------
    ADMIN PAGE — Seitengerüst
-   #/admin zeigt nur das Menü, #/admin/<bereich> nur diesen einen Bereich.
-   Beide Ansichten laufen über die volle Breite; eine Sidebar gibt es nicht
-   mehr.
+   #/admin zeigt das Menü, #/admin/<bereich> genau einen Bereich. Alles steht
+   in einer mittigen Spalte; die Flächen nutzen dasselbe Glas wie Navigation
+   und Einstellungen-Dialog. Gemeinsame Werte als Variablen:
    --------------------------------- */
 .admin-page {
+  --admin-surface: rgba(255, 255, 255, 0.04);
+  --admin-surface-hover: rgba(255, 255, 255, 0.065);
+  --admin-hairline: rgba(255, 255, 255, 0.07);
+  --admin-radius: 18px;
+  --admin-muted: rgba(255, 255, 255, 0.5);
+  --admin-danger: #ff6b6b;
+  --admin-success: #4ade80;
   display: flex;
   flex-direction: column;
+  width: min(100%, 960px);
+  margin: 0 auto;
 }
 
 .admin-page-loading {
@@ -19,10 +28,85 @@
 .admin-page-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 20px;
+}
+
+/* Seitenkopf: Zurück-Chip, Titel, Unterzeile — linksbündig. */
+.admin-page-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.admin-page-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.admin-page-subtitle {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.admin-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin-bottom: 6px;
+  padding: 0 12px 0 6px;
+  border-radius: 999px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  font-weight: 620;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-back-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-back-button:hover {
+  background: var(--admin-surface-hover);
+  color: var(--text-primary);
+}
+
+.admin-back-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
 }
 
 .admin-page-header-row {
   display: flex;
   align-items: center;
+}
+
+.admin-section-body {
+  min-width: 0;
+}
+
+/* Leere Listen und Ladefehler in allen Bereichen */
+.admin-page .search-empty-state {
+  padding: 36px 16px;
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-hairline);
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.admin-page .search-empty-state.hidden {
+  display: none;
 }

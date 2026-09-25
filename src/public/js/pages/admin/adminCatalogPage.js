@@ -28,13 +28,21 @@ export const describeRun = (run) => {
   return `${label} am ${formatTime(run.finishedAt)} (${formatDuration(run.durationMs)}): ${parts.join(', ')}${skipped}`;
 };
 
-// Accordion section for the catalogue mirror: shows what the sync last did and
-// when it runs next, and lets the admin change the schedule or trigger a run.
-export function createAdminCatalogSection() {
-  let expanded = false;
-  let loaded = false;
+const group = (title, ...children) => createElement('section', { className: 'admin-settings-group' },
+  title ? createElement('h3', { className: 'admin-settings-group-title' }, title) : null,
+  createElement('div', { className: 'admin-settings-card' }, ...children)
+);
+
+const formatCount = value => (Number.isFinite(value) ? new Intl.NumberFormat('de-DE').format(value) : '–');
+
+// Unterseite "Katalog" der Admin-Einstellungen: was der Spiegel enthält, was
+// der Abgleich zuletzt getan hat und wann er wieder läuft, der Zeitplan und
+// die Läufe zum Anstoßen. activate() lädt bei jedem Öffnen frisch,
+// deactivate() beendet das Nachfragen während eines Laufs.
+export function createAdminCatalogPage() {
   let busy = false;
   let pollTimer = null;
+  let active = false;
 
   const setMessage = (text, type = '') => {
     messageEl.textContent = text || '';
@@ -46,40 +54,52 @@ export function createAdminCatalogSection() {
     [saveButton, updateButton, fullButton].forEach(button => { button.disabled = busy; });
   };
 
-  const countsText = createElement('p', { className: 'admin-settings-webhook-status' }, 'Lädt…');
-  const lastRunText = createElement('p', { className: 'admin-catalog-line' });
-  const nextRunText = createElement('p', { className: 'admin-catalog-line' });
+  const stat = label => {
+    const value = createElement('strong', { className: 'admin-catalog-stat-value' }, '–');
+    return { value, element: createElement('div', { className: 'admin-catalog-stat' }, value, createElement('span', {}, label)) };
+  };
+  const stats = { movies: stat('Filme'), series: stat('Serien'), episodes: stat('Folgen'), libraries: stat('Bibliotheken') };
+
+  const infoRow = label => {
+    const value = createElement('span', { className: 'admin-catalog-info-value' }, '–');
+    return { value, element: createElement('div', { className: 'admin-catalog-info-row' }, createElement('span', {}, label), value) };
+  };
+  const lastRun = infoRow('Letzter Lauf');
+  const nextUpdate = infoRow('Nächste Suche nach neuen Inhalten');
+  const nextFull = infoRow('Nächster Vollabgleich');
   const runningText = createElement('p', { className: 'admin-catalog-line admin-catalog-running', hidden: true }, 'Abgleich läuft…');
 
   const intervalInput = createElement('input', {
     className: 'admin-settings-input admin-catalog-input',
     type: 'number',
+    inputMode: 'numeric',
     min: '1',
     max: '60',
     step: '1',
-    id: 'admin-catalog-interval',
-    'aria-label': 'Intervall für neue Inhalte in Minuten'
+    id: 'admin-catalog-interval'
   });
 
   const timeInput = createElement('input', {
     className: 'admin-settings-input admin-catalog-input',
     type: 'time',
-    id: 'admin-catalog-full-time',
-    'aria-label': 'Uhrzeit des Vollabgleichs'
+    id: 'admin-catalog-full-time'
   });
 
   const applyStatus = (status) => {
     const { movies = 0, series = 0, episodes = null } = status.library || {};
-    const episodesText = episodes === null ? '' : `, ${episodes} Folgen`;
-    countsText.textContent = `${movies} Filme, ${series} Serien${episodesText} in ${status.libraryCount} Bibliotheken.`;
-    lastRunText.textContent = `Letzter Lauf: ${describeRun(status.lastRun)}`;
-    nextRunText.textContent = `Nächste Läufe: neue Inhalte ${formatTime(status.plan?.nextUpdateAt)}, Vollabgleich ${formatTime(status.plan?.nextFullAt)}.`;
+    stats.movies.value.textContent = formatCount(movies);
+    stats.series.value.textContent = formatCount(series);
+    stats.episodes.value.textContent = episodes === null ? '–' : formatCount(episodes);
+    stats.libraries.value.textContent = formatCount(status.libraryCount);
+    lastRun.value.textContent = describeRun(status.lastRun);
+    nextUpdate.value.textContent = formatTime(status.plan?.nextUpdateAt);
+    nextFull.value.textContent = formatTime(status.plan?.nextFullAt);
     runningText.hidden = !status.running;
 
     if (document.activeElement !== intervalInput) intervalInput.value = String(status.plan?.updateIntervalMinutes ?? '');
     if (document.activeElement !== timeInput) timeInput.value = status.plan?.fullSyncTime ?? '';
 
-    if (status.running) startPolling();
+    if (status.running && active) startPolling();
     else stopPolling();
   };
 
@@ -87,7 +107,7 @@ export function createAdminCatalogSection() {
     try {
       applyStatus(await AdminSettingsApi.getCatalogStatus());
     } catch (error) {
-      countsText.textContent = 'Status konnte nicht geladen werden.';
+      lastRun.value.textContent = 'Status konnte nicht geladen werden.';
       setMessage(error.message || 'Status konnte nicht geladen werden.', 'error');
     }
   };
@@ -154,71 +174,51 @@ export function createAdminCatalogSection() {
     onClick: () => trigger(() => AdminSettingsApi.runCatalogFullSync(), 'Vollabgleich')
   }, 'Vollabgleich jetzt');
 
-  const messageEl = createElement('div', { className: 'admin-settings-message' });
+  const messageEl = createElement('div', { className: 'admin-settings-message', 'aria-live': 'polite' });
 
-  const body = createElement('div', {
-    className: 'admin-settings-section-body',
-    id: 'admin-settings-catalog-body'
-  },
-    countsText,
-    lastRunText,
-    nextRunText,
-    runningText,
-    createElement('div', { className: 'admin-catalog-fields' },
-      createElement('div', { className: 'admin-settings-field' },
-        createElement('label', { className: 'admin-settings-label', for: 'admin-catalog-interval' },
-          'Nach neuen Inhalten suchen alle … Minuten'
+  const element = createElement('div', { className: 'admin-settings-page' },
+    createElement('p', { className: 'admin-settings-page-intro' },
+      'Spiegelt Filme und Serien aus Jellyfin, damit Startseite, Bibliothek und Suche ohne Wartezeit laden.'),
+    createElement('div', { className: 'admin-catalog-stats' },
+      stats.movies.element, stats.series.element, stats.episodes.element, stats.libraries.element),
+    group('Abgleich', lastRun.element, nextUpdate.element, nextFull.element, runningText),
+    group('Zeitplan',
+      createElement('div', { className: 'admin-settings-row' },
+        createElement('label', { className: 'admin-settings-row-text', for: 'admin-catalog-interval' },
+          createElement('strong', {}, 'Neue Inhalte suchen'),
+          createElement('span', {}, 'Alle … Minuten (1–60)')
         ),
-        createElement('div', { className: 'admin-settings-field-row' }, intervalInput)
+        intervalInput
       ),
-      createElement('div', { className: 'admin-settings-field' },
-        createElement('label', { className: 'admin-settings-label', for: 'admin-catalog-full-time' },
-          'Vollabgleich täglich um'
+      createElement('div', { className: 'admin-settings-row' },
+        createElement('label', { className: 'admin-settings-row-text', for: 'admin-catalog-full-time' },
+          createElement('strong', {}, 'Vollabgleich'),
+          createElement('span', {}, 'Täglich um, entfernt auch Gelöschtes')
         ),
-        createElement('div', { className: 'admin-settings-field-row' }, timeInput)
-      )
+        timeInput
+      ),
+      createElement('div', { className: 'admin-settings-actions' }, saveButton)
     ),
-    createElement('div', { className: 'admin-settings-actions' },
-      saveButton,
-      updateButton,
-      fullButton
+    group('Jetzt ausführen',
+      createElement('div', { className: 'admin-settings-actions' }, updateButton, fullButton)
     ),
     messageEl
   );
 
-  const bodyWrap = createElement('div', { className: 'admin-settings-section-body-wrap' }, body);
-  bodyWrap.toggleAttribute('inert', true);
-
-  const toggle = createElement('button', {
-    className: 'admin-settings-section-toggle',
-    type: 'button',
-    'aria-expanded': 'false',
-    'aria-controls': 'admin-settings-catalog-body',
-    onClick: () => setExpanded(!expanded)
-  },
-    createElement('span', { className: 'admin-settings-section-heading' },
-      createElement('h3', { className: 'admin-settings-section-title' }, 'Katalog'),
-      createElement('p', { className: 'admin-settings-section-description' },
-        'Spiegelt Filme und Serien aus Jellyfin, damit Startseite, Bibliothek und Suche ohne Wartezeit laden.'
-      )
-    ),
-    createElement('span', { className: 'admin-settings-section-chevron' }, '⌄')
-  );
-
-  const element = createElement('section', { className: 'admin-settings-section' }, toggle, bodyWrap);
-
-  function setExpanded(value) {
-    expanded = value;
-    toggle.setAttribute('aria-expanded', String(expanded));
-    element.classList.toggle('expanded', expanded);
-    bodyWrap.toggleAttribute('inert', !expanded);
-
-    if (expanded && !loaded) {
-      loaded = true;
-      load();
+  return {
+    element,
+    activate: () => {
+      active = true;
+      setMessage('');
+      return load();
+    },
+    deactivate: () => {
+      active = false;
+      stopPolling();
+    },
+    destroy: () => {
+      active = false;
+      stopPolling();
     }
-    if (!expanded) stopPolling();
-  }
-
-  return { element, setExpanded, destroy: stopPolling };
+  };
 }

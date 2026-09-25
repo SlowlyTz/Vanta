@@ -1,57 +1,64 @@
-.admin-user-library-mode,
-.admin-user-library-grid {
-  display: grid;
-  gap: 8px;
-}
-
+/* Bibliothekszugriff: Umschalter "Alle / Ausgewählte", darunter Chips. */
 .admin-user-library-mode {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.admin-user-choice-btn {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.84rem;
+  font-weight: 620;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-user-choice-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .admin-user-library-grid {
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .admin-user-library-grid.hidden {
   display: none;
 }
 
-.admin-user-choice-btn,
 .admin-user-library-toggle {
-  min-height: 44px;
-  border-radius: var(--abyss-radius);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.055);
-  color: var(--text-primary);
-  font-weight: 680;
-  font-size: 0.88rem;
-  text-align: left;
-  padding: 10px 12px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.84rem;
+  font-weight: 580;
   cursor: pointer;
-  overflow-wrap: anywhere;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.admin-user-choice-btn:hover,
-.admin-user-library-toggle:hover {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.admin-user-choice-btn:focus-visible,
-.admin-user-library-toggle:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 2px;
-}
-
-.admin-user-choice-btn.active,
 .admin-user-library-toggle.active {
-  border-color: rgba(var(--abyss-accent), 0.5);
-  background: rgba(var(--abyss-accent), 0.16);
-  color: #ffffff;
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #fff;
 }
 
-@media (max-width: 520px) {
-  .admin-user-library-mode {
-    grid-template-columns: 1fr;
-  }
+.admin-user-library-toggle.active::before {
+  content: '✓ ';
+  color: #c4b5fd;
 }

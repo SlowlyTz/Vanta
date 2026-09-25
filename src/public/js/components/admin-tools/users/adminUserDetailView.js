@@ -2,6 +2,7 @@ import { createElement } from '../../../utils/dom.js';
 import { AdminUsersApi } from '../../../api/admin-users.api.js';
 import { openBanDialog, openDeleteDialog } from './adminUserDialogs.js';
 import { buildRenameField, buildPasswordField, buildLibraryField, buildStreamLimitField } from './adminUserDetailView/fields.js';
+import { createUserBadges, userInitial } from './adminUserRow.js';
 
 export function createAdminUserDetailView(user, {
   libraries = [],
@@ -11,16 +12,7 @@ export function createAdminUserDetailView(user, {
 } = {}) {
   const isSelf = currentAdminId != null && user.id === currentAdminId;
 
-  const badges = createElement('div', { className: 'admin-user-badges' });
-  if (user.isAdmin) {
-    badges.appendChild(createElement('span', { className: 'admin-user-badge admin-user-badge-admin' }, 'Admin'));
-  }
-  if (user.isBanned) {
-    badges.appendChild(createElement('span', { className: 'admin-user-badge admin-user-badge-banned' }, 'Gesperrt'));
-  }
-  if (user.isDisabled) {
-    badges.appendChild(createElement('span', { className: 'admin-user-badge admin-user-badge-disabled' }, 'Deaktiviert'));
-  }
+  const badges = createUserBadges(user);
 
   const streamInfo = createElement('span', { className: 'admin-user-stream-info' },
     `${user.activeStreams}/${user.maxConcurrentStreams} Streams`);
@@ -73,14 +65,32 @@ export function createAdminUserDetailView(user, {
   }, 'Löschen');
 
   const header = createElement('div', { className: 'admin-user-detail-header' },
+    createElement('span', { className: 'admin-user-avatar admin-user-avatar-large', 'aria-hidden': 'true' }, userInitial(user.name)),
     createElement('div', { className: 'admin-user-detail-header-main' },
       createElement('div', { className: 'admin-user-detail-name-row' },
         createElement('h3', { className: 'admin-user-detail-name' }, user.name),
         badges
       ),
       streamInfo
+    )
+  );
+
+  // Sperren und Löschen am Ende, abgesetzt als eigene Gruppe.
+  const dangerRow = (title, hint, button) => createElement('div', { className: 'admin-user-danger-row' },
+    createElement('span', { className: 'admin-user-danger-text' },
+      createElement('strong', {}, title),
+      createElement('span', {}, hint)
     ),
-    createElement('div', { className: 'admin-user-detail-header-actions' }, banBtn, deleteBtn)
+    button
+  );
+  const dangerZone = createElement('section', { className: 'admin-user-section admin-user-danger-zone' },
+    createElement('h4', { className: 'admin-user-section-title' }, 'Gefahrenzone'),
+    createElement('div', { className: 'admin-user-card' },
+      user.isBanned
+        ? dangerRow('Sperre aufheben', 'Der Nutzer kann sich wieder anmelden.', banBtn)
+        : dangerRow('Nutzer sperren', 'Anmeldung blockieren, bis die Sperre aufgehoben wird.', banBtn),
+      dangerRow('Nutzer löschen', 'Entfernt das Konto endgültig aus Jellyfin.', deleteBtn)
+    )
   );
 
   const renameField = buildRenameField(user);
@@ -150,11 +160,16 @@ export function createAdminUserDetailView(user, {
     await onReload?.();
   }
 
+  const section = (title, ...fields) => createElement('section', { className: 'admin-user-section' },
+    createElement('h4', { className: 'admin-user-section-title' }, title),
+    createElement('div', { className: 'admin-user-card' }, ...fields)
+  );
+
   const body = createElement('div', { className: 'admin-user-detail-body' },
-    renameField.element,
-    passwordField.element,
-    libraryField.element,
-    streamField.element,
+    section('Konto', renameField.element, passwordField.element),
+    section('Zugriff', libraryField.element),
+    section('Streams', streamField.element),
+    dangerZone,
     createElement('div', { className: 'admin-user-save-all-row' }, saveAllBtn)
   );
 

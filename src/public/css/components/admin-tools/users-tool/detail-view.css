@@ -1,103 +1,242 @@
+/* ---------------------------------
+   ADMIN · NUTZER — Detailansicht im Modal
+   Kopf mit Avatar, darunter Gruppen (Konto, Zugriff, Streams, Gefahrenzone)
+   im Stil des Einstellungen-Dialogs; Speichern bleibt unten stehen.
+   --------------------------------- */
 .admin-user-detail-view {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  min-width: 0;
+  gap: 20px;
 }
 
 .admin-user-detail-header {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: center;
+  gap: 14px;
+  padding-right: 44px;
 }
 
 .admin-user-detail-header-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .admin-user-detail-name-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px 10px;
 }
 
 .admin-user-detail-name {
-  font-size: 1.1rem;
-  font-weight: 740;
-  color: var(--text-primary);
   margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.admin-user-detail-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  overflow: hidden;
+  font-size: 1.22rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-user-detail-body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  min-width: 0;
+}
+
+.admin-user-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-user-section-title {
+  margin: 0;
+  padding: 0 4px;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .admin-user-field-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 0;
 }
 
 .admin-user-field-label {
-  font-size: 0.8rem;
-  font-weight: 640;
-  color: var(--text-secondary);
+  padding: 0 2px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .admin-user-field-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 
 .admin-user-field-row .settings-input {
-  flex: 1 1 160px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.admin-user-stream-input {
-  max-width: 100px;
-  flex: 0 0 auto;
+/* Streams: label left, −/+ stepper right */
+.admin-user-field-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.admin-user-save-all-row {
+.admin-user-field-inline .admin-user-field-label {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 560;
+}
+
+.admin-user-stepper {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.admin-user-stepper-button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.admin-user-stepper-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-user-stepper .admin-user-stream-input {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.admin-user-stepper .admin-user-stream-input::-webkit-outer-spin-button,
+.admin-user-stepper .admin-user-stream-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Gefahrenzone */
+.admin-user-danger-zone .admin-user-card {
+  gap: 0;
+  padding: 4px 14px;
+  border-color: rgba(255, 90, 90, 0.14);
+}
+
+.admin-user-danger-row {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 14px;
-  margin-top: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.admin-user-danger-row + .admin-user-danger-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-user-danger-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-user-danger-text strong {
+  font-size: 0.9rem;
+  font-weight: 620;
+}
+
+.admin-user-danger-text span {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.admin-user-action-btn {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.admin-user-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-user-action-btn.admin-user-action-danger {
+  background: rgba(255, 90, 90, 0.08);
+  border-color: rgba(255, 90, 90, 0.2);
+  color: #ff7b7b;
+}
+
+.admin-user-action-btn.admin-user-action-danger:hover:not(:disabled) {
+  background: rgba(255, 90, 90, 0.15);
+}
+
+.admin-user-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Speichern: bleibt am unteren Rand der scrollenden Ansicht sichtbar. */
+.admin-user-save-all-row {
+  position: sticky;
+  bottom: -24px;
+  z-index: 2;
+  margin: 0 -24px -24px;
+  padding: 14px 24px 24px;
+  background: linear-gradient(180deg, rgba(14, 14, 17, 0), rgba(14, 14, 17, 0.96) 38%);
 }
 
 .admin-user-save-all {
-  min-width: 140px;
-}
-
-@media (max-width: 480px) {
-  .admin-user-save-all-row {
-    justify-content: stretch;
-  }
-
-  .admin-user-save-all {
-    width: 100%;
-  }
+  width: 100%;
+  min-height: 48px;
+  border-radius: 14px;
 }

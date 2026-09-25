@@ -24,7 +24,7 @@ function buildListSignature(list) {
 export const ADMIN_USERS_TOOL = {
   id: 'users',
   label: 'Nutzerverwaltung',
-  description: 'Jellyfin-Nutzer verwalten, sperren und Streams begrenzen',
+  description: 'Konten, Zugriff und Streams verwalten',
   icon: () => createUsersManagementIcon()
 };
 

@@ -1,89 +1,119 @@
-/* Ban / delete confirmation dialog. Läuft jetzt direkt auf der Admin-Seite
-   (nicht mehr im Einstellungen-Modal), muss also nur über deren eigenen
-   Overlays liegen: Navbar (1900) und das Admin-Einstellungen-Panel (1500).
-   War früher auf "Modal über Modal" ausgelegt und lag mit 10000 zufällig auf
-   derselben Ebene wie Toasts (siehe components/toast.css) — dadurch konnte
-   ein Toast von diesem Overlay verdeckt werden. Jetzt bewusst darunter. */
+/* ---------------------------------
+   ADMIN · MODALS (Nutzer-Detail, Sperren, Löschen)
+   Dasselbe Glas wie der Einstellungen-Dialog; am Handy ein Sheet von unten.
+   Liegt unter den Toasts (components/toast.css), aber über der Navigation.
+   --------------------------------- */
 .admin-user-dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 4, 6, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  z-index: 5000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5000;
-  padding: 20px;
+  padding: 24px;
   box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: admin-overlay-in 200ms ease both;
 }
 
 .admin-user-dialog {
   position: relative;
   width: min(420px, 100%);
-  background: rgba(var(--abyss-glass-tint), 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--abyss-radius-dialog);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 24px;
   box-sizing: border-box;
+  background:
+    radial-gradient(120% 55% at 0% 0%, rgba(124, 92, 255, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(24, 24, 29, 0.97), rgba(14, 14, 17, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 26px;
+  box-shadow: 0 40px 110px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  scrollbar-width: none;
+  animation: admin-dialog-in 360ms var(--abyss-ease) both;
 }
 
-/* Die Nutzer-Detailansicht im Modal: breiter (das Bibliotheksraster braucht
-   Platz) und intern scrollend, damit sie bei wenig Hoehe nicht aus dem
-   Viewport waechst. Bewusst eine Ebene unter den Bestaetigungsdialogen, die
-   aus ihr heraus geoeffnet werden — sonst haengt die Reihenfolge daran, in
-   welcher Reihenfolge die Overlays im DOM landen. */
+.admin-user-dialog::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-user-dialog:focus {
+  outline: none;
+}
+
+/* Die Detailansicht liegt eine Ebene unter den Rückfragen, die aus ihr
+   heraus geöffnet werden. */
 .admin-user-dialog-overlay.admin-user-dialog-detail {
   z-index: 4900;
 }
 
 .admin-user-dialog-overlay.admin-user-dialog-detail .admin-user-dialog {
-  width: min(760px, 100%);
-  max-height: 100%;
-  overflow-y: auto;
+  width: min(520px, 100%);
 }
 
 .admin-user-dialog-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 1.4rem;
-  line-height: 1;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.62);
   cursor: pointer;
-  padding: 4px 8px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-user-dialog-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-user-dialog-close:hover {
+  background: rgba(255, 255, 255, 0.11);
+  color: #fff;
 }
 
 .admin-user-dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .admin-user-dialog-content h3 {
-  font-size: 1.1rem;
-  font-weight: 720;
   margin: 0;
-  padding-right: 24px;
-  overflow-wrap: anywhere;
+  padding-right: 44px;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .admin-user-dialog-hint {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .admin-user-dialog-textarea {
+  height: auto;
+  min-height: 88px;
+  padding: 12px 14px;
   resize: vertical;
-  min-height: 72px;
   font-family: inherit;
 }
 
 .admin-user-dialog-error {
-  color: var(--error-color);
-  font-size: 0.85rem;
+  color: #ff7b7b;
+  font-size: 0.84rem;
 }
 
 .admin-user-dialog-error.hidden {
@@ -91,27 +121,80 @@
 }
 
 .admin-user-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
+}
+
+.admin-user-dialog-actions button {
+  min-height: 46px;
+  border-radius: 14px;
 }
 
 .admin-user-dialog-danger {
-  background: var(--error-color);
+  background: #ef4444 !important;
+  color: #fff !important;
 }
 
-@media (max-width: 480px) {
-  .admin-user-row-actions {
-    margin-left: 0;
-    width: 100%;
+@keyframes admin-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-dialog-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 600px) {
+  .admin-user-dialog-overlay {
+    align-items: flex-end;
+    padding: 0;
   }
 
-  .admin-user-dialog-actions {
-    flex-direction: column-reverse;
+  .admin-user-dialog,
+  .admin-user-dialog-overlay.admin-user-dialog-detail .admin-user-dialog {
+    width: 100%;
+    max-height: calc(100dvh - 40px);
+    padding: 28px 18px calc(18px + env(safe-area-inset-bottom));
+    border-bottom: 0;
+    border-radius: 26px 26px 0 0;
+    animation-name: admin-sheet-in;
   }
 
-  .admin-user-dialog-actions button {
-    width: 100%;
+  .admin-user-dialog::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateX(-50%);
+  }
+
+  .admin-user-dialog-close {
+    top: 16px;
+    right: 14px;
+  }
+
+  .admin-user-save-all-row {
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    margin: 0 -18px calc(-18px - env(safe-area-inset-bottom));
+    padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes admin-sheet-in {
+  from { transform: translateY(60px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-user-dialog-overlay,
+  .admin-user-dialog {
+    animation: none;
   }
 }

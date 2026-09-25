@@ -10,7 +10,7 @@ vi.mock('../../../../src/public/js/api/admin-settings.api.js', () => ({
 }));
 
 import { AdminSettingsApi } from '../../../../src/public/js/api/admin-settings.api.js';
-import { createAdminCatalogSection, describeRun } from '../../../../src/public/js/pages/admin/adminCatalogSection.js';
+import { createAdminCatalogPage, describeRun } from '../../../../src/public/js/pages/admin/adminCatalogPage.js';
 
 const STATUS = {
   running: false,
@@ -42,14 +42,14 @@ describe('describeRun', () => {
   });
 });
 
-describe('createAdminCatalogSection', () => {
+describe('createAdminCatalogPage', () => {
   let section;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     AdminSettingsApi.getCatalogStatus.mockResolvedValue(STATUS);
-    section = createAdminCatalogSection();
+    section = createAdminCatalogPage();
     document.body.appendChild(section.element);
   });
 
@@ -59,17 +59,18 @@ describe('createAdminCatalogSection', () => {
     vi.useRealTimers();
   });
 
-  it('starts collapsed and loads the status on first expansion only', async () => {
+  it('loads nothing until the page opens, then fresh on every opening', async () => {
     expect(AdminSettingsApi.getCatalogStatus).not.toHaveBeenCalled();
-    expect(section.element.querySelector('.admin-settings-section-body-wrap').hasAttribute('inert')).toBe(true);
 
-    section.setExpanded(true);
+    section.activate();
     await flush();
-    section.setExpanded(false);
-    section.setExpanded(true);
+    section.deactivate();
+    section.activate();
+    await flush();
 
-    expect(AdminSettingsApi.getCatalogStatus).toHaveBeenCalledTimes(1);
-    expect(section.element.textContent).toContain('377 Filme, 85 Serien, 1444 Folgen in 6 Bibliotheken');
+    expect(AdminSettingsApi.getCatalogStatus).toHaveBeenCalledTimes(2);
+    const stats = Array.from(section.element.querySelectorAll('.admin-catalog-stat')).map(el => el.textContent);
+    expect(stats).toEqual(['377Filme', '85Serien', '1.444Folgen', '6Bibliotheken']);
     expect(section.element.textContent).toContain('Vollabgleich am');
     expect(section.element.querySelector('#admin-catalog-interval').value).toBe('10');
     expect(section.element.querySelector('#admin-catalog-full-time').value).toBe('03:00');
@@ -79,7 +80,7 @@ describe('createAdminCatalogSection', () => {
     AdminSettingsApi.updateCatalogSettings.mockResolvedValue({
       ...STATUS, plan: { ...STATUS.plan, updateIntervalMinutes: 15, fullSyncTime: '04:30' }
     });
-    section.setExpanded(true);
+    section.activate();
     await flush();
 
     section.element.querySelector('#admin-catalog-interval').value = '15';
@@ -93,7 +94,7 @@ describe('createAdminCatalogSection', () => {
 
   it('shows the server-side validation message on a rejected save', async () => {
     AdminSettingsApi.updateCatalogSettings.mockRejectedValue(new Error('Das Intervall muss zwischen 1 und 60 Minuten liegen'));
-    section.setExpanded(true);
+    section.activate();
     await flush();
 
     button(section.element, 'Zeitplan speichern').click();
@@ -110,7 +111,7 @@ describe('createAdminCatalogSection', () => {
       .mockResolvedValueOnce(STATUS)
       .mockResolvedValueOnce({ ...STATUS, running: true })
       .mockResolvedValue({ ...STATUS, running: false, library: { movies: 385, series: 85, episodes: 1444 } });
-    section.setExpanded(true);
+    section.activate();
     await flush();
 
     button(section.element, 'Vollabgleich jetzt').click();
@@ -125,7 +126,7 @@ describe('createAdminCatalogSection', () => {
 
     await vi.advanceTimersByTimeAsync(2000);
     expect(section.element.querySelector('.admin-catalog-running').hidden).toBe(true);
-    expect(section.element.textContent).toContain('385 Filme');
+    expect(section.element.querySelector('.admin-catalog-stat-value').textContent).toBe('385');
 
     const calls = AdminSettingsApi.getCatalogStatus.mock.calls.length;
     await vi.advanceTimersByTimeAsync(6000);
@@ -134,7 +135,7 @@ describe('createAdminCatalogSection', () => {
 
   it('tells the admin when a run is already in progress', async () => {
     AdminSettingsApi.runCatalogUpdate.mockResolvedValue({ started: false, ...STATUS, running: true });
-    section.setExpanded(true);
+    section.activate();
     await flush();
 
     button(section.element, 'Neue Inhalte jetzt suchen').click();
@@ -145,7 +146,7 @@ describe('createAdminCatalogSection', () => {
 
   it('does not overwrite an input the admin is editing while a poll lands', async () => {
     AdminSettingsApi.getCatalogStatus.mockResolvedValue({ ...STATUS, running: true });
-    section.setExpanded(true);
+    section.activate();
     await flush();
 
     const interval = section.element.querySelector('#admin-catalog-interval');
@@ -156,11 +157,11 @@ describe('createAdminCatalogSection', () => {
     expect(interval.value).toBe('3');
   });
 
-  it('stops polling when collapsed or destroyed', async () => {
+  it('stops polling when the page closes or is destroyed', async () => {
     AdminSettingsApi.getCatalogStatus.mockResolvedValue({ ...STATUS, running: true });
-    section.setExpanded(true);
+    section.activate();
     await flush();
-    section.setExpanded(false);
+    section.deactivate();
 
     const calls = AdminSettingsApi.getCatalogStatus.mock.calls.length;
     await vi.advanceTimersByTimeAsync(10_000);

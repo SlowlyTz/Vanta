@@ -180,7 +180,7 @@ describe('AdminUsersTool', () => {
     expect(status.textContent).toContain('Netzwerkfehler');
   });
 
-  it('clicking Bearbeiten opens the detail view in a modal and leaves the list standing', async () => {
+  it('clicking a user row opens the detail view in a modal and leaves the list standing', async () => {
     AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
     const tool = createAdminUsersTool();
@@ -191,7 +191,7 @@ describe('AdminUsersTool', () => {
     expect(listView.hidden).toBe(false);
     expect(detailModal()).toBeNull();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
 
     const modal = detailModal();
     expect(modal).toBeTruthy();
@@ -211,7 +211,7 @@ describe('AdminUsersTool', () => {
     await flush();
     expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(1);
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
     expect(detailModal()).toBeTruthy();
 
     detailModal().querySelector('.admin-user-dialog-close').click();
@@ -232,7 +232,7 @@ describe('AdminUsersTool', () => {
     expect(tool.registerBackControl).toBeUndefined();
     expect(tool.element.querySelector('.admin-view-back-button')).toBeNull();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
     expect(detailModal().querySelector('.admin-user-dialog-close')).toBeTruthy();
   });
 
@@ -246,7 +246,7 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
 
     const input = detailModal().querySelector('.admin-user-stream-input');
     input.value = '2';
@@ -271,7 +271,7 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
 
     const deleteBtn = Array.from(detailModal().querySelectorAll('.admin-user-action-btn'))
       .find(b => b.textContent === 'Löschen');
@@ -295,7 +295,7 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
     const input = detailModal().querySelector('.admin-user-stream-input');
     input.value = '2';
     detailModal().querySelector('.admin-user-save-all').click();
@@ -313,7 +313,7 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
     const nameInput = detailModal().querySelector('.admin-user-field-row input[type="text"]');
     nameInput.value = 'bob';
     detailModal().querySelector('.admin-user-save-all').click();
@@ -328,7 +328,7 @@ describe('AdminUsersTool', () => {
     await tool.load();
     await flush();
 
-    tool.element.querySelector('.admin-user-action-btn').click();
+    tool.element.querySelector('.admin-user-row-summary').click();
     expect(detailModal()).toBeTruthy();
 
     tool.destroy();

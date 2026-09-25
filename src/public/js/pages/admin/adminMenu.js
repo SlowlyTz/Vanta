@@ -1,4 +1,5 @@
 import { createElement } from '../../utils/dom.js';
+import { createChevronIcon } from '../../components/navbar/icons.js';
 
 // Menü der Admin-Verwaltung (#/admin): eine Karte je Bereich. Die Karten
 // navigieren auf eine eigene Route und sind deshalb echte Buttons — keine Tabs:
@@ -22,7 +23,8 @@ export function createAdminMenu({ tools = [], onSelect } = {}) {
         createElement('span', { className: 'admin-menu-card-title' }, tool.label),
         createElement('span', { className: 'admin-menu-card-description' }, tool.description || '')
       ),
-      badge
+      badge,
+      createElement('span', { className: 'admin-menu-card-chevron', 'aria-hidden': 'true' }, createChevronIcon())
     ));
   });
 

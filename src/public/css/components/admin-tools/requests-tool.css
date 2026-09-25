@@ -1,26 +1,34 @@
+/* ---------------------------------
+   ADMIN · ANFRAGEN
+   Umschalter Offen/Alle, darunter eine Karte je Anfrage: Poster, Titel,
+   Nutzer · Typ · Datum mit dem Umfang als Chip, Aktionen rechts (am Handy
+   als zwei gleich breite Buttons unter der Karte).
+   --------------------------------- */
 .admin-requests-view {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .admin-requests-view[hidden] {
   display: none !important;
 }
 
-/* Tabs "Offen" / "Alle" */
 .admin-requests-tabs {
-  display: flex;
-  gap: var(--spacing-sm);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: var(--spacing-sm);
+  align-self: flex-start;
 }
 
 .admin-requests-tab {
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-weight: 640;
+  min-width: 84px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.85rem;
+  font-weight: 620;
+  cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
@@ -29,30 +37,27 @@
 }
 
 .admin-requests-tab.active {
-  background: rgba(var(--abyss-accent), 0.14);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .admin-requests-tab:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline: 2px solid rgba(255, 255, 255, 0.55);
   outline-offset: 2px;
 }
 
 .admin-requests-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .admin-requests-empty,
 .admin-requests-status {
-  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.92rem;
 }
 
 .admin-requests-empty[hidden],
@@ -62,29 +67,31 @@
   display: none;
 }
 
-/* Anfragenzeile: Poster-Thumbnail, Titel, Nutzer/Typ/Datum, Aktionen */
 .admin-request-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: border-color var(--transition-fast);
+  gap: 14px;
+  padding: 12px 14px 12px 12px;
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .admin-request-item:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--admin-surface-hover);
 }
 
 .admin-request-item-poster {
-  flex: 0 0 auto;
-  width: 46px;
-  height: 69px;
-  border-radius: var(--radius-sm);
+  width: 52px;
+  height: 78px;
+  border-radius: 10px;
   object-fit: cover;
-  background: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(14, 165, 233, 0.1)),
+    rgba(255, 255, 255, 0.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 .admin-request-item-poster-empty {
@@ -92,17 +99,20 @@
 }
 
 .admin-request-item-info {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .admin-request-item-title {
-  font-weight: 640;
-  color: var(--text-primary);
+  max-width: 100%;
   overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  font-weight: 680;
+  line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -111,29 +121,103 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  color: var(--text-secondary);
+  gap: 4px 6px;
+  color: var(--admin-muted);
   font-size: 0.8rem;
 }
 
-.admin-request-item-type {
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  font-size: 0.72rem;
+.admin-request-item-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 560;
+}
+
+.admin-request-item-avatar {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #0ea5e9);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.admin-request-item-dot {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* Der Umfang steht als Chip in einer eigenen Zeile unter Nutzer · Typ · Datum. */
+.admin-request-item-break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+.admin-request-item-scope,
+.admin-request-item-meta .request-status {
+  margin-top: 2px;
 }
 
 .admin-request-item-actions {
-  flex: 0 0 auto;
   display: flex;
-  gap: var(--spacing-sm);
+  gap: 8px;
+}
+
+.admin-request-item-actions:empty {
+  display: none;
+}
+
+.admin-request-item .request-admin-action {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.request-admin-action-icon {
+  display: inline-flex;
+}
+
+.admin-request-item .request-admin-action:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 @media (max-width: 640px) {
+  .admin-requests-tabs {
+    align-self: stretch;
+  }
+
+  .admin-requests-tab {
+    flex: 1 1 0;
+  }
+
   .admin-request-item {
-    align-items: flex-start;
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .admin-request-item-poster {
+    width: 46px;
+    height: 69px;
   }
 
   .admin-request-item-actions {
-    flex-direction: column;
+    grid-column: 1 / -1;
+  }
+
+  .admin-request-item .request-admin-action {
+    flex: 1 1 0;
+    min-height: 42px;
   }
 }

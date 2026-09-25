@@ -1,314 +1,559 @@
 /* ---------------------------------
-   ADMIN SETTINGS — Bereich unter #/admin/settings
-   Kein Overlay mehr: der Bereich steht als normaler Block auf der Seite.
+   ADMIN · EINSTELLUNGEN
+   Eine Liste wie in den Einstellungen am Handy; jeder Eintrag öffnet seine
+   Seite als Ebene, die von rechts hereinfährt (settingsLayer.js).
    --------------------------------- */
-.admin-settings-panel {
+.admin-settings-list {
   display: flex;
   flex-direction: column;
-  width: min(720px, 100%);
+  padding: 4px;
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
 }
 
-/* Sektionen — luftig angeordnet und so aufgebaut, dass ein weiterer
-   Abschnitt (z.B. später) einfach als zusätzliches .admin-settings-section
-   danebengesetzt werden kann, ohne diesen Bereich umzubauen. */
-.admin-settings-sections {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xl);
-}
-
-.admin-settings-section {
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--abyss-radius);
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  overflow: hidden;
-}
-
-/* Aufklappbare Kopfzeile. Der Abschnitt startet eingeklappt; erst ein Klick
-   zeigt den Rumpf und holt den Status nach. */
-.admin-settings-section-toggle {
+.admin-settings-list-row {
+  position: relative;
+  width: 100%;
+  min-height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  width: 100%;
-  padding: var(--spacing-lg);
+  gap: 14px;
+  padding: 10px 14px 10px 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
   transition: background var(--transition-fast);
 }
 
-.admin-settings-section-toggle:hover {
-  background: rgba(255, 255, 255, 0.04);
+.admin-settings-list-row + .admin-settings-list-row::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 64px;
+  right: 14px;
+  height: 1px;
+  background: var(--admin-hairline);
 }
 
-.admin-settings-section-toggle:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+.admin-settings-list-row:hover {
+  background: var(--admin-surface-hover);
+}
+
+.admin-settings-list-row:hover::before,
+.admin-settings-list-row:hover + .admin-settings-list-row::before {
+  opacity: 0;
+}
+
+.admin-settings-list-row:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
   outline-offset: -2px;
 }
 
-.admin-settings-section-heading {
+.admin-settings-list-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.admin-settings-list-text {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  gap: 2px;
 }
 
-.admin-settings-section-chevron {
+.admin-settings-list-title {
+  font-size: 0.95rem;
+  font-weight: 640;
+}
+
+.admin-settings-list-hint {
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+}
+
+.admin-settings-list-chevron {
   flex: 0 0 auto;
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  line-height: 1;
-  transition: transform var(--transition-fast);
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.34);
+  transition: transform var(--transition-fast), color var(--transition-fast);
 }
 
-.admin-settings-section.expanded .admin-settings-section-chevron {
-  transform: rotate(180deg);
+.admin-settings-list-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-settings-list-row:hover .admin-settings-list-chevron {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateX(2px);
+}
+
+/* The pushed page: a full-screen layer over the app (navbar included), with
+   its own bar. It slides in from the right and back out the same way. */
+html.admin-settings-layer-open,
+html.admin-settings-layer-open body {
+  overflow: hidden;
+}
+
+.admin-settings-layer {
+  --admin-surface: rgba(255, 255, 255, 0.04);
+  --admin-surface-hover: rgba(255, 255, 255, 0.065);
+  --admin-hairline: rgba(255, 255, 255, 0.07);
+  --admin-radius: 18px;
+  --admin-muted: rgba(255, 255, 255, 0.5);
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(90% 40% at 100% 0%, rgba(124, 92, 255, 0.08), transparent 60%),
+    var(--bg-primary);
+  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.6);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 420ms var(--abyss-ease);
+}
+
+.admin-settings-layer.is-open {
+  transform: translate3d(0, 0, 0);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-settings-section-body-wrap,
-  .admin-settings-section-body,
-  .admin-settings-section-chevron {
+  .admin-settings-layer {
     transition: none;
   }
 }
 
-/* Sanftes Auf- und Zuklappen. Der Wrapper ist ein Grid, dessen einzige Zeile
-   von 0fr auf 1fr faehrt: das animiert die tatsaechliche Inhaltshoehe, ohne
-   sie in JS messen zu muessen. Bewusst kein max-height wie im Drawer-Accordion
-   (components/navbar/mobile-drawer/accordion.css) — der Rumpf waechst hier je
-   nach Status- und Fehlermeldung, und eine geratene Maximalhoehe wuerde beim
-   Zuklappen springen. Timing und Kurve sind von dort uebernommen, damit sich
-   beide Accordions gleich anfuehlen. */
-.admin-settings-section-body-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 240ms cubic-bezier(0.25, 1, 0.5, 1);
+.admin-settings-layer:focus {
+  outline: none;
 }
 
-.admin-settings-section.expanded .admin-settings-section-body-wrap {
-  grid-template-rows: 1fr;
+/* The bar lines up with the content column (640px) on wide screens. */
+.admin-settings-layer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, calc((100% - 640px) / 2 + 4px)) 4px;
 }
 
-.admin-settings-section-body {
+.admin-settings-layer-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.admin-settings-layer-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-settings-layer-back:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-settings-layer-back:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.admin-settings-layer-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+.admin-settings-layer-inner {
+  width: min(100%, 640px);
+  margin: 0 auto;
+}
+
+.admin-settings-layer-title {
+  margin: 4px 0 6px;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+/* Page content: an intro, then groups of cards like the settings dialog. */
+.admin-settings-page {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  padding: 0 var(--spacing-lg) var(--spacing-lg);
-  /* Beides noetig, damit die Zeile auf 0 zusammenfahren kann und der Inhalt
-     dabei sauber abgeschnitten statt gestaucht wird. */
-  min-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity 180ms ease,
-    transform 220ms ease;
+  gap: 20px;
 }
 
-.admin-settings-section.expanded .admin-settings-section-body {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.admin-settings-section-title {
-  color: var(--text-primary);
-  font-size: 1.05rem;
-  font-weight: 740;
-  line-height: 1.2;
-}
-
-.admin-settings-section-description {
-  color: var(--text-secondary);
+.admin-settings-page-intro {
+  margin: 0;
+  color: var(--admin-muted);
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.admin-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-settings-group[hidden] {
+  display: none;
+}
+
+.admin-settings-group-title {
+  margin: 0;
+  padding: 0 4px;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
+}
+
+.admin-settings-card-danger {
+  border-color: rgba(255, 90, 90, 0.16);
+}
+
+.admin-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-settings-row-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: default;
+}
+
+.admin-settings-row-text strong {
+  font-size: 0.92rem;
+  font-weight: 620;
+}
+
+.admin-settings-row-text span {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+/* iOS-style switch around the checkbox */
+.admin-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 30px;
+}
+
+.admin-settings-toggle-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-switch-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 220ms ease;
+}
+
+.admin-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 260ms var(--abyss-ease);
+}
+
+.admin-settings-toggle-input:checked + .admin-switch-track {
+  background: #22c55e;
+}
+
+.admin-settings-toggle-input:checked + .admin-switch-track::after {
+  transform: translateX(20px);
+}
+
+.admin-settings-toggle-input:focus-visible + .admin-switch-track {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.admin-settings-toggle-input:disabled + .admin-switch-track {
+  opacity: 0.55;
 }
 
 .admin-settings-webhook-status {
-  color: var(--text-primary);
-  font-size: 0.92rem;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.045);
-  word-break: break-all;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.admin-settings-webhook-status.is-configured {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .admin-settings-field {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 6px;
 }
 
 .admin-settings-label {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  line-height: 1.35;
+  padding: 0 2px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
-.admin-settings-field-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
+.admin-settings-hint {
+  padding: 0 2px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 .admin-settings-input {
   width: 100%;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.052);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: var(--abyss-radius);
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
-  padding: 0 var(--spacing-md);
   font-size: 0.92rem;
   outline: none;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.admin-settings-input:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(var(--abyss-accent), 0.3);
+.admin-settings-input:focus-visible,
+.admin-settings-input:focus {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
 }
 
-.admin-settings-toggle-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+.admin-settings-input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
 }
 
-/* Checkbox als Pill-Schalter gestylt */
-.admin-settings-toggle-input {
-  appearance: none;
-  -webkit-appearance: none;
+.admin-settings-row .admin-catalog-input {
   flex: 0 0 auto;
-  width: 44px;
-  height: 26px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  position: relative;
-  cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.admin-settings-toggle-input::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--text-primary);
-  transition: transform var(--transition-fast);
-}
-
-.admin-settings-toggle-input:checked {
-  background: rgb(var(--abyss-accent));
-  border-color: rgb(var(--abyss-accent));
-}
-
-.admin-settings-toggle-input:checked::before {
-  transform: translateX(18px);
-  background: var(--bg-primary);
-}
-
-.admin-settings-toggle-input:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 2px;
-}
-
-.admin-settings-toggle-input:disabled {
-  opacity: 0.55;
-  cursor: wait;
+  width: 128px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color-scheme: dark;
 }
 
 .admin-settings-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .admin-settings-action {
+  flex: 1 1 160px;
   min-height: 44px;
-  padding: 0 var(--spacing-lg);
-  border-radius: var(--abyss-radius);
-  font-size: 0.92rem;
-  font-weight: 680;
-  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  padding: 0 16px;
+  border-radius: 13px;
+  border: 1px solid transparent;
+  font-size: 0.88rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
 }
 
-.admin-settings-action:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 2px;
+.admin-settings-action:active:not(:disabled) {
+  transform: scale(0.99);
 }
 
 .admin-settings-action:disabled {
-  opacity: 0.55;
-  cursor: wait;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .admin-settings-action-primary {
-  background: rgb(var(--abyss-accent));
-  color: var(--bg-primary);
+  background: #fff;
+  color: #0b0b0e;
+}
+
+.admin-settings-action-primary:hover:not(:disabled) {
+  opacity: 0.92;
 }
 
 .admin-settings-action-secondary {
   background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.11);
+}
+
+.admin-settings-action-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-settings-row .admin-settings-action-danger {
+  flex: 0 0 auto;
 }
 
 .admin-settings-action-danger {
-  background: rgba(255, 77, 77, 0.1);
-  color: var(--error-color);
-  border: 1px solid rgba(255, 77, 77, 0.28);
+  background: rgba(255, 90, 90, 0.08);
+  border-color: rgba(255, 90, 90, 0.2);
+  color: #ff7b7b;
 }
 
-.admin-settings-action-danger:hover {
-  background: rgba(255, 77, 77, 0.16);
+.admin-settings-action-danger:hover:not(:disabled) {
+  background: rgba(255, 90, 90, 0.15);
 }
 
 .admin-settings-message {
-  min-height: 18px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  line-height: 1.35;
+  min-height: 20px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.admin-settings-message:empty {
+  min-height: 0;
 }
 
 .admin-settings-message.success {
-  color: var(--success-color);
+  color: #4ade80;
 }
 
 .admin-settings-message.error {
-  color: var(--error-color);
+  color: #ff7b7b;
 }
 
-@media (max-width: 640px) {
-  .admin-settings-sections {
-    gap: var(--spacing-lg);
-  }
+/* Katalog: Zahlen-Kacheln und Laufinformationen */
+.admin-catalog-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
 }
 
-/* Katalog-Sektion */
+.admin-catalog-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
+}
+
+.admin-catalog-stat-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-catalog-stat span {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.76rem;
+}
+
+.admin-catalog-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.86rem;
+}
+
+.admin-catalog-info-row > span:first-child {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-catalog-info-value {
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.86);
+  text-align: right;
+}
+
 .admin-catalog-line {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
 }
 
 .admin-catalog-running {
-  color: var(--accent-color);
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.16);
+  color: #c4b5fd;
+  font-size: 0.78rem;
+  font-weight: 650;
 }
 
-.admin-catalog-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: var(--spacing-md);
+.admin-catalog-running[hidden] {
+  display: none;
 }
 
-.admin-catalog-input {
-  max-width: 160px;
+@media (max-width: 640px) {
+  .admin-catalog-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-catalog-info-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .admin-catalog-info-value {
+    text-align: left;
+  }
 }

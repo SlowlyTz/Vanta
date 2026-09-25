@@ -1,156 +1,153 @@
-.admin-users-view {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
+/* ---------------------------------
+   ADMIN · NUTZER — Liste
+   Eine Karte je Nutzer: Avatar, Name mit Badges, Streams; die ganze Karte
+   öffnet die Detailansicht.
+   --------------------------------- */
+.admin-users-view,
 .admin-users-list-view {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-width: 0;
-  container-type: inline-size;
-}
-
-.admin-users-list-view[hidden] {
-  display: none;
 }
 
 .admin-users-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 0;
+  gap: 8px;
 }
 
-.admin-user-row {
-  border: 1px solid rgba(255, 255, 255, 0.105);
-  border-radius: var(--abyss-radius);
-  background: rgba(255, 255, 255, 0.045);
-  overflow: hidden;
-}
-
-/* Feste Spalten für Name/Badges, Streams und Aktionen statt des früheren
-   flex-wrap mit flex: 1 1 160px — auf der breiten Admin-Seite quetscht sich
-   dadurch nichts mehr zusammen. Die Namensspalte darf auf 0 schrumpfen und
-   kürzt per Ellipse; die Aktionen bleiben dadurch immer einzeilig. */
 .admin-user-row-summary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  width: 100%;
+  display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 20px;
-  min-width: 0;
+  gap: 14px;
+  padding: 12px 14px 12px 12px;
+  border-radius: var(--admin-radius, 18px);
+  background: var(--admin-surface, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--admin-hairline, rgba(255, 255, 255, 0.07));
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.admin-user-row-summary:hover {
+  background: var(--admin-surface-hover, rgba(255, 255, 255, 0.065));
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-user-row-summary:active {
+  transform: scale(0.995);
+}
+
+.admin-user-row-summary:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.admin-user-avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 55%, #0ea5e9 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.admin-user-row.is-banned .admin-user-avatar,
+.admin-user-row.is-disabled .admin-user-avatar {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-user-avatar-large {
+  width: 56px;
+  height: 56px;
+  font-size: 1.35rem;
 }
 
 .admin-user-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-user-row-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   min-width: 0;
 }
 
 .admin-user-row-name {
-  font-weight: 700;
-  color: var(--text-primary);
   min-width: 0;
   overflow: hidden;
+  font-size: 0.96rem;
+  font-weight: 680;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.admin-user-badges {
-  display: flex;
+.admin-user-stream-info {
+  color: var(--admin-muted, rgba(255, 255, 255, 0.5));
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-user-row-chevron {
   flex: 0 0 auto;
-  gap: 6px;
+  display: inline-flex;
+  color: rgba(255, 255, 255, 0.34);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-user-row-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-user-row-summary:hover .admin-user-row-chevron {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateX(2px);
+}
+
+.admin-user-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .admin-user-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
-  white-space: nowrap;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-transform: uppercase;
 }
 
 .admin-user-badge-admin {
-  color: hsl(45, 90%, 65%);
-  background: hsla(45, 90%, 65%, 0.12);
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
 }
 
 .admin-user-badge-banned {
-  color: var(--error-color);
-  background: var(--error-bg);
+  background: rgba(255, 90, 90, 0.14);
+  color: #ff8a8a;
 }
 
 .admin-user-badge-disabled {
-  color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.08);
-}
-
-.admin-user-stream-info {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  justify-self: end;
-}
-
-/* Wird die Liste schmal — im Split neben der Detailansicht oder auf dem
-   Handy — rutschen Name und Badges auf eine eigene Zeile, darunter Streams
-   und Aktionen. Hängt an der Spaltenbreite statt am Viewport, damit beide
-   Fälle von derselben Regel abgedeckt sind. */
-@container (max-width: 620px) {
-  .admin-user-row-summary {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 16px;
-  }
-
-  .admin-user-row-main {
-    grid-column: 1 / -1;
-  }
-
-  .admin-user-stream-info {
-    justify-self: start;
-  }
-}
-
-/* Niemals umbrechen — gestapelte Buttons haben die Zeilen vorher auf die
-   dreifache Höhe aufgeblasen. Lieber kürzt der Name. */
-.admin-user-row-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  justify-self: end;
-}
-
-.admin-user-action-btn {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-primary);
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
-  font-weight: 640;
-  cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.admin-user-action-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.admin-user-action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.admin-user-action-danger {
-  color: var(--error-color);
-  border-color: hsla(0, 85%, 60%, 0.3);
-}
-
-.admin-user-action-danger:hover:not(:disabled) {
-  background: var(--error-bg);
+  color: rgba(255, 255, 255, 0.6);
 }

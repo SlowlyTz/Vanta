@@ -222,32 +222,24 @@ describe('AdminPage', () => {
       await flush();
 
       expect(container.querySelector('.admin-settings-panel')).toBeTruthy();
-      expect(container.querySelector('.admin-settings-section-toggle')).toBeTruthy();
+      expect(container.querySelector('.admin-settings-list-row')).toBeTruthy();
       expect(createAdminHeader).not.toHaveBeenCalled();
     });
 
-    it('shows the area label as the page title, above a back button', async () => {
+    it('shows a back chip above the area label and its description', async () => {
       const container = AdminPage({ section: 'users' });
       await flush();
 
       const backButton = container.querySelector('.admin-back-button');
-      expect(backButton.textContent).toContain('Zurück');
+      expect(backButton.textContent).toContain('Admin');
       expect(backButton.getAttribute('aria-label')).toBe('Zurück zur Admin-Verwaltung');
-      expect(container.querySelector('.page-heading-title').textContent).toBe('Nutzerverwaltung');
-      expect(backButton.compareDocumentPosition(container.querySelector('.page-heading')))
-        .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      const title = container.querySelector('.admin-page-title');
+      expect(title.textContent).toBe('Nutzerverwaltung');
+      expect(backButton.compareDocumentPosition(title)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(container.querySelector('.admin-page-subtitle').textContent).toBeTruthy();
     });
 
     it('names the search bar after the area it belongs to', async () => {
-      AdminPage({ section: 'requests' });
-      await flush();
-      expect(createAdminHeader.mock.calls[0][0]).toMatchObject({
-        placeholder: 'Anfragen durchsuchen…',
-        label: 'Anfragen durchsuchen'
-      });
-
-      createAdminHeader.mockClear();
-
       AdminPage({ section: 'users' });
       await flush();
       expect(createAdminHeader.mock.calls[0][0]).toMatchObject({
@@ -274,21 +266,18 @@ describe('AdminPage', () => {
       expect(rows[0].textContent).toContain('bob');
     });
 
-    it('renders a search bar for every area that can filter, and none for the others', async () => {
-      const withSearch = ['requests', 'users'];
-
-      for (const section of withSearch) {
-        createAdminHeader.mockClear();
-        const container = AdminPage({ section });
-        await flush();
-        expect(container.querySelector('.admin-header-bar')).toBeTruthy();
-      }
-
-      createAdminHeader.mockClear();
-      const settings = AdminPage({ section: 'settings' });
+    it('renders a search bar only for the users area', async () => {
+      const container = AdminPage({ section: 'users' });
       await flush();
-      expect(settings.querySelector('.admin-header-bar')).toBeNull();
-      expect(createAdminHeader).not.toHaveBeenCalled();
+      expect(container.querySelector('.admin-header-bar')).toBeTruthy();
+
+      for (const section of ['requests', 'settings']) {
+        createAdminHeader.mockClear();
+        const other = AdminPage({ section });
+        await flush();
+        expect(other.querySelector('.admin-header-bar')).toBeNull();
+        expect(createAdminHeader).not.toHaveBeenCalled();
+      }
     });
 
     it('returns to the menu when the back button is clicked', async () => {
@@ -300,24 +289,6 @@ describe('AdminPage', () => {
       container.querySelector('.admin-back-button').click();
 
       expect(window.location.hash).toBe('#/admin');
-    });
-
-    it('hands the scoped search term to that area’s setFilter', async () => {
-      RequestsApi.getOpenRequests.mockResolvedValue([
-        makeRequest({ id: 1, title: 'Fight Club', username: 'alice' }),
-        makeRequest({ id: 2, title: 'Heat', username: 'bob' })
-      ]);
-
-      const container = AdminPage({ section: 'requests' });
-      await flush();
-
-      expect(container.querySelectorAll('.admin-request-item')).toHaveLength(2);
-
-      const { onSearch } = createAdminHeader.mock.calls[0][0];
-      onSearch('heat');
-
-      expect(container.querySelectorAll('.admin-request-item')).toHaveLength(1);
-      expect(container.querySelector('.admin-request-item').textContent).toContain('Heat');
     });
   });
 
@@ -383,7 +354,7 @@ describe('AdminPage', () => {
       const container = AdminPage({ section: 'users' });
       await flush();
 
-      container.querySelector('.admin-user-action-btn').click();
+      container.querySelector('.admin-user-row-summary').click();
       expect(document.querySelector('.admin-user-dialog-detail')).toBeTruthy();
 
       window.dispatchEvent(new Event('hashchange'));
@@ -404,7 +375,7 @@ describe('AdminPage', () => {
       const container = AdminPage({ section: 'users' });
       await flush();
 
-      container.querySelector('.admin-user-action-btn').click();
+      container.querySelector('.admin-user-row-summary').click();
       const banButton = [...document.querySelectorAll('.admin-user-dialog button')]
         .find(button => /sperren/i.test(button.textContent));
       banButton.click();
@@ -440,7 +411,7 @@ describe('AdminPage', () => {
       const container = AdminPage({ section: 'users' });
       await flush();
 
-      container.querySelector('.admin-user-action-btn').click();
+      container.querySelector('.admin-user-row-summary').click();
       expect(document.querySelector('.admin-user-dialog-detail')).toBeTruthy();
 
       window.dispatchEvent(new Event('hashchange'));

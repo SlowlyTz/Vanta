@@ -4,19 +4,34 @@ import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
 import { createSectionLoader } from '../components/loader.js';
-import { PageHeading } from '../components/pageHeading.js';
 import { createBackIcon } from '../components/navbar/icons.js';
 import { listAdminTools, createAdminTool } from '../components/admin-tools/AdminToolRegistry.js';
 import { closeAllAdminModals } from '../components/admin-tools/adminModal.js';
 import { createAdminMenu } from './admin/adminMenu.js';
 import { createAdminHeader } from './admin/adminHeader.js';
 
-// Beschriftung der Suchleiste je Bereich. Bereiche ohne setFilter (z.B.
+// Beschriftung der Suchleiste je Bereich. Bereiche ohne setFilter (Anfragen,
 // Einstellungen) bekommen gar keine Leiste und stehen deshalb nicht hier.
 const SECTION_SEARCH = {
-  requests: { placeholder: 'Anfragen durchsuchen…', label: 'Anfragen durchsuchen' },
   users: { placeholder: 'Nutzer durchsuchen…', label: 'Nutzer durchsuchen' }
 };
+
+// Kompakter, linksbündiger Seitenkopf der Admin-Verwaltung: in einem Bereich
+// mit Zurück-Chip darüber, im Menü ohne.
+function createAdminHeading({ title, subtitle = '', onBack = null }) {
+  return createElement('header', { className: 'admin-page-heading' },
+    onBack
+      ? createElement('button', {
+        className: 'admin-back-button',
+        type: 'button',
+        'aria-label': 'Zurück zur Admin-Verwaltung',
+        onClick: onBack
+      }, createBackIcon(), 'Admin')
+      : null,
+    createElement('h1', { className: 'admin-page-title' }, title),
+    subtitle ? createElement('p', { className: 'admin-page-subtitle' }, subtitle) : null
+  );
+}
 
 // Seiteneinstieg der Admin-Verwaltung. Ohne `section` (#/admin) steht hier das
 // Menü, mit `section` (#/admin/requests|users|settings) genau ein Bereich samt
@@ -75,9 +90,9 @@ export default function AdminPage({ section = null } = {}) {
       .catch(error => console.error('[AdminPage] Offene Anfragen für das Menü konnten nicht geladen werden:', error));
 
     return createElement('div', { className: 'admin-page-layout' },
-      PageHeading({
-        title: 'Admin-Verwaltung',
-        subtitle: 'Medienanfragen prüfen und Nutzer verwalten.'
+      createAdminHeading({
+        title: 'Admin',
+        subtitle: 'Anfragen prüfen, Nutzer verwalten und VANTA einrichten.'
       }),
       menu.element
     );
@@ -87,13 +102,6 @@ export default function AdminPage({ section = null } = {}) {
     const tool = createAdminTool(id);
     activeTool = tool;
 
-    const backButton = createElement('button', {
-      className: 'admin-back-button',
-      type: 'button',
-      'aria-label': 'Zurück zur Admin-Verwaltung',
-      onClick: () => { window.location.hash = '#/admin'; }
-    }, createBackIcon(), 'Zurück');
-
     const search = tool.setFilter
       ? createAdminHeader({
         ...SECTION_SEARCH[id],
@@ -101,9 +109,12 @@ export default function AdminPage({ section = null } = {}) {
       })
       : null;
 
-    const layout = createElement('div', { className: 'admin-page-layout' },
-      createElement('div', { className: 'admin-back-row' }, backButton),
-      PageHeading({ title: tool.label }),
+    const layout = createElement('div', { className: 'admin-page-layout', dataset: { section: id } },
+      createAdminHeading({
+        title: tool.label,
+        subtitle: tool.description,
+        onBack: () => { window.location.hash = '#/admin'; }
+      }),
       search ? createElement('div', { className: 'admin-page-header-row' }, search.element) : null,
       createElement('div', { className: 'admin-section-body' }, tool.element)
     );

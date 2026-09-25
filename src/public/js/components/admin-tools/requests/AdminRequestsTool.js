@@ -16,24 +16,22 @@ const TABS = [
 export const ADMIN_REQUESTS_TOOL = {
   id: 'requests',
   label: 'Anfragen',
-  description: 'Medienanfragen prüfen, genehmigen oder ablehnen',
+  description: 'Medienanfragen prüfen und beantworten',
   icon: () => createChatIcon()
 };
 
-// Anfragen-Bereich der Admin-Seite: Tabs "Offen" (Standard, nur pending) und
-// "Alle" (jeder Status, mit Status-Badge je Zeile). Die Suchleiste des
-// Bereichs reicht ihren Begriff über setFilter herein; gefiltert wird die
-// zuletzt geladene Liste, damit ein Tastendruck keinen Request auslöst.
+// Anfragen-Bereich der Admin-Seite: Umschalter "Offen" (Standard, nur pending)
+// und "Alle" (jeder Status, mit Status-Badge je Karte). Ohne Suche: die Liste
+// der offenen Anfragen ist kurz, und "Alle" ist nach Datum sortiert.
 export function createAdminRequestsTool() {
   let activeTab = 'open';
   let loadedRequests = [];
-  let filterTerm = '';
 
   const notify = (message, type = 'info') => appStore.showToast(message, type);
 
   const tabButtons = new Map();
   const tabsNav = createElement('div', {
-    className: 'admin-requests-tabs',
+    className: 'admin-requests-tabs admin-segmented',
     role: 'tablist',
     'aria-label': 'Anfragen-Filter'
   });
@@ -76,18 +74,8 @@ export function createAdminRequestsTool() {
     load();
   };
 
-  const getVisibleRequests = () => {
-    const term = filterTerm.trim().toLowerCase();
-    if (!term) return loadedRequests;
-
-    return loadedRequests.filter(request =>
-      (request.title || '').toLowerCase().includes(term) ||
-      (request.username || '').toLowerCase().includes(term)
-    );
-  };
-
   const renderList = () => {
-    const visible = getVisibleRequests();
+    const visible = loadedRequests;
     listContainer.innerHTML = '';
 
     if (visible.length === 0) {
@@ -97,9 +85,7 @@ export function createAdminRequestsTool() {
         return;
       }
 
-      emptyElement.textContent = filterTerm.trim()
-        ? 'Keine Treffer für diese Suche'
-        : (activeTab === 'all' ? 'Keine Anfragen vorhanden' : 'Keine offenen Anfragen');
+      emptyElement.textContent = activeTab === 'all' ? 'Keine Anfragen vorhanden' : 'Keine offenen Anfragen';
       emptyElement.classList.remove('hidden');
       return;
     }
@@ -113,14 +99,6 @@ export function createAdminRequestsTool() {
         showStatus: activeTab === 'all'
       }));
     });
-  };
-
-  // Der Begriff kommt von der Suchleiste des Bereichs (adminHeader.js), die
-  // Eingaben bereits entprellt — hier wird nur neu gerendert. Der Begriff
-  // überlebt Tab-Wechsel und wird nach jedem load() erneut angewandt.
-  const setFilter = (term = '') => {
-    filterTerm = term || '';
-    renderList();
   };
 
   const load = async () => {
@@ -155,7 +133,6 @@ export function createAdminRequestsTool() {
   return {
     ...ADMIN_REQUESTS_TOOL,
     element,
-    load,
-    setFilter
+    load
   };
 }

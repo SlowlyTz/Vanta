@@ -29,13 +29,13 @@ export function buildPasswordField() {
   const input = createElement('input', {
     className: 'settings-input',
     type: 'password',
-    placeholder: 'Neues Passwort',
+    placeholder: 'Leer lassen, um es zu behalten',
     autocomplete: 'new-password'
   });
 
   return {
     element: createElement('div', { className: 'admin-user-field-group' },
-      createElement('label', { className: 'admin-user-field-label' }, 'Passwort'),
+      createElement('label', { className: 'admin-user-field-label' }, 'Neues Passwort'),
       createElement('div', { className: 'admin-user-field-row' }, input)
     ),
     getValue: () => input.value,
@@ -56,14 +56,14 @@ export function buildLibraryField(user, libraries) {
     className: `admin-user-choice-btn${enableAll ? ' active' : ''}`,
     'aria-pressed': String(enableAll),
     onClick: () => { enableAll = true; renderLibraryAccess(); }
-  }, 'Alle Bibliotheken');
+  }, 'Alle');
 
   const selectedBtn = createElement('button', {
     type: 'button',
     className: `admin-user-choice-btn${!enableAll ? ' active' : ''}`,
     'aria-pressed': String(!enableAll),
     onClick: () => { enableAll = false; renderLibraryAccess(); }
-  }, 'Ausgewählte Bibliotheken');
+  }, 'Nur ausgewählte');
 
   const modeGroup = createElement('div', {
     className: 'admin-user-library-mode',
@@ -107,7 +107,7 @@ export function buildLibraryField(user, libraries) {
 
   return {
     element: createElement('div', { className: 'admin-user-field-group' },
-      createElement('label', { className: 'admin-user-field-label' }, 'Bibliothekszugriff'),
+      createElement('label', { className: 'admin-user-field-label' }, 'Bibliotheken'),
       modeGroup,
       libraryGrid
     ),
@@ -129,10 +129,27 @@ export function buildStreamLimitField(user) {
     value: String(user.maxConcurrentStreams)
   });
 
+  // −/+ around the number: easier than typing into a number field on a phone.
+  const step = delta => {
+    const current = parseInt(input.value, 10);
+    const next = Math.min(20, Math.max(0, (Number.isInteger(current) ? current : 0) + delta));
+    input.value = String(next);
+  };
+  const stepButton = (delta, label, text) => createElement('button', {
+    className: 'admin-user-stepper-button',
+    type: 'button',
+    'aria-label': label,
+    onClick: () => step(delta)
+  }, text);
+
   return {
-    element: createElement('div', { className: 'admin-user-field-group' },
+    element: createElement('div', { className: 'admin-user-field-group admin-user-field-inline' },
       createElement('label', { className: 'admin-user-field-label' }, 'Max. gleichzeitige Streams'),
-      createElement('div', { className: 'admin-user-field-row' }, input)
+      createElement('div', { className: 'admin-user-field-row admin-user-stepper' },
+        stepButton(-1, 'Ein Stream weniger', '−'),
+        input,
+        stepButton(1, 'Ein Stream mehr', '+')
+      )
     ),
     getValue: () => parseInt(input.value, 10),
     isValid: () => {

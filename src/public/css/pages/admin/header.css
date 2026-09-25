@@ -14,17 +14,18 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.052);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: var(--abyss-radius);
-  padding: 0 var(--spacing-md);
-  height: 50px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
+  border-radius: 14px;
+  padding: 0 14px;
+  height: 46px;
+  cursor: text;
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .admin-header-search-wrapper:focus-within {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(var(--abyss-accent), 0.3);
+  background: var(--admin-surface-hover);
+  border-color: rgba(255, 255, 255, 0.24);
 }
 
 .admin-header-search-wrapper .navbar-action-icon {
@@ -80,6 +81,6 @@
   }
 
   .admin-header-search-wrapper {
-    height: 46px;
+    height: 44px;
   }
 }

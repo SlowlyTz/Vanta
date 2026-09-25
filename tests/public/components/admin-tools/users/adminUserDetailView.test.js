@@ -258,4 +258,55 @@ describe('createAdminUserDetailView', () => {
 
     document.body.removeChild(view);
   });
+
+  it('opens a ban dialog from the danger zone that requires a non-empty reason before confirming', async () => {
+    const onReload = vi.fn();
+    const view = createAdminUserDetailView(makeUser(), { libraries, onReload });
+    document.body.appendChild(view);
+
+    const banBtn = Array.from(view.querySelectorAll('.admin-user-danger-zone .admin-user-action-btn')).find(b => b.textContent === 'Sperren');
+    banBtn.click();
+
+    const dialog = document.querySelector('.admin-user-dialog-overlay');
+    expect(dialog.textContent).toContain('alice sperren');
+
+    const confirmBtn = Array.from(dialog.querySelectorAll('button')).find(b => b.textContent === 'Sperren');
+    confirmBtn.click();
+    await flush();
+    expect(AdminUsersApi.banUser).not.toHaveBeenCalled();
+    expect(dialog.querySelector('.admin-user-dialog-error').classList.contains('hidden')).toBe(false);
+
+    dialog.querySelector('textarea').value = 'Account geteilt';
+    confirmBtn.click();
+    await flush();
+
+    expect(AdminUsersApi.banUser).toHaveBeenCalledWith('u1', 'Account geteilt', 'alice');
+    expect(onReload).toHaveBeenCalled();
+
+    document.body.removeChild(view);
+  });
+
+  it('unbans directly without a dialog when the user is already banned', async () => {
+    const onReload = vi.fn();
+    AdminUsersApi.unbanUser.mockResolvedValue({ success: true });
+    const view = createAdminUserDetailView(makeUser({ isBanned: true }), { libraries, onReload });
+
+    Array.from(view.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Entsperren').click();
+    await flush();
+
+    expect(AdminUsersApi.unbanUser).toHaveBeenCalledWith('u1');
+    expect(onReload).toHaveBeenCalled();
+  });
+
+  it('steps the stream limit with −/+ within 0 to 20', () => {
+    const view = createAdminUserDetailView(makeUser({ maxConcurrentStreams: 19 }), { libraries });
+    const [minus, plus] = view.querySelectorAll('.admin-user-stepper-button');
+    const input = view.querySelector('.admin-user-stream-input');
+
+    plus.click();
+    plus.click();
+    expect(input.value).toBe('20');
+    minus.click();
+    expect(input.value).toBe('19');
+  });
 });

@@ -1,42 +1,40 @@
 /* ---------------------------------
-   ADMIN MENU — Kachel je Bereich (#/admin)
+   ADMIN MENU — eine Karte je Bereich (#/admin)
    --------------------------------- */
 .admin-menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 12px;
 }
 
 .admin-menu-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 14px;
   width: 100%;
-  min-height: 104px;
-  padding: var(--spacing-lg);
+  min-height: 84px;
+  padding: 16px 16px 16px 14px;
   text-align: left;
-  border-radius: var(--abyss-radius);
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.105);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
   color: var(--text-primary);
-  transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    transform var(--transition-fast);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .admin-menu-card:hover {
-  background: rgba(255, 255, 255, 0.075);
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-2px);
+  background: var(--admin-surface-hover);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .admin-menu-card:active {
-  transform: translateY(0) scale(0.995);
+  transform: scale(0.99);
 }
 
 .admin-menu-card:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
+  outline: 2px solid rgba(255, 255, 255, 0.55);
   outline-offset: 2px;
 }
 
@@ -47,18 +45,24 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: var(--abyss-radius);
-  background: rgba(var(--abyss-accent), 0.1);
-  color: var(--text-primary);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Der Icon-Knoten kommt fertig gestempelt aus navbar/icons.js und bringt seine
-   eigene Größe mit — hier wird er nur zentriert und auf eine Farbe gebracht. */
 .admin-menu-card-icon > span {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: auto;
+  height: auto;
   color: inherit;
+}
+
+.admin-menu-card-icon svg {
+  width: 21px;
+  height: 21px;
 }
 
 .admin-menu-card-text {
@@ -66,67 +70,62 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .admin-menu-card-title {
   color: var(--text-primary);
-  font-size: 1.05rem;
-  font-weight: 740;
-  line-height: 1.2;
+  font-size: 0.98rem;
+  font-weight: 680;
+  line-height: 1.25;
 }
 
 .admin-menu-card-description {
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-  font-weight: 500;
-  line-height: 1.35;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .admin-menu-badge {
   flex: 0 0 auto;
-  align-self: flex-start;
   min-width: 22px;
-  padding: 1px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
-  background: rgb(var(--abyss-accent));
-  color: var(--bg-primary);
+  background: #fff;
+  color: #0b0b0e;
   font-size: 0.74rem;
-  font-weight: 740;
+  font-weight: 750;
   text-align: center;
   line-height: 1.6;
 }
 
-/* ---------------------------------
-   ADMIN SECTION — ein Bereich als ganze Seite (#/admin/<bereich>)
-   --------------------------------- */
-.admin-back-row {
-  display: flex;
-  align-items: center;
+.admin-menu-badge.hidden {
+  display: none;
 }
 
-.admin-back-button {
+.admin-menu-card-chevron {
+  flex: 0 0 auto;
   display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  min-height: 40px;
-  padding: 0 var(--spacing-md) 0 var(--spacing-sm);
-  border-radius: var(--abyss-radius);
-  color: var(--text-secondary);
-  font-weight: 640;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  color: rgba(255, 255, 255, 0.34);
+  transition: transform var(--transition-fast), color var(--transition-fast);
 }
 
-.admin-back-button:hover {
-  background: rgba(255, 255, 255, 0.055);
-  color: var(--text-primary);
+.admin-menu-card-chevron svg {
+  width: 16px;
+  height: 16px;
 }
 
-.admin-back-button:focus-visible {
-  outline: 2px solid rgba(var(--abyss-accent), 0.72);
-  outline-offset: 2px;
+.admin-menu-card:hover .admin-menu-card-chevron {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateX(2px);
 }
 
-.admin-section-body {
-  min-width: 0;
+/* Umschalter (Offen / Alle) im Stil eines Segmented Controls */
+.admin-segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-hairline);
 }

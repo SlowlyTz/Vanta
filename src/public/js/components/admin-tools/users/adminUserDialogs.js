@@ -19,7 +19,7 @@ export function openBanDialog({ user, onConfirm }) {
   };
 
   const confirmBtn = createElement('button', {
-    className: 'btn-primary',
+    className: 'btn-primary admin-user-dialog-danger',
     type: 'button',
     onClick: async () => {
       const reason = reasonInput.value.trim();

@@ -4,6 +4,17 @@ import { STATUS_MAP, getTmdbImageUrl, getScopeLabel, getRequestScope } from '../
 
 const TYPE_LABELS = { movie: 'Film', tv: 'Serie' };
 
+const ACTION_ICONS = {
+  approve: '<path d="M20 6 9 17l-5-5"></path>',
+  reject: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
+};
+
+function actionIcon(kind) {
+  const icon = createElement('span', { className: 'request-admin-action-icon', 'aria-hidden': 'true' });
+  icon.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ACTION_ICONS[kind]}</svg>`;
+  return icon;
+}
+
 function formatRequestDate(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -29,11 +40,19 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
   const typeLabel = TYPE_LABELS[request.tmdb_type] || request.tmdb_type;
   const dateLabel = formatRequestDate(request.created_at);
 
+  const dot = () => createElement('span', { className: 'admin-request-item-dot', 'aria-hidden': 'true' }, '·');
   const meta = createElement('div', { className: 'admin-request-item-meta' },
-    createElement('span', { className: 'admin-request-item-user' }, request.username),
+    createElement('span', { className: 'admin-request-item-user' },
+      createElement('span', { className: 'admin-request-item-avatar', 'aria-hidden': 'true' },
+        (String(request.username || '?').charAt(0) || '?').toUpperCase()),
+      request.username
+    ),
+    dot(),
     createElement('span', { className: 'admin-request-item-type' }, typeLabel),
-    createElement('span', { className: 'admin-request-item-scope' }, getScopeLabel(request)),
-    dateLabel ? createElement('span', { className: 'admin-request-item-date' }, dateLabel) : null
+    dateLabel ? dot() : null,
+    dateLabel ? createElement('span', { className: 'admin-request-item-date' }, dateLabel) : null,
+    createElement('span', { className: 'admin-request-item-break', 'aria-hidden': 'true' }),
+    createElement('span', { className: 'admin-request-item-scope' }, getScopeLabel(request))
   );
 
   const info = createElement('div', { className: 'admin-request-item-info' },
@@ -41,9 +60,10 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
     meta
   );
 
+  // Im "Alle"-Tab steht der Status als zweiter Chip neben dem Umfang.
   if (showStatus) {
     const statusInfo = STATUS_MAP[request.status] || { label: request.status, cls: 'unknown' };
-    info.appendChild(
+    meta.appendChild(
       createElement('span', { className: `request-status request-status-${statusInfo.cls}` }, statusInfo.label)
     );
   }
@@ -73,7 +93,7 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
           setBusy(false);
         }
       }
-    }, 'Genehmigen');
+    }, actionIcon('approve'), createElement('span', {}, 'Genehmigen'));
 
     // Nur eine abgelehnte Gesamtanfrage sperrt den Titel; eine einzelne Staffel
     // oder Folge kann danach erneut angefragt werden (requests.service.js).
@@ -101,13 +121,13 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
           setBusy(false);
         }
       }
-    }, 'Ablehnen');
+    }, actionIcon('reject'), createElement('span', {}, 'Ablehnen'));
 
     actions.appendChild(approveBtn);
     actions.appendChild(rejectBtn);
   }
 
-  return createElement('div', { className: 'admin-request-item' },
+  return createElement('div', { className: `admin-request-item${actions.childElementCount ? ' has-actions' : ''}` },
     poster,
     info,
     actions

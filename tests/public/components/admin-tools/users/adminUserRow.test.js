@@ -51,95 +51,25 @@ describe('createAdminUserRow', () => {
     expect(row.querySelector('.admin-user-row-summary')).toBeTruthy();
   });
 
-  it('calls onEdit with the user when Bearbeiten is clicked, without rendering a detail panel', () => {
+  it('shows avatar initial, name, badges and streams', () => {
+    const row = createAdminUserRow(makeUser({ isAdmin: true, isBanned: true, activeStreams: 1, maxConcurrentStreams: 3 }));
+
+    expect(row.querySelector('.admin-user-avatar').textContent).toBe('A');
+    expect(row.querySelector('.admin-user-row-name').textContent).toBe('alice');
+    expect(Array.from(row.querySelectorAll('.admin-user-badge')).map(b => b.textContent)).toEqual(['Admin', 'Gesperrt']);
+    expect(row.querySelector('.admin-user-stream-info').textContent).toBe('1/3 Streams');
+    expect(row.classList.contains('is-banned')).toBe(true);
+  });
+
+  it('opens the detail view when the row is clicked; ban and delete live there, not in the row', () => {
     const onEdit = vi.fn();
     const user = makeUser();
     const row = createAdminUserRow(user, { onEdit });
 
-    const editBtn = row.querySelector('.admin-user-action-btn');
-    editBtn.click();
+    row.querySelector('.admin-user-row-summary').click();
 
     expect(onEdit).toHaveBeenCalledWith(user);
-    expect(row.querySelector('.admin-user-detail')).toBeNull();
-  });
-
-  it('opens a ban dialog that requires a non-empty reason before confirming', async () => {
-    const onChange = vi.fn();
-    const row = createAdminUserRow(makeUser(), { onChange });
-    document.body.appendChild(row);
-
-    const banBtn = Array.from(row.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Sperren');
-    banBtn.click();
-
-    const dialog = document.querySelector('.admin-user-dialog-overlay');
-    expect(dialog).toBeTruthy();
-    expect(dialog.textContent).toContain('alice sperren');
-
-    const confirmBtn = Array.from(dialog.querySelectorAll('button')).find(b => b.textContent === 'Sperren');
-    confirmBtn.click();
-    await flush();
-
+    expect(row.querySelector('.admin-user-action-btn')).toBeNull();
     expect(AdminUsersApi.banUser).not.toHaveBeenCalled();
-    expect(dialog.querySelector('.admin-user-dialog-error').classList.contains('hidden')).toBe(false);
-
-    dialog.querySelector('textarea').value = 'Account geteilt';
-    confirmBtn.click();
-    await flush();
-
-    expect(AdminUsersApi.banUser).toHaveBeenCalledWith('u1', 'Account geteilt', 'alice');
-    expect(onChange).toHaveBeenCalled();
-    expect(document.querySelector('.admin-user-dialog-overlay')).toBeNull();
-
-    document.body.removeChild(row);
-  });
-
-  it('unbans directly without a dialog when the user is already banned', async () => {
-    const onChange = vi.fn();
-    AdminUsersApi.unbanUser.mockResolvedValue({ success: true });
-    const row = createAdminUserRow(makeUser({ isBanned: true }), { onChange });
-
-    const unbanBtn = Array.from(row.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Entsperren');
-    unbanBtn.click();
-    await flush();
-
-    expect(AdminUsersApi.unbanUser).toHaveBeenCalledWith('u1');
-    expect(onChange).toHaveBeenCalled();
-  });
-
-  it('requires the exact username before confirming deletion', async () => {
-    const onChange = vi.fn();
-    const row = createAdminUserRow(makeUser(), { onChange });
-    document.body.appendChild(row);
-
-    const deleteBtn = Array.from(row.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Löschen');
-    deleteBtn.click();
-
-    const dialog = document.querySelector('.admin-user-dialog-overlay');
-    const confirmBtn = Array.from(dialog.querySelectorAll('button')).find(b => b.textContent === 'Endgültig löschen');
-    const input = dialog.querySelector('input[type="text"]');
-
-    input.value = 'wrong-name';
-    confirmBtn.click();
-    await flush();
-    expect(AdminUsersApi.deleteUser).not.toHaveBeenCalled();
-
-    input.value = 'alice';
-    confirmBtn.click();
-    await flush();
-
-    expect(AdminUsersApi.deleteUser).toHaveBeenCalledWith('u1');
-    expect(onChange).toHaveBeenCalled();
-
-    document.body.removeChild(row);
-  });
-
-  it('disables ban and delete actions for the current admin (self-protection)', () => {
-    const row = createAdminUserRow(makeUser({ id: 'admin-1' }), { currentAdminId: 'admin-1' });
-
-    const banBtn = Array.from(row.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Sperren');
-    const deleteBtn = Array.from(row.querySelectorAll('.admin-user-action-btn')).find(b => b.textContent === 'Löschen');
-
-    expect(banBtn.disabled).toBe(true);
-    expect(deleteBtn.disabled).toBe(true);
   });
 });
