@@ -8,7 +8,8 @@ vi.mock('../../../../src/server/services/jellyfin/playback-api.service.js', () =
     getPlaybackInfo: vi.fn(),
     reportPlayback: vi.fn(),
     markPlayed: vi.fn(),
-    fetchPlaybackResource: vi.fn()
+    fetchPlaybackResource: vi.fn(),
+    stopEncoding: vi.fn()
   }
 }));
 
@@ -55,6 +56,7 @@ describe('Playback Routes stream-limit integration', () => {
     vi.clearAllMocks();
     PlaybackApiService.getPlaybackInfo.mockResolvedValue({ MediaSources: [{}], PlaySessionId: 'jf-session-1' });
     PlaybackService.resolvePlayback.mockReturnValue({ playSessionId: 'jf-session-1', url: '/proxy-url' });
+    PlaybackApiService.stopEncoding.mockResolvedValue({});
   });
 
   describe('GET /:id', () => {
@@ -81,6 +83,14 @@ describe('Playback Routes stream-limit integration', () => {
       expect(streamSessionService.reserve).toHaveBeenCalledWith(expect.objectContaining({ replacesPlaySessionId: 'old-session_1' }));
       await request(createApp()).get('/item-1?replacesPlaySessionId=../../x');
       expect(streamSessionService.reserve).toHaveBeenLastCalledWith(expect.objectContaining({ replacesPlaySessionId: null }));
+    });
+
+    it('beendet beim Wechsel das Encoding der ersetzten Session, sonst keins', async () => {
+      await request(createApp()).get('/item-1');
+      expect(PlaybackApiService.stopEncoding).not.toHaveBeenCalled();
+
+      await request(createApp()).get('/item-1?replacesPlaySessionId=old-session_1');
+      expect(PlaybackApiService.stopEncoding).toHaveBeenCalledWith('token', 'old-session_1');
     });
 
     it('reicht eine gewählte Tonspur an Jellyfin und die Antwort weiter', async () => {

@@ -215,6 +215,14 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       throw limitError;
     }
 
+    // Quality, audio track or HLS fallback: the stream being replaced is dead
+    // weight on the Jellyfin server from here on.
+    if (replacesPlaySessionId && replacesPlaySessionId !== playback.playSessionId) {
+      PlaybackApiService.stopEncoding(accessToken, replacesPlaySessionId).catch(error => {
+        console.warn(`[Playback] could not stop the replaced encoding ${replacesPlaySessionId}:`, error.message);
+      });
+    }
+
     res.setHeader('Cache-Control', 'no-store');
     return res.json(playback);
   } catch (error) {

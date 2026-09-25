@@ -1,4 +1,4 @@
-import { JELLYFIN_BASE_URL, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
+import { JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export class PlaybackApiService {
@@ -51,6 +51,17 @@ export class PlaybackApiService {
     if (rangeHeader) headers.Range = rangeHeader;
 
     return fetch(url, { method: 'GET', headers, signal });
+  }
+
+  // Ends the ffmpeg job behind a play session right away; without this a
+  // stream the player has swapped out keeps encoding until Jellyfin's idle
+  // timer notices.
+  static stopEncoding(token, playSessionId) {
+    return jellyfinFetch('/Videos/ActiveEncodings', {
+      token,
+      method: 'DELETE',
+      query: { deviceId: deviceIdForToken(token), playSessionId }
+    });
   }
 
   static reportPlayback(token, event, payload) {
