@@ -1,5 +1,4 @@
 import { exitPictureInPicture, enterInlineFullscreen } from '../platform.js';
-import { isLandscape, enterSmartphoneFullscreen } from '../orientation.js';
 import { createSourceSwitch } from '../sourceSwitch.js';
 
 export function bindSourceSwitchIntegration(context) {
@@ -22,8 +21,7 @@ export function bindSourceSwitchIntegration(context) {
     },
     onBeforeSourceChange: () => {
       exitPictureInPicture().catch(() => {});
-    },
-    shouldPreventPlayback: () => context.gateActive
+    }
   });
 
   if (isPhone) {
@@ -32,18 +30,6 @@ export function bindSourceSwitchIntegration(context) {
       enterInlineFullscreen(root);
       context.updateFullscreenIcon();
     }
-    context.listen(window, 'orientationchange', context.handleOrientationChange);
-
-    (async () => {
-      try {
-        await enterSmartphoneFullscreen({ root, onError: () => {} });
-        if (!isLandscape()) {
-          context.showOrientationGate();
-        }
-      } catch {
-        context.showOrientationGate();
-      }
-    })();
   }
 
   return context;

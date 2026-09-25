@@ -7,7 +7,13 @@ vi.mock('../../../src/player/src/platform.js', async importOriginal => ({
   exitFullscreen: vi.fn(async () => {})
 }));
 
-import { enterFullscreen } from '../../../src/player/src/platform.js';
+vi.mock('../../../src/player/src/orientation.js', () => ({
+  lockLandscape: vi.fn(async () => true),
+  unlockOrientation: vi.fn(async () => true)
+}));
+
+import { enterFullscreen, exitFullscreen, isFullscreen } from '../../../src/player/src/platform.js';
+import { lockLandscape, unlockOrientation } from '../../../src/player/src/orientation.js';
 import { bindFullscreenControls } from '../../../src/player/src/player/fullscreenControls.js';
 
 function setup(extra = {}) {
@@ -47,5 +53,29 @@ describe('bindFullscreenControls', () => {
     const { root } = setup({ fullscreenTarget: () => page });
     root.querySelector('.vanta-player-fullscreen-button').click();
     await vi.waitFor(() => expect(enterFullscreen).toHaveBeenCalledWith(page));
+  });
+
+  it('turns the video sideways on a phone and frees the rotation again', async () => {
+    const { context } = setup({ isPhone: true });
+    await context.toggleFullscreen();
+    expect(lockLandscape).toHaveBeenCalled();
+
+    isFullscreen.mockReturnValue(true);
+    await context.toggleFullscreen();
+    expect(unlockOrientation).toHaveBeenCalled();
+    expect(exitFullscreen).toHaveBeenCalled();
+    isFullscreen.mockReturnValue(false);
+  });
+
+  it('frees the rotation when the system ends fullscreen (back gesture)', () => {
+    setup({ isPhone: true });
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(unlockOrientation).toHaveBeenCalled();
+  });
+
+  it('leaves the rotation alone on desktop', async () => {
+    const { context } = setup({ isPhone: false });
+    await context.toggleFullscreen();
+    expect(lockLandscape).not.toHaveBeenCalled();
   });
 });

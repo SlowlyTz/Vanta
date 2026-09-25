@@ -29,30 +29,6 @@ describe('createSourceSwitch · Gating', () => {
     restoreGlobals();
   });
 
-  it('does not auto-play when playback is gated', async () => {
-    const preventSourceSwitch = createSourceSwitch({
-      player,
-      reporter,
-      ui,
-      callbacks,
-      shouldPreventPlayback: () => true
-    });
-
-    const playback = { url: '/gated.mp4', delivery: 'http', playSessionId: 'session-gated' };
-    const loadPromise = preventSourceSwitch.loadPlayback(playback, { isBoot: true });
-    await new Promise(resolve => setTimeout(resolve, 10));
-    player.dispatchEvent({ type: 'can-play' });
-    player.duration = 120;
-    player.dispatchEvent({ type: 'duration-change', detail: 120 });
-    await new Promise(resolve => setTimeout(resolve, 10));
-    player.dispatchEvent({ type: 'seeked' });
-    player.dispatchEvent({ type: 'playing' });
-
-    await loadPromise;
-
-    expect(player.paused).toBe(true);
-  });
-
   it('does not call pause() for deferred non-playing loads', async () => {
     const pause = vi.fn(() => {
       throw new Error('pause should not be called for deferred loads');

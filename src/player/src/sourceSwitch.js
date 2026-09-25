@@ -62,8 +62,7 @@ export function createSourceSwitch(options) {
       if (!state.isCurrentLoad(version)) return;
       await performSeek(state, nextState.position, { version });
       if (!state.isCurrentLoad(version)) return;
-      const shouldPlay = nextState.shouldPlay && !state.shouldPreventPlayback?.();
-      await applyPlaybackState(state, { shouldPlay });
+      await applyPlaybackState(state, { shouldPlay: nextState.shouldPlay });
       if (!state.isCurrentLoad(version)) return;
       finalizeSwitch(version, { success: true });
     } catch (error) {
@@ -93,8 +92,7 @@ export function createSourceSwitch(options) {
     state.setInlineLoading(false);
 
     try {
-      const shouldPlay = !state.shouldPreventPlayback?.();
-      await applyPlaybackState(state, { shouldPlay });
+      await applyPlaybackState(state, { shouldPlay: true });
       if (!state.isCurrentLoad(version)) return;
       state.switching = false;
       if (!state.autoplayBlocked) {

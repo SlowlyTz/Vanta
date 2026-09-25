@@ -10,8 +10,7 @@ export function createSourceSwitchState({
     setInlineLoading,
     showError
   },
-  onBeforeSourceChange,
-  shouldPreventPlayback
+  onBeforeSourceChange
 }) {
   const state = {
     player,
@@ -22,7 +21,6 @@ export function createSourceSwitchState({
     setInlineLoading,
     showError,
     onBeforeSourceChange,
-    shouldPreventPlayback,
     currentPlayback: null,
     switching: false,
     loadVersion: 0,

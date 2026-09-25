@@ -103,8 +103,6 @@ export function createPlayerController(context) {
     destroy: () => {
       if (context.destroyed) return Promise.resolve();
       context.destroyed = true;
-      context.phoneOrientationActive = false;
-      context.gateActive = false;
       context.sourceSwitch.clearSeekTimer();
       context.echoTokens.clear();
 
@@ -114,7 +112,6 @@ export function createPlayerController(context) {
       // Begin PiP cleanup while the video element is still present.
       const pipPromise = exitPictureInPicture().catch(() => {});
 
-      context.orientationGate.destroy();
       exitInlineFullscreen(root);
       context.reporter.destroy();
       context.subtitleMenu.destroy();
