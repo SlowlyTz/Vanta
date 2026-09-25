@@ -14,10 +14,21 @@ function waitForPresentedFrame(player, timeoutMs) {
     let progressHandler = null;
     const timeout = window.setTimeout(() => finish(false), timeoutMs);
 
+    // A tab in the background presents no frames (no video frame callbacks,
+    // no animation frames), yet the video plays on. Time moving on the
+    // <video> itself counts too, or such a tab would sit in "loading" and
+    // report buffering, which makes a watch party wait for it.
+    const startedAt = Number(video.currentTime) || 0;
+    const onNativeTime = () => {
+      if (!video.paused && Number(video.currentTime) > startedAt + 0.05) finish(true);
+    };
+    video.addEventListener?.('timeupdate', onNativeTime);
+
     function finish(presented) {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
+      video.removeEventListener?.('timeupdate', onNativeTime);
       if (frameId !== null && video.cancelVideoFrameCallback) {
         video.cancelVideoFrameCallback(frameId);
       }

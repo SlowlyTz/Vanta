@@ -1136,16 +1136,19 @@ function Rt(e, t) {
 			n(!1);
 			return;
 		}
-		let i = !1, a = null, o = null, s = window.setTimeout(() => c(!1), t);
-		function c(t) {
-			i || (i = !0, window.clearTimeout(s), a !== null && r.cancelVideoFrameCallback && r.cancelVideoFrameCallback(a), o && e.removeEventListener("time-update", o), n(t));
+		let i = !1, a = null, o = null, s = window.setTimeout(() => u(!1), t), c = Number(r.currentTime) || 0, l = () => {
+			!r.paused && Number(r.currentTime) > c + .05 && u(!0);
+		};
+		r.addEventListener?.("timeupdate", l);
+		function u(t) {
+			i || (i = !0, window.clearTimeout(s), r.removeEventListener?.("timeupdate", l), a !== null && r.cancelVideoFrameCallback && r.cancelVideoFrameCallback(a), o && e.removeEventListener("time-update", o), n(t));
 		}
 		if (r.requestVideoFrameCallback) {
-			a = r.requestVideoFrameCallback(() => c(!0));
+			a = r.requestVideoFrameCallback(() => u(!0));
 			return;
 		}
 		o = () => {
-			window.requestAnimationFrame(() => window.requestAnimationFrame(() => c(!0)));
+			window.requestAnimationFrame(() => window.requestAnimationFrame(() => u(!0)));
 		}, e.addEventListener("time-update", o, { once: !0 });
 	});
 }
