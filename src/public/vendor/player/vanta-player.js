@@ -588,7 +588,9 @@ async function Ye(e) {
 		title: r,
 		subtitle: i,
 		poster: a
-	}), { player: y } = v, b = {
+	}), { player: y } = v;
+	u?.enabled && (y.autoplay = !1);
+	let b = {
 		root: t,
 		itemId: n,
 		title: r,
@@ -1269,19 +1271,19 @@ function Zt(e) {
 var Qt = 6e3;
 function $t(e, t) {
 	return new Promise((n) => {
-		let r = () => Number.isFinite(e.duration) && e.duration > 0, i = () => e.seekable?.length > 0 && Number.isFinite(e.seekable.end(0));
-		if (r() || i()) {
+		let r = () => [e.querySelector?.("video"), e].filter(Boolean), i = () => r().some((e) => Number.isFinite(e.duration) && e.duration > 0), a = () => r().some((e) => e.seekable?.length > 0 && Number.isFinite(e.seekable.end(0)));
+		if (i() || a()) {
 			n();
 			return;
 		}
-		let a, o = () => {
-			window.clearTimeout(a), e.removeEventListener("duration-change", s), e.removeEventListener("loaded-metadata", s);
-		}, s = () => {
-			(r() || i()) && (o(), n());
+		let o, s = () => {
+			window.clearTimeout(o), e.removeEventListener("duration-change", c), e.removeEventListener("loaded-metadata", c);
+		}, c = () => {
+			(i() || a()) && (s(), n());
 		};
-		a = window.setTimeout(() => {
-			o(), n();
-		}, t), e.addEventListener("duration-change", s), e.addEventListener("loaded-metadata", s);
+		o = window.setTimeout(() => {
+			s(), n();
+		}, t), e.addEventListener("duration-change", c), e.addEventListener("loaded-metadata", c);
 	});
 }
 function en(e) {

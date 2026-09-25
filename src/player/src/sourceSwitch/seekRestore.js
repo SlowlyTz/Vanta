@@ -5,10 +5,14 @@ import { formatClock } from '../../../public/js/shared/time.js';
 
 const SEEK_TIMEOUT_MS = 6_000;
 
+// vidstack's <media-player> has no `duration` or `seekable` property of its
+// own; both live on the <video> inside it. Reading only the player made every
+// load wait out the whole timeout.
 export function waitForDurationOrSeekable(player, timeoutMs) {
   return new Promise(resolve => {
-    const hasDuration = () => Number.isFinite(player.duration) && player.duration > 0;
-    const hasSeekable = () => player.seekable?.length > 0 && Number.isFinite(player.seekable.end(0));
+    const sources = () => [player.querySelector?.('video'), player].filter(Boolean);
+    const hasDuration = () => sources().some(media => Number.isFinite(media.duration) && media.duration > 0);
+    const hasSeekable = () => sources().some(media => media.seekable?.length > 0 && Number.isFinite(media.seekable.end(0)));
 
     if (hasDuration() || hasSeekable()) {
       resolve();

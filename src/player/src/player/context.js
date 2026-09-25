@@ -33,6 +33,10 @@ export async function createPlayerContext(options) {
   const iosLike = isIOSLike();
   const dom = createPlayerMarkup(root, { title, subtitle, poster });
   const { player } = dom;
+  // A watch party starts playback itself, at the server's time. vidstack's
+  // autoplay would start the hidden preload in the lobby (with sound) before
+  // the player's own pause could take hold.
+  if (watchParty?.enabled) player.autoplay = false;
 
   const context = {
     root,
