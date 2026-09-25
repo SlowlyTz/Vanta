@@ -20894,17 +20894,38 @@ var gm = class {
 };
 _m.defaultConfig = void 0;
 //#endregion
-//#region src/player/src/player/eventBindings.js
+//#region src/player/src/player/ownerControlEvents.js
 function vm(e) {
-	let { player: t, dom: n, listen: r, watchParty: i, onBack: a } = e, o = async (t) => {
+	let { player: t, listen: n, watchParty: r } = e, i = () => Math.round(t.currentTime * 1e3);
+	n(t, "play", () => {
+		e.canEmitOwnerControl("play") && r.onOwnerPlay?.(i());
+	}), n(t, "pause", () => {
+		e.canEmitOwnerControl("pause") && r.onOwnerPause?.(i());
+	});
+	let a = !1;
+	n(t, "seeking", () => {
+		e.echoTokens.consume("seek") && (a = !0);
+	}), n(t, "seeked", () => {
+		let t = e.takePendingSeekStep?.() ?? null;
+		if (a) {
+			a = !1;
+			return;
+		}
+		e.canEmitOwnerControl("seek") && r.onOwnerSeek?.(i(), t ? { step: t } : {});
+	});
+}
+//#endregion
+//#region src/player/src/player/eventBindings.js
+function ym(e) {
+	let { player: t, dom: n, listen: r, onBack: i } = e, a = async (t) => {
 		if (!(e.sourceSwitch.isSwitching() || e.destroyed)) {
 			if (e.sourceSwitch.getCurrentPlayback()?.delivery !== "hls") {
-				await s(t, { silent: e.isDeferredReadyRoom() });
+				await o(t, { silent: e.isDeferredReadyRoom() });
 				return;
 			}
 			e.showError(t?.message);
 		}
-	}, s = async (t, { silent: n = !1 } = {}) => {
+	}, o = async (t, { silent: n = !1 } = {}) => {
 		if (e.fallbackAttempted || e.destroyed) {
 			n || e.showError(t?.message);
 			return;
@@ -20924,7 +20945,7 @@ function vm(e) {
 			if (e.destroyed || e.handleFatalPlaybackError(t)) return;
 			n || e.showError(t.message);
 		}
-	}, c = () => {
+	}, s = () => {
 		e.sourceSwitch.isSwitching() || e.destroyed || (e.ui.setState("buffering"), e.inlineLoading.begin());
 	};
 	return r(t, "provider-change", (t) => {
@@ -20942,7 +20963,7 @@ function vm(e) {
 	}), r(t, "can-play", e.syncInlinePlayback), r(t, "loaded-metadata", e.syncInlinePlayback), r(t, "error", (t) => {
 		if (e.sourceSwitch.isSwitching() || e.destroyed) return;
 		let n = t.detail || {}, r = n.message || "Medienfehler";
-		(n.code >= 2 && n.code <= 4 || /not supported|decode|network|media_err/i.test(r)) && o(Error(r));
+		(n.code >= 2 && n.code <= 4 || /not supported|decode|network|media_err/i.test(r)) && a(Error(r));
 	}), r(t, "duration-change", (t) => {
 		let n = Number(t.detail);
 		Number.isFinite(n) && n > 0 && (e.knownDuration = n);
@@ -20951,32 +20972,25 @@ function vm(e) {
 	}), r(t, "pause", () => {
 		e.sourceSwitch.isSwitching() || (e.sourceSwitch.setIntendsToPlay(!1), e.sourceSwitch.clearSeekTimer(), t.querySelector?.("video")?.seeking || e.inlineLoading.end(), e.ui.setState("ready-paused"));
 	}), r(t, "waiting", () => {
-		e.sourceSwitch.isSwitching() || c();
+		e.sourceSwitch.isSwitching() || s();
 	}), r(t, "seeking", () => {
 		e.sourceSwitch.isSwitching() || (e.ui.setState("seeking"), e.inlineLoading.begin());
 	}), r(t, "playing", () => {
 		e.sourceSwitch.clearSeekTimer(), e.sourceSwitch.isSwitching() || (e.sourceSwitch.setAutoplayBlocked(!1), e.setLoading(!1), e.inlineLoading.isActive() ? e.inlineLoading.check() : e.setInlineLoading(!1), e.sourceSwitch.syncPlayingState());
 	}), r(t, "seeked", () => {
 		e.sourceSwitch.clearSeekTimer(), !e.sourceSwitch.isSwitching() && !e.destroyed && (e.inlineLoading.check(), e.sourceSwitch.syncPlayingState());
-	}), r(t, "play", () => {
-		e.canEmitOwnerControl("play") && i.onOwnerPlay?.(Math.round(t.currentTime * 1e3));
-	}), r(t, "pause", () => {
-		e.canEmitOwnerControl("pause") && i.onOwnerPause?.(Math.round(t.currentTime * 1e3));
-	}), r(t, "seeked", () => {
-		let n = e.takePendingSeekStep?.() ?? null;
-		e.canEmitOwnerControl("seek") && i.onOwnerSeek?.(Math.round(t.currentTime * 1e3), n ? { step: n } : {});
-	}), r(t, "ended", () => {
+	}), vm(e), r(t, "ended", () => {
 		Ee().catch(() => {}), e.reporter.stop({ ended: !0 });
-	}), r(n.backButton, "click", a), e.switchToHls = s, e;
+	}), r(n.backButton, "click", i), e.switchToHls = o, e;
 }
 //#endregion
 //#region src/player/src/player/syncControls.js
-var ym = 3, bm = .05, xm = class extends Error {
+var bm = 3, xm = .05, Sm = class extends Error {
 	constructor() {
 		super("Der Browser hat die automatische Wiedergabe blockiert."), this.name = "NotAllowedError";
 	}
 };
-function Sm(e) {
+function Cm(e) {
 	let { player: t, listen: n, echoTokens: r } = e, i = () => performance.now(), a = i(), o = () => {
 		a = i();
 	};
@@ -20990,7 +21004,7 @@ function Sm(e) {
 	let s = () => t.querySelector?.("video") || null, c = () => {
 		if (e.sourceSwitch.isSwitching()) return !0;
 		let t = s();
-		return t ? t.seeking ? !0 : !t.paused && t.readyState < ym : !1;
+		return t ? t.seeking ? !0 : !t.paused && t.readyState < bm : !1;
 	};
 	return e.getSyncState = () => {
 		let n = c();
@@ -21013,9 +21027,9 @@ function Sm(e) {
 		Math.abs((Number(t.playbackRate) || 1) - n) < .001 || (t.playbackRate = n);
 	}, e.syncSeek = (e) => {
 		let n = Ut(e, t);
-		Number.isFinite(n) && (Math.abs((Number(t.currentTime) || 0) - n) < bm || (r.expect("seek"), o(), t.currentTime = n));
+		Number.isFinite(n) && (Math.abs((Number(t.currentTime) || 0) - n) < xm || (r.expect("seek"), o(), t.currentTime = n));
 	}, e.syncPlay = async ({ quiet: n = !0 } = {}) => {
-		if (t.paused && (r.expect("play"), e.sourceSwitch.setIntendsToPlay(!0), await e.sourceSwitch.startCurrentPlayback({ quiet: n }), e.sourceSwitch.getAutoplayBlocked())) throw new xm();
+		if (t.paused && (r.expect("play"), e.sourceSwitch.setIntendsToPlay(!0), await e.sourceSwitch.startCurrentPlayback({ quiet: n }), e.sourceSwitch.getAutoplayBlocked())) throw new Sm();
 	}, e.syncPause = () => {
 		t.paused || (r.expect("pause"), e.sourceSwitch.setIntendsToPlay(!1), t.pause());
 	}, e.unlockPlayback = () => {
@@ -21029,10 +21043,10 @@ function Sm(e) {
 		} catch {
 			r = Promise.reject();
 		}
-		return Promise.resolve(r).then(() => !0, () => !1).then((r) => (e.pause(), e.muted = t, Math.abs(e.currentTime - n) > bm && (e.currentTime = n), r));
+		return Promise.resolve(r).then(() => !0, () => !1).then((r) => (e.pause(), e.muted = t, Math.abs(e.currentTime - n) > xm && (e.currentTime = n), r));
 	}, e;
 }
-function Cm(e, { setTimer: t = (e, t) => window.setInterval(e, t), clearTimer: n = (e) => window.clearInterval(e) } = {}) {
+function wm(e, { setTimer: t = (e, t) => window.setInterval(e, t), clearTimer: n = (e) => window.clearInterval(e) } = {}) {
 	let { player: r } = e, i = !1, a = () => {
 		let t = r.querySelector?.("video"), n = r.$store;
 		if (!t || typeof n?.currentTime?.set != "function" || t.paused || t.seeking || t.ended) return;
@@ -21051,8 +21065,8 @@ function Cm(e, { setTimer: t = (e, t) => window.setInterval(e, t), clearTimer: n
 	}, o = t(a, 500);
 	return e.disposers.push(() => n(o)), { check: a };
 }
-var wm = 750;
-function Tm({ now: e = () => performance.now(), chainMs: t = 900 } = {}) {
+var Tm = 750;
+function Em({ now: e = () => performance.now(), chainMs: t = 900 } = {}) {
 	let n = {
 		back: {
 			at: -Infinity,
@@ -21070,12 +21084,12 @@ function Tm({ now: e = () => performance.now(), chainMs: t = 900 } = {}) {
 		return s.at = -Infinity, a.total;
 	} };
 }
-function Em(e, t, n = null) {
+function Dm(e, t, n = null) {
 	let r = `${e === "back" ? "−" : "+"}${t} s`;
 	return n ? `${r} · ${n}` : r;
 }
-function Dm(e) {
-	let { player: t, dom: n, listen: r, root: i, ui: a } = e, o = Tm(), s = {
+function Om(e) {
+	let { player: t, dom: n, listen: r, root: i, ui: a } = e, o = Em(), s = {
 		back: null,
 		forward: null
 	}, c = () => {
@@ -21085,7 +21099,7 @@ function Dm(e) {
 		});
 	}, l = (e, t, r = null) => {
 		let i = n.seekBubbles[e];
-		i && (i.textContent = Em(e, t, r), i.classList.remove("is-visible"), i.offsetWidth, i.classList.add("is-visible"), window.clearTimeout(s[e]), s[e] = window.setTimeout(() => i.classList.remove("is-visible"), wm));
+		i && (i.textContent = Dm(e, t, r), i.classList.remove("is-visible"), i.offsetWidth, i.classList.add("is-visible"), window.clearTimeout(s[e]), s[e] = window.setTimeout(() => i.classList.remove("is-visible"), Tm));
 	}, u = (e) => {
 		n.seekButtons.filter((t) => (Number(t.dataset.seek) < 0 ? "back" : "forward") === e).forEach((e) => {
 			e.classList.remove("is-pressed"), e.offsetWidth, e.classList.add("is-pressed");
@@ -21126,7 +21140,7 @@ function Dm(e) {
 }
 //#endregion
 //#region src/player/src/player/shortcuts.js
-var Om = .05, km = 900, Am = 40, jm = 320, Mm = [
+var km = .05, Am = 900, jm = 40, Mm = 320, Nm = [
 	{
 		id: "toggle-play",
 		keys: ["Leertaste", "K"],
@@ -21186,7 +21200,7 @@ var Om = .05, km = 900, Am = 40, jm = 320, Mm = [
 		keys: ["Esc"],
 		label: "Menü oder Hilfe schließen"
 	}
-], Nm = [
+], Pm = [
 	{
 		id: "click",
 		input: "Klick aufs Bild",
@@ -21227,20 +21241,20 @@ var Om = .05, km = 900, Am = 40, jm = 320, Mm = [
 		pointer: "touch"
 	}
 ];
-function Pm(e) {
+function Fm(e) {
 	if (e.ctrlKey || e.metaKey || e.altKey) return null;
 	let t = e.key;
 	return t === " " || t === "Spacebar" || t === "k" || t === "K" ? "toggle-play" : t === "ArrowLeft" || t === "j" || t === "J" ? "seek-back" : t === "ArrowRight" || t === "l" || t === "L" ? "seek-forward" : t === "ArrowUp" ? "volume-up" : t === "ArrowDown" ? "volume-down" : t === "m" || t === "M" ? "mute" : t === "f" || t === "F" ? "fullscreen" : t === "c" || t === "C" ? "subtitles" : t === "?" ? "help" : /^[0-9]$/.test(t) ? "jump" : null;
 }
-function Fm(e) {
+function Im(e) {
 	return !e || typeof e.closest != "function" ? !1 : !!e.closest("input, textarea, select, [contenteditable=\"true\"], [role=\"dialog\"]");
 }
-function Im(e) {
+function Lm(e) {
 	let { player: t, root: n, listen: r, ui: i, dom: a } = e, o = null, s = 0, c = 0, l = () => !e.watchParty?.enabled || e.canControlWatchParty(), u = () => {
 		let e = a.volumeBubble;
 		if (!e) return;
 		let n = t.muted ? 0 : Math.round((Number(t.volume) || 0) * 100);
-		e.style.setProperty("--level", String(n / 100)), e.querySelector(".vanta-player-volume-bubble-value").textContent = t.muted ? "Stumm" : `${n} %`, e.dataset.level = t.muted || n === 0 ? "mute" : n < 50 ? "low" : "high", e.classList.add("is-visible"), window.clearTimeout(o), o = window.setTimeout(() => e.classList.remove("is-visible"), km);
+		e.style.setProperty("--level", String(n / 100)), e.querySelector(".vanta-player-volume-bubble-value").textContent = t.muted ? "Stumm" : `${n} %`, e.dataset.level = t.muted || n === 0 ? "mute" : n < 50 ? "low" : "high", e.classList.add("is-visible"), window.clearTimeout(o), o = window.setTimeout(() => e.classList.remove("is-visible"), Am);
 	};
 	e.adjustVolume = (e) => {
 		t.volume = Math.min(1, Math.max(0, Math.round(((Number(t.volume) || 0) + e) * 100) / 100)), e > 0 && t.muted && (t.muted = !1), u();
@@ -21252,7 +21266,7 @@ function Im(e) {
 			case "toggle-play": return e.togglePlay(), !0;
 			case "seek-back": return e.seekStep(-10), !0;
 			case "seek-forward": return e.seekStep(10), !0;
-			case "volume-up": return e.adjustVolume(Om), !0;
+			case "volume-up": return e.adjustVolume(km), !0;
 			case "volume-down": return e.adjustVolume(-.05), !0;
 			case "mute": return e.toggleMute(), !0;
 			case "fullscreen": return e.toggleFullscreen?.(), !0;
@@ -21262,9 +21276,9 @@ function Im(e) {
 		}
 	};
 	r(document, "keydown", (n) => {
-		if (n.defaultPrevented || e.destroyed || e.settingsOpen || e.helpOpen || Fm(n.target)) return;
-		let r = Pm(n);
-		if (r && !(Mm.find((e) => e.id === r)?.transport && !l())) {
+		if (n.defaultPrevented || e.destroyed || e.settingsOpen || e.helpOpen || Im(n.target)) return;
+		let r = Fm(n);
+		if (r && !(Nm.find((e) => e.id === r)?.transport && !l())) {
 			if (n.preventDefault(), r === "jump") {
 				let e = Number(t.duration);
 				Number.isFinite(e) && e > 0 && Wt(t, e * Number(n.key) / 10, { endEpsilon: .25 }), i.resetIdle();
@@ -21275,17 +21289,17 @@ function Im(e) {
 	});
 	let f = n.querySelector(".vanta-player-volume");
 	f && r(f, "wheel", (t) => {
-		t.preventDefault(), s += t.deltaY, !(Math.abs(s) < Am && Math.abs(t.deltaY) < Am) && (e.adjustVolume(s > 0 ? -.05 : Om), s = 0);
+		t.preventDefault(), s += t.deltaY, !(Math.abs(s) < jm && Math.abs(t.deltaY) < jm) && (e.adjustVolume(s > 0 ? -.05 : km), s = 0);
 	}, { passive: !1 });
 	let p = n.querySelector(".vanta-player-timeline-row");
 	return p && r(p, "wheel", (t) => {
 		if (!l() || Math.abs(t.deltaY) < 4) return;
 		t.preventDefault();
 		let n = performance.now();
-		n - c < jm || (c = n, e.seekStep(t.deltaY > 0 ? 10 : -10));
+		n - c < Mm || (c = n, e.seekStep(t.deltaY > 0 ? 10 : -10));
 	}, { passive: !1 }), e.disposers.push(() => window.clearTimeout(o)), e;
 }
-function Lm({ onClick: e, onDoubleClick: t, setTimer: n = (e, t) => window.setTimeout(e, t), clearTimer: r = (e) => window.clearTimeout(e) }) {
+function Rm({ onClick: e, onDoubleClick: t, setTimer: n = (e, t) => window.setTimeout(e, t), clearTimer: r = (e) => window.clearTimeout(e) }) {
 	let i = null;
 	return {
 		click() {
@@ -21298,14 +21312,14 @@ function Lm({ onClick: e, onDoubleClick: t, setTimer: n = (e, t) => window.setTi
 		}
 	};
 }
-function Rm(e, t) {
+function zm(e, t) {
 	return e < t / 3 ? "back" : e > t * 2 / 3 ? "forward" : null;
 }
-function zm({ onSingle: e, onSeek: t, now: n = () => performance.now(), setTimer: r = (e, t) => window.setTimeout(e, t), clearTimer: i = (e) => window.clearTimeout(e) }) {
+function Bm({ onSingle: e, onSeek: t, now: n = () => performance.now(), setTimer: r = (e, t) => window.setTimeout(e, t), clearTimer: i = (e) => window.clearTimeout(e) }) {
 	let a = null, o = null, s = null;
 	return {
 		tap({ x: c, y: l, width: u }) {
-			let d = n(), f = Rm(c, u);
+			let d = n(), f = zm(c, u);
 			return o && f === o.side && d - o.at <= 650 ? (o.at = d, t(f), "seek") : (o = null, a && d - a.at <= 300 && Math.hypot(c - a.x, l - a.y) <= 40 && f ? (i(s), s = null, a = null, o = {
 				side: f,
 				at: d
@@ -21322,15 +21336,15 @@ function zm({ onSingle: e, onSeek: t, now: n = () => performance.now(), setTimer
 		}
 	};
 }
-function Bm(e) {
+function Vm(e) {
 	let { root: t, listen: n, ui: r } = e, i = t.querySelector(".vanta-player-tap-layer");
 	if (!i) return e;
-	let a = zm({
+	let a = Bm({
 		onSeek: (t) => e.seekStep(t === "back" ? -10 : 10),
 		onSingle: () => {
 			r.getState() === "ready-playing-active" ? r.setState("ready-playing-idle") : r.resetIdle();
 		}
-	}), o = Lm({
+	}), o = Rm({
 		onClick: () => e.togglePlay(),
 		onDoubleClick: () => e.toggleFullscreen?.()
 	});
@@ -21352,13 +21366,13 @@ function Bm(e) {
 }
 //#endregion
 //#region src/player/src/mediaSession.js
-var Vm = [
+var Hm = [
 	"play",
 	"pause",
 	"seekbackward",
 	"seekforward"
-], Hm = 1e3;
-function Um(e, { session: t = globalThis.navigator?.mediaSession, MediaMetadataClass: n = globalThis.MediaMetadata } = {}) {
+], Um = 1e3;
+function Wm(e, { session: t = globalThis.navigator?.mediaSession, MediaMetadataClass: n = globalThis.MediaMetadata } = {}) {
 	if (!t) return {
 		refresh() {},
 		destroy() {}
@@ -21388,7 +21402,7 @@ function Um(e, { session: t = globalThis.navigator?.mediaSession, MediaMetadataC
 	};
 	return e.listen(r, "play", u), e.listen(r, "pause", u), e.listen(r, "time-update", () => {
 		let e = performance.now();
-		if (e - s < Hm || typeof t.setPositionState != "function") return;
+		if (e - s < Um || typeof t.setPositionState != "function") return;
 		s = e;
 		let n = Number(r.duration), i = Number(r.currentTime);
 		if (!(!Number.isFinite(n) || n <= 0 || !Number.isFinite(i))) try {
@@ -21401,7 +21415,7 @@ function Um(e, { session: t = globalThis.navigator?.mediaSession, MediaMetadataC
 	}), l(), {
 		refresh: l,
 		destroy() {
-			Vm.forEach((e) => c(e, null));
+			Hm.forEach((e) => c(e, null));
 			try {
 				t.metadata = null, t.playbackState = "none";
 			} catch {}
@@ -21410,23 +21424,23 @@ function Um(e, { session: t = globalThis.navigator?.mediaSession, MediaMetadataC
 }
 //#endregion
 //#region src/player/src/preferences.js
-var Wm = "vanta.player.prefs", Gm = Object.freeze({
+var Gm = "vanta.player.prefs", Km = Object.freeze({
 	volume: .8,
 	muted: !1,
 	subtitleLanguage: null,
 	audioLanguage: null,
 	subtitleSize: "medium",
 	subtitleBackground: "semi"
-}), Km = 400;
-function qm(e) {
+}), qm = 400;
+function Jm(e) {
 	try {
 		return e === "session" ? globalThis.sessionStorage : globalThis.localStorage;
 	} catch {
 		return null;
 	}
 }
-function Jm({ key: e = Wm, storage: t = "local" } = {}, { backend: n = qm(t) } = {}) {
-	let r = { ...Gm };
+function Ym({ key: e = Gm, storage: t = "local" } = {}, { backend: n = Jm(t) } = {}) {
+	let r = { ...Km };
 	try {
 		let t = JSON.parse(n?.getItem(e) || "null");
 		t && typeof t == "object" && (r = {
@@ -21446,15 +21460,15 @@ function Jm({ key: e = Wm, storage: t = "local" } = {}, { backend: n = qm(t) } =
 			r = {
 				...r,
 				...e
-			}, i === null && (i = setTimeout(a, Km));
+			}, i === null && (i = setTimeout(a, qm));
 		},
 		flush() {
 			i !== null && (clearTimeout(i), a());
 		}
 	};
 }
-function Ym(e) {
-	let { player: t, listen: n } = e, r = Jm(e.preferencesConfig || void 0);
+function Xm(e) {
+	let { player: t, listen: n } = e, r = Ym(e.preferencesConfig || void 0);
 	e.preferences = r;
 	let { volume: i, muted: a } = r.get();
 	return Number.isFinite(i) && (t.volume = Math.min(1, Math.max(0, i))), t.muted = !!a, n(t, "volume-change", () => {
@@ -21466,7 +21480,7 @@ function Ym(e) {
 }
 //#endregion
 //#region src/player/src/help.js
-var Xm = [
+var Zm = [
 	"Admins steuern Wiedergabe, Pause und Spulen für alle. Zuschauer sehen oben „Admin steuert“.",
 	"Springt jemand 10 Sekunden, zeigen alle Bildschirme eine Blase mit dem Namen.",
 	"Im Zahnrad-Menü siehst du, wer synchron ist, und kannst dich mit „Neu synchronisieren“ zurückholen.",
@@ -21474,12 +21488,12 @@ var Xm = [
 	"Hängt jemand beim Laden, pausiert die Party, bis alle wieder bereit sind. Der Gastgeber kann das im Zahnrad-Menü abschalten.",
 	"Lautstärke, Untertitel, Tonspur und Vollbild stellt jeder für sich ein."
 ];
-function Zm({ party: e = !1, viewer: t = !1 } = {}) {
+function Qm({ party: e = !1, viewer: t = !1 } = {}) {
 	let n = (e) => t && e.transport ? "Nur Admins" : null, r = [
 		{
 			id: "keyboard",
 			title: "Tastatur",
-			rows: Mm.map((e) => ({
+			rows: Nm.map((e) => ({
 				keys: e.keys,
 				label: e.label,
 				tag: n(e)
@@ -21488,7 +21502,7 @@ function Zm({ party: e = !1, viewer: t = !1 } = {}) {
 		{
 			id: "mouse",
 			title: "Maus",
-			rows: Nm.filter((e) => e.pointer === "mouse").map((e) => ({
+			rows: Pm.filter((e) => e.pointer === "mouse").map((e) => ({
 				input: e.input,
 				label: e.label,
 				tag: n(e)
@@ -21497,7 +21511,7 @@ function Zm({ party: e = !1, viewer: t = !1 } = {}) {
 		{
 			id: "touch",
 			title: "Touch",
-			rows: Nm.filter((e) => e.pointer === "touch").map((e) => ({
+			rows: Pm.filter((e) => e.pointer === "touch").map((e) => ({
 				input: e.input,
 				label: e.label,
 				tag: n(e)
@@ -21507,10 +21521,10 @@ function Zm({ party: e = !1, viewer: t = !1 } = {}) {
 	return e && r.push({
 		id: "party",
 		title: "Watch Party",
-		notes: Xm
+		notes: Zm
 	}), r;
 }
-function Qm(e) {
+function $m(e) {
 	let t = (e.rows || []).map((e) => `
     <li class="vanta-help-row${e.tag ? " is-locked" : ""}">
       <span class="vanta-help-input">${e.keys ? e.keys.map((e) => `<kbd>${I(e)}</kbd>`).join("<span class=\"vanta-help-or\">oder</span>") : I(e.input)}</span>
@@ -21522,7 +21536,7 @@ function Qm(e) {
       <ul>${t}${n}</ul>
     </section>`;
 }
-function $m(e) {
+function eh(e) {
 	let { root: t, ui: n, listen: r } = e, i = t.querySelector(".vanta-player-shell"), a = null, o = document.createElement("div");
 	o.className = "vanta-help", o.setAttribute("role", "dialog"), o.setAttribute("aria-modal", "true"), o.setAttribute("aria-label", "Hilfe"), o.hidden = !0, i.appendChild(o);
 	let s = () => {
@@ -21535,10 +21549,10 @@ function $m(e) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.7 17 4.3l-5 5-5-5-1.4 1.4 5 5-5 5L7 17.1l5-5 5 5 1.4-1.4-5-5z"/></svg>
           </button>
         </div>
-        <div class="vanta-help-grid">${Zm({
+        <div class="vanta-help-grid">${Qm({
 			party: t,
 			viewer: t && !e.canControlWatchParty()
-		}).map(Qm).join("")}</div>
+		}).map($m).join("")}</div>
         <p class="vanta-help-foot">Mit <kbd>?</kbd> oder <kbd>Esc</kbd> schließen.</p>
       </div>`, o.querySelector(".vanta-help-close").addEventListener("click", () => l());
 	};
@@ -21562,7 +21576,7 @@ function $m(e) {
 }
 //#endregion
 //#region src/player/src/player/lifecycle.js
-async function eh(e) {
+async function th(e) {
 	let { watchParty: t, resumePosition: n } = e, r = !1, i = null;
 	async function a({ position: a = n } = {}) {
 		if (r) return;
@@ -21599,7 +21613,7 @@ async function eh(e) {
 	} catch {}
 	return e;
 }
-function th(e) {
+function nh(e) {
 	let { player: t, watchParty: n, isPhone: r, root: i } = e;
 	return {
 		player: t,
@@ -21631,9 +21645,9 @@ function th(e) {
 }
 //#endregion
 //#region src/player/src/index.js
-async function nh(e) {
+async function rh(e) {
 	let t = await Je(e);
-	return Ym(t), et(t), Mt(t), gt(t), tn(t), ur(t), vm(t), Dm(t), Bm(t), Im(t), t.mediaSession = Um(t), t.help = $m(t), or(t, { loadSegments: t.loadSegments }), Sm(t), Cm(t), await eh(t), th(t);
+	return Xm(t), et(t), Mt(t), gt(t), tn(t), ur(t), ym(t), Om(t), Vm(t), Lm(t), t.mediaSession = Wm(t), t.help = eh(t), or(t, { loadSegments: t.loadSegments }), Cm(t), wm(t), await th(t), nh(t);
 }
 //#endregion
-export { nh as mountVantaPlayer };
+export { rh as mountVantaPlayer };

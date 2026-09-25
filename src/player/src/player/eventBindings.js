@@ -2,9 +2,10 @@ import Hls from 'hls.js';
 import { isHLSProvider } from 'vidstack';
 import { exitPictureInPicture } from '../platform.js';
 import { HLS_FRAGMENT_TIMEOUT_MS, HLS_WORKER_PATH } from './markup.js';
+import { bindOwnerControlEvents } from './ownerControlEvents.js';
 
 export function bindPlayerEvents(context) {
-  const { player, dom, listen, watchParty, onBack } = context;
+  const { player, dom, listen, onBack } = context;
 
   const handlePlaybackFailure = async error => {
     if (context.sourceSwitch.isSwitching() || context.destroyed) return;
@@ -131,24 +132,7 @@ export function bindPlayerEvents(context) {
     }
   });
 
-  listen(player, 'play', () => {
-    if (context.canEmitOwnerControl('play')) {
-      watchParty.onOwnerPlay?.(Math.round(player.currentTime * 1000));
-    }
-  });
-
-  listen(player, 'pause', () => {
-    if (context.canEmitOwnerControl('pause')) {
-      watchParty.onOwnerPause?.(Math.round(player.currentTime * 1000));
-    }
-  });
-
-  listen(player, 'seeked', () => {
-    const step = context.takePendingSeekStep?.() ?? null;
-    if (context.canEmitOwnerControl('seek')) {
-      watchParty.onOwnerSeek?.(Math.round(player.currentTime * 1000), step ? { step } : {});
-    }
-  });
+  bindOwnerControlEvents(context);
 
   listen(player, 'ended', () => {
     exitPictureInPicture().catch(() => {});
