@@ -61,6 +61,16 @@ async function flush() {
   for (let i = 0; i < 6; i++) await Promise.resolve();
 }
 
+// Leaves the admin area the way the router sees it: a new hash, then the
+// hashchange event.
+function leaveAdmin(hash = '#/home') {
+  window.history.replaceState(null, '', hash);
+  window.dispatchEvent(new Event('hashchange'));
+}
+
+// The open area lives in a layer on document.body, not inside the page.
+const layer = () => document.querySelector('.admin-layer');
+
 function makeRequest(overrides = {}) {
   return {
     id: 1,
@@ -106,8 +116,9 @@ describe('AdminPage', () => {
   afterEach(() => {
     // Jede noch lebende Seite abbauen: sonst bleiben ihre Modals registriert und
     // ein späterer Abbau schließt sie — samt Nachladen — im nächsten Test.
-    window.dispatchEvent(new Event('hashchange'));
-    document.querySelectorAll('.admin-user-dialog-overlay').forEach(el => el.remove());
+    leaveAdmin();
+    window.history.replaceState(null, '', '#/admin');
+    document.querySelectorAll('.admin-user-dialog-overlay, .admin-layer').forEach(el => el.remove());
   });
 
   describe('Menü (#/admin)', () => {
@@ -190,53 +201,47 @@ describe('AdminPage', () => {
   });
 
   describe('Bereich (#/admin/<id>)', () => {
-    it('renders only the requests area and loads it', async () => {
+    it('opens the requests area as a layer over the menu on a deep link, without sliding', async () => {
       RequestsApi.getOpenRequests.mockResolvedValue([makeRequest()]);
 
       const container = AdminPage({ section: 'requests' });
       await flush();
 
-      expect(container.querySelector('.admin-requests-view')).toBeTruthy();
-      expect(container.querySelector('.admin-users-view')).toBeNull();
-      expect(container.querySelector('.admin-settings-panel')).toBeNull();
-      expect(container.querySelector('.admin-menu-grid')).toBeNull();
-      expect(RequestsApi.getOpenRequests).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('.admin-menu-grid')).toBeTruthy();
+      expect(layer().querySelector('.admin-requests-view')).toBeTruthy();
+      expect(layer().classList.contains('is-open')).toBe(true);
+      expect(layer().querySelector('.admin-users-view')).toBeNull();
       expect(AdminUsersApi.listUsers).not.toHaveBeenCalled();
-      expect(container.querySelectorAll('.admin-request-item')).toHaveLength(1);
+      expect(layer().querySelectorAll('.admin-request-item')).toHaveLength(1);
     });
 
-    it('renders only the users area and loads it', async () => {
+    it('opens only the users area and loads it', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-      const container = AdminPage({ section: 'users' });
+      AdminPage({ section: 'users' });
       await flush();
 
-      expect(container.querySelector('.admin-users-view')).toBeTruthy();
-      expect(container.querySelector('.admin-requests-view')).toBeNull();
+      expect(layer().querySelector('.admin-users-view')).toBeTruthy();
+      expect(layer().querySelector('.admin-requests-view')).toBeNull();
       expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(1);
-      expect(RequestsApi.getOpenRequests).not.toHaveBeenCalled();
     });
 
     it('renders the settings area without a search bar, since it has no filter', async () => {
-      const container = AdminPage({ section: 'settings' });
+      AdminPage({ section: 'settings' });
       await flush();
 
-      expect(container.querySelector('.admin-settings-panel')).toBeTruthy();
-      expect(container.querySelector('.admin-settings-list-row')).toBeTruthy();
+      expect(layer().querySelector('.admin-settings-panel')).toBeTruthy();
+      expect(layer().querySelector('.admin-settings-list-row')).toBeTruthy();
       expect(createAdminHeader).not.toHaveBeenCalled();
     });
 
-    it('shows a back chip above the area label and its description', async () => {
-      const container = AdminPage({ section: 'users' });
+    it('titles the layer with the area label and its description, under a Zurück button', async () => {
+      AdminPage({ section: 'users' });
       await flush();
 
-      const backButton = container.querySelector('.admin-back-button');
-      expect(backButton.textContent).toContain('Admin');
-      expect(backButton.getAttribute('aria-label')).toBe('Zurück zur Admin-Verwaltung');
-      const title = container.querySelector('.admin-page-title');
-      expect(title.textContent).toBe('Nutzerverwaltung');
-      expect(backButton.compareDocumentPosition(title)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-      expect(container.querySelector('.admin-page-subtitle').textContent).toBeTruthy();
+      expect(layer().querySelector('.admin-layer-back').textContent).toContain('Zurück');
+      expect(layer().querySelector('.admin-layer-title').textContent).toBe('Nutzerverwaltung');
+      expect(layer().querySelector('.admin-layer-subtitle').textContent).toBeTruthy();
     });
 
     it('names the search bar after the area it belongs to', async () => {
@@ -253,42 +258,67 @@ describe('AdminPage', () => {
         users: [makeUser({ id: 'u1', name: 'alice' }), makeUser({ id: 'u2', name: 'bob' })]
       });
 
-      const container = AdminPage({ section: 'users' });
+      AdminPage({ section: 'users' });
       await flush();
 
-      expect(container.querySelectorAll('.admin-user-row')).toHaveLength(2);
+      expect(layer().querySelectorAll('.admin-user-row')).toHaveLength(2);
 
       const { onSearch } = createAdminHeader.mock.calls[0][0];
       onSearch('bob');
 
-      const rows = container.querySelectorAll('.admin-user-row');
+      const rows = layer().querySelectorAll('.admin-user-row');
       expect(rows).toHaveLength(1);
       expect(rows[0].textContent).toContain('bob');
     });
 
     it('renders a search bar only for the users area', async () => {
-      const container = AdminPage({ section: 'users' });
+      AdminPage({ section: 'users' });
       await flush();
-      expect(container.querySelector('.admin-header-bar')).toBeTruthy();
+      expect(layer().querySelector('.admin-header-bar')).toBeTruthy();
+      leaveAdmin();
 
       for (const section of ['requests', 'settings']) {
+        window.history.replaceState(null, '', '#/admin');
         createAdminHeader.mockClear();
-        const other = AdminPage({ section });
+        AdminPage({ section });
         await flush();
-        expect(other.querySelector('.admin-header-bar')).toBeNull();
+        expect(layer().querySelector('.admin-header-bar')).toBeNull();
         expect(createAdminHeader).not.toHaveBeenCalled();
+        leaveAdmin();
       }
     });
 
-    it('returns to the menu when the back button is clicked', async () => {
-      window.location.hash = '#/admin/users';
-
-      const container = AdminPage({ section: 'users' });
+    it('slides an area in when the hash moves from the menu to it, and back out on the way back', async () => {
+      vi.useFakeTimers();
+      const container = AdminPage();
       await flush();
 
-      container.querySelector('.admin-back-button').click();
+      expect(container.handleHashChange('#/admin/requests')).toBe(true);
+      expect(layer()).toBeTruthy();
+      expect(layer().classList.contains('is-open')).toBe(false);
+      await vi.advanceTimersByTimeAsync(50);
+      expect(layer().classList.contains('is-open')).toBe(true);
 
-      expect(window.location.hash).toBe('#/admin');
+      expect(container.handleHashChange('#/admin')).toBe(true);
+      expect(layer().classList.contains('is-open')).toBe(false);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(layer()).toBeNull();
+
+      // Anything outside the admin area is left to the router.
+      expect(container.handleHashChange('#/home')).toBe(false);
+      vi.useRealTimers();
+    });
+
+    it('steps back through the history from an area opened from the menu', async () => {
+      const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+      const container = AdminPage();
+      await flush();
+
+      container.handleHashChange('#/admin/users');
+      layer().querySelector('.admin-layer-back').click();
+
+      expect(back).toHaveBeenCalledTimes(1);
+      back.mockRestore();
     });
   });
 
@@ -351,19 +381,19 @@ describe('AdminPage', () => {
     it('tears down only once and takes its own hashchange listener with it', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-      const container = AdminPage({ section: 'users' });
+      AdminPage({ section: 'users' });
       await flush();
 
-      container.querySelector('.admin-user-row-summary').click();
+      layer().querySelector('.admin-user-row-summary').click();
       expect(document.querySelector('.admin-user-dialog-detail')).toBeTruthy();
 
-      window.dispatchEvent(new Event('hashchange'));
+      leaveAdmin();
       await flush();
 
       // Nach dem Abbau darf ein weiterer Routenwechsel nichts mehr auslösen:
       // der Listener hat sich selbst entfernt.
       AdminUsersApi.listUsers.mockClear();
-      window.dispatchEvent(new Event('hashchange'));
+      leaveAdmin('#/search');
       await flush();
 
       expect(AdminUsersApi.listUsers).not.toHaveBeenCalled();
@@ -372,10 +402,10 @@ describe('AdminPage', () => {
     it('closes a ban confirmation that is still open when the route changes', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser({ id: 'u1', name: 'alice' })] });
 
-      const container = AdminPage({ section: 'users' });
+      AdminPage({ section: 'users' });
       await flush();
 
-      container.querySelector('.admin-user-row-summary').click();
+      layer().querySelector('.admin-user-row-summary').click();
       const banButton = [...document.querySelectorAll('.admin-user-dialog button')]
         .find(button => /sperren/i.test(button.textContent));
       banButton.click();
@@ -383,7 +413,7 @@ describe('AdminPage', () => {
 
       expect(document.querySelectorAll('.admin-user-dialog-overlay').length).toBeGreaterThan(1);
 
-      window.dispatchEvent(new Event('hashchange'));
+      leaveAdmin();
       await flush();
 
       // Bestätigungsdialoge hängen ebenfalls an document.body und werden vom
@@ -397,24 +427,24 @@ describe('AdminPage', () => {
       AuthApi.getCurrentUser.mockReturnValue(new Promise(resolve => { resolveMe = resolve; }));
 
       AdminPage();
-      window.dispatchEvent(new Event('hashchange'));
+      leaveAdmin('#/search');
       resolveMe({ user: { id: 'u9', isAdmin: false } });
       await flush();
 
       expect(appStore.showToast).not.toHaveBeenCalled();
-      expect(window.location.hash).toBe('#/admin');
+      expect(window.location.hash).toBe('#/search');
     });
 
     it('closes the user detail modal when the route changes', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-      const container = AdminPage({ section: 'users' });
+      AdminPage({ section: 'users' });
       await flush();
 
-      container.querySelector('.admin-user-row-summary').click();
+      layer().querySelector('.admin-user-row-summary').click();
       expect(document.querySelector('.admin-user-dialog-detail')).toBeTruthy();
 
-      window.dispatchEvent(new Event('hashchange'));
+      leaveAdmin();
       await flush();
 
       // Der Router hat keinen Unmount-Hook — das Modal hängt an document.body

@@ -39,7 +39,17 @@ export class Router {
   }
 
   init() {
-    window.addEventListener('hashchange', () => this.handleRoute());
+    window.addEventListener('hashchange', () => {
+      // A page can take a hash change within itself (the admin area slides its
+      // sections in and out); the router then leaves the page standing.
+      const hash = window.location.hash || '#/home';
+      const page = this.currentPage;
+      if (page?.isConnected && page.handleHashChange?.(hash)) {
+        this.updateShellState(hash);
+        return;
+      }
+      this.handleRoute();
+    });
     window.addEventListener('scroll', () => this.updateShellState());
 
     this.unsubscribeAuth = authStore.subscribe(({ user }) => {
@@ -206,6 +216,7 @@ export class Router {
       const pageElement = pageComponentModule.default(pageParams);
 
       this.updateShellState(hash, user);
+      this.currentPage = pageElement;
       await this.renderPage(pageElement, pageUsesShell);
       if (pageElement?.dataset?.restoreScroll !== 'true') {
         window.scrollTo(0, 0);

@@ -120,3 +120,36 @@ describe('Router.renderPage', () => {
     expect(document.activeElement).toBe(element.querySelector('input'));
   });
 });
+
+describe('Router · hash changes a page handles itself', () => {
+  let router;
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="app"></div>';
+    router = new Router();
+    router.handleRoute = vi.fn();
+    router.init();
+    router.handleRoute.mockClear();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    window.history.replaceState(null, '', '#/home');
+  });
+
+  it('leaves the page standing when it takes the new hash', async () => {
+    const element = page('');
+    element.handleHashChange = vi.fn(hash => hash.startsWith('#/admin'));
+    router.currentPage = element;
+    await router.renderPage(element, true);
+
+    window.history.replaceState(null, '', '#/admin/users');
+    window.dispatchEvent(new Event('hashchange'));
+    expect(element.handleHashChange).toHaveBeenCalledWith('#/admin/users');
+    expect(router.handleRoute).not.toHaveBeenCalled();
+
+    window.history.replaceState(null, '', '#/home');
+    window.dispatchEvent(new Event('hashchange'));
+    expect(router.handleRoute).toHaveBeenCalledTimes(1);
+  });
+});

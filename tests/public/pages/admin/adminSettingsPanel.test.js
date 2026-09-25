@@ -16,7 +16,7 @@ async function flush() {
   for (let i = 0; i < 6; i++) await Promise.resolve();
 }
 
-const layer = () => document.querySelector('.admin-settings-layer');
+const layer = () => document.querySelector('.admin-layer');
 
 describe('createAdminSettingsPanel', () => {
   beforeEach(() => {
@@ -47,11 +47,11 @@ describe('createAdminSettingsPanel', () => {
     await flush();
 
     expect(layer()).toBeTruthy();
-    expect(layer().querySelector('.admin-settings-layer-title').textContent).toBe('Discord-Webhook');
-    expect(layer().querySelector('.admin-settings-layer-back').textContent).toContain('Zurück');
+    expect(layer().querySelector('.admin-layer-title').textContent).toBe('Discord-Webhook');
+    expect(layer().querySelector('.admin-layer-back').textContent).toContain('Zurück');
     expect(AdminSettingsApi.getDiscordWebhook).toHaveBeenCalledTimes(1);
     expect(AdminSettingsApi.getCatalogStatus).not.toHaveBeenCalled();
-    expect(document.documentElement.classList.contains('admin-settings-layer-open')).toBe(true);
+    expect(document.documentElement.classList.contains('admin-layer-open')).toBe(true);
 
     await vi.advanceTimersByTimeAsync(50);
     expect(layer().classList.contains('is-open')).toBe(true);
@@ -62,20 +62,20 @@ describe('createAdminSettingsPanel', () => {
     panel.element.querySelector('[data-page="catalog"]').click();
     await vi.advanceTimersByTimeAsync(50);
 
-    layer().querySelector('.admin-settings-layer-back').click();
+    layer().querySelector('.admin-layer-back').click();
     expect(layer().classList.contains('is-open')).toBe(false);
     expect(layer()).toBeTruthy();
 
     await vi.advanceTimersByTimeAsync(500);
     expect(layer()).toBeNull();
-    expect(document.documentElement.classList.contains('admin-settings-layer-open')).toBe(false);
+    expect(document.documentElement.classList.contains('admin-layer-open')).toBe(false);
   });
 
   it('closes on Escape as well, and opens only one layer at a time', async () => {
     const panel = createAdminSettingsPanel();
     panel.element.querySelector('[data-page="discord"]').click();
     panel.element.querySelector('[data-page="catalog"]').click();
-    expect(document.querySelectorAll('.admin-settings-layer')).toHaveLength(1);
+    expect(document.querySelectorAll('.admin-layer')).toHaveLength(1);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await vi.advanceTimersByTimeAsync(500);

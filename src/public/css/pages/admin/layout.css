@@ -4,7 +4,8 @@
    in einer mittigen Spalte; die Flächen nutzen dasselbe Glas wie Navigation
    und Einstellungen-Dialog. Gemeinsame Werte als Variablen:
    --------------------------------- */
-.admin-page {
+.admin-page,
+.admin-layer {
   --admin-surface: rgba(255, 255, 255, 0.04);
   --admin-surface-hover: rgba(255, 255, 255, 0.065);
   --admin-hairline: rgba(255, 255, 255, 0.07);
@@ -12,6 +13,9 @@
   --admin-muted: rgba(255, 255, 255, 0.5);
   --admin-danger: #ff6b6b;
   --admin-success: #4ade80;
+}
+
+.admin-page {
   display: flex;
   flex-direction: column;
   width: min(100%, 960px);
@@ -54,6 +58,141 @@
   color: var(--admin-muted);
   font-size: 0.92rem;
   line-height: 1.45;
+}
+
+/* ---------------------------------
+   ADMIN LAYER (adminLayer.js)
+   Ein Bereich oder eine Einstellungsseite als Ebene über der ganzen App,
+   Navigation eingeschlossen: fährt von rechts herein und genauso wieder
+   hinaus. Leiste und Inhalt stehen in derselben mittigen Spalte.
+   --------------------------------- */
+html.admin-layer-open,
+html.admin-layer-open body {
+  overflow: hidden;
+}
+
+.admin-layer {
+  --admin-layer-width: 640px;
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(90% 40% at 100% 0%, rgba(124, 92, 255, 0.08), transparent 60%),
+    var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.6);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 420ms var(--abyss-ease);
+}
+
+.admin-layer-wide {
+  --admin-layer-width: 960px;
+}
+
+.admin-layer.is-open {
+  transform: translate3d(0, 0, 0);
+}
+
+.admin-layer.no-slide {
+  transition: none;
+}
+
+.admin-layer:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-layer {
+    transition: none;
+  }
+}
+
+.admin-layer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, calc((100% - var(--admin-layer-width)) / 2 + 4px)) 4px;
+}
+
+.admin-layer-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.admin-layer-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-layer-back:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-layer-back:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.admin-layer-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+.admin-layer-inner {
+  width: min(100%, var(--admin-layer-width));
+  margin: 0 auto;
+}
+
+.admin-layer-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 20px;
+}
+
+.admin-layer-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.admin-layer-subtitle {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.admin-layer .search-empty-state {
+  padding: 36px 16px;
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-hairline);
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.admin-layer .search-empty-state.hidden {
+  display: none;
 }
 
 .admin-back-button {
