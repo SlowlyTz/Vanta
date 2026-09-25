@@ -68,8 +68,11 @@ export function mergeSeasons(tmdbSeasons = [], crossCheckSeasons = []) {
       episode_count: toNumber(season.episode_count ?? check?.episode_count) ?? 0,
       poster_path: season.poster_path || null,
       exists: Boolean(check?.exists),
-      // `requestable` is server policy (specials and library seasons are out);
-      // without a cross-check only specials are excluded.
+      // Present with every episode; a partly present season stays requestable.
+      complete: Boolean(check?.complete ?? check?.exists),
+      availableEpisodes: Array.isArray(check?.available_episodes) ? check.available_episodes : [],
+      // `requestable` is server policy (specials and complete library seasons
+      // are out); without a cross-check only specials are excluded.
       requestable: check ? Boolean(check.requestable) : !special,
       special
     });

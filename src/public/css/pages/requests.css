@@ -1,7 +1,3 @@
-@import './requests/workspace-tabs.css';
-@import './requests/search-results.css';
-@import './requests/my-requests.css';
 @import './requests/status-badges.css';
-@import './requests/detail.css';
 @import './requests/admin.css';
-@import './requests/responsive.css';
+@import './requests/pages.css';

@@ -1,206 +1,188 @@
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
-import { createSectionLoader, setSectionBusy } from '../components/loader.js';
-import { DetailView } from '../components/detailView.js';
+import { createSectionLoader } from '../components/loader.js';
 import { openTrailerModal } from '../components/trailerModal.js';
+import { createBackIcon } from '../components/navbar/icons.js';
 import { mergeSeasons, buildRequestCoverage } from './requests/helpers.js';
-import { createRequestScopeSelector } from './requests/scopeSelector.js';
-import { getTmdbImageUrl } from '../utils/poster.js';
+import { createSeriesPicker } from './requests/seriesPicker.js';
+import { getTmdbImageUrl, createPosterPlaceholder } from '../utils/poster.js';
 
-function normalizeRequestDetail(details, type) {
+const chip = (text, tone) => createElement('span', { className: `ui-chip ${tone}` }, text);
+
+// Title-level state of a request page: what the hero says in one chip.
+function titleStatus({ isMovie, crossCheck, isBanned, isRequested, seasons }) {
+  if (isBanned) return chip('Abgelehnt', 'ui-chip-danger');
+  if (isMovie) {
+    if (crossCheck.exists) return chip('In Bibliothek', 'ui-chip-success');
+    if (isRequested) return chip('Angefragt', 'ui-chip-warning');
+    return null;
+  }
+  if (crossCheck.exists) {
+    const regular = seasons.filter(season => !season.special);
+    const complete = regular.every(season => season.complete);
+    return complete ? chip('In Bibliothek', 'ui-chip-success') : chip('Teilweise in Bibliothek', 'ui-chip-accent');
+  }
+  if (isRequested) return chip('Angefragt', 'ui-chip-warning');
+  return null;
+}
+
+function buildHero({ details, type, statusChip, onTrailer }) {
   const title = details.title || details.name || 'Unbekannt';
   const year = (details.release_date || details.first_air_date || '').slice(0, 4);
+  const meta = [
+    type === 'tv' ? 'Serie' : 'Film',
+    year || null,
+    details.runtime ? `${details.runtime} Min.` : null,
+    type === 'tv' && details.number_of_seasons ? `${details.number_of_seasons} Staffeln` : null
+  ].filter(Boolean).join(' · ');
+  const genres = (details.genres || []).map(genre => genre.name).filter(Boolean).slice(0, 3);
+  const backdrop = getTmdbImageUrl(details.backdrop_path, 'w1280');
+  const poster = getTmdbImageUrl(details.poster_path, 'w342');
 
-  return {
-    id: details.id,
-    name: title,
-    originalTitle: details.original_title || details.original_name || null,
-    typeLabel: type === 'tv' ? 'Serie' : 'Film',
-    year: year || null,
-    duration: details.runtime ? `${details.runtime} min` : null,
-    rating: details.vote_average || null,
-    tagline: details.tagline || null,
-    overview: details.overview || 'Keine Beschreibung verfügbar.',
-    genres: (details.genres || []).map(genre => genre.name).filter(Boolean),
-    posterUrl: getTmdbImageUrl(details.poster_path),
-    backdropUrl: getTmdbImageUrl(details.backdrop_path, 'w1280')
-  };
-}
-
-// Series get their season availability from the scope selector below the hero,
-// so the hero only carries the title-level badges.
-function buildStatusContent({ crossCheck, isBanned, isRequested }) {
-  const badges = createElement('div', { className: 'request-detail-badges' });
-
-  if (crossCheck.exists) {
-    badges.appendChild(createElement('span', { className: 'request-detail-badge badge-available' }, 'In Mediathek verfügbar'));
-  }
-
-  if (isBanned) {
-    badges.appendChild(createElement('span', { className: 'request-detail-badge badge-banned' }, 'Abgelehnt'));
-  } else if (isRequested) {
-    badges.appendChild(createElement('span', { className: 'request-detail-badge badge-requested' }, 'Bereits angefragt'));
-  }
-
-  return badges.children.length > 0 ? [badges] : null;
-}
-
-function buildCastSection(cast) {
-  if (!cast || cast.length === 0) return null;
-
-  const section = createElement('div', { className: 'request-detail-cast' },
-    createElement('h3', { className: 'request-detail-section-title' }, 'Besetzung')
+  return createElement('section', { className: 'request-hero' },
+    backdrop ? createElement('div', { className: 'request-hero-backdrop', style: `background-image:url("${backdrop}")` }) : null,
+    createElement('img', {
+      className: 'request-hero-poster',
+      src: poster || createPosterPlaceholder(title),
+      alt: '',
+      onError: event => { event.currentTarget.onerror = null; event.currentTarget.src = createPosterPlaceholder(title); }
+    }),
+    createElement('div', { className: 'request-hero-body' },
+      createElement('div', { className: 'request-hero-chips' },
+        statusChip,
+        ...genres.map(genre => chip(genre, 'ui-chip-muted'))
+      ),
+      createElement('h1', { className: 'request-hero-title' }, title),
+      createElement('p', { className: 'request-hero-meta' }, meta),
+      details.overview ? createElement('p', { className: 'request-hero-overview' }, details.overview) : null,
+      onTrailer ? createElement('div', { className: 'request-hero-actions' },
+        createElement('button', { className: 'ui-button ui-button-secondary', type: 'button', onClick: onTrailer }, 'Trailer ansehen')
+      ) : null
+    )
   );
-  const grid = createElement('div', { className: 'request-detail-cast-grid' });
-
-  cast.forEach(actor => {
-    const item = createElement('div', { className: 'request-detail-cast-item' });
-    if (actor.profile_path) {
-      item.appendChild(createElement('img', {
-        src: getTmdbImageUrl(actor.profile_path, 'w185'),
-        alt: actor.name,
-        loading: 'lazy',
-        onError: (e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none'; }
-      }));
-    }
-    item.appendChild(createElement('div', { className: 'request-detail-cast-name' }, actor.name));
-    if (actor.character) {
-      item.appendChild(createElement('div', { className: 'request-detail-cast-role' }, actor.character));
-    }
-    grid.appendChild(item);
-  });
-
-  section.appendChild(grid);
-  return section;
 }
 
+// The action for a movie: request it, or say why not and offer the way on.
+function buildMovieAction({ tmdbId, crossCheck, isBanned, isRequested }) {
+  const text = createElement('span', { className: 'ui-action-bar-text' });
+  const button = createElement('button', { className: 'ui-button ui-button-primary', type: 'button' });
+  const bar = createElement('div', { className: 'ui-action-bar request-movie-bar' }, text, button);
+
+  const show = (message, label, { disabled = false, onClick = null } = {}) => {
+    text.textContent = message;
+    button.textContent = label;
+    button.disabled = disabled;
+    button.onclick = onClick;
+  };
+
+  if (crossCheck.exists && crossCheck.jellyfinItemId) {
+    show('Dieser Film ist schon in der Bibliothek.', 'Ansehen', { onClick: () => { window.location.hash = `#/item/${crossCheck.jellyfinItemId}`; } });
+  } else if (crossCheck.exists) {
+    show('Dieser Film ist schon in der Bibliothek.', 'Verfügbar', { disabled: true });
+  } else if (isBanned) {
+    show('Dieser Film wurde abgelehnt und kann nicht erneut angefragt werden.', 'Abgelehnt', { disabled: true });
+  } else if (isRequested) {
+    show('Dieser Film ist bereits angefragt. Du bekommst Bescheid, sobald entschieden ist.', 'Angefragt', { disabled: true });
+  } else {
+    show('Fehlt dir dieser Film? Frag ihn an.', 'Film anfragen', {
+      onClick: async () => {
+        show('Wird angefragt …', 'Film anfragen', { disabled: true });
+        try {
+          await RequestsApi.createRequest(tmdbId, 'movie', '', { scope: 'all' });
+          show('Angefragt! Du bekommst Bescheid, sobald entschieden ist.', 'Angefragt', { disabled: true });
+          appStore.showToast('Film angefragt', 'success');
+        } catch (error) {
+          show('Fehlt dir dieser Film? Frag ihn an.', 'Film anfragen');
+          appStore.showToast(error.message || 'Anfrage fehlgeschlagen', 'error');
+        }
+      }
+    });
+  }
+
+  return bar;
+}
+
+function buildCast(cast) {
+  if (!cast?.length) return null;
+  return createElement('section', { className: 'ui-section request-cast' },
+    createElement('h2', { className: 'ui-group-title' }, 'Besetzung'),
+    createElement('div', { className: 'request-cast-row' },
+      ...cast.slice(0, 16).map(actor => createElement('div', { className: 'request-cast-item' },
+        actor.profile_path
+          ? createElement('img', { src: getTmdbImageUrl(actor.profile_path, 'w185'), alt: '', loading: 'lazy' })
+          : createElement('span', { className: 'request-cast-initial' }, (actor.name || '?').charAt(0)),
+        createElement('strong', {}, actor.name),
+        actor.character ? createElement('span', {}, actor.character) : null
+      ))
+    )
+  );
+}
+
+// Request page of one TMDB title: the hero with its state, then either the
+// movie's action or the series picker (whole series, seasons, episodes —
+// also for a series that is partly in the library already).
 export default function RequestDetailPage({ type, id }) {
-  const container = createElement('div', { className: 'page-container request-detail-page' });
-
   const tmdbId = parseInt(id, 10);
+  const container = createElement('div', { className: 'page-container content-section' });
+  const page = createElement('div', { className: 'ui-page request-detail' });
+  container.appendChild(page);
 
-  const loadDetails = async () => {
-    container.innerHTML = '';
-    setSectionBusy(container, true);
-    container.appendChild(createSectionLoader({ label: 'Details werden geladen' }));
+  const load = async () => {
+    page.innerHTML = '';
+    page.appendChild(createSectionLoader({ label: 'Details werden geladen' }));
 
     try {
       const [details, crossCheck] = await Promise.all([
         RequestsApi.getDetails(tmdbId, type),
-        RequestsApi.crossCheck(tmdbId, type)
-          .catch(() => ({ exists: false, seasons: [], requestedScopes: [] }))
+        RequestsApi.crossCheck(tmdbId, type).catch(() => ({ exists: false, seasons: [], requestedScopes: [] }))
       ]);
 
-      // Der Cross-Check liefert die offenen Anfragen ALLER Nutzer für diesen
-      // Titel — dieselbe Menge, gegen die der Server das Duplikat prüft.
+      // Open requests of every user for this title — the same set the server
+      // checks duplicates against.
       const coverage = buildRequestCoverage(crossCheck.requestedScopes || []);
-
-      const normalized = normalizeRequestDetail(details, type);
       const isBanned = Boolean(details.banned || crossCheck.banned);
       const isRequested = Boolean(details.requested) || coverage.all;
-      // Series are requested through the scope selector below the hero, which
-      // also covers the partially available case; movies keep the single action.
-      const canRequest = type !== 'tv' && !isRequested && !crossCheck.exists && !isBanned;
+      const seasons = type === 'tv' ? mergeSeasons(details.seasons, crossCheck.seasons) : [];
 
-      const handleRequest = async (event) => {
-        const btn = event.currentTarget;
-        btn.disabled = true;
-        btn.setAttribute('aria-busy', 'true');
-        btn.textContent = 'Wird angefragt...';
-        try {
-          await RequestsApi.createRequest(tmdbId, type, '', { scope: 'all' });
-          btn.textContent = 'Angefragt';
-          btn.classList.remove('btn-primary');
-          btn.classList.add('btn-requested');
-          btn.disabled = true;
-          btn.removeAttribute('aria-busy');
-          appStore.showToast('Anfrage erfolgreich!', 'success');
-        } catch (error) {
-          btn.disabled = false;
-          btn.removeAttribute('aria-busy');
-          btn.textContent = 'Anfragen';
-          appStore.showToast(error.message || 'Fehler beim Anfrage', 'error');
-        }
-      };
+      const trailer = details.trailer?.site === 'YouTube' && details.trailer.key
+        ? () => openTrailerModal({ title: `${details.title || details.name} Trailer`, videoId: details.trailer.key })
+        : null;
 
-      const trailerAction = details.trailer && details.trailer.site === 'YouTube' && details.trailer.key
-        ? {
-            label: 'Trailer',
-            className: 'btn-secondary',
-            onClick: () => openTrailerModal({ title: `${normalized.name} Trailer`, videoId: details.trailer.key })
+      page.innerHTML = '';
+      page.append(
+        createElement('button', {
+          className: 'ui-button ui-button-ghost request-back',
+          type: 'button',
+          onClick: () => {
+            if (window.history.length > 1) window.history.back();
+            else window.location.hash = '#/requests';
           }
-        : null;
-
-      const actions = [
-        canRequest ? {
-          label: 'Anfragen',
-          className: 'btn-primary',
-          onClick: handleRequest
-        } : null,
-        trailerAction,
-        {
-          label: 'Zurück',
-          className: 'btn-secondary',
-          onClick: () => { window.history.back(); }
-        }
-      ].filter(Boolean);
-
-      const statusContent = buildStatusContent({ crossCheck, isBanned, isRequested });
-      const castSection = buildCastSection(details.cast);
-
-      const scopeSelector = type === 'tv'
-        ? createRequestScopeSelector({
-          tmdbId,
-          seasons: mergeSeasons(details.seasons, crossCheck.seasons),
-          coverage,
-          seriesExists: Boolean(crossCheck.exists),
-          banned: isBanned
-        })
-        : null;
-
-      const detailView = DetailView({
-        item: normalized,
-        actions,
-        castSection,
-        statusContent
-      });
-
-      container.innerHTML = '';
-      while (detailView.firstChild) {
-        container.appendChild(detailView.firstChild);
-      }
-
-      // The scope selector belongs between the hero and the cast section.
-      const hero = container.querySelector('.detail-page');
-      if (scopeSelector && hero) {
-        container.insertBefore(scopeSelector.element, hero.nextSibling);
-      }
-
+        }, createBackIcon(), 'Zurück'),
+        buildHero({
+          details,
+          type,
+          statusChip: titleStatus({ isMovie: type !== 'tv', crossCheck, isBanned, isRequested, seasons }),
+          onTrailer: trailer
+        }),
+        type === 'tv'
+          ? createSeriesPicker({ tmdbId, seasons, coverage, seriesExists: Boolean(crossCheck.exists), banned: isBanned }).element
+          : buildMovieAction({ tmdbId, crossCheck, isBanned, isRequested })
+      );
+      const cast = buildCast(details.cast);
+      if (cast) page.appendChild(cast);
     } catch (error) {
       if (error.isAuthError) return;
-
       console.error('[Request Detail Page Error]', error);
-      appStore.showToast('Fehler beim Laden', 'error');
-      container.innerHTML = '';
-      container.appendChild(
-        createElement('div', { className: 'content-section' },
-          createElement('div', { className: 'search-empty-state' },
-            createElement('h3', {}, 'Fehler beim Laden'),
-            createElement('p', {}, error.message || 'Die Details konnten nicht abgerufen werden.'),
-            createElement('button', {
-              className: 'btn-primary',
-              onClick: loadDetails
-            }, 'Erneut versuchen')
-          )
-        )
-      );
-    } finally {
-      setSectionBusy(container, false);
+      page.innerHTML = '';
+      page.appendChild(createElement('div', { className: 'ui-empty' },
+        createElement('strong', {}, 'Fehler beim Laden'),
+        createElement('p', {}, error.message || 'Die Details konnten nicht abgerufen werden.'),
+        createElement('button', { className: 'ui-button ui-button-secondary', type: 'button', onClick: load }, 'Erneut versuchen')
+      ));
     }
   };
 
-  loadDetails();
-
+  load();
   return container;
 }

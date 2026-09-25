@@ -52,7 +52,7 @@ router.get('/search', requireAuth, asyncHandler(async (req, res) => {
     const tmdbType = item.media_type;
     const [banned, requested, crossCheck] = await Promise.all([
       RequestsService.isBanned(tmdbId, tmdbType),
-      RequestsService.exists(tmdbId, tmdbType),
+      RequestsService.isWholeTitleRequested(tmdbId, tmdbType),
       RequestsService.crossCheck(userId, accessToken, tmdbId, tmdbType, { media: item, withSeasons: false })
         .catch(() => ({ exists: false, jellyfinItemId: null }))
     ]);
@@ -82,7 +82,7 @@ router.get('/details', asyncHandler(async (req, res) => {
     ...details,
     banned: RequestsService.isBanned(parseInt(tmdbId), tmdbType),
     bannedInfo: RequestsService.getBannedMedia(parseInt(tmdbId), tmdbType),
-    requested: await RequestsService.exists(parseInt(tmdbId), tmdbType)
+    requested: await RequestsService.isWholeTitleRequested(parseInt(tmdbId), tmdbType)
   });
 }));
 

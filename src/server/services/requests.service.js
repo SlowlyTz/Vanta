@@ -180,6 +180,12 @@ class RequestsService {
     return rows.some(row => rowCovers(row, scope, seasonNumber, episodeNumber));
   }
 
+  // Is the whole title asked for (not just one of its seasons or episodes)?
+  // A title with an open season request can still get further requests.
+  static async isWholeTitleRequested(tmdbId, tmdbType) {
+    return getBlockingRequests.all(tmdbId, tmdbType).some(row => (row.request_scope || 'all') === 'all');
+  }
+
   // Every open scope for a title, across all users — the client cannot derive
   // this from its own requests, but the duplicate rule is evaluated globally.
   static async getOpenScopes(tmdbId, tmdbType) {

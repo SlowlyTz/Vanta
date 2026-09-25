@@ -8,7 +8,8 @@ vi.mock('../../../src/server/services/jellyfin/library.service.js', () => ({
 
 vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({
   ItemsService: {
-    getSeasons: vi.fn()
+    getSeasons: vi.fn(),
+    getEpisodes: vi.fn()
   }
 }));
 
@@ -295,6 +296,8 @@ describe('JellyfinCrossCheck.checkMediaExists', () => {
 describe('JellyfinCrossCheck.checkSeriesSeasons', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // No episode list: a present season counts as complete, as before.
+    ItemsService.getEpisodes.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -315,10 +318,28 @@ describe('JellyfinCrossCheck.checkSeriesSeasons', () => {
 
     expect(ItemsService.getSeasons).toHaveBeenCalledWith('u1', 't1', 'series-1');
     expect(result).toEqual([
-      { season_number: 1, name: 'Staffel 1', exists: true, jellyfin_season_id: 'jf-s1', episode_count: 10, requestable: false },
-      { season_number: 2, name: 'Staffel 2', exists: true, jellyfin_season_id: 'jf-s2', episode_count: 8, requestable: false },
-      { season_number: 3, name: 'Staffel 3', exists: false, jellyfin_season_id: null, episode_count: 6, requestable: true }
+      { season_number: 1, name: 'Staffel 1', exists: true, complete: true, available_episodes: [], jellyfin_season_id: 'jf-s1', episode_count: 10, requestable: false },
+      { season_number: 2, name: 'Staffel 2', exists: true, complete: true, available_episodes: [], jellyfin_season_id: 'jf-s2', episode_count: 8, requestable: false },
+      { season_number: 3, name: 'Staffel 3', exists: false, complete: false, available_episodes: [], jellyfin_season_id: null, episode_count: 6, requestable: true }
     ]);
+  });
+
+  it('keeps a season Jellyfin has only in part requestable and names its episodes', async () => {
+    ItemsService.getSeasons.mockResolvedValue([{ Id: 'jf-s1', IndexNumber: 1 }, { Id: 'jf-s2', IndexNumber: 2 }]);
+    ItemsService.getEpisodes.mockResolvedValue([
+      { ParentIndexNumber: 1, IndexNumber: 1 },
+      { ParentIndexNumber: 1, IndexNumber: 2, IndexNumberEnd: 3 },
+      { ParentIndexNumber: 2, IndexNumber: 1 },
+      { ParentIndexNumber: 2, IndexNumber: 4 }
+    ]);
+
+    const [first, second] = await JellyfinCrossCheck.checkSeriesSeasons('u1', 't1', 'series-1', [
+      { season_number: 1, name: 'Staffel 1', episode_count: 3 },
+      { season_number: 2, name: 'Staffel 2', episode_count: 8 }
+    ]);
+
+    expect(first).toMatchObject({ exists: true, complete: true, available_episodes: [1, 2, 3], requestable: false });
+    expect(second).toMatchObject({ exists: true, complete: false, available_episodes: [1, 4], requestable: true });
   });
 
   it('reports the real presence of season 0 but never marks it requestable', async () => {
@@ -333,6 +354,8 @@ describe('JellyfinCrossCheck.checkSeriesSeasons', () => {
         season_number: 0,
         name: 'Specials',
         exists: true,
+        complete: true,
+        available_episodes: [],
         jellyfin_season_id: 'jf-s0',
         episode_count: 4,
         requestable: false,

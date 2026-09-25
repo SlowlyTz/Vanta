@@ -92,12 +92,28 @@ class JellyfinCrossCheck {
     }
   }
 
+  // Season availability down to the episode: a season Jellyfin has only in
+  // part is not complete, and its missing episodes can still be requested.
   static async checkSeriesSeasons(userId, token, jellyfinSeriesId, tmdbSeasons) {
     try {
-      const jellyfinSeasons = await ItemsService.getSeasons(userId, token, jellyfinSeriesId);
+      const [jellyfinSeasons, jellyfinEpisodes] = await Promise.all([
+        ItemsService.getSeasons(userId, token, jellyfinSeriesId),
+        ItemsService.getEpisodes(userId, token, jellyfinSeriesId).catch(() => [])
+      ]);
       const existingSeasons = new Map();
       for (const s of jellyfinSeasons) {
         existingSeasons.set(s.IndexNumber, s);
+      }
+      const episodesBySeason = new Map();
+      for (const episode of jellyfinEpisodes || []) {
+        if (!Number.isInteger(episode.ParentIndexNumber) || !Number.isInteger(episode.IndexNumber)) continue;
+        if (!episodesBySeason.has(episode.ParentIndexNumber)) episodesBySeason.set(episode.ParentIndexNumber, new Set());
+        const set = episodesBySeason.get(episode.ParentIndexNumber);
+        set.add(episode.IndexNumber);
+        // A double episode ("S01E01-E02") covers every number up to its end.
+        if (Number.isInteger(episode.IndexNumberEnd)) {
+          for (let n = episode.IndexNumber + 1; n <= episode.IndexNumberEnd; n += 1) set.add(n);
+        }
       }
 
       // One shape for every season, specials included: reporting them as missing
@@ -107,14 +123,21 @@ class JellyfinCrossCheck {
         const seasonNumber = tmdbS.season_number;
         const exists = existingSeasons.has(seasonNumber);
         const isSpecial = seasonNumber === 0;
+        const available = [...(episodesBySeason.get(seasonNumber) || [])].sort((a, b) => a - b);
+        const total = Number(tmdbS.episode_count) || 0;
+        // Without an episode list (older Jellyfin, a failed call) a present
+        // season counts as complete, as before.
+        const complete = exists && (jellyfinEpisodes?.length ? total > 0 && available.length >= total : true);
 
         return {
           season_number: seasonNumber,
           name: tmdbS.name,
           exists,
+          complete,
+          available_episodes: available,
           jellyfin_season_id: exists ? existingSeasons.get(seasonNumber).Id : null,
           episode_count: tmdbS.episode_count,
-          requestable: !isSpecial && !exists,
+          requestable: !isSpecial && !complete,
           ...(isSpecial ? { reason: 'special' } : {})
         };
       });

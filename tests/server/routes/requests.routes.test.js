@@ -21,6 +21,7 @@ vi.mock('../../../src/server/services/requests.service.js', () => ({
     isBanned: vi.fn(),
     getBannedMedia: vi.fn(),
     exists: vi.fn(),
+    isWholeTitleRequested: vi.fn(),
     crossCheck: vi.fn(),
     getOpenScopes: vi.fn()
   }
@@ -276,6 +277,8 @@ describe('Requests Routes', () => {
       TmdbService.search.mockResolvedValue({ results: [searchHit] });
       RequestsService.isBanned.mockReturnValue(false);
       RequestsService.exists.mockResolvedValue(false);
+      RequestsService.isWholeTitleRequested.mockResolvedValue(false);
+      RequestsService.isWholeTitleRequested.mockResolvedValue(false);
       RequestsService.crossCheck.mockResolvedValue({ exists: true, jellyfinItemId: 'jf-1' });
     });
 
@@ -342,6 +345,7 @@ describe('Requests Routes', () => {
       RequestsService.isBanned.mockReturnValue(false);
       RequestsService.getBannedMedia.mockReturnValue(null);
       RequestsService.exists.mockResolvedValue(false);
+      RequestsService.isWholeTitleRequested.mockResolvedValue(false);
     });
 
     it('requires tmdbId and tmdbType', async () => {
