@@ -5,12 +5,12 @@ import { AuthApi } from '../../api/auth.api.js';
 
 // Die Admin-Verwaltung lebt inzwischen als eigene Seite unter #/admin
 // (src/public/js/pages/admin.page.js). Dieses Modul behält aus dem
-// Einstellungen-Dialog heraus nur noch die Kachel "Admin tools" samt
+// Einstellungen-Dialog heraus nur noch die Kachel "Admin-Tools" samt
 // Sichtbarkeits- und Zugriffsprüfung — das Panel- und Tool-Grid von früher
 // entfällt vollständig.
 export function createAdminToolsPanel({ onOpen } = {}) {
   const adminOption = createElement('div', { className: 'admin-option-container' },
-    createSettingsOption('Admin tools', () => checkAdminAndOpenAdmin(), createAdminIcon())
+    createSettingsOption('Admin-Tools', () => checkAdminAndOpenAdmin(), createAdminIcon())
   );
 
   const checkAdminAndOpenAdmin = async () => {

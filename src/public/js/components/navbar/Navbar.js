@@ -105,7 +105,7 @@ export function Navbar({ onLogout, onChangePassword }) {
     element.classList.toggle('scrolled', !!scrolled);
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
-    settingsDialog.settingsUsername.textContent = displayName;
+    settingsDialog.setUsername(displayName);
     mobileDrawer.setUser(displayName);
 
     topTabs.updateActive(currentHash);

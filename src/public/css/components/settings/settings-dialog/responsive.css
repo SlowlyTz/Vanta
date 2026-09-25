@@ -1,18 +1,37 @@
-@media (max-width: 768px) {
+/* Phones: a sheet from the bottom edge, full width, rounded on top. */
+@media (max-width: 600px) {
   .settings-modal-backdrop {
-    align-items: flex-start;
-    padding: 74px 12px 18px;
+    align-items: flex-end;
+    padding: 0;
   }
+
   .settings-dialog {
-    width: min(100%, 440px);
-    max-height: calc(100vh - 92px);
-    border-radius: var(--abyss-radius-dialog);
+    width: 100%;
+    max-height: calc(100dvh - 48px);
+    border-bottom: 0;
+    border-radius: 26px 26px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    transform: translateY(40px);
   }
-  .settings-dialog-header {
-    padding: 14px 14px 10px;
+
+  .settings-modal-backdrop.open .settings-dialog {
+    transform: translateY(0);
   }
+
+  /* A grab handle hints that this is a sheet. */
+  .settings-dialog::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateX(-50%);
+  }
+
   .settings-panel {
-    padding: 8px 16px 18px;
+    padding: 8px 16px 16px;
   }
 }
-

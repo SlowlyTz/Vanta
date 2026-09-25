@@ -1,21 +1,21 @@
+/* Sub views (Passwort ändern) get a header with back button, title and
+   close; the overview only keeps the close button in its corner. */
 .settings-dialog-header {
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
   align-items: center;
   gap: 8px;
-  padding: 20px 22px 10px;
+  padding: 16px 16px 6px;
 }
 
 .settings-dialog[data-view="root"] .settings-dialog-header {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   z-index: 3;
-  width: 46px;
   padding: 0;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
   pointer-events: none;
 }
 
@@ -31,40 +31,41 @@
 .settings-dialog-title {
   min-width: 0;
   color: var(--text-primary);
-  font-size: 1.08rem;
-  font-weight: 700;
-  letter-spacing: 0;
+  font-size: 1rem;
+  font-weight: 680;
   line-height: 1.2;
   text-align: center;
 }
 
 .settings-header-button {
-  width: 46px;
-  height: 46px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.62);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.settings-header-button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .settings-header-button:hover {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.11);
   color: var(--text-primary);
 }
 
 .settings-header-button:active {
-  transform: scale(0.96);
+  transform: scale(0.94);
 }
 
 .settings-header-button.invisible {
   visibility: hidden;
   pointer-events: none;
 }
-

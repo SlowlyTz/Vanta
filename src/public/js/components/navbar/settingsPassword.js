@@ -4,22 +4,19 @@ export function createPasswordForm(onChangePassword) {
   const currentPasswordInput = createElement('input', {
     className: 'settings-input',
     type: 'password',
-    autocomplete: 'current-password',
-    placeholder: 'Aktuelles Passwort'
+    autocomplete: 'current-password'
   });
 
   const newPasswordInput = createElement('input', {
     className: 'settings-input',
     type: 'password',
-    autocomplete: 'new-password',
-    placeholder: 'Neues Passwort'
+    autocomplete: 'new-password'
   });
 
   const confirmPasswordInput = createElement('input', {
     className: 'settings-input',
     type: 'password',
-    autocomplete: 'new-password',
-    placeholder: 'Neues Passwort bestätigen'
+    autocomplete: 'new-password'
   });
 
   const settingsStatus = createElement('div', {
@@ -68,6 +65,11 @@ export function createPasswordForm(onChangePassword) {
     }
   };
 
+  const field = (label, input) => createElement('label', { className: 'settings-field' },
+    createElement('span', { className: 'settings-field-label' }, label),
+    input
+  );
+
   const form = createElement('form', {
     className: 'settings-password-form',
     onSubmit: async (event) => {
@@ -75,9 +77,11 @@ export function createPasswordForm(onChangePassword) {
       await handlePasswordSubmit();
     }
   },
-    currentPasswordInput,
-    newPasswordInput,
-    confirmPasswordInput,
+    createElement('p', { className: 'settings-password-intro' },
+      'Das Passwort gilt für VANTA und deinen Jellyfin-Zugang.'),
+    field('Aktuelles Passwort', currentPasswordInput),
+    field('Neues Passwort', newPasswordInput),
+    field('Neues Passwort bestätigen', confirmPasswordInput),
     submitBtn,
     settingsStatus
   );

@@ -1,88 +1,96 @@
+/* Account header of the settings dialog. */
 .settings-profile {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 14px;
   min-width: 0;
-  padding-right: 70px;
+  padding: 0 52px 0 4px;
 }
 
 .settings-profile-avatar {
   flex: 0 0 auto;
-  width: 108px;
-  height: 108px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.76);
-  background:
-    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.18), transparent 40%),
-    rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 55%, #0ea5e9 100%);
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(79, 70, 229, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .settings-profile-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .settings-profile-name {
   min-width: 0;
   overflow: hidden;
+  color: var(--text-primary);
+  font-size: 1.22rem;
+  font-weight: 700;
+  line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-primary);
-  font-size: 1.85rem;
-  font-weight: 760;
-  letter-spacing: 0;
-  line-height: 1.06;
 }
 
+.settings-profile-role {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+  font-weight: 520;
+}
+
+/* Library counts: three small tiles. */
 .settings-overview-grid {
-  min-height: 134px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  overflow: hidden;
-  border-radius: var(--abyss-radius);
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.105);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  gap: 8px;
 }
 
 .settings-stat {
-  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 18px 10px;
-  text-align: center;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 12px 11px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.settings-stat + .settings-stat {
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+.settings-stat .settings-row-icon {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.settings-stat .settings-row-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .settings-accent-icon {
   color: rgb(var(--abyss-accent));
 }
 
-.settings-stat-label {
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 0.98rem;
-  font-weight: 510;
-  line-height: 1.1;
-}
-
 .settings-stat-value {
   color: var(--text-primary);
-  font-size: 1.72rem;
-  font-weight: 780;
-  line-height: 1;
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
+.settings-stat-label {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.76rem;
+  font-weight: 520;
+}

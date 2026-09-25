@@ -1,5 +1,5 @@
 import { createElement } from '../../utils/dom.js';
-import { createBackIcon, createCloseIcon, createChevronIcon, createPasswordIcon, createProfileIcon, createLogoutIcon } from './icons.js';
+import { createBackIcon, createCloseIcon, createPasswordIcon, createProfileIcon, createLogoutIcon } from './icons.js';
 import { createSettingsOption } from './settingsHelpers.js';
 import { createSettingsProfile, createSettingsOverview } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
@@ -20,8 +20,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     }
   },
     createLogoutIcon(),
-    createElement('span', { className: 'settings-logout-label' }, 'Abmelden'),
-    createChevronIcon()
+    createElement('span', { className: 'settings-logout-label' }, 'Abmelden')
   );
 
   const { adminOption, loadAdminVisibility } = createAdminToolsPanel({
@@ -31,30 +30,42 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     }
   });
 
-  const passwordOption = createSettingsOption('Passwort', () => setSettingsView('password'), createPasswordIcon());
-  const profileOption = createSettingsOption('Profil', () => {
+  const passwordOption = createSettingsOption('Passwort ändern', () => setSettingsView('password'), createPasswordIcon());
+  const profileOption = createSettingsOption('Profil, Verlauf & Favoriten', () => {
     setSettingsOpen(false);
     window.location.hash = '#/profile';
   }, createProfileIcon());
+
+  const settingsProfile = createSettingsProfile(settingsUsername);
+  const sectionTitle = text => createElement('h3', { className: 'settings-section-title' }, text);
+
+  // Only admins see the Verwaltung group; its one entry decides.
+  const adminSection = createElement('section', { className: 'settings-section', hidden: true },
+    sectionTitle('Verwaltung'),
+    createElement('div', { className: 'settings-options' }, adminOption)
+  );
+
+  const refreshAdminVisibility = async () => {
+    await loadAdminVisibility();
+    adminSection.hidden = adminOption.hidden;
+    settingsProfile.setAdmin(!adminOption.hidden);
+  };
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
     dataset: { view: 'root' }
   },
-    createSettingsProfile(settingsUsername),
+    settingsProfile.element,
     createElement('section', { className: 'settings-section' },
-      createElement('h3', { className: 'settings-section-title' }, 'Overview'),
-      settingsOverview.element,
-      createElement('div', { className: 'settings-options' }, profileOption)
+      sectionTitle('Deine Bibliothek'),
+      settingsOverview.element
     ),
     createElement('section', { className: 'settings-section' },
-      createElement('h3', { className: 'settings-section-title' }, 'Einstellungen'),
-      createElement('div', { className: 'settings-options' },
-        passwordOption,
-        adminOption
-      ),
-      createElement('div', { className: 'settings-logout-section' }, logoutBtn)
-    )
+      sectionTitle('Konto'),
+      createElement('div', { className: 'settings-options' }, profileOption, passwordOption)
+    ),
+    adminSection,
+    createElement('div', { className: 'settings-logout-section' }, logoutBtn)
   );
 
   const passwordPanel = createElement('div', {
@@ -138,7 +149,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
 
   const setSettingsView = (view) => {
     settingsView = view;
-    settingsTitle.textContent = settingsView === 'password' ? 'Passwort' : 'Einstellungen';
+    settingsTitle.textContent = settingsView === 'password' ? 'Passwort ändern' : 'Einstellungen';
 
     backButton.classList.toggle('invisible', settingsView === 'root');
     settingsDialog.dataset.view = settingsView;
@@ -174,7 +185,7 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
 
     setSettingsView('root');
     settingsStats.load();
-    loadAdminVisibility();
+    refreshAdminVisibility();
     window.requestAnimationFrame(() => settingsDialog.focus());
   };
 
@@ -186,7 +197,8 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     settingsUsername,
     settingsOverview,
     adminOption,
-    loadAdminVisibility,
+    loadAdminVisibility: refreshAdminVisibility,
+    setUsername: settingsProfile.setName,
     setSettingsView,
     setSettingsOpen,
     isOpen: () => settingsOpen

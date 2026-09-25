@@ -1,5 +1,5 @@
 import { createElement } from '../../utils/dom.js';
-import { createUserIcon, createMovieIcon, createScreenIcon, createPlayOutlineIcon } from './icons.js';
+import { createMovieIcon, createScreenIcon, createPlayOutlineIcon } from './icons.js';
 
 export function createSettingsOverview() {
   const movies = createElement('span', { className: 'settings-stat-value' }, '-');
@@ -21,16 +21,29 @@ export function createSettingsOverview() {
 function createSettingsStat(label, valueElement, icon) {
   return createElement('div', { className: 'settings-stat' },
     icon,
-    createElement('span', { className: 'settings-stat-label' }, label),
-    valueElement
+    valueElement,
+    createElement('span', { className: 'settings-stat-label' }, label)
   );
 }
 
+// The account header: an avatar with the initial, the name and the role.
 export function createSettingsProfile(usernameElement) {
-  return createElement('div', { className: 'settings-profile' },
-    createElement('div', { className: 'settings-profile-avatar' }, createUserIcon()),
-    createElement('div', { className: 'settings-profile-copy' },
-      usernameElement
-    )
+  const avatar = createElement('span', { className: 'settings-profile-avatar', 'aria-hidden': 'true' }, '?');
+  const role = createElement('span', { className: 'settings-profile-role' }, 'Mitglied');
+
+  const element = createElement('div', { className: 'settings-profile' },
+    avatar,
+    createElement('div', { className: 'settings-profile-copy' }, usernameElement, role)
   );
+
+  const setName = name => {
+    usernameElement.textContent = name || 'Username';
+    avatar.textContent = (String(name || '').trim().charAt(0) || '?').toUpperCase();
+  };
+
+  const setAdmin = isAdmin => {
+    role.textContent = isAdmin ? 'Administrator' : 'Mitglied';
+  };
+
+  return { element, setName, setAdmin };
 }
