@@ -55,19 +55,33 @@ function showSubmenuError(submenu, message) {
   submenu.appendChild(createElement('li', { className: 'mobile-drawer-submenu-item mobile-drawer-submenu-empty' }, message));
 }
 
+// Entries of the drawer, in two groups; everything about the user (profile,
+// settings) sits in the card pinned to the bottom.
+const DRAWER_SECTIONS = [
+  { label: 'Entdecken', keys: ['home', 'movies', 'series', 'publishers', 'scroller'] },
+  { label: 'Mehr', keys: ['requests'] }
+];
+
+const initialOf = name => (String(name || '').trim().charAt(0) || '?').toUpperCase();
+
 export function createMobileDrawer({ onNavigate, onOpenSettings }) {
   const mobileNavList = createElement('nav', {
     className: 'mobile-drawer-nav',
     id: 'mobile-navigation',
-    'aria-label': 'Mobile Navigation'
+    'aria-label': 'Navigation'
   });
 
   const mobileDrawerHeader = createElement('div', { className: 'mobile-drawer-header' },
-    createElement('img', {
+    createElement('a', {
+      className: 'mobile-drawer-brand',
+      href: '#/home',
+      'aria-label': 'VANTA Startseite',
+      onClick: () => onNavigate?.()
+    }, createElement('img', {
       className: 'mobile-drawer-logo',
       src: '/assets/logo-vanta.png',
       alt: 'VANTA'
-    }),
+    })),
     createElement('button', {
       className: 'mobile-drawer-close',
       type: 'button',
@@ -76,9 +90,9 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     }, createCloseIcon())
   );
 
-  const mobileNavLinksList = createElement('ul', { className: 'mobile-drawer-list' });
+  const scrollArea = createElement('div', { className: 'mobile-drawer-scroll' });
   mobileNavList.appendChild(mobileDrawerHeader);
-  mobileNavList.appendChild(mobileNavLinksList);
+  mobileNavList.appendChild(scrollArea);
 
   const mobileNavEntries = new Map();
   const accordionSubmenus = new Map();
@@ -134,93 +148,94 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     }
   }
 
-  NAV_LINKS.forEach(link => {
-    if (ACCORDION_KEYS.has(link.key)) {
-      const submenu = createElement('ul', { className: 'mobile-drawer-submenu', hidden: true });
-
-      const overviewLink = createElement('a', {
-        className: 'navbar-link mobile-drawer-accordion-link',
-        href: link.href,
-        onClick: () => onNavigate?.()
-      },
-        createNavIcon(link.key),
-        createElement('span', { className: 'mobile-nav-label' }, link.label)
-      );
-
-      const toggleButton = createElement('button', {
-        className: 'mobile-drawer-accordion-toggle',
-        type: 'button',
-        'aria-expanded': 'false',
-        'aria-label': `${link.label} Untermenü öffnen`
-      }, createElement('span', { className: 'mobile-drawer-chevron' }, createChevronIcon()));
-
-      const trigger = createElement('div', { className: 'mobile-drawer-accordion-trigger' }, overviewLink, toggleButton);
-
-      const item = createElement('li', {
-        className: 'navbar-item mobile-nav-link-item mobile-drawer-accordion',
-        dataset: { mobileAccordion: link.key }
-      }, trigger, submenu);
-
-      const handleToggle = () => toggleAccordion(link.key, item, toggleButton, submenu);
-      toggleButton.addEventListener('click', handleToggle);
-      toggleButton.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        handleToggle();
-      });
-
-      mobileNavEntries.set(link.key, overviewLink);
-      accordionSubmenus.set(link.key, submenu);
-      mobileNavLinksList.appendChild(item);
-      return;
-    }
-
+  const createEntry = link => {
     const anchor = createElement('a', {
-      className: 'navbar-link',
+      className: ACCORDION_KEYS.has(link.key) ? 'navbar-link mobile-drawer-accordion-link' : 'navbar-link',
       href: link.href,
       onClick: () => onNavigate?.()
     },
       createNavIcon(link.key),
       createElement('span', { className: 'mobile-nav-label' }, link.label)
     );
-
-    const item = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, anchor);
     mobileNavEntries.set(link.key, anchor);
-    mobileNavLinksList.appendChild(item);
+
+    if (!ACCORDION_KEYS.has(link.key)) {
+      return createElement('li', { className: 'navbar-item mobile-nav-link-item' }, anchor);
+    }
+
+    const submenu = createElement('ul', { className: 'mobile-drawer-submenu', hidden: true });
+    const toggleButton = createElement('button', {
+      className: 'mobile-drawer-accordion-toggle',
+      type: 'button',
+      'aria-expanded': 'false',
+      'aria-label': `${link.label} Untermenü öffnen`
+    }, createElement('span', { className: 'mobile-drawer-chevron' }, createChevronIcon()));
+
+    const trigger = createElement('div', { className: 'mobile-drawer-accordion-trigger' }, anchor, toggleButton);
+    const item = createElement('li', {
+      className: 'navbar-item mobile-nav-link-item mobile-drawer-accordion',
+      dataset: { mobileAccordion: link.key }
+    }, trigger, submenu);
+
+    const handleToggle = () => toggleAccordion(link.key, item, toggleButton, submenu);
+    toggleButton.addEventListener('click', handleToggle);
+    toggleButton.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      handleToggle();
+    });
+
+    accordionSubmenus.set(link.key, submenu);
+    return item;
+  };
+
+  // Stagger order for the fly-in animation, see drawer-shell.css.
+  let flyIndex = 0;
+  const fly = element => {
+    element.style.setProperty('--fly-index', String(flyIndex));
+    flyIndex += 1;
+    return element;
+  };
+  fly(mobileDrawerHeader);
+
+  DRAWER_SECTIONS.forEach(section => {
+    const label = fly(createElement('p', { className: 'mobile-drawer-section-label', 'aria-hidden': 'true' }, section.label));
+    const list = createElement('ul', { className: 'mobile-drawer-list', 'aria-label': section.label });
+    section.keys
+      .map(key => NAV_LINKS.find(link => link.key === key))
+      .filter(Boolean)
+      .forEach(link => list.appendChild(fly(createEntry(link))));
+    scrollArea.appendChild(createElement('section', { className: 'mobile-drawer-section' }, label, list));
   });
 
+  // The user card: the whole card opens the profile, the gear the settings.
+  const avatar = createElement('span', { className: 'mobile-drawer-avatar', 'aria-hidden': 'true' }, '?');
+  const userName = createElement('strong', { className: 'mobile-drawer-user-name' }, '');
+  const mobileProfileLink = createElement('a', {
+    className: 'mobile-drawer-profile',
+    href: '#/profile',
+    onClick: () => onNavigate?.()
+  },
+    avatar,
+    createElement('span', { className: 'mobile-drawer-user' },
+      userName,
+      createElement('span', { className: 'mobile-drawer-user-hint' }, 'Profil, Verlauf & Favoriten')
+    )
+  );
+
   const mobileSettingsButton = createElement('button', {
-    className: 'navbar-link navbar-mobile-settings',
+    className: 'mobile-drawer-settings navbar-mobile-settings',
     type: 'button',
+    'aria-label': 'Einstellungen',
+    title: 'Einstellungen',
     onClick: () => {
       onNavigate?.();
       onOpenSettings?.();
     }
-  },
-    createNavIcon('settings'),
-    createElement('span', { className: 'mobile-nav-label' }, 'Einstellungen')
-  );
+  }, createNavIcon('settings'));
 
-  const mobileSettingsItem = createElement('li', { className: 'navbar-item navbar-mobile-settings-item mobile-nav-link-item' }, mobileSettingsButton);
-  mobileNavLinksList.appendChild(mobileSettingsItem);
-
-  const mobileProfileLink = createElement('a', {
-    className: 'navbar-link',
-    href: '#/profile',
-    onClick: () => onNavigate?.()
-  },
-    createNavIcon('profile'),
-    createElement('span', { className: 'mobile-nav-label' }, 'Profil')
-  );
-
-  const mobileProfileItem = createElement('li', { className: 'navbar-item mobile-nav-link-item' }, mobileProfileLink);
-  mobileNavLinksList.appendChild(mobileProfileItem);
-
-  // Stagger order for the fly-in animation, see drawer-shell.css.
-  mobileDrawerHeader.style.setProperty('--fly-index', '0');
-  Array.from(mobileNavLinksList.children).forEach((item, index) => {
-    item.style.setProperty('--fly-index', String(index + 1));
-  });
+  const footer = fly(createElement('div', { className: 'mobile-drawer-footer' }, mobileProfileLink, mobileSettingsButton));
+  mobileNavList.appendChild(footer);
 
   const mobileNavBackdrop = createElement('div', {
     className: 'mobile-nav-backdrop',
@@ -228,41 +243,43 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     onClick: () => onNavigate?.()
   });
 
+  const setActive = (anchor, isActive) => {
+    anchor.classList.toggle('active', isActive);
+    if (isActive) anchor.setAttribute('aria-current', 'page');
+    else anchor.removeAttribute('aria-current');
+  };
+
   const updateActive = (currentHash) => {
     NAV_LINKS.forEach(link => {
       const anchor = mobileNavEntries.get(link.key);
-      if (!anchor) return;
-      const isActive = isNavLinkActive(link, currentHash);
-      anchor.classList.toggle('active', isActive);
-      if (isActive) anchor.setAttribute('aria-current', 'page');
-      else anchor.removeAttribute('aria-current');
+      if (anchor) setActive(anchor, isNavLinkActive(link, currentHash));
     });
 
     accordionSubmenus.forEach(submenu => {
       submenu.querySelectorAll('a[href]').forEach(link => {
         const href = link.getAttribute('href');
-        const isActive = currentHash === href || currentHash.startsWith(`${href}?`);
-        link.classList.toggle('active', isActive);
-        if (isActive) link.setAttribute('aria-current', 'page');
-        else link.removeAttribute('aria-current');
+        setActive(link, currentHash === href || currentHash.startsWith(`${href}?`));
       });
     });
 
-    const profileActive = isNavLinkActive({ key: 'profile' }, currentHash);
-    mobileProfileLink.classList.toggle('active', profileActive);
-    if (profileActive) mobileProfileLink.setAttribute('aria-current', 'page');
-    else mobileProfileLink.removeAttribute('aria-current');
+    setActive(mobileProfileLink, isNavLinkActive({ key: 'profile' }, currentHash));
+  };
+
+  const setUser = name => {
+    userName.textContent = name || 'Profil';
+    avatar.textContent = initialOf(name);
   };
 
   const resetToNav = () => {
     mobileDrawerHeader.hidden = false;
-    mobileNavLinksList.hidden = false;
+    scrollArea.hidden = false;
   };
 
   return {
     mobileNavList,
     mobileNavBackdrop,
     updateActive,
+    setUser,
     resetToNav
   };
 }

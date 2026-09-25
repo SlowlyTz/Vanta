@@ -56,25 +56,31 @@ describe('Navbar', () => {
     expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]')).toBeFalsy();
   });
 
-  it('lists the drawer entries as Home, Filme, Serien, Publisher, Scroller, Anfragen', () => {
+  it('groups the drawer entries under Entdecken and Mehr', () => {
     Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
-    const labels = Array.from(document.querySelectorAll('.mobile-drawer-list > .mobile-nav-link-item .mobile-nav-label'))
-      .map(el => el.textContent);
+    const sections = Array.from(document.querySelectorAll('.mobile-drawer-section')).map(section => ({
+      label: section.querySelector('.mobile-drawer-section-label').textContent,
+      entries: Array.from(section.querySelectorAll('.mobile-drawer-list > .mobile-nav-link-item .mobile-nav-label')).map(el => el.textContent)
+    }));
 
-    expect(labels).toEqual(['Home', 'Filme', 'Serien', 'Publisher', 'Scroller', 'Anfragen', 'Einstellungen', 'Profil']);
+    expect(sections).toEqual([
+      { label: 'Entdecken', entries: ['Home', 'Filme', 'Serien', 'Publisher', 'Scroller'] },
+      { label: 'Mehr', entries: ['Anfragen'] }
+    ]);
   });
 
-  it('numbers the drawer header and entries for the staggered fly-in', () => {
+  it('numbers header, labels, entries and the user card in order for the staggered fly-in', () => {
     Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
-    const header = document.querySelector('.mobile-drawer-header');
-    const items = Array.from(document.querySelectorAll('.mobile-drawer-list > .mobile-nav-link-item'));
+    const blocks = Array.from(document.querySelectorAll(
+      '.mobile-drawer-header, .mobile-drawer-section-label, .mobile-drawer-list > .mobile-nav-link-item, .mobile-drawer-footer'
+    ));
 
-    expect(header.style.getPropertyValue('--fly-index')).toBe('0');
-    expect(items.length).toBeGreaterThan(0);
-    expect(items.map(item => item.style.getPropertyValue('--fly-index')))
-      .toEqual(items.map((_, index) => String(index + 1)));
+    expect(blocks[0].classList.contains('mobile-drawer-header')).toBe(true);
+    expect(blocks.at(-1).classList.contains('mobile-drawer-footer')).toBe(true);
+    expect(blocks.map(block => block.style.getPropertyValue('--fly-index')))
+      .toEqual(blocks.map((_, index) => String(index)));
   });
 
   it('renders group, search and profile actions on the right', () => {
@@ -261,23 +267,19 @@ describe('Navbar', () => {
     expect(navbar.element.classList.contains('mobile-open')).toBe(false);
   });
 
-  it('shows a Profil link directly under Einstellungen in the mobile drawer list and closes the drawer on click', () => {
+  it('shows the user card with name and initial, links it to the profile and closes the drawer on click', () => {
     stubMatchMedia(false);
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
+    navbar.update({ currentHash: '#/home', user: { username: 'alice' }, scrolled: false });
     navbar.element.querySelector('.mobile-menu-button').click();
     expect(navbar.element.classList.contains('mobile-open')).toBe(true);
 
-    const mobileNav = document.getElementById('mobile-navigation');
-    const items = Array.from(mobileNav.querySelectorAll('.mobile-drawer-list > li'));
-    const labels = items.map(item => item.querySelector('.mobile-nav-label').textContent);
+    const footer = document.querySelector('#mobile-navigation .mobile-drawer-footer');
+    expect(footer.querySelector('.mobile-drawer-user-name').textContent).toBe('alice');
+    expect(footer.querySelector('.mobile-drawer-avatar').textContent).toBe('A');
 
-    const settingsIndex = labels.indexOf('Einstellungen');
-    const profileIndex = labels.indexOf('Profil');
-
-    expect(profileIndex).toBe(settingsIndex + 1);
-
-    const profileLink = items[profileIndex].querySelector('a');
+    const profileLink = footer.querySelector('a.mobile-drawer-profile');
     expect(profileLink.getAttribute('href')).toBe('#/profile');
 
     profileLink.click();

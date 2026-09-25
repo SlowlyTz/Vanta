@@ -1,44 +1,41 @@
 :root {
   /* How far the app slides right while the drawer is open. */
-  --drawer-push: clamp(56px, 6vw, 96px);
-  --drawer-width: min(320px, 86vw);
-  --drawer-motion: 380ms var(--abyss-ease);
+  --drawer-push: clamp(40px, 4vw, 72px);
+  --drawer-width: 296px;
+  --drawer-inset: 12px;
+  --drawer-motion: 420ms var(--abyss-ease);
 }
 
-/* A full-height panel that slides in from the left edge and pushes the app
-   aside; the same on desktop and phones, only the width differs. */
+/* A floating glass panel on the left: header with the logo, the scrolling
+   entries in the middle and the user card pinned to the bottom. On desktop
+   it hovers with a margin around it; phones get a full-height sheet
+   (responsive.css). */
 .mobile-drawer-nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: var(--drawer-inset);
+  left: var(--drawer-inset);
+  bottom: var(--drawer-inset);
   width: var(--drawer-width);
-  height: 100vh;
-  height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  background: rgba(var(--abyss-glass-tint), 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-left: 0;
-  border-radius: 0 var(--abyss-radius-drawer) var(--abyss-radius-drawer) 0;
-  box-shadow: 26px 0 78px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(26px) saturate(128%);
-  -webkit-backdrop-filter: blur(26px) saturate(128%);
-  padding: calc(18px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  scrollbar-width: none;
-  list-style: none;
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(124, 92, 255, 0.10), transparent 60%),
+    linear-gradient(180deg, rgba(22, 22, 27, 0.9), rgba(12, 12, 15, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 26px;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.62),
+    0 2px 10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  overflow: hidden;
   visibility: hidden;
   pointer-events: none;
   contain: layout paint;
-  transform: translate3d(-100%, 0, 0);
-  transition: transform var(--drawer-motion), visibility 0s linear 380ms;
+  transform: translate3d(calc(-100% - var(--drawer-inset) * 2), 0, 0);
+  transition: transform var(--drawer-motion), visibility 0s linear 420ms;
   z-index: 1950;
-}
-
-.mobile-drawer-nav::-webkit-scrollbar {
-  display: none;
 }
 
 body.mobile-nav-open .mobile-drawer-nav {
@@ -62,32 +59,6 @@ body.mobile-nav-open .navbar.navbar-spotlight {
   transform: translate3d(var(--drawer-push), 0, 0);
 }
 
-/* Short desktop windows: shrink the header so the list needs no scrolling */
-@media (min-width: 769px) and (max-height: 720px) {
-  .mobile-drawer-nav {
-    gap: 6px;
-    padding-top: 10px;
-    padding-bottom: 12px;
-  }
-  .mobile-drawer-header {
-    min-height: 72px;
-    padding-bottom: 2px;
-  }
-  .mobile-drawer-logo {
-    width: 88px;
-  }
-  .mobile-drawer-list {
-    gap: 6px;
-  }
-  .mobile-drawer-nav .navbar-link {
-    min-height: 42px;
-  }
-  .mobile-drawer-nav .navbar-mobile-settings-item {
-    margin-top: 8px;
-    padding-top: 8px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .mobile-drawer-nav,
   .app-main,
@@ -97,13 +68,14 @@ body.mobile-nav-open .navbar.navbar-spotlight {
   }
 }
 
-/* Every entry flies in from the left once the drawer opens; --fly-index is
-   set by mobileDrawer.js (0 = header, then the items in order). Closing
-   drops the animation, so the entries stay put while the panel fades. */
+/* Every block flies in from the left once the drawer opens; --fly-index is
+   set by mobileDrawer.js (0 = header, then labels and entries in order, the
+   user card last). Closing drops the animation, so the entries stay put
+   while the panel slides out. */
 @keyframes mobile-drawer-fly-in {
   from {
     opacity: 0;
-    transform: translate3d(-22px, 0, 0);
+    transform: translate3d(-18px, 0, 0);
   }
   to {
     opacity: 1;
@@ -112,136 +84,291 @@ body.mobile-nav-open .navbar.navbar-spotlight {
 }
 
 body.mobile-nav-open .mobile-drawer-header,
-body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
-  animation: mobile-drawer-fly-in 380ms var(--abyss-ease) both;
-  animation-delay: calc(40ms + var(--fly-index, 0) * 45ms);
+body.mobile-nav-open .mobile-drawer-section-label,
+body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item,
+body.mobile-nav-open .mobile-drawer-footer {
+  animation: mobile-drawer-fly-in 420ms var(--abyss-ease) both;
+  animation-delay: calc(60ms + var(--fly-index, 0) * 32ms);
 }
 
 @media (prefers-reduced-motion: reduce) {
   body.mobile-nav-open .mobile-drawer-header,
-  body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item {
+  body.mobile-nav-open .mobile-drawer-section-label,
+  body.mobile-nav-open .mobile-drawer-list > .mobile-nav-link-item,
+  body.mobile-nav-open .mobile-drawer-footer {
     animation: none;
   }
 }
 
+/* Header: the logo centred, the close button in the corner. */
 .mobile-drawer-header {
   position: relative;
   flex: 0 0 auto;
-  min-height: 112px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 0 44px 10px;
+  padding: 22px 56px 14px;
+}
+
+.mobile-drawer-brand {
+  display: block;
+  border-radius: 14px;
+}
+
+.mobile-drawer-brand:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 6px;
 }
 
 .mobile-drawer-logo {
-  width: min(126px, 72%);
+  width: 92px;
   height: auto;
   display: block;
-  filter: drop-shadow(0 20px 28px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 14px 26px rgba(90, 60, 255, 0.28));
 }
 
 .mobile-drawer-close {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 36px;
-  height: 36px;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  color: rgba(255, 255, 255, 0.76);
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  border-radius: 11px;
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
-.mobile-drawer-close:hover {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: rgba(255, 255, 255, 0.16);
+.mobile-drawer-close:hover,
+.mobile-drawer-close:focus-visible {
+  background: rgba(255, 255, 255, 0.11);
   color: var(--text-primary);
+  outline: none;
 }
 
 .mobile-drawer-close:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
-/* The list takes the remaining height and hands it to the entries, so the
-   buttons grow (up to a cap) and spread over the panel instead of leaving
-   the lower half empty. An open accordion adds height and scrolls. */
-.mobile-drawer-list {
+.mobile-drawer-close .settings-header-icon {
+  display: inline-flex;
+}
+
+.mobile-drawer-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Middle: the entries scroll on their own, header and card stay. */
+.mobile-drawer-scroll {
   flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  list-style: none;
-  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 12px 12px;
+  scrollbar-width: none;
 }
 
-.mobile-drawer-list > .mobile-nav-link-item {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.mobile-drawer-scroll::-webkit-scrollbar {
+  display: none;
 }
 
-.mobile-drawer-list > .mobile-nav-link-item > .navbar-link,
-.mobile-drawer-list > .mobile-nav-link-item > .mobile-drawer-accordion-trigger {
-  flex: 1 1 auto;
-  max-height: 72px;
-}
-
-.mobile-drawer-accordion-trigger .navbar-link,
-.mobile-drawer-accordion-trigger .mobile-drawer-accordion-toggle {
-  height: 100%;
-}
-
-.mobile-drawer-list > .mobile-nav-link-item > .mobile-drawer-submenu {
-  flex: 0 0 auto;
-}
-
-.mobile-drawer-list[hidden],
+.mobile-drawer-scroll[hidden],
 .mobile-drawer-header[hidden],
 .mobile-nav-link-item[hidden] {
   display: none !important;
 }
 
-.navbar-mobile-settings-item {
-  display: none;
+.mobile-drawer-section + .mobile-drawer-section {
+  margin-top: 10px;
 }
 
-.mobile-drawer-nav .navbar-mobile-settings-item {
-  display: block;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.mobile-drawer-section-label {
+  margin: 0;
+  padding: 14px 12px 8px;
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
+.mobile-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+/* One entry: icon, label, and for the accordions a chevron at the end. */
 .mobile-drawer-nav .navbar-link {
+  position: relative;
   width: 100%;
-  min-height: 46px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
-  gap: 16px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.9rem;
+  gap: 14px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 0.93rem;
   font-weight: 560;
-  padding: 0 10px;
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  letter-spacing: 0.005em;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.mobile-drawer-nav .navbar-link:hover {
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0.055);
-  border-color: rgba(255, 255, 255, 0.06);
+.mobile-drawer-nav .navbar-link svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
 }
 
+.mobile-drawer-nav .navbar-link > span[aria-hidden='true'] {
+  display: inline-flex;
+}
+
+.mobile-drawer-nav .navbar-link:hover,
+.mobile-drawer-nav .navbar-link:focus-visible {
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.mobile-drawer-nav .navbar-link:hover svg {
+  opacity: 1;
+}
+
+/* Current page: a lit row with a glowing bar on the left edge. */
 .mobile-drawer-nav .navbar-link.active {
-  color: rgb(var(--abyss-accent));
-  background: rgba(var(--abyss-accent), 0.1);
-  border-color: rgba(var(--abyss-accent), 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: #fff;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.mobile-drawer-nav .navbar-link.active svg {
+  opacity: 1;
+}
+
+.mobile-drawer-nav .navbar-link.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+  transform: translateY(-50%);
+}
+
+/* Bottom: the user card and the settings gear. */
+.mobile-drawer-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mobile-drawer-profile {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 6px;
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: background var(--transition-fast);
+}
+
+.mobile-drawer-profile:hover,
+.mobile-drawer-profile:focus-visible,
+.mobile-drawer-profile.active {
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+}
+
+.mobile-drawer-avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 55%, #0ea5e9 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.mobile-drawer-user {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.mobile-drawer-user-name {
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-drawer-user-hint {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-drawer-settings {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), transform 420ms var(--abyss-ease);
+}
+
+.mobile-drawer-settings > span {
+  display: inline-flex;
+}
+
+.mobile-drawer-settings:hover,
+.mobile-drawer-settings:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  outline: none;
+}
+
+.mobile-drawer-settings:hover svg {
+  transform: rotate(45deg);
+}
+
+.mobile-drawer-settings svg {
+  transition: transform 420ms var(--abyss-ease);
 }

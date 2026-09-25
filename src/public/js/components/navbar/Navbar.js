@@ -106,6 +106,7 @@ export function Navbar({ onLogout, onChangePassword }) {
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
     settingsDialog.settingsUsername.textContent = displayName;
+    mobileDrawer.setUser(displayName);
 
     topTabs.updateActive(currentHash);
     mobileDrawer.updateActive(currentHash);
