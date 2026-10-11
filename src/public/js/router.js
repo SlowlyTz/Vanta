@@ -26,6 +26,9 @@ export function focusAutofocusTarget(pageElement) {
   return null;
 }
 
+// From this far down the navbar takes its scrolled look.
+const SCROLLED_OFFSET = 16;
+
 export class Router {
   constructor() {
     this.routes = [];
@@ -61,7 +64,16 @@ export class Router {
       }
       this.handleRoute();
     });
-    window.addEventListener('scroll', () => this.updateShellState());
+    // Scrolling only moves the navbar between its two looks: one check per
+    // frame, and only a change touches the DOM.
+    let scrollFrame = null;
+    window.addEventListener('scroll', () => {
+      if (scrollFrame !== null) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = null;
+        this.navbar?.setScrolled(window.scrollY > SCROLLED_OFFSET);
+      });
+    }, { passive: true });
 
     this.unsubscribeAuth = authStore.subscribe(({ user }) => {
       this.updateShellState(window.location.hash || '#/home', user);
@@ -114,7 +126,7 @@ export class Router {
     this.navbar.update({
       currentHash: hash,
       user,
-      scrolled: window.scrollY > 16
+      scrolled: window.scrollY > SCROLLED_OFFSET
     });
   }
 

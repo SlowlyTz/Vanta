@@ -102,8 +102,15 @@ export function Navbar({ onLogout, onChangePassword }) {
   document.body.appendChild(settingsDialog.element);
   document.body.appendChild(watchPartyDialog.element);
 
+  let isScrolled = null;
+  const setScrolled = (scrolled) => {
+    if (isScrolled === !!scrolled) return;
+    isScrolled = !!scrolled;
+    element.classList.toggle('scrolled', isScrolled);
+  };
+
   const update = ({ currentHash, user, scrolled }) => {
-    element.classList.toggle('scrolled', !!scrolled);
+    setScrolled(scrolled);
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
     settingsDialog.setUsername(displayName);
@@ -151,5 +158,5 @@ export function Navbar({ onLogout, onChangePassword }) {
     settingsDialog.setAdminBadge(adminTotal);
   });
 
-  return { element, update };
+  return { element, update, setScrolled };
 }
