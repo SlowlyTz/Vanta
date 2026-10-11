@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
+import { formatClock } from '../shared/time.js';
 
 const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
 const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
@@ -29,6 +30,49 @@ export default function LoginPage() {
   const hideLoginError = () => {
     errorBanner.classList.add('hidden');
     errorBanner.innerHTML = '';
+  };
+
+  const resetLoginButton = () => {
+    loginButton.disabled = false;
+    loginButton.removeAttribute('aria-busy');
+    loginButton.textContent = LOGIN_BUTTON_IDLE_TEXT;
+  };
+
+  // After too many wrong passwords the server refuses logins for a while; the
+  // button stays off and counts down until the next try is allowed.
+  let lockTimer = null;
+  const stopLockCountdown = () => {
+    if (lockTimer) window.clearInterval(lockTimer);
+    lockTimer = null;
+  };
+
+  const startLockCountdown = (message, retryAfterMs) => {
+    stopLockCountdown();
+    const unlockAt = Date.now() + retryAfterMs;
+    const countdown = createElement('p', { className: 'login-error-reason' });
+
+    const tick = () => {
+      const left = unlockAt - Date.now();
+      if (left <= 0 || (lockTimer && !container.isConnected)) {
+        stopLockCountdown();
+        if (container.isConnected) {
+          hideLoginError();
+          resetLoginButton();
+        }
+        return;
+      }
+      loginButton.disabled = true;
+      loginButton.textContent = `Gesperrt · ${formatClock(Math.ceil(left / 1000))}`;
+      countdown.textContent = `Nächster Versuch in ${formatClock(Math.ceil(left / 1000))}`;
+    };
+
+    errorBanner.innerHTML = '';
+    errorBanner.appendChild(createElement('p', { className: 'login-error-message' }, message));
+    errorBanner.appendChild(countdown);
+    errorBanner.classList.remove('hidden');
+    loginButton.removeAttribute('aria-busy');
+    tick();
+    lockTimer = window.setInterval(tick, 1000);
   };
 
   const handleLogin = async (e) => {
@@ -59,13 +103,14 @@ export default function LoginPage() {
       }
       window.location.hash = redirectHash;
     } catch (error) {
-      console.error(error);
       const message = error.message || GENERIC_LOGIN_ERROR;
+      if (error.status === 429 && Number(error.retryAfterMs) > 0) {
+        startLockCountdown(message, Number(error.retryAfterMs));
+        return;
+      }
       showLoginError(message, error.reason);
       appStore.showToast(message, 'error');
-      loginButton.disabled = false;
-      loginButton.removeAttribute('aria-busy');
-      loginButton.textContent = LOGIN_BUTTON_IDLE_TEXT;
+      resetLoginButton();
     }
   };
 

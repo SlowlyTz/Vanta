@@ -12,6 +12,7 @@ const createApiError = (message, response, options = {}) => {
   if (options.reason !== undefined) error.reason = options.reason;
   if (options.limit !== undefined) error.limit = options.limit;
   if (options.activeStreams !== undefined) error.activeStreams = options.activeStreams;
+  if (options.retryAfterMs !== undefined) error.retryAfterMs = options.retryAfterMs;
   return error;
 };
 
@@ -63,7 +64,8 @@ export async function request(url, options = {}) {
         code: errJson.code,
         reason: errJson.reason,
         limit: errJson.limit,
-        activeStreams: errJson.activeStreams
+        activeStreams: errJson.activeStreams,
+        retryAfterMs: errJson.retryAfterMs
       });
     }
 

@@ -99,7 +99,8 @@ Users and admins see the version at the bottom of the settings dialog. The serve
 
 The browser does not talk to Jellyfin directly. All communication goes through the Express backend:
 
-- Jellyfin login with a server-side session
+- Jellyfin login with a server-side session, a fresh session id per login and the Jellyfin token revoked on logout
+- login throttling: three wrong passwords for one username from one address lock it for a minute, every further three double the lock up to 24 hours (an address trying many usernames is locked after 20); a successful login or a day without failures starts over, and locked attempts never reach Jellyfin
 - HTTP-only session cookies instead of browser-stored tokens
 - a Jellyfin device id per login, so Jellyfin keeps each browser's session (and transcoding progress) apart
 - proxy routes for media, images, playlists, and playback reporting
