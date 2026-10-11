@@ -1,41 +1,31 @@
 import { createElement } from '../utils/dom.js';
+import { openModal } from '../utils/modal.js';
 
 // Small yes/no question in the app's dialog style. Resolves true for the
-// confirm button, false for "Nein", Escape or a click on the backdrop.
+// confirm button, false for "Nein", Escape, a click on the backdrop or when
+// the page is left.
 export function confirmDialog({ title, message, confirmLabel = 'Ja', cancelLabel = 'Nein' }) {
   return new Promise((resolve) => {
-    let settled = false;
-    const previouslyFocused = document.activeElement;
-
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      document.removeEventListener('keydown', onKeydown);
-      overlay.remove();
-      previouslyFocused?.focus?.();
-      resolve(result);
-    };
-
-    const onKeydown = (event) => {
-      if (event.key === 'Escape') finish(false);
-    };
+    let result = false;
 
     const cancelButton = createElement('button', {
       type: 'button',
       className: 'btn-secondary confirm-dialog-cancel',
-      onClick: () => finish(false)
+      onClick: () => modal.close()
     }, cancelLabel);
 
     const confirmButton = createElement('button', {
       type: 'button',
       className: 'btn-primary confirm-dialog-confirm',
-      onClick: () => finish(true)
+      onClick: () => {
+        result = true;
+        modal.close();
+      }
     }, confirmLabel);
 
     const card = createElement('div', {
       className: 'confirm-dialog',
       role: 'alertdialog',
-      'aria-modal': 'true',
       'aria-labelledby': 'confirm-dialog-title',
       'aria-describedby': message ? 'confirm-dialog-message' : null
     },
@@ -44,13 +34,13 @@ export function confirmDialog({ title, message, confirmLabel = 'Ja', cancelLabel
       createElement('div', { className: 'confirm-dialog-actions' }, cancelButton, confirmButton)
     );
 
-    const overlay = createElement('div', {
-      className: 'confirm-dialog-overlay',
-      onClick: (event) => { if (event.target === overlay) finish(false); }
-    }, card);
+    const overlay = createElement('div', { className: 'confirm-dialog-overlay' }, card);
 
-    document.addEventListener('keydown', onKeydown);
-    document.body.appendChild(overlay);
-    window.requestAnimationFrame?.(() => confirmButton.focus());
+    const modal = openModal({
+      overlay,
+      dialog: card,
+      initialFocus: confirmButton,
+      onClose: () => resolve(result)
+    });
   });
 }

@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { YouTubePlayerManager } from '../pages/trailer-scroller/player.js';
+import { openModal } from '../utils/modal.js';
 
 let trailerModalCounter = 0;
 
@@ -44,47 +45,35 @@ export function openTrailerModal({ title, videoId }) {
     id: modalId
   });
 
-  const closeModal = () => {
-    playerManager.destroyAll();
-    modal.remove();
-    document.removeEventListener('keydown', handleKeydown);
-  };
+  const closeButton = createElement('button', {
+    className: 'detail-trailer-close',
+    type: 'button',
+    'aria-label': 'Trailer schließen',
+    onClick: () => modal.close()
+  }, '×');
 
-  const handleKeydown = (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeModal();
-    }
-  };
-
-  const modal = createElement('div', {
-    className: 'detail-trailer-backdrop',
-    onClick: (event) => {
-      if (event.target === modal) closeModal();
-    }
+  const dialog = createElement('div', {
+    className: 'detail-trailer-modal',
+    'aria-labelledby': 'detail-trailer-title'
   },
-    createElement('div', {
-      className: 'detail-trailer-modal',
-      role: 'dialog',
-      'aria-modal': 'true',
-      'aria-labelledby': 'detail-trailer-title'
-    },
-      createElement('button', {
-        className: 'detail-trailer-close',
-        type: 'button',
-        'aria-label': 'Trailer schließen',
-        onClick: closeModal
-      }, '×'),
-      createElement('h2', { className: 'detail-trailer-title', id: 'detail-trailer-title' }, title),
-      createElement('div', { className: 'detail-trailer-frame' }, playerTarget)
-    )
+    closeButton,
+    createElement('h2', { className: 'detail-trailer-title', id: 'detail-trailer-title' }, title),
+    createElement('div', { className: 'detail-trailer-frame' }, playerTarget)
   );
 
-  document.body.appendChild(modal);
-  document.addEventListener('keydown', handleKeydown);
+  const overlay = createElement('div', { className: 'detail-trailer-backdrop' }, dialog);
+
+  const modal = openModal({
+    overlay,
+    dialog,
+    initialFocus: closeButton,
+    onClose: () => playerManager.destroyAll()
+  });
 
   playerManager.createPlayer(modalId, videoId, {
     autoplay: 1,
     muted: false
   });
+
+  return modal;
 }

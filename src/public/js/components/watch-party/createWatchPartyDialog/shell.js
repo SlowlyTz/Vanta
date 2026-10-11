@@ -1,4 +1,5 @@
 import { WatchPartyApi } from '../../../api/watch-party.api.js';
+import { openModal } from '../../../utils/modal.js';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -13,9 +14,17 @@ export function bindShell(ctx) {
     ctx.open = nextOpen;
 
     if (ctx.open) {
-      ctx.lastFocusedElement = document.activeElement;
       ctx.backdrop.classList.add('open');
       ctx.backdrop.setAttribute('aria-hidden', 'false');
+      // Focus, Escape, the scroll lock and closing with the page: openModal.
+      ctx.modal = openModal({
+        overlay: ctx.backdrop,
+        dialog: ctx.dialog,
+        initialFocus: ctx.searchInput,
+        removeOnClose: false,
+        closeOnBackdrop: false,
+        onClose: () => ctx.setOpen(false)
+      });
 
       void ctx.loadRecentParties?.();
       try {
@@ -31,14 +40,11 @@ export function bindShell(ctx) {
       ctx.backdrop.classList.remove('open');
       ctx.backdrop.setAttribute('aria-hidden', 'true');
       window.clearTimeout(ctx.debounceTimer);
-      ctx.lastFocusedElement?.focus?.();
-      ctx.lastFocusedElement = null;
+      const modal = ctx.modal;
+      ctx.modal = null;
+      modal?.close();
     }
   };
-
-  window.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && ctx.open) ctx.setOpen(false);
-  });
 
   return ctx;
 }

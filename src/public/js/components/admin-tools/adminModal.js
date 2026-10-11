@@ -1,6 +1,7 @@
 import { createElement } from '../../utils/dom.js';
 import { createCloseIcon } from '../navbar/icons.js';
 import { bindSheetSwipe } from '../../utils/sheetSwipe.js';
+import { openModal } from '../../utils/modal.js';
 
 // Einziger Modal-Helfer des Admin-Bereichs: Overlay, Schließen-Button, Escape
 // und Backdrop-Klick. Wird sowohl von den Bestätigungsdialogen (Sperren,
@@ -21,56 +22,37 @@ export function closeAllAdminModals() {
 }
 
 export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
-  let closed = false;
-  const previouslyFocused = document.activeElement;
-
   const overlay = createElement('div', {
     className: `admin-user-dialog-overlay${variant ? ` ${variant}` : ''}`
   });
-
-  let unbindSwipe = null;
-
-  const close = () => {
-    if (closed) return;
-    closed = true;
-    unbindSwipe?.();
-    openModals.delete(handle);
-    document.removeEventListener('keydown', handleKeydown);
-    overlay.remove();
-    previouslyFocused?.focus?.();
-    onClose?.();
-  };
-
-  const handleKeydown = (event) => {
-    if (event.key === 'Escape') close();
-  };
 
   const closeBtn = createElement('button', {
     className: 'admin-user-dialog-close',
     type: 'button',
     'aria-label': 'Schließen',
-    onClick: close
+    onClick: () => modal.close()
   }, createCloseIcon());
 
-  const card = createElement('div', {
-    className: 'admin-user-dialog',
-    role: 'dialog',
-    'aria-modal': 'true',
-    tabindex: '-1'
-  }, closeBtn, contentEl);
-
+  const card = createElement('div', { className: 'admin-user-dialog' }, closeBtn, contentEl);
   overlay.appendChild(card);
-  // On a phone the dialog is a sheet: swiping it down closes it.
-  unbindSwipe = bindSheetSwipe({ sheet: card, onDismiss: close });
-  overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) close();
+
+  let unbindSwipe = null;
+  const handle = { close: () => modal.close(), element: overlay };
+
+  const modal = openModal({
+    overlay,
+    dialog: card,
+    // The dialog itself takes focus: its first control may be a destructive one.
+    initialFocus: card,
+    onClose: () => {
+      unbindSwipe?.();
+      openModals.delete(handle);
+      onClose?.();
+    }
   });
 
-  document.addEventListener('keydown', handleKeydown);
-  document.body.appendChild(overlay);
-  window.requestAnimationFrame?.(() => card.focus?.());
-
-  const handle = { close, element: overlay };
+  // On a phone the dialog is a sheet: swiping it down closes it.
+  unbindSwipe = bindSheetSwipe({ sheet: card, onDismiss: () => modal.close() });
   openModals.add(handle);
 
   return handle;

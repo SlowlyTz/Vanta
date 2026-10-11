@@ -7,6 +7,7 @@ import { createPasswordForm } from './settingsPassword.js';
 import { createAdminToolsPanel } from '../admin-tools/AdminToolsPanel.js';
 import { createSettingsStatsLoader } from '../settings/settingsStats.js';
 import { APP_VERSION, formatVersion } from '../../shared/version.js';
+import { openModal } from '../../utils/modal.js';
 
 export function createSettingsDialog({ onLogout, onChangePassword }) {
   const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
@@ -139,31 +140,8 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
 
   let settingsOpen = false;
   let settingsView = 'root';
-  let lastFocusedElement = null;
-  let settingsScrollY = 0;
+  let modal = null;
   const settingsStats = createSettingsStatsLoader(settingsOverview);
-
-  const lockSettingsViewport = () => {
-    settingsScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    document.documentElement.classList.add('settings-modal-open');
-    document.body.classList.add('settings-modal-open');
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${settingsScrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-  };
-
-  const unlockSettingsViewport = () => {
-    document.documentElement.classList.remove('settings-modal-open');
-    document.body.classList.remove('settings-modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    window.scrollTo(0, settingsScrollY);
-  };
 
   const setSettingsView = (view) => {
     settingsView = view;
@@ -179,32 +157,35 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
     }
   };
 
+  // Focus, Escape, the backdrop click, the scroll lock and closing when the
+  // page is left all come from openModal; the backdrop stays in the DOM and
+  // is only shown and hidden.
   const setSettingsOpen = (open) => {
     if (settingsOpen === open) return;
-
-    if (open) {
-      lastFocusedElement = document.activeElement;
-    }
 
     settingsOpen = open;
     settingsBackdrop.classList.toggle('open', settingsOpen);
     settingsBackdrop.setAttribute('aria-hidden', settingsOpen ? 'false' : 'true');
 
     if (!settingsOpen) {
-      unlockSettingsViewport();
+      modal?.close();
+      modal = null;
       setPasswordStatus('');
       setSettingsView('root');
-      lastFocusedElement?.focus?.();
-      lastFocusedElement = null;
       return;
     }
 
-    lockSettingsViewport();
-
     setSettingsView('root');
+    modal = openModal({
+      overlay: settingsBackdrop,
+      dialog: settingsDialog,
+      initialFocus: settingsDialog,
+      removeOnClose: false,
+      closeOnBackdrop: false,
+      onClose: () => setSettingsOpen(false)
+    });
     settingsStats.load();
     refreshAdminVisibility();
-    window.requestAnimationFrame(() => settingsDialog.focus());
   };
 
   setSettingsView('root');

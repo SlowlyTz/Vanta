@@ -1,0 +1,196 @@
+import { resolvePageScope } from './pageScope.js';
+
+// The one way VANTA opens a modal dialog. It gives every dialog the same
+// behaviour: focus moves in and stays inside (Tab wraps around), Escape and a
+// click on the backdrop close it, the page behind cannot scroll and is inert
+// for assistive technology, focus returns to where it was, and the dialog
+// closes when its page is left (Back while it is open included).
+// Several can be stacked; only the topmost one reacts to keys.
+
+const FOCUSABLE = [
+  'a[href]', 'area[href]', 'button:not([disabled])', 'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])', 'textarea:not([disabled])', 'iframe', 'audio[controls]', 'video[controls]',
+  '[contenteditable]:not([contenteditable="false"])', '[tabindex]:not([tabindex="-1"])'
+].join(',');
+
+// Elements on <body> that stay reachable while a modal is open: live
+// regions and the blocking app-level notices above every dialog.
+const KEEP_INTERACTIVE = '#toast-container, .update-overlay, .offline-overlay';
+
+const stack = [];
+
+export const isModalOpen = () => stack.length > 0;
+
+export function focusableIn(root) {
+  return [...root.querySelectorAll(FOCUSABLE)].filter(element =>
+    !element.closest('[hidden], [inert], .hidden, .invisible'));
+}
+
+// Scroll lock shared by all open modals: the body is pinned where the page
+// was (iOS ignores overflow: hidden) and released when the last one closes.
+let lockedScrollY = 0;
+let lockCount = 0;
+
+function lockScroll() {
+  if (lockCount++ > 0) return;
+  lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.documentElement.classList.add('modal-open');
+  document.body.classList.add('modal-open');
+  Object.assign(document.body.style, { position: 'fixed', top: `-${lockedScrollY}px`, left: '0', right: '0', width: '100%' });
+}
+
+function unlockScroll() {
+  if (lockCount === 0 || --lockCount > 0) return;
+  document.documentElement.classList.remove('modal-open');
+  document.body.classList.remove('modal-open');
+  Object.assign(document.body.style, { position: '', top: '', left: '', right: '', width: '' });
+  window.scrollTo(0, lockedScrollY);
+}
+
+// Everything but the overlay's own branch goes inert: the siblings of the
+// overlay and of each of its ancestors up to <body> (the settings dialog, for
+// one, lives inside the app shell).
+function makeBackgroundInert(overlay) {
+  const changed = [];
+  for (let node = overlay; node && node !== document.body && node.parentElement; node = node.parentElement) {
+    for (const sibling of node.parentElement.children) {
+      if (sibling === node || sibling.inert || sibling.matches(KEEP_INTERACTIVE) || sibling.tagName === 'SCRIPT') continue;
+      sibling.inert = true;
+      changed.push(sibling);
+    }
+  }
+  return () => changed.forEach(element => { element.inert = false; });
+}
+
+function onKeydown(event) {
+  const top = stack[stack.length - 1];
+  if (!top) return;
+
+  if (event.key === 'Escape' && top.closeOnEscape) {
+    event.preventDefault();
+    event.stopPropagation();
+    top.close();
+    return;
+  }
+
+  if (event.key !== 'Tab') return;
+  const items = focusableIn(top.dialog);
+  if (items.length === 0) {
+    event.preventDefault();
+    top.dialog.focus?.();
+    return;
+  }
+  const first = items[0];
+  const last = items[items.length - 1];
+  const inside = top.dialog.contains(document.activeElement);
+  if (event.shiftKey && (document.activeElement === first || !inside)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (document.activeElement === last || !inside)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+// Focus that wanders out (a click on the inert background cannot, but a
+// script or the browser chrome can) is pulled back in.
+function onFocusIn(event) {
+  const top = stack[stack.length - 1];
+  if (!top || top.dialog.contains(event.target) || top.overlay.contains(event.target)) return;
+  if (event.target.closest?.(KEEP_INTERACTIVE)) return;
+  (focusableIn(top.dialog)[0] || top.dialog).focus?.();
+}
+
+/**
+ * @param {object} options
+ * @param {HTMLElement} options.overlay   backdrop element; appended to <body> if detached
+ * @param {HTMLElement} [options.dialog]  the dialog box inside it (defaults to the overlay)
+ * @param {HTMLElement|string} [options.initialFocus] element or selector to focus first
+ * @param {Function} [options.onClose]    runs once after the modal closed
+ * @param {boolean} [options.removeOnClose=true] take the overlay out of the DOM on close
+ * @param {boolean} [options.closeOnBackdrop=true]
+ * @param {boolean} [options.closeOnEscape=true]
+ * @param {boolean} [options.lockScroll=true]
+ * @param {string}  [options.label]       aria-label when the dialog has no labelled heading
+ * @param {object}  [options.pageScope]   closes with this page; defaults to the current one
+ */
+export function openModal({
+  overlay,
+  dialog = overlay,
+  initialFocus = null,
+  onClose = null,
+  removeOnClose = true,
+  closeOnBackdrop = true,
+  closeOnEscape = true,
+  lockScroll: shouldLockScroll = true,
+  label = null,
+  pageScope = null
+}) {
+  const previouslyFocused = document.activeElement;
+  let closed = false;
+
+  if (!dialog.hasAttribute('role')) dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-modal', 'true');
+  if (label && !dialog.hasAttribute('aria-labelledby')) dialog.setAttribute('aria-label', label);
+  if (!dialog.hasAttribute('tabindex')) dialog.setAttribute('tabindex', '-1');
+  if (!overlay.isConnected) document.body.appendChild(overlay);
+
+  const onBackdropClick = (event) => {
+    if (event.target === overlay) handle.close();
+  };
+  if (closeOnBackdrop) overlay.addEventListener('click', onBackdropClick);
+
+  if (stack.length === 0) {
+    document.addEventListener('keydown', onKeydown, true);
+    document.addEventListener('focusin', onFocusIn);
+  }
+  if (shouldLockScroll) lockScroll();
+  const restoreBackground = makeBackgroundInert(overlay);
+
+  const handle = {
+    overlay,
+    dialog,
+    closeOnEscape,
+    element: overlay,
+    get isOpen() { return !closed; },
+    close() {
+      if (closed) return;
+      closed = true;
+      stopWithPage();
+      const index = stack.indexOf(handle);
+      if (index >= 0) stack.splice(index, 1);
+      if (stack.length === 0) {
+        document.removeEventListener('keydown', onKeydown, true);
+        document.removeEventListener('focusin', onFocusIn);
+      }
+      overlay.removeEventListener('click', onBackdropClick);
+      restoreBackground();
+      if (shouldLockScroll) unlockScroll();
+      if (removeOnClose) overlay.remove();
+      if (previouslyFocused?.isConnected) previouslyFocused.focus?.({ preventScroll: true });
+      onClose?.();
+    }
+  };
+
+  stack.push(handle);
+  const stopWithPage = resolvePageScope(pageScope).onLeave(() => handle.close());
+
+  // A dialog that fades in can still be invisible (and so unfocusable) in the
+  // first frame; focus is tried again for a moment until it lands inside.
+  const focusTarget = typeof initialFocus === 'string' ? dialog.querySelector(initialFocus) : initialFocus;
+  let focusTries = 0;
+  const focusFirst = () => {
+    if (closed || overlay.contains(document.activeElement)) return;
+    (focusTarget || focusableIn(dialog)[0] || dialog).focus?.({ preventScroll: true });
+    if (!overlay.contains(document.activeElement) && ++focusTries < 10) setTimeout(focusFirst, 40);
+  };
+  if (window.requestAnimationFrame) window.requestAnimationFrame(focusFirst);
+  else focusFirst();
+
+  return handle;
+}
+
+// Test helper: closes every open modal.
+export function closeAllModals() {
+  for (const handle of [...stack].reverse()) handle.close();
+}

@@ -3,50 +3,25 @@ import { MediaApi } from '../../api/media.api.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../../utils/image.js';
 import { MediaCarousel } from '../../components/mediaCarousel.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
+import { openModal } from '../../utils/modal.js';
 
 export function createActorModal({ currentItemId }) {
   const modalOverlay = createElement('div', { className: 'actor-modal-overlay' });
-  let modalScrollY = 0;
+  let modal = null;
+  // Each opening gets a number: a slow answer for an actor clicked before
+  // must not fill the dialog of the one clicked after.
+  let openRun = 0;
 
-  const lockModalScroll = () => {
-    modalScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    document.body.classList.add('actor-modal-open');
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${modalScrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.width = '100%';
-  };
-
-  const unlockModalScroll = () => {
-    document.body.classList.remove('actor-modal-open');
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.left = '';
-    document.body.style.right = '';
-    document.body.style.width = '';
-    window.scrollTo(0, modalScrollY);
-  };
-
-  const handleEscapeKey = (e) => {
-    if (e.key === 'Escape') closeModal();
-  };
-
-  const closeModal = () => {
-    if (!modalOverlay.classList.contains('active')) return;
-    modalOverlay.classList.remove('active');
-    unlockModalScroll();
-    window.removeEventListener('keydown', handleEscapeKey);
-    modalOverlay.onclick = null;
-    modalOverlay.remove();
-  };
+  const closeModal = () => modal?.close();
 
   const createModalCloseButton = () => {
     const button = createElement('button', {
       className: 'actor-modal-close',
+      type: 'button',
+      'aria-label': 'Schließen',
       onClick: () => closeModal()
     });
-    button.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    button.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
     return button;
   };
 
@@ -98,7 +73,7 @@ export function createActorModal({ currentItemId }) {
     });
 
     const infoContainer = createElement('div', { className: 'actor-profile-info' },
-      createElement('h2', { className: 'actor-modal-name' }, person.Name)
+      createElement('h2', { className: 'actor-modal-name', id: 'actor-modal-name' }, person.Name)
     );
 
     if (role) {
@@ -175,6 +150,7 @@ export function createActorModal({ currentItemId }) {
   };
 
   const openActorModal = async (actor) => {
+    const run = ++openRun;
     modalOverlay.innerHTML = '';
 
     const modalClose = createModalCloseButton();
@@ -184,18 +160,28 @@ export function createActorModal({ currentItemId }) {
     );
 
     modalOverlay.appendChild(modalContent);
-    if (!modalOverlay.isConnected) {
-      document.body.appendChild(modalOverlay);
-    }
     modalOverlay.classList.add('active');
     setSectionBusy(modalContent, true);
-    lockModalScroll();
 
-    window.addEventListener('keydown', handleEscapeKey);
-
-    modalOverlay.onclick = (e) => {
-      if (e.target === modalOverlay) closeModal();
-    };
+    if (!modal?.isOpen) {
+      modal = openModal({
+        overlay: modalOverlay,
+        dialog: modalOverlay,
+        initialFocus: modalClose,
+        label: actor.Name || 'Schauspieler',
+        onClose: () => {
+          openRun++;
+          modalOverlay.classList.remove('active');
+          modalOverlay.removeAttribute('aria-labelledby');
+          modal = null;
+        }
+      });
+    }
+    modalOverlay.removeAttribute('aria-labelledby');
+    modalOverlay.setAttribute('aria-label', actor.Name || 'Schauspieler');
+    // The box is rebuilt per actor; the overlay is the dialog.
+    window.requestAnimationFrame?.(() => modalOverlay.querySelector('.actor-modal-close')?.focus({ preventScroll: true }));
+    const stale = () => run !== openRun;
 
     try {
       let person = null;
@@ -225,13 +211,17 @@ export function createActorModal({ currentItemId }) {
         items = await MediaApi.getPersonItemsByName(actor.Name);
       }
 
+      if (stale()) return;
       if (!person) {
         throw new Error('Details zum Schauspieler konnten in Jellyfin nicht gefunden werden.');
       }
 
       renderModalDetails(modalContent, person, actor.Role, items);
+      modalOverlay.removeAttribute('aria-label');
+      modalOverlay.setAttribute('aria-labelledby', 'actor-modal-name');
 
     } catch (err) {
+      if (stale()) return;
       console.error('[Actor Modal Error]', err);
       modalContent.innerHTML = '';
       modalContent.appendChild(createModalCloseButton());
@@ -243,6 +233,10 @@ export function createActorModal({ currentItemId }) {
       );
     } finally {
       setSectionBusy(modalContent, false);
+      // The box was rebuilt, the focused close button with it.
+      if (!stale() && !modalOverlay.contains(document.activeElement)) {
+        modalOverlay.querySelector('.actor-modal-close')?.focus({ preventScroll: true });
+      }
     }
   };
 

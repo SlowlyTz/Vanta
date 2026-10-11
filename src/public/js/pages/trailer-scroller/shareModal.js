@@ -1,11 +1,13 @@
 import { createElement } from '../../utils/dom.js';
 import { appStore } from '../../store/app.store.js';
+import { openModal } from '../../utils/modal.js';
 
 export function bindShareModal(ctx) {
   ctx.closeShareModal = () => {
-    if (!ctx.shareModal) return;
-    ctx.shareModal.remove();
+    const modal = ctx.shareModalHandle;
+    ctx.shareModalHandle = null;
     ctx.shareModal = null;
+    modal?.close();
   };
 
   ctx.copyShareUrl = async url => {
@@ -53,8 +55,6 @@ export function bindShareModal(ctx) {
 
     const modalContent = createElement('div', {
       className: 'trailer-share-content',
-      role: 'dialog',
-      'aria-modal': 'true',
       'aria-labelledby': 'trailer-share-title'
     },
       createElement('button', {
@@ -76,14 +76,18 @@ export function bindShareModal(ctx) {
       )
     );
 
-    ctx.shareModal = createElement('div', {
-      className: 'trailer-share-backdrop',
-      onClick: (event) => {
-        if (event.target === ctx.shareModal) ctx.closeShareModal();
-      }
-    }, modalContent);
+    ctx.shareModal = createElement('div', { className: 'trailer-share-backdrop' }, modalContent);
 
+    // Inside the scroller's container, which styles it; openModal adds focus
+    // handling, Escape, the backdrop click and closing with the page.
     ctx.container.appendChild(ctx.shareModal);
+    ctx.shareModalHandle = openModal({
+      overlay: ctx.shareModal,
+      dialog: modalContent,
+      initialFocus: urlInput,
+      lockScroll: false,
+      onClose: () => ctx.closeShareModal()
+    });
     urlInput.select();
   };
 

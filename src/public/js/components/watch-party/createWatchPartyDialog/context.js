@@ -23,7 +23,7 @@ export function createDialogContext() {
     currentView: 'pick-media',
     selectedSeries: null,
     open: false,
-    lastFocusedElement: null
+    modal: null
   };
 
   ctx.backButton = createElement('button', {

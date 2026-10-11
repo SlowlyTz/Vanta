@@ -77,6 +77,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* A dialog is open (js/utils/modal.js): the page behind stays put. */
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 #app {
   width: 100%;
   max-width: 100%;

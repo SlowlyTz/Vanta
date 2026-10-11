@@ -23,12 +23,6 @@
   outline-offset: 2px;
 }
 
-html.settings-modal-open,
-body.settings-modal-open {
-  overflow: hidden !important;
-  overscroll-behavior: none;
-}
-
 .settings-modal-backdrop,
 .settings-dialog,
 .settings-panel,

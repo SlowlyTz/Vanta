@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AuthApi } from '../../../../src/public/js/api/auth.api.js';
 import { createSettingsDialog } from '../../../../src/public/js/components/navbar/settingsDialog.js';
+import { closeAllModals } from '../../../../src/public/js/utils/modal.js';
 import { APP_VERSION } from '../../../../src/public/js/shared/version.js';
 
 vi.mock('../../../../src/public/js/api/auth.api.js', () => ({
@@ -19,16 +20,17 @@ describe('settingsDialog scroll lock', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     AuthApi.getCurrentUser.mockResolvedValue({ user: { isAdmin: false } });
-    document.documentElement.classList.remove('settings-modal-open');
-    document.body.classList.remove('settings-modal-open');
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
     document.body.style.position = '';
     document.body.style.top = '';
     window.scrollTo = vi.fn();
   });
 
   afterEach(() => {
-    document.documentElement.classList.remove('settings-modal-open');
-    document.body.classList.remove('settings-modal-open');
+    closeAllModals();
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
     document.body.style.position = '';
     document.body.style.top = '';
   });
@@ -39,8 +41,8 @@ describe('settingsDialog scroll lock', () => {
     const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
     dialog.setSettingsOpen(true);
 
-    expect(document.documentElement.classList.contains('settings-modal-open')).toBe(true);
-    expect(document.body.classList.contains('settings-modal-open')).toBe(true);
+    expect(document.documentElement.classList.contains('modal-open')).toBe(true);
+    expect(document.body.classList.contains('modal-open')).toBe(true);
     expect(document.body.style.position).toBe('fixed');
     expect(document.body.style.top).toBe('-640px');
 
@@ -54,8 +56,8 @@ describe('settingsDialog scroll lock', () => {
     dialog.setSettingsOpen(true);
     dialog.setSettingsOpen(false);
 
-    expect(document.documentElement.classList.contains('settings-modal-open')).toBe(false);
-    expect(document.body.classList.contains('settings-modal-open')).toBe(false);
+    expect(document.documentElement.classList.contains('modal-open')).toBe(false);
+    expect(document.body.classList.contains('modal-open')).toBe(false);
     expect(document.body.style.position).toBe('');
     expect(document.body.style.top).toBe('');
     expect(window.scrollTo).toHaveBeenCalledWith(0, 900);
@@ -82,8 +84,8 @@ describe('settingsDialog single back button', () => {
   });
 
   afterEach(() => {
-    document.documentElement.classList.remove('settings-modal-open');
-    document.body.classList.remove('settings-modal-open');
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
     document.body.style.position = '';
     document.body.style.top = '';
   });
@@ -119,8 +121,8 @@ describe('settingsDialog admin tile navigates to #/admin', () => {
   });
 
   afterEach(() => {
-    document.documentElement.classList.remove('settings-modal-open');
-    document.body.classList.remove('settings-modal-open');
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
     document.body.style.position = '';
     document.body.style.top = '';
     window.location.hash = '';
