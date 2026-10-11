@@ -5,6 +5,7 @@ import { checkServerBuild } from './utils/appVersion.js';
 import { Navbar } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
 import { createPageScope, runInPageScope, setActivePageScope } from './utils/pageScope.js';
+import { ensurePageStyles } from './utils/pageStyles.js';
 
 // Focuses the page's [data-autofocus] element once it is attached to the document.
 // Pages cannot do this themselves: their factory runs while the element is still
@@ -228,7 +229,9 @@ export class Router {
 
     try {
       const pageParams = { ...route.defaultParams, ...params };
-      const pageComponentModule = await route.pageLoader();
+      // The page's own stylesheets load alongside its code, so it never shows
+      // unstyled.
+      const [pageComponentModule] = await Promise.all([route.pageLoader(), ensurePageStyles(route.styles)]);
       if (superseded()) return;
       const scope = createPageScope();
       let pageElement;

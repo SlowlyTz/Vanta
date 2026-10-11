@@ -1,0 +1,3 @@
+/* Requests, request details and problem reports; the admin area uses them too. */
+@import '../pages/report.css';
+@import '../pages/requests.css';

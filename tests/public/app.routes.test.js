@@ -25,7 +25,7 @@ const route = (path) => added.find(entry => entry.path === path);
 describe('Routentabelle', () => {
   it('registriert das Admin-Menü ohne Bereich', () => {
     expect(route('#/admin')).toBeTruthy();
-    expect(route('#/admin').options).toEqual({ requiresAuth: true });
+    expect(route('#/admin').options).toEqual({ styles: ['admin'], requiresAuth: true });
   });
 
   it.each([
@@ -35,7 +35,7 @@ describe('Routentabelle', () => {
   ])('registriert %s mit dem passenden Bereich', (path, section) => {
     const entry = route(path);
     expect(entry).toBeTruthy();
-    expect(entry.options).toEqual({ requiresAuth: true, defaultParams: { section } });
+    expect(entry.options).toEqual({ styles: ['admin'], requiresAuth: true, defaultParams: { section } });
   });
 
   it('lädt alle vier Admin-Routen aus derselben Seite', async () => {

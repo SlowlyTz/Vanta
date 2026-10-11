@@ -1,0 +1,11 @@
+/* Admin area (#/admin…): its tools, the request and report items it lists,
+   and its own layout, in the order index.html used to link them. */
+@import '../components/admin-tools/requests-tool.css';
+@import '../components/admin-tools/users-tool.css';
+@import '../pages/report.css';
+@import '../pages/requests.css';
+@import '../pages/admin/layout.css';
+@import '../pages/admin/header.css';
+@import '../pages/admin/sections.css';
+@import '../pages/admin/settings-panel.css';
+@import '../pages/admin/responsive.css';

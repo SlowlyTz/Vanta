@@ -48,3 +48,31 @@ export function injectBuildMeta(html, buildId) {
   if (!buildId) return html;
   return html.replace(/<head>/i, match => `${match}\n  <meta name="${BUILD_META_NAME}" content="${buildId}">`);
 }
+
+const BUNDLE_SOURCE = /^css\/bundles\/([\w-]+)\.css$/;
+
+// The hashed file of every page style bundle (css/bundles/*.css) from the
+// Vite manifest, as { admin: '/assets/page-admin-….css', … }; null without a
+// build. js/utils/pageStyles.js falls back to the unbundled files.
+export function readPageStyles(distDir) {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(distDir, '.vite', 'manifest.json'), 'utf8'));
+    const styles = {};
+    for (const [source, entry] of Object.entries(manifest)) {
+      const match = source.match(BUNDLE_SOURCE);
+      if (match && entry?.file) styles[match[1]] = `/${entry.file}`;
+    }
+    return Object.keys(styles).length > 0 ? styles : null;
+  } catch {
+    return null;
+  }
+}
+
+export const PAGE_STYLES = SERVE_DIST ? readPageStyles(DIST_DIR) : null;
+
+// A data block, never executed (so the CSP has nothing to say about it).
+export function injectPageStyles(html, styles) {
+  if (!styles) return html;
+  const json = JSON.stringify(styles).replace(/</g, '\\u003c');
+  return html.replace(/<\/head>/i, `  <script type="application/json" id="vanta-page-styles">${json}</script>\n</head>`);
+}

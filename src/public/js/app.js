@@ -7,31 +7,31 @@ import { registerServiceWorker } from './utils/service-worker.js';
 import { initDetailPrefetch } from './utils/prefetch.js';
 
 // Define routing mappings using dynamic ES modules imports
-router.add('#/login', () => import('./pages/login.page.js'), { guestOnly: true });
+router.add('#/login', () => import('./pages/login.page.js'), { styles: ['login'], guestOnly: true });
 router.add('#/home', () => import('./pages/home.page.js'), { requiresAuth: true });
 router.add('#/movies', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie' } });
 router.add('#/series', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Series' } });
-router.add('#/scroller', () => import('./pages/trailer-scroller.page.js'), { requiresAuth: true });
+router.add('#/scroller', () => import('./pages/trailer-scroller.page.js'), { styles: ['trailer-scroller'], requiresAuth: true });
 router.add('#/genre/:type/:genreName', () => import('./pages/library.page.js'), { requiresAuth: true });
-router.add('#/publishers', () => import('./pages/publishers.page.js'), { requiresAuth: true });
+router.add('#/publishers', () => import('./pages/publishers.page.js'), { styles: ['publishers'], requiresAuth: true });
 router.add('#/publisher-group/:publisherId', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie,Series' } });
 router.add('#/publisher/:studioName', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie,Series' } });
 router.add('#/search', () => import('./pages/search.page.js'), { requiresAuth: true });
-router.add('#/requests', () => import('./pages/requests.page.js'), { requiresAuth: true });
-router.add('#/requests/new', () => import('./pages/requests.page.js'), { requiresAuth: true, defaultParams: { view: 'new' } });
-router.add('#/requests/mine', () => import('./pages/requests.page.js'), { requiresAuth: true, defaultParams: { view: 'list' } });
-router.add('#/report', () => import('./pages/report.page.js'), { requiresAuth: true });
-router.add('#/report/mine', () => import('./pages/report.page.js'), { requiresAuth: true, defaultParams: { view: 'mine' } });
-router.add('#/request-detail/:type/:id', () => import('./pages/request-detail.page.js'), { requiresAuth: true });
-router.add('#/admin', () => import('./pages/admin.page.js'), { requiresAuth: true });
-router.add('#/admin/requests', () => import('./pages/admin.page.js'), { requiresAuth: true, defaultParams: { section: 'requests' } });
-router.add('#/admin/users', () => import('./pages/admin.page.js'), { requiresAuth: true, defaultParams: { section: 'users' } });
-router.add('#/admin/settings', () => import('./pages/admin.page.js'), { requiresAuth: true, defaultParams: { section: 'settings' } });
+router.add('#/requests', () => import('./pages/requests.page.js'), { styles: ['requests'], requiresAuth: true });
+router.add('#/requests/new', () => import('./pages/requests.page.js'), { styles: ['requests'], requiresAuth: true, defaultParams: { view: 'new' } });
+router.add('#/requests/mine', () => import('./pages/requests.page.js'), { styles: ['requests'], requiresAuth: true, defaultParams: { view: 'list' } });
+router.add('#/report', () => import('./pages/report.page.js'), { styles: ['requests'], requiresAuth: true });
+router.add('#/report/mine', () => import('./pages/report.page.js'), { styles: ['requests'], requiresAuth: true, defaultParams: { view: 'mine' } });
+router.add('#/request-detail/:type/:id', () => import('./pages/request-detail.page.js'), { styles: ['requests'], requiresAuth: true });
+router.add('#/admin', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true });
+router.add('#/admin/requests', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'requests' } });
+router.add('#/admin/users', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'users' } });
+router.add('#/admin/settings', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'settings' } });
 router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth: true });
-router.add('#/profile', () => import('./pages/profile.page.js'), { requiresAuth: true });
-router.add('#/favorites', () => import('./pages/profile.page.js'), { requiresAuth: true, defaultParams: { initialTab: 'favorites' } });
-router.add('#/player/:id', () => import('./pages/player.page.js'), { requiresAuth: true });
-router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js'), { requiresAuth: true });
+router.add('#/profile', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true });
+router.add('#/favorites', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true, defaultParams: { initialTab: 'favorites' } });
+router.add('#/player/:id', () => import('./pages/player.page.js'), { styles: ['player'], requiresAuth: true });
+router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js'), { styles: ['watch-party', 'player'], requiresAuth: true });
 
 // Initialise client router on page load
 document.addEventListener('DOMContentLoaded', () => {

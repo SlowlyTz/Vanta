@@ -49,3 +49,27 @@ describe('injectBuildMeta', () => {
     expect(injectBuildMeta('<head></head>', null)).toBe('<head></head>');
   });
 });
+
+describe('page style bundles', () => {
+  it('reads the hashed bundle files from the Vite manifest and writes them into the page', async () => {
+    const { readPageStyles, injectPageStyles } = await import('../../../src/server/config/build.js');
+    const dist = fs.mkdtempSync(path.join(os.tmpdir(), 'vanta-dist-'));
+    fs.mkdirSync(path.join(dist, '.vite'));
+    fs.writeFileSync(path.join(dist, '.vite', 'manifest.json'), JSON.stringify({
+      'index.html': { file: 'assets/index-1.js', isEntry: true },
+      'css/bundles/admin.css': { file: 'assets/page-admin-AbC.css', isEntry: true },
+      'css/bundles/player.css': { file: 'assets/page-player-XyZ.css', isEntry: true }
+    }));
+
+    const styles = readPageStyles(dist);
+    expect(styles).toEqual({ admin: '/assets/page-admin-AbC.css', player: '/assets/page-player-XyZ.css' });
+
+    const html = injectPageStyles('<html><head><title>x</title></head><body></body></html>', styles);
+    const block = html.match(/<script type="application\/json" id="vanta-page-styles">(.*)<\/script>\n<\/head>/);
+    expect(JSON.parse(block[1])).toEqual(styles);
+
+    expect(readPageStyles(path.join(dist, 'missing'))).toBeNull();
+    expect(injectPageStyles('<head></head>', null)).toBe('<head></head>');
+    fs.rmSync(dist, { recursive: true, force: true });
+  });
+});

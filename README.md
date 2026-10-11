@@ -59,6 +59,8 @@ npm start
 
 `npm run build` builds the player, the opening scene, the watch-party countdown and the web app itself; the last step bundles `src/public/` with Vite into `dist/` (not committed). In production the server refuses to start without `dist/index.html`.
 
+Only the styles every page needs are linked from `index.html`. Each area with styles of its own (login, admin, requests and reports, profile, publishers, trailer scroller, watch party, player) has a bundle in `src/public/css/bundles/` that the router loads with the page and waits for before showing it (`js/utils/pageStyles.js`, route option `styles`). The build turns every bundle into one hashed file; the server reads them from `dist/.vite/manifest.json` and names them in `index.html`. The player's own stylesheet (`/vendor/player/vanta-player.css`) comes with the player bundle.
+
 VANTA runs at `http://localhost:3000` by default.
 
 ## Development
