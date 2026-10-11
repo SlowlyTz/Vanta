@@ -1,3 +1,5 @@
+import { clearUserCaches } from './service-worker.js';
+
 // A message for the login page from a session that ended on the server's
 // side (a ban): whoever learns about it first (an API response or the app
 // socket) leaves it here, and the login page shows it once.
@@ -27,7 +29,10 @@ export function takeSessionNotice() {
 // The server ended this session: drop the user and go to the login, where
 // the notice (if any) is waiting.
 export function endClientSession(notice = null) {
-  if (notice) storeSessionNotice(notice);
+  if (notice) {
+    storeSessionNotice(notice);
+    clearUserCaches();
+  }
   window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
   if (window.location.hash !== '#/login') {
     window.location.hash = '#/login';

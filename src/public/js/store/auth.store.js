@@ -1,5 +1,6 @@
 import { AuthApi } from '../api/auth.api.js';
 import { Store } from './store.js';
+import { clearUserCaches } from '../utils/service-worker.js';
 
 class AuthStore extends Store {
   constructor() {
@@ -44,6 +45,7 @@ class AuthStore extends Store {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      clearUserCaches();
       this.user = null;
       this.notify();
       window.location.hash = '#/login';
