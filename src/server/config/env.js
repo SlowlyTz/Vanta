@@ -47,4 +47,9 @@ export default {
   TMDB_API_KEY,
   // Optional: where resized poster/backdrop renditions are stored (default cache/images).
   IMAGE_CACHE_DIR: process.env.IMAGE_CACHE_DIR || '',
+  // Optional: upper limit of that directory in MB (default 2048); the least
+  // recently used renditions are deleted beyond it.
+  IMAGE_CACHE_MAX_BYTES: Number.parseInt(process.env.IMAGE_CACHE_MAX_MB || '', 10) > 0
+    ? Number.parseInt(process.env.IMAGE_CACHE_MAX_MB, 10) * 1024 * 1024
+    : null,
 };

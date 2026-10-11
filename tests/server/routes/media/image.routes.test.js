@@ -19,6 +19,17 @@ vi.mock('../../../../src/server/services/images/image-cache.js', () => ({
   getImageCache: () => cache
 }));
 
+const access = { canSee: vi.fn(async () => true) };
+
+vi.mock('../../../../src/server/services/images/image-access.js', () => ({
+  getImageAccess: () => access
+}));
+
+vi.mock('../../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  UserBanService: { getBan: vi.fn(() => null) }
+}));
+
 import imageRoutes from '../../../../src/server/routes/media/image.routes.js';
 import { ImagesService } from '../../../../src/server/services/jellyfin/images.service.js';
 
@@ -51,6 +62,18 @@ describe('GET /image/:id', () => {
     cache.isAvailable.mockReturnValue(true);
     cache.resolveWidth.mockReturnValue(400);
     cache.createReadStream.mockImplementation(() => Readable.from([WEBP]));
+    access.canSee.mockResolvedValue(true);
+  });
+
+  it('serves a placeholder and never touches the cache for an item the user may not see', async () => {
+    access.canSee.mockResolvedValue(false);
+
+    const res = await request(createApp()).get('/image/abc?type=Primary&tag=t1');
+
+    expect(access.canSee).toHaveBeenCalledWith({ userId: 'u1', token: 'tok', itemId: 'abc' });
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/image\/svg\+xml/);
+    expect(cache.getImage).not.toHaveBeenCalled();
   });
 
   it('rejects requests without a session', async () => {
@@ -65,7 +88,7 @@ describe('GET /image/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('image/webp');
-    expect(res.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+    expect(res.headers['cache-control']).toBe('private, max-age=31536000, immutable');
     expect(res.headers['etag']).toBe('"abc/Primary-t1-400.webp"');
     expect(res.headers['content-length']).toBe(String(WEBP.length));
     expect(Buffer.from(res.body).equals(WEBP)).toBe(true);
@@ -79,7 +102,7 @@ describe('GET /image/:id', () => {
     const res = await request(createApp()).get('/image/abc?maxWidth=400');
 
     expect(res.status).toBe(200);
-    expect(res.headers['cache-control']).toBe('public, max-age=3600');
+    expect(res.headers['cache-control']).toBe('private, max-age=3600');
     expect(cache.getImage).toHaveBeenCalledWith(expect.objectContaining({ type: 'Primary', tag: undefined }));
   });
 
@@ -130,7 +153,7 @@ describe('GET /image/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('image/jpeg');
-    expect(res.headers['cache-control']).toBe('public, max-age=86400');
+    expect(res.headers['cache-control']).toBe('private, max-age=86400');
     expect(res.body.toString()).toBe('jpeg-bytes');
     expect(ImagesService.fetchImageStream).toHaveBeenCalledWith('abc', 'tok', 'Primary', {
       tag: 't1', width: undefined, height: undefined, maxWidth: '400', maxHeight: undefined, quality: '90'

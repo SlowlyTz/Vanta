@@ -120,6 +120,12 @@ describe('CatalogReader', () => {
     });
   });
 
+  it('names the library of a catalogue title and nothing for unknown ids', () => {
+    expect(reader.libraryOf('m3')).toBe('lib-b');
+    expect(reader.libraryOf('s1')).toBe('lib-s');
+    expect(reader.libraryOf('episode-1')).toBeUndefined();
+  });
+
   describe('all and byProviderId', () => {
     it('returns every visible title, optionally only those with a trailer', () => {
       expect(reader.all()).toHaveLength(5);

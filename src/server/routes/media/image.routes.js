@@ -2,14 +2,17 @@ import express from 'express';
 import { pipeline } from 'stream/promises';
 import { ImagesService } from '../../services/jellyfin/images.service.js';
 import { getImageCache } from '../../services/images/image-cache.js';
+import { getImageAccess } from '../../services/images/image-access.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { pipeReadable, getSvgPlaceholder } from './proxyHelpers.js';
 
 const router = express.Router();
 
-const IMMUTABLE = 'public, max-age=31536000, immutable';
-const SHORT = 'public, max-age=3600';
+// private: which images a user may see depends on their libraries, so no
+// shared cache in between may hand one user's answer to another.
+const IMMUTABLE = 'private, max-age=31536000, immutable';
+const SHORT = 'private, max-age=3600';
 
 const PERSON_PLACEHOLDER = '/assets/person-placeholder.webp';
 
@@ -30,17 +33,23 @@ const matchesEtag = (header, etag) =>
 const proxyThrough = async (req, res, { id, accessToken, type, query }) => {
   const imageResponse = await ImagesService.fetchImageStream(id, accessToken, type, query);
   res.setHeader('Content-Type', imageResponse.headers.get('content-type') || 'image/jpeg');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.setHeader('Cache-Control', 'private, max-age=86400');
   return pipeReadable(imageResponse, req, res);
 };
 
 router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
-  const { accessToken } = req.session;
+  const { accessToken, userId } = req.session;
   const { id } = req.params;
   const { type = 'Primary', tag, width, height, maxWidth, maxHeight, quality, fallback } = req.query;
   const cache = getImageCache();
 
   try {
+    // Cached renditions are shared by everyone; only users with access to the
+    // item's library get them.
+    if (!(await getImageAccess().canSee({ userId, token: accessToken, itemId: id }))) {
+      return sendPlaceholder(res, type, fallback);
+    }
+
     await cache.ready;
     if (!cache.isAvailable()) {
       return proxyThrough(req, res, { id, accessToken, type, query: { tag, width, height, maxWidth, maxHeight, quality } });

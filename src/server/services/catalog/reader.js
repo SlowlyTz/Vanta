@@ -126,6 +126,13 @@ export function createCatalogReader(db) {
       `).all(...params).map(row => ({ Name: row.Name, Id: row.Id, ItemCount: row.count }));
     },
 
+    // The library a movie or series sits in: undefined when the catalogue
+    // does not know the id (episodes, seasons, people), null without one.
+    libraryOf: (itemId) => {
+      const rows = db.prepare('SELECT library_id FROM catalog_items WHERE id = ?').all(String(itemId));
+      return rows.length === 0 ? undefined : (rows[0].library_id ?? null);
+    },
+
     byProviderId: ({ tmdbId = null, imdbId = null, type = null, libraryIds = null }) => {
       const filters = buildWhere({ types: parseTypes(type) || [], libraryIds });
       const clauses = [];

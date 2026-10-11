@@ -175,7 +175,9 @@ Both schedules can be changed under Admin > Einstellungen > Katalog, where a run
 
 Posters, backdrops and logos are resized once on the VANTA server and stored as WebP under `cache/images/` (override with `IMAGE_CACHE_DIR`, relative paths count from the repo root). Each image is kept in a few fixed widths (posters 200/400/800, backdrops 800/1280/1920), so Jellyfin is asked for the original only on the first request and every later request is a plain file read. After each catalogue sync the poster and backdrop of every new or changed title are rendered in the background, so the home page is warm before anyone opens it.
 
-The directory is git-ignored and safe to delete at any time; missing renditions are simply rendered again. For a library of around 480 titles expect a few hundred MB at most. Resizing needs the `sharp` package (installed with `npm install`); if its native binary cannot be loaded, VANTA logs a warning at startup and proxies images straight from Jellyfin as before.
+The directory is git-ignored and safe to delete at any time; missing renditions are simply rendered again. For a library of around 480 titles expect a few hundred MB at most. The cache is capped at 2 GB (`IMAGE_CACHE_MAX_MB`); beyond that the least recently used renditions are deleted down to 90 %.
+
+The renditions are shared by all users, so every request is checked against the user's access first: movies and series through the catalogue and the user's libraries, everything else (seasons, episodes, people) by asking Jellyfin once per user and item (remembered for ten minutes). A title from a library the user cannot see gets the placeholder. Image responses are `Cache-Control: private`. Resizing needs the `sharp` package (installed with `npm install`); if its native binary cannot be loaded, VANTA logs a warning at startup and proxies images straight from Jellyfin as before.
 
 ## Important Notes
 
