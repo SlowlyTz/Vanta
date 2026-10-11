@@ -81,6 +81,16 @@ describe('Library Routes', () => {
       expect(LibraryService.getLibrary).not.toHaveBeenCalled();
     });
 
+    it('serves a restored list of up to 720 titles in one page, no more', async () => {
+      LibraryService.getLibrary.mockResolvedValue({ items: [], totalRecordCount: 0 });
+
+      await request(createApp()).get('/library?type=Movie&page=1&limit=108');
+      expect(LibraryService.getLibrary).toHaveBeenLastCalledWith('test-user', 'test-token', 'Movie', undefined, undefined, 1, 108);
+
+      await request(createApp()).get('/library?type=Movie&page=1&limit=5000');
+      expect(LibraryService.getLibrary).toHaveBeenLastCalledWith('test-user', 'test-token', 'Movie', undefined, undefined, 1, 720);
+    });
+
     it('rejects requests that combine studio and publisher', async () => {
       const res = await request(createApp()).get('/library?type=Movie&studio=Warner%20Bros&publisher=warner-bros');
 

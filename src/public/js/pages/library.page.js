@@ -58,15 +58,18 @@ export default function LibraryPage(params, pageScope) {
     createElement('div', { className: 'library-content' }, PageHeading({ title: pageTitle }), bodySlot)
   );
 
-  const fetchPage = (page) => {
-    return MediaApi.getLibrary(type, genre, studio, page, BATCH_SIZE, { publisherId, signal: scope.signal });
+  const fetchPage = (page, limit = BATCH_SIZE) => {
+    return MediaApi.getLibrary(type, genre, studio, page, limit, { publisherId, signal: scope.signal });
   };
 
+  // One insertion per batch, however many cards it brings.
   const appendItems = (items) => {
+    const fragment = document.createDocumentFragment();
     items.forEach(item => {
       const cardEl = MediaCard({ item, landscape: false, sourceType: 'library' });
-      if (cardEl) grid.appendChild(cardEl);
+      if (cardEl) fragment.appendChild(cardEl);
     });
+    grid.appendChild(fragment);
   };
 
   const hasMore = () => loadedPages < totalPages;
@@ -154,7 +157,8 @@ export default function LibraryPage(params, pageScope) {
   };
 
   // First load: everything that was on screen before a detail visit comes
-  // back in one go, otherwise just the first batch.
+  // back in one request (the catalogue is local, so one big page is cheap),
+  // otherwise just the first batch.
   const loadInitial = async () => {
     const restoreTarget = pendingRestore;
     pendingRestore = null;
@@ -166,16 +170,13 @@ export default function LibraryPage(params, pageScope) {
     loading = true;
 
     try {
-      const results = await Promise.all(
-        Array.from({ length: pagesWanted }, (_, index) => fetchPage(index + 1))
-      );
-      const last = results[results.length - 1];
-      totalItems = last.totalItems;
-      totalPages = last.totalPages;
+      const result = await fetchPage(1, pagesWanted * BATCH_SIZE);
+      totalItems = result.totalItems;
+      totalPages = Math.ceil(totalItems / BATCH_SIZE);
       loadedPages = Math.min(pagesWanted, totalPages);
 
       bodySlot.innerHTML = '';
-      const items = results.flatMap(result => result.items);
+      const items = result.items || [];
       if (items.length === 0) {
         renderEmpty();
         return;

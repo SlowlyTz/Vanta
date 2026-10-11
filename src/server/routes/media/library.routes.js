@@ -5,6 +5,10 @@ import { PlaybackApiService } from '../../services/jellyfin/playback-api.service
 import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
+
+// A list restored after a detail visit asks for everything it showed at once:
+// up to 20 batches of 36 cards.
+export const MAX_LIBRARY_LIMIT = 720;
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 
 const router = express.Router();
@@ -128,7 +132,7 @@ router.get('/library', requireAuth, asyncHandler(async (req, res) => {
   }
 
   const pageNum = Math.max(1, parseInt(page) || 1);
-  const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 50));
+  const limitNum = Math.max(1, Math.min(MAX_LIBRARY_LIMIT, parseInt(limit) || 50));
 
   try {
     const result = publisher

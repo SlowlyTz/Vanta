@@ -11,10 +11,10 @@ function makeItem(id) {
   return { Id: String(id), Name: `Movie ${id}`, Type: 'Movie', ProductionYear: 2020 };
 }
 
-const batch = (page, total) => ({
-  items: Array.from({ length: Math.max(0, Math.min(36, total - (page - 1) * 36)) }, (_, i) => makeItem((page - 1) * 36 + i + 1)),
+const batch = (page, total, limit = 36) => ({
+  items: Array.from({ length: Math.max(0, Math.min(limit, total - (page - 1) * limit)) }, (_, i) => makeItem((page - 1) * limit + i + 1)),
   totalItems: total,
-  totalPages: Math.ceil(total / 36)
+  totalPages: Math.ceil(total / limit)
 });
 
 async function flush() {
@@ -103,13 +103,15 @@ describe('LibraryPage', () => {
   it('remembers how many batches were shown and reloads them when returning from a detail page', async () => {
     saveRouteState('#/movies', { pages: 3 });
     markReturnFromDetail({ scrollY: 640, itemId: '80' });
-    MediaApi.getLibrary.mockImplementation((type, genre, studio, page) => Promise.resolve(batch(page, 200)));
+    MediaApi.getLibrary.mockImplementation((type, genre, studio, page, limit) => Promise.resolve(batch(page, 200, limit)));
 
     const container = LibraryPage({ type: 'Movie' });
     document.body.appendChild(container);
     await flush();
 
-    expect(MediaApi.getLibrary).toHaveBeenCalledTimes(3);
+    // One request for all three batches instead of three in parallel.
+    expect(MediaApi.getLibrary).toHaveBeenCalledTimes(1);
+    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie', null, null, 1, 108, withSignal());
     expect(container.querySelectorAll('.media-card')).toHaveLength(108);
     expect(window.scrollTo).not.toHaveBeenCalled();
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: 'center' });
