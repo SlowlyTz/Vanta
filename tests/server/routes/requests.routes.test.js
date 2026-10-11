@@ -353,12 +353,33 @@ describe('Requests Routes', () => {
       expect(res.status).toBe(400);
     });
 
-    // Deliberately public; this must not start requiring a session.
-    it('answers without a session', async () => {
+    // Every lookup spends the server's TMDB key, so it needs a session.
+    it('refuses a request without a session', async () => {
       const res = await request(createApp({ authenticated: false })).get('/details?tmdbId=70523&tmdbType=tv');
+
+      expect(res.status).toBe(401);
+      expect(TmdbService.getTvDetails).not.toHaveBeenCalled();
+    });
+
+    it('answers with the ban and request state', async () => {
+      const res = await request(createApp()).get('/details?tmdbId=70523&tmdbType=tv');
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ id: 70523, banned: false, bannedInfo: null, requested: false });
+    });
+
+    it.each([
+      ['abc', 'tv'],
+      ['-5', 'tv'],
+      ['0', 'movie'],
+      ['12abc', 'movie'],
+      ['42', 'person']
+    ])('rejects tmdbId=%s tmdbType=%s', async (tmdbId, tmdbType) => {
+      const res = await request(createApp()).get(`/details?tmdbId=${tmdbId}&tmdbType=${tmdbType}`);
+
+      expect(res.status).toBe(400);
+      expect(TmdbService.getTvDetails).not.toHaveBeenCalled();
+      expect(TmdbService.getMovieDetails).not.toHaveBeenCalled();
     });
 
     it('does not attach any Jellyfin or season data', async () => {

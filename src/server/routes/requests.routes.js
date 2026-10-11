@@ -69,20 +69,29 @@ router.get('/search', requireAuth, asyncHandler(async (req, res) => {
   res.json(enriched);
 }));
 
-// Get TMDB details
-router.get('/details', asyncHandler(async (req, res) => {
-  const { tmdbId, tmdbType } = req.query;
-  if (!tmdbId || !tmdbType) return res.status(400).json({ error: 'tmdbId and tmdbType required' });
+// A TMDB title as the client names it: a positive id and movie or tv.
+const parseTmdbTarget = (tmdbId, tmdbType) => {
+  const id = toScopeInteger(tmdbId);
+  if (id === null || id <= 0 || (tmdbType !== 'movie' && tmdbType !== 'tv')) return null;
+  return { id, type: tmdbType };
+};
 
-  const details = tmdbType === 'tv'
-    ? await TmdbService.getTvDetails(parseInt(tmdbId))
-    : await TmdbService.getMovieDetails(parseInt(tmdbId));
+const TARGET_ERROR = 'tmdbId and tmdbType (movie or tv) required';
+
+// Get TMDB details
+router.get('/details', requireAuth, asyncHandler(async (req, res) => {
+  const target = parseTmdbTarget(req.query.tmdbId, req.query.tmdbType);
+  if (!target) return res.status(400).json({ error: TARGET_ERROR });
+
+  const details = target.type === 'tv'
+    ? await TmdbService.getTvDetails(target.id)
+    : await TmdbService.getMovieDetails(target.id);
 
   res.json({
     ...details,
-    banned: RequestsService.isBanned(parseInt(tmdbId), tmdbType),
-    bannedInfo: RequestsService.getBannedMedia(parseInt(tmdbId), tmdbType),
-    requested: await RequestsService.isWholeTitleRequested(parseInt(tmdbId), tmdbType)
+    banned: RequestsService.isBanned(target.id, target.type),
+    bannedInfo: RequestsService.getBannedMedia(target.id, target.type),
+    requested: await RequestsService.isWholeTitleRequested(target.id, target.type)
   });
 }));
 
@@ -112,14 +121,13 @@ router.get('/season', requireAuth, asyncHandler(async (req, res) => {
 
 // Cross-check with Jellyfin library
 router.post('/cross-check', requireAuth, asyncHandler(async (req, res) => {
-  const { tmdbId, tmdbType } = req.body;
-  if (!tmdbId || !tmdbType) return res.status(400).json({ error: 'tmdbId and tmdbType required' });
+  const target = parseTmdbTarget(req.body?.tmdbId, req.body?.tmdbType);
+  if (!target) return res.status(400).json({ error: TARGET_ERROR });
 
   const { userId, accessToken } = req.session;
-  const id = parseInt(tmdbId);
   const [result, requestedScopes] = await Promise.all([
-    RequestsService.crossCheck(userId, accessToken, id, tmdbType),
-    RequestsService.getOpenScopes(id, tmdbType)
+    RequestsService.crossCheck(userId, accessToken, target.id, target.type),
+    RequestsService.getOpenScopes(target.id, target.type)
   ]);
   res.json({ ...result, requestedScopes });
 }));
@@ -127,7 +135,7 @@ router.post('/cross-check', requireAuth, asyncHandler(async (req, res) => {
 // Create request (requires auth)
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const { tmdbId, tmdbType, note, scope, seasonNumber, episodeNumber } = req.body;
-  if (!tmdbId || !tmdbType) return res.status(400).json({ error: 'tmdbId and tmdbType required' });
+  if (!parseTmdbTarget(tmdbId, tmdbType)) return res.status(400).json({ error: TARGET_ERROR });
 
   const selection = normalizeScopeSelection({ scope, tmdbType, seasonNumber, episodeNumber });
   if (selection.error) return res.status(400).json({ error: selection.error });
