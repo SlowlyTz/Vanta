@@ -28,11 +28,14 @@ vi.mock('fs', () => {
     default: {
       existsSync: vi.fn((path) => (isBannedFile(path) ? fsState.banned !== null : true)),
       readFileSync: vi.fn(() => fsState.banned),
-      writeFileSync: vi.fn((path, data) => { fsState.banned = data; }),
       mkdirSync: vi.fn()
     }
   };
 });
+
+vi.mock('../../../src/server/utils/atomicWrite.js', () => ({
+  writeFileAtomicSync: vi.fn((path, data) => { fsState.banned = data; })
+}));
 
 // Reads the status predicate out of the statement instead of restating it, so a
 // change to the WHERE clause is visible in the test outcomes.
@@ -93,6 +96,7 @@ vi.mock('../../../src/server/services/jellyfin-crosscheck.service.js', () => ({
 }));
 
 import fs from 'fs';
+import { writeFileAtomicSync } from '../../../src/server/utils/atomicWrite.js';
 import { TmdbService } from '../../../src/server/services/tmdb.service.js';
 import { JellyfinCrossCheck } from '../../../src/server/services/jellyfin-crosscheck.service.js';
 import { RequestsService } from '../../../src/server/services/requests.service.js';
@@ -321,8 +325,8 @@ describe('RequestsService.reject', () => {
     dbState.cachedMedia = { first_air_date: '2017-12-01' };
     await rejectRequest({ id: 9, tmdb_id: 70523, tmdb_type: 'tv', title: 'Dark', request_scope: 'all', seasons: null });
 
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(fs.writeFileSync.mock.calls[0][1]).series).toContainEqual({
+    expect(writeFileAtomicSync).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(writeFileAtomicSync.mock.calls[0][1]).series).toContainEqual({
       name: 'Dark', releaseYear: '2017', tmdbId: 70523
     });
     expect(dbState.statusUpdates[0][0]).toBe('rejected');
@@ -331,7 +335,7 @@ describe('RequestsService.reject', () => {
   it('bans a title whose row predates the migration', async () => {
     await rejectRequest({ id: 9, tmdb_id: 1399, tmdb_type: 'tv', title: 'Game of Thrones', seasons: null });
 
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+    expect(writeFileAtomicSync).toHaveBeenCalledTimes(1);
   });
 
   it('never bans the title when a season request is rejected', async () => {
@@ -340,7 +344,7 @@ describe('RequestsService.reject', () => {
       request_scope: 'season', season_number: 2, seasons: null
     });
 
-    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    expect(writeFileAtomicSync).not.toHaveBeenCalled();
     expect(dbState.statusUpdates[0][0]).toBe('rejected');
   });
 
@@ -350,7 +354,7 @@ describe('RequestsService.reject', () => {
       request_scope: 'episode', season_number: 2, episode_number: 5, seasons: null
     });
 
-    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    expect(writeFileAtomicSync).not.toHaveBeenCalled();
   });
 
   it('throws 404 for an unknown request', async () => {

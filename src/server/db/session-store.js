@@ -3,6 +3,7 @@ import initSqlJs from 'sql.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
@@ -86,8 +87,7 @@ export class SqliteSessionStore extends session.Store {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
-    fs.mkdirSync(dirname(this.file), { recursive: true });
-    fs.writeFileSync(this.file, Buffer.from(this.db.export()));
+    writeFileAtomicSync(this.file, Buffer.from(this.db.export()));
   }
 
   get(sid, callback) {

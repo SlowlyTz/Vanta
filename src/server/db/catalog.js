@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
@@ -105,8 +106,7 @@ export function createCatalogDb({ SQL, file = null, bytes = null }) {
 
   const persist = () => {
     if (!file) return;
-    fs.mkdirSync(dirname(file), { recursive: true });
-    fs.writeFileSync(file, Buffer.from(sqlite.export()));
+    writeFileAtomicSync(file, Buffer.from(sqlite.export()));
   };
 
   // Runs `fn` inside one SQLite transaction and persists only on success, so a

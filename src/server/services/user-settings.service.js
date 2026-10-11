@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -30,13 +31,7 @@ export function createUserSettingsService({ dbDir = DEFAULT_USER_DB_DIR } = {}) 
   }
 
   function writeSettings(settings) {
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
-
-    const tmpFile = `${settingsFile}.tmp`;
-    fs.writeFileSync(tmpFile, `${JSON.stringify(settings, null, 2)}\n`, 'utf8');
-    fs.renameSync(tmpFile, settingsFile);
+    writeFileAtomicSync(settingsFile, `${JSON.stringify(settings, null, 2)}\n`, { encoding: 'utf8' });
   }
 
   return {

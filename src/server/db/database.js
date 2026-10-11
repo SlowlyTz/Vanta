@@ -3,6 +3,7 @@ import { migrateRequestsTable } from './migrations.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
@@ -17,8 +18,37 @@ const sqlite = fs.existsSync(DB_FILE)
   ? new SQL.Database(fs.readFileSync(DB_FILE))
   : new SQL.Database();
 
+// sql.js keeps the database in memory; every write serialises all of it to
+// disk. Writes are collected for a moment so a burst (a TMDB cache fill, a
+// request with its media row) costs one export, and flush() writes at once
+// for shutdown.
+const PERSIST_DELAY_MS = 250;
+let persistTimer = null;
+let dirty = false;
+
+const flush = () => {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  if (!dirty) return;
+  dirty = false;
+  writeFileAtomicSync(DB_FILE, Buffer.from(sqlite.export()));
+};
+
 const persist = () => {
-  fs.writeFileSync(DB_FILE, Buffer.from(sqlite.export()));
+  dirty = true;
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    try {
+      flush();
+    } catch (error) {
+      dirty = true;
+      console.error('[Database] could not write requests.db:', error.message);
+    }
+  }, PERSIST_DELAY_MS);
+  persistTimer.unref?.();
 };
 
 const normalizeParams = (params) => {
@@ -77,8 +107,10 @@ const db = {
     return createStatement(sql);
   },
 
+  flush,
+
   close() {
-    persist();
+    flush();
     sqlite.close();
   }
 };
@@ -172,5 +204,9 @@ db.exec(`
     updated_at TEXT NOT NULL
   );
 `);
+
+flush();
+
+export const flushDatabase = flush;
 
 export default db;

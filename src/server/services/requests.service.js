@@ -3,6 +3,7 @@ import { TmdbService } from './tmdb.service.js';
 import { JellyfinCrossCheck } from './jellyfin-crosscheck.service.js';
 import { normalizeScopeSelection, toScopeInteger } from './request-scope.js';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -58,11 +59,7 @@ const readBannedList = () => {
 };
 
 const writeBannedList = (list) => {
-  if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
-  }
-
-  fs.writeFileSync(BANNED_FILE, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  writeFileAtomicSync(BANNED_FILE, `${JSON.stringify(list, null, 2)}\n`, { encoding: 'utf8' });
   bannedListCache = null;
 };
 

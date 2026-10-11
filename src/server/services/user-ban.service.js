@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -23,13 +24,7 @@ export function createUserBanService({ dbDir = DEFAULT_USER_DB_DIR } = {}) {
   }
 
   function writeBannedList(list) {
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
-
-    const tmpFile = `${bannedFile}.tmp`;
-    fs.writeFileSync(tmpFile, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
-    fs.renameSync(tmpFile, bannedFile);
+    writeFileAtomicSync(bannedFile, `${JSON.stringify(list, null, 2)}\n`, { encoding: 'utf8' });
   }
 
   return {
