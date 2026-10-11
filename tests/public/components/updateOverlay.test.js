@@ -63,3 +63,38 @@ describe('mountUpdateOverlay', () => {
     expect(fetchImpl).toHaveBeenCalledWith(expect.any(String), { cache: 'reload' });
   });
 });
+
+describe('mountUpdateOverlay versions', () => {
+  let unmount = () => {};
+  afterEach(() => unmount());
+
+  const overlay = () => document.querySelector('.update-overlay');
+  const versionsLine = () => overlay().querySelector('.update-versions');
+
+  it('names the step from this tab\'s release to the server\'s', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ build: 'build-b', version: '1.02' }) });
+    unmount = mountUpdateOverlay({ clientBuild: 'build-a', clientVersion: '1.01', fetchImpl });
+    await vi.waitFor(() => expect(overlay().hidden).toBe(false));
+    expect(versionsLine().hidden).toBe(false);
+    expect(versionsLine().textContent).toBe('1.01→1.02');
+  });
+
+  it('asks for the version when only the build header reported the change', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ build: 'build-a', version: '1.01' }) });
+    unmount = mountUpdateOverlay({ clientBuild: 'build-a', clientVersion: '1.01', fetchImpl });
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+
+    fetchImpl.mockResolvedValue({ ok: true, json: async () => ({ build: 'build-b', version: '1.1' }) });
+    reportServerBuild('build-b');
+    expect(overlay().hidden).toBe(false);
+    await vi.waitFor(() => expect(versionsLine().textContent).toBe('1.01→1.1'));
+  });
+
+  it('shows no arrow for a new build of the same release', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ build: 'build-a' }) });
+    unmount = mountUpdateOverlay({ clientBuild: 'build-a', clientVersion: '1.01', fetchImpl });
+    reportServerBuild('build-b', '1.01');
+    expect(overlay().hidden).toBe(false);
+    expect(versionsLine().hidden).toBe(true);
+  });
+});

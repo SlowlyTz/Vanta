@@ -89,6 +89,12 @@ Run tests:
 npm test
 ```
 
+### Versioning
+
+Every release has a number like `1.01`: the part after the dot counts up per release branch (`1.01`, `1.02`, …) until the next minor release (`1.1`). The number lives in `src/public/js/shared/version.js` (`APP_VERSION`); `package.json` carries the same number as semver (`1.01` is `1.0.1`, `1.1` is `1.1.0`), and a test keeps both in step. Bump both with every release.
+
+Users and admins see the version at the bottom of the settings dialog. The server reports its release from `GET /api/version` and in `APP_SOCKET_READY`; the update overlay shows the step from the tab's own release to the server's (`1.01 → 1.02`) and leaves the arrow out when only the build changed.
+
 ## How It Works
 
 The browser does not talk to Jellyfin directly. All communication goes through the Express backend:

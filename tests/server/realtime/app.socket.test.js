@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventEmitter } from 'events';
+import { APP_VERSION } from '../../../src/public/js/shared/version.js';
 
 let sessionOverride = null;
 
@@ -90,7 +91,7 @@ describe('AppSocketHub', () => {
     hub.wss.emit('connection', ws, req);
 
     expect(ws.sent).toEqual([
-      expect.objectContaining({ type: 'APP_SOCKET_READY' })
+      expect.objectContaining({ type: 'APP_SOCKET_READY', version: APP_VERSION })
     ]);
     expect(hub.connectionsByUser.get('user-1').has(ws)).toBe(true);
   });

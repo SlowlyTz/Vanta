@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AuthApi } from '../../../../src/public/js/api/auth.api.js';
 import { createSettingsDialog } from '../../../../src/public/js/components/navbar/settingsDialog.js';
+import { APP_VERSION } from '../../../../src/public/js/shared/version.js';
 
 vi.mock('../../../../src/public/js/api/auth.api.js', () => ({
   AuthApi: { getCurrentUser: vi.fn() }
@@ -160,5 +161,12 @@ describe('settingsDialog admin tile navigates to #/admin', () => {
 
     expect(dialog.settingsDialog.querySelector('.settings-panel-admin')).toBeNull();
     expect(dialog.settingsDialog.querySelector('.admin-tools-grid')).toBeNull();
+  });
+});
+
+describe('settingsDialog version', () => {
+  it('shows the app release to every user', () => {
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    expect(dialog.element.querySelector('.settings-version').textContent).toBe(`VANTA · Version ${APP_VERSION}`);
   });
 });

@@ -6,6 +6,7 @@ import { createSettingsProfile, createSettingsOverview } from './settingsOvervie
 import { createPasswordForm } from './settingsPassword.js';
 import { createAdminToolsPanel } from '../admin-tools/AdminToolsPanel.js';
 import { createSettingsStatsLoader } from '../settings/settingsStats.js';
+import { APP_VERSION, formatVersion } from '../../shared/version.js';
 
 export function createSettingsDialog({ onLogout, onChangePassword }) {
   const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
@@ -74,7 +75,8 @@ export function createSettingsDialog({ onLogout, onChangePassword }) {
       createElement('div', { className: 'settings-options' }, profileOption, passwordOption)
     ),
     adminSection,
-    createElement('div', { className: 'settings-logout-section' }, logoutBtn)
+    createElement('div', { className: 'settings-logout-section' }, logoutBtn),
+    createElement('p', { className: 'settings-version' }, `VANTA · ${formatVersion(APP_VERSION)}`)
   );
 
   const passwordPanel = createElement('div', {

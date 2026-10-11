@@ -14,7 +14,7 @@ export function initAppRealtime() {
           // Sent on every (re)connect, so an open tab hears about a deploy as
           // soon as the restarted server takes the socket back.
           if (message?.type === 'APP_SOCKET_READY') {
-            reportServerBuild(message.build);
+            reportServerBuild(message.build, message.version);
             // A reconnect may have missed changes.
             notificationsStore.refresh();
             return;
