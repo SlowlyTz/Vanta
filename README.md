@@ -179,7 +179,7 @@ The directory is git-ignored and safe to delete at any time; missing renditions 
 ## Important Notes
 
 - In production, `SESSION_SECRET` must be set to a long, random value.
-- If VANTA is served behind HTTPS, set `COOKIE_SECURE=true`.
+- If VANTA is served behind HTTPS, set `COOKIE_SECURE=true`. Behind a reverse proxy, `TRUST_PROXY` decides which proxies may pass on the visitor's address and protocol (`X-Forwarded-For`/`-Proto`); the default trusts loopback and private networks, which covers a proxy on the same host or LXC bridge. Set it to `false` when VANTA is reachable directly.
 - `TMDB_API_KEY` and `JELLYFIN_API_KEY` are required; the server will not start without them. Create the Jellyfin key under Dashboard > API Keys.
 - After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date; the same goes for `src/intro/` and `npm run intro:build`, and for `src/countdown/` and `npm run countdown:build`.
 - VANTA is not a full Jellyfin Web replacement. Its focus is a custom, streamlined streaming and media browsing experience.

@@ -21,6 +21,11 @@ import { BUILD_ID, BUILD_HEADER } from './config/build.js';
 
 const app = express();
 
+// Behind nginx every connection comes from the proxy; this makes req.ip the
+// visitor's address (login throttling, logs) and req.secure follow
+// X-Forwarded-Proto, so COOKIE_SECURE=true works behind TLS termination.
+app.set('trust proxy', env.TRUST_PROXY ?? false);
+
 // Security Headers
 app.use(securityHeaders);
 
