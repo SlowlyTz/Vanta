@@ -50,6 +50,7 @@ import { UserBanService } from '../../../../src/server/services/user-ban.service
 import { UserSettingsService } from '../../../../src/server/services/user-settings.service.js';
 import { streamSessionService } from '../../../../src/server/services/stream-session.service.js';
 import { revokeUserAccess } from '../../../../src/server/services/session-revocation.service.js';
+import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
 
 function createApp({ authenticated = true, session = {} } = {}) {
   const app = express();
@@ -77,6 +78,7 @@ function createApp({ authenticated = true, session = {} } = {}) {
 describe('Admin Users Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
     UserBanService.getBan.mockReturnValue(null);
     UserSettingsService.getMaxConcurrentStreams.mockReturnValue(1);

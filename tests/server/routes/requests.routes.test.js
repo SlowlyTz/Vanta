@@ -44,6 +44,7 @@ import { AuthService } from '../../../src/server/services/jellyfin/auth.service.
 import { RequestsService } from '../../../src/server/services/requests.service.js';
 import { TmdbService } from '../../../src/server/services/tmdb.service.js';
 import { sendRequestCreated } from '../../../src/server/services/discord-webhook.service.js';
+import { clearAdminCheckCache } from '../../../src/server/middleware/auth.middleware.js';
 
 const TV_SEASONS = [
   { season_number: 0, name: 'Specials' },
@@ -79,6 +80,7 @@ function createApp({ authenticated = true } = {}) {
 describe('Requests Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
   });
 

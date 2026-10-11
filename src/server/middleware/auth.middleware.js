@@ -37,9 +37,25 @@ export const requireAuth = (req, res, next) => {
   next();
 };
 
+// The admin flag comes from Jellyfin, asked again for each admin request; an
+// admin screen fires several at once, so one answer serves a user for a short
+// while. A demotion in Jellyfin takes effect within that time.
+export const ADMIN_CHECK_TTL_MS = 30 * 1000;
+const adminChecks = new Map(); // userId -> { token, isAdmin, at }
+
+const isAdminCached = async (userId, token, now = Date.now()) => {
+  const cached = adminChecks.get(userId);
+  if (cached && cached.token === token && now - cached.at < ADMIN_CHECK_TTL_MS) return cached.isAdmin;
+  const isAdmin = await AuthService.isUserAdmin(userId, token);
+  adminChecks.set(userId, { token, isAdmin, at: now });
+  return isAdmin;
+};
+
+export const clearAdminCheckCache = () => adminChecks.clear();
+
 export const requireFreshAdmin = async (req, res, next) => {
   try {
-    const isAdmin = await AuthService.isUserAdmin(req.session.userId, req.session.accessToken);
+    const isAdmin = await isAdminCached(req.session.userId, req.session.accessToken);
     req.session.isAdmin = isAdmin;
 
     if (!isAdmin) {

@@ -49,3 +49,27 @@ describe('requireAuth', () => {
     expect(res.headers['set-cookie']?.[0]).toMatch(/^connect\.sid=;/);
   });
 });
+
+describe('requireFreshAdmin', () => {
+  it('asks Jellyfin once per user for a short while and again with another token', async () => {
+    const { AuthService } = await import('../../../src/server/services/jellyfin/auth.service.js');
+    const { requireFreshAdmin, clearAdminCheckCache } = await import('../../../src/server/middleware/auth.middleware.js');
+    clearAdminCheckCache();
+    const spy = vi.spyOn(AuthService, 'isUserAdmin').mockResolvedValue(true);
+
+    const app = express();
+    let token = 't1';
+    app.use((req, res, next) => { req.session = { userId: 'admin', accessToken: token }; next(); });
+    app.get('/admin', requireFreshAdmin, (req, res) => res.json({ ok: true }));
+
+    expect((await request(app).get('/admin')).status).toBe(200);
+    expect((await request(app).get('/admin')).status).toBe(200);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    token = 't2';
+    spy.mockResolvedValue(false);
+    expect((await request(app).get('/admin')).status).toBe(403);
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+});

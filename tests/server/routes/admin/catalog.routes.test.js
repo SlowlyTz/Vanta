@@ -28,6 +28,7 @@ vi.mock('../../../../src/server/services/catalog/index.js', () => ({
 }));
 
 import { AuthService } from '../../../../src/server/services/jellyfin/auth.service.js';
+import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
 
 function createApp({ authenticated = true } = {}) {
   const app = express();
@@ -47,6 +48,7 @@ const PLAN = { started: true, updateIntervalMinutes: 10, fullSyncTime: '03:00', 
 describe('Admin catalog routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
     catalog.sync.getStatus.mockReturnValue(STATUS);
     catalog.sync.isRunning.mockReturnValue(false);

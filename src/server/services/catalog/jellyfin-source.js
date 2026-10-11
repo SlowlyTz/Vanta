@@ -37,7 +37,8 @@ const trimItem = (item) => {
 // every item knows which library it belongs to. That is what per-user library
 // access is later filtered on.
 export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fetchJson = jellyfinJson, pageSize = PAGE_SIZE } = {}) {
-  const request = (path, query = {}) => fetchJson(path, { token: apiKey, query });
+  // Pages of the whole library are big; a sync may wait longer than a page view.
+  const request = (path, query = {}) => fetchJson(path, { token: apiKey, query, timeoutMs: 60 * 1000 });
 
   const listLibraries = async () => {
     const folders = await request('/Library/VirtualFolders');
