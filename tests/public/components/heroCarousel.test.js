@@ -83,4 +83,56 @@ describe('HeroCarousel', () => {
     expect(el.querySelector('.hero-carousel-dots')).toBeNull();
     expect(el.querySelector('.hero-carousel-dot')).toBeNull();
   });
+
+  describe('auto-advance timer', () => {
+    const activeIndex = (el) => Array.from(el.querySelectorAll('.hero-slide-content'))
+      .findIndex(content => content.classList.contains('active'));
+
+    it('stops for good once the page that held it is cleared', () => {
+      vi.useFakeTimers();
+      const page = document.createElement('main');
+      document.body.appendChild(page);
+      const el = HeroCarousel({ items: [makeItem({ Id: 'a' }), makeItem({ Id: 'b' })] });
+      page.appendChild(el);
+
+      vi.advanceTimersByTime(8000);
+      expect(activeIndex(el)).toBe(1);
+
+      page.innerHTML = '';
+      vi.advanceTimersByTime(8000);
+      expect(vi.getTimerCount()).toBe(0);
+      expect(activeIndex(el)).toBe(1);
+      page.remove();
+    });
+
+    it('waits while still detached and starts once attached', () => {
+      vi.useFakeTimers();
+      const el = HeroCarousel({ items: [makeItem({ Id: 'a' }), makeItem({ Id: 'b' })] });
+      vi.advanceTimersByTime(8000);
+      expect(activeIndex(el)).toBe(0);
+      expect(vi.getTimerCount()).toBe(1);
+
+      document.body.appendChild(el);
+      vi.advanceTimersByTime(8000);
+      expect(activeIndex(el)).toBe(1);
+      el.destroyCarousel();
+      el.remove();
+    });
+
+    it('goes on after the pointer leaves again', () => {
+      vi.useFakeTimers();
+      const el = HeroCarousel({ items: [makeItem({ Id: 'a' }), makeItem({ Id: 'b' })] });
+      document.body.appendChild(el);
+
+      el.dispatchEvent(new Event('mouseenter'));
+      vi.advanceTimersByTime(16000);
+      expect(activeIndex(el)).toBe(0);
+
+      el.dispatchEvent(new Event('mouseleave'));
+      vi.advanceTimersByTime(8000);
+      expect(activeIndex(el)).toBe(1);
+      el.destroyCarousel();
+      el.remove();
+    });
+  });
 });

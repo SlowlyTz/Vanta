@@ -129,12 +129,27 @@ export function HeroCarousel({ items = [] }) {
     goToSlide(nextIndex);
   };
 
+  let wasConnected = false;
+
+  // The carousel is built detached and the router later drops the whole page
+  // with innerHTML = '', which no observer on the old parent sees. Each tick
+  // checks instead: once it was on the page and is gone, it stops for good.
   const scheduleNext = () => {
     stopAutoTimer();
     autoTimer = setTimeout(() => {
-      if (!isPaused && !destroyed) {
-        nextSlide();
+      autoTimer = null;
+      if (destroyed) return;
+      if (container.isConnected) {
+        wasConnected = true;
+      } else if (wasConnected) {
+        cleanup();
+        return;
       }
+      if (isPaused || !container.isConnected) {
+        scheduleNext();
+        return;
+      }
+      nextSlide();
     }, SLIDE_INTERVAL);
   };
 
@@ -155,6 +170,7 @@ export function HeroCarousel({ items = [] }) {
 
   container.addEventListener('mouseleave', () => {
     isPaused = false;
+    if (!destroyed && slidesData.length > 1) scheduleNext();
   });
 
   const cleanup = () => {
@@ -162,22 +178,11 @@ export function HeroCarousel({ items = [] }) {
     stopAutoTimer();
   };
 
-  const disconnectObserver = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.removedNodes) {
-        if (node === container || node.contains(container)) {
-          cleanup();
-          disconnectObserver.disconnect();
-          return;
-        }
-      }
-    }
-  });
-  disconnectObserver.observe(container.parentNode || document.body, { childList: true });
-
   if (slidesData.length > 1) {
     scheduleNext();
   }
+
+  container.destroyCarousel = cleanup;
 
   return container;
 }
