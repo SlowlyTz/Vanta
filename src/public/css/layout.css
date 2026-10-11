@@ -21,6 +21,11 @@
   overflow-x: clip;
 }
 
+/* Focus lands here from the skip link; the page is the outline enough. */
+.app-main:focus {
+  outline: none;
+}
+
 .app-main.app-main--edge-top {
   padding-top: 0;
 }

@@ -100,4 +100,18 @@ describe('SearchPage', () => {
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
     expect(container.querySelector('.media-card').dataset.itemId).toBe('2');
   });
+
+  it('labels the search field and announces how the search went', async () => {
+    MediaApi.search.mockResolvedValue([makeItem('1'), makeItem('2')]);
+    window.location.hash = '#/search?q=matrix';
+
+    const container = SearchPage();
+    await flush();
+
+    const input = container.querySelector('.search-input-field');
+    expect(input.type).toBe('search');
+    expect(input.getAttribute('aria-label')).toBe('Filme oder Serien suchen');
+    expect(container.querySelector('[role="search"]').contains(input)).toBe(true);
+    expect(container.querySelector('[role="status"]').textContent).toBe('2 Treffer für „matrix“');
+  });
 });

@@ -1,10 +1,15 @@
 import { createElement } from '../utils/dom.js';
 import { createMetaIcon } from './metaIcons.js';
-import { getItemImageUrl } from '../utils/image.js';
+import { getItemImageUrl, getBackdropUrlFor } from '../utils/image.js';
 import { formatYear, formatTicksToDuration } from '../utils/format.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 
 const SLIDE_INTERVAL = 8000;
+
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
+const PLAY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+
+const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
 function getHeroLogoUrl(item) {
   if (!item?.ImageTags?.Logo) return null;
@@ -19,47 +24,51 @@ function createMetaPill({ className, icon, text }) {
   );
 }
 
+// The rotating banner on the home page. It moves on every eight seconds, but
+// never while the pointer is over it, while focus is inside it, while the tab
+// is hidden, after the pause button, or at all when the system asks for
+// reduced motion. Slides that are not shown are inert, so neither Tab nor a
+// screen reader lands on their buttons, and a backdrop is only loaded once its
+// slide is next.
 export function HeroCarousel({ items = [], pageScope = null }) {
   if (!items || items.length === 0) return null;
 
-  const container = createElement('div', { className: 'home-hero hero-carousel' });
+  const container = createElement('section', {
+    className: 'home-hero hero-carousel',
+    'aria-roledescription': 'Karussell',
+    'aria-label': 'Empfehlungen'
+  });
 
   let currentIndex = 0;
   let autoTimer = null;
-  let isPaused = false;
+  let hovered = false;
+  let focusedInside = false;
+  let pausedByUser = prefersReducedMotion();
   let destroyed = false;
 
-  const backdropsContainer = createElement('div', { className: 'hero-carousel-backdrops' });
+  const backdropsContainer = createElement('div', { className: 'hero-carousel-backdrops', 'aria-hidden': 'true' });
 
   const slidesData = items.map((item, index) => {
-    const backdropUrl = getItemImageUrl(item, 'Backdrop');
-
     const playBtn = createElement('button', {
       className: 'btn-primary',
+      type: 'button',
       onClick: (e) => {
         e.stopPropagation();
         window.location.hash = `#/player/${item.Id}`;
       }
     });
-    playBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg>Abspielen`;
+    playBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Abspielen`;
 
-    const infoBtn = createElement('button', {
+    const infoBtn = createElement('a', {
       className: 'btn-hero-info',
-      type: 'button',
-      'aria-label': `${item.Name} Details öffnen`,
-      onClick: (e) => {
-        e.stopPropagation();
-        window.location.hash = `#/item/${item.Id}`;
-      }
+      href: `#/item/${item.Id}`,
+      'aria-label': `${item.Name} Details öffnen`
     });
-    infoBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 16v-5"></path><path d="M12 8h.01"></path></svg>';
+    infoBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 16v-5"></path><path d="M12 8h.01"></path></svg>';
 
     const backdrop = createElement('div', {
       className: 'hero-slide-backdrop',
-      style: {
-        backgroundImage: `url('${backdropUrl}')`,
-        opacity: index === 0 ? '1' : '0'
-      }
+      style: { opacity: index === 0 ? '1' : '0' }
     });
 
     const logoUrl = getHeroLogoUrl(item);
@@ -76,6 +85,9 @@ export function HeroCarousel({ items = [], pageScope = null }) {
 
     const content = createElement('div', {
       className: `home-hero-content hero-slide-content${index === 0 ? ' active' : ''}`,
+      role: 'group',
+      'aria-roledescription': 'Folie',
+      'aria-label': `${index + 1} von ${items.length}: ${item.Name}`,
       style: {
         opacity: index === 0 ? '1' : '0',
         pointerEvents: index === 0 ? 'auto' : 'none'
@@ -89,23 +101,55 @@ export function HeroCarousel({ items = [], pageScope = null }) {
         infoBtn
       )
     );
+    if (index !== 0) {
+      content.inert = true;
+      content.setAttribute('aria-hidden', 'true');
+    }
 
     backdropsContainer.appendChild(backdrop);
     container.appendChild(content);
 
-    return { backdrop, content, item };
+    return { backdrop, content, item, loaded: false };
   });
+
+  // A backdrop is fetched when its slide is shown or comes next, at the width
+  // this screen needs.
+  const loadBackdrop = (index) => {
+    const slide = slidesData[index];
+    if (!slide || slide.loaded) return;
+    slide.loaded = true;
+    slide.backdrop.style.backgroundImage = `url('${getBackdropUrlFor(slide.item)}')`;
+  };
 
   container.insertBefore(backdropsContainer, container.firstChild);
 
-  const gradientOverlay = createElement('div', { className: 'hero-carousel-gradient' });
+  const gradientOverlay = createElement('div', { className: 'hero-carousel-gradient', 'aria-hidden': 'true' });
   container.insertBefore(gradientOverlay, container.children[1]);
+
+  const pauseButton = createElement('button', {
+    type: 'button',
+    className: 'hero-carousel-pause',
+    onClick: () => {
+      pausedByUser = !pausedByUser;
+      updatePauseButton();
+      scheduleNext();
+    }
+  });
+  const updatePauseButton = () => {
+    pauseButton.innerHTML = pausedByUser ? PLAY_ICON : PAUSE_ICON;
+    pauseButton.setAttribute('aria-label', pausedByUser ? 'Empfehlungen automatisch wechseln' : 'Automatischen Wechsel anhalten');
+    pauseButton.setAttribute('aria-pressed', pausedByUser ? 'true' : 'false');
+  };
+  updatePauseButton();
+  if (slidesData.length > 1) container.appendChild(pauseButton);
 
   const deactivateSlide = (slide) => {
     slide.backdrop.style.opacity = '0';
     slide.content.style.opacity = '0';
     slide.content.style.pointerEvents = 'none';
     slide.content.classList.remove('active');
+    slide.content.inert = true;
+    slide.content.setAttribute('aria-hidden', 'true');
   };
 
   const activateSlide = (slide) => {
@@ -113,30 +157,43 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     slide.content.style.opacity = '1';
     slide.content.style.pointerEvents = 'auto';
     slide.content.classList.add('active');
+    slide.content.inert = false;
+    slide.content.removeAttribute('aria-hidden');
   };
 
   const goToSlide = (index) => {
     if (index === currentIndex || index < 0 || index >= slidesData.length) return;
 
+    loadBackdrop(index);
     deactivateSlide(slidesData[currentIndex]);
     currentIndex = index;
     activateSlide(slidesData[currentIndex]);
+    loadBackdrop((currentIndex + 1) % slidesData.length);
 
-    resetAutoTimer();
+    scheduleNext();
   };
 
   const nextSlide = () => {
-    const nextIndex = (currentIndex + 1) % slidesData.length;
-    goToSlide(nextIndex);
+    goToSlide((currentIndex + 1) % slidesData.length);
+  };
+
+  const isPaused = () => pausedByUser || hovered || focusedInside || document.hidden;
+
+  const stopAutoTimer = () => {
+    if (autoTimer) {
+      clearTimeout(autoTimer);
+      autoTimer = null;
+    }
   };
 
   let wasConnected = false;
 
-  // The carousel is built detached and the router later drops the whole page
-  // with innerHTML = '', which no observer on the old parent sees. Each tick
-  // checks instead: once it was on the page and is gone, it stops for good.
-  const scheduleNext = () => {
+  // The carousel is built detached; its page scope stops it when the page is
+  // left. The connection check is the fallback for a carousel built outside
+  // any page.
+  function scheduleNext() {
     stopAutoTimer();
+    if (destroyed || slidesData.length < 2 || pausedByUser) return;
     autoTimer = setTimeout(() => {
       autoTimer = null;
       if (destroyed) return;
@@ -146,42 +203,48 @@ export function HeroCarousel({ items = [], pageScope = null }) {
         cleanup();
         return;
       }
-      if (isPaused || !container.isConnected) {
+      if (isPaused() || !container.isConnected) {
         scheduleNext();
         return;
       }
       nextSlide();
     }, SLIDE_INTERVAL);
-  };
-
-  const stopAutoTimer = () => {
-    if (autoTimer) {
-      clearTimeout(autoTimer);
-      autoTimer = null;
-    }
-  };
-
-  const resetAutoTimer = () => {
-    scheduleNext();
-  };
+  }
 
   container.addEventListener('mouseenter', () => {
-    isPaused = true;
+    hovered = true;
   });
 
   container.addEventListener('mouseleave', () => {
-    isPaused = false;
-    if (!destroyed && slidesData.length > 1) scheduleNext();
+    hovered = false;
+    scheduleNext();
   });
 
-  const cleanup = () => {
+  container.addEventListener('focusin', () => {
+    focusedInside = true;
+  });
+
+  container.addEventListener('focusout', (event) => {
+    if (container.contains(event.relatedTarget)) return;
+    focusedInside = false;
+    scheduleNext();
+  });
+
+  // Back in the foreground: a full interval before the next slide.
+  const onVisibilityChange = () => {
+    if (!document.hidden) scheduleNext();
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  function cleanup() {
     destroyed = true;
     stopAutoTimer();
-  };
-
-  if (slidesData.length > 1) {
-    scheduleNext();
+    document.removeEventListener('visibilitychange', onVisibilityChange);
   }
+
+  loadBackdrop(0);
+  if (slidesData.length > 1) loadBackdrop(1);
+  scheduleNext();
 
   container.destroyCarousel = cleanup;
   resolvePageScope(pageScope).onLeave(cleanup);

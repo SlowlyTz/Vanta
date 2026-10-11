@@ -102,6 +102,16 @@ export function getItemImageUrl(item, type = 'Primary') {
   return imageUrl(source.id, source.imageType, source.wide ? BACKDROP_WIDTH : POSTER_WIDTH, source.tag);
 }
 
+// The backdrop rendition that fills `cssWidth` CSS pixels on this screen
+// (for CSS backgrounds, which have no srcset).
+export function getBackdropUrlFor(item, cssWidth = window.innerWidth) {
+  const source = item ? resolveImageSource(item, 'Backdrop') : null;
+  if (!source) return getItemImageUrl(item, 'Backdrop');
+  const needed = cssWidth * (window.devicePixelRatio || 1);
+  const width = BACKDROP_WIDTHS.find(step => step >= needed) || BACKDROP_WIDTHS[BACKDROP_WIDTHS.length - 1];
+  return imageUrl(source.id, source.imageType, width, source.tag);
+}
+
 // `src` is exactly what getItemImageUrl returns; `srcset`/`sizes` let the
 // browser pick a smaller or larger cached rendition for the given card layout.
 // Placeholders have no srcset.

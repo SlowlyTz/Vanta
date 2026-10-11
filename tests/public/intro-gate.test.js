@@ -66,6 +66,34 @@ describe('intro-gate', () => {
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '#/player/1' })).toBe(false);
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', online: false })).toBe(false);
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', online: true })).toBe(true);
+    expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', reducedMotion: true })).toBe(false);
+  });
+
+  it('never plays when the system asks for reduced motion', () => {
+    const load = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal('matchMedia', query => ({ matches: query.includes('reduce') }));
+    loadGate({ load });
+    expect(load).not.toHaveBeenCalled();
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('lets a click or any key skip the scene at once', async () => {
+    for (const skip of [overlay => overlay.dispatchEvent(new Event('pointerdown')), () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))]) {
+      const gate = loadGate();
+      const overlay = document.getElementById('intro');
+      let signal;
+      const playIntro = vi.fn((el, options) => { signal = options.signal; return new Promise(resolve => signal.addEventListener('abort', resolve)); });
+
+      const done = gate.start(Promise.resolve({ playIntro }));
+      await Promise.resolve();
+      await Promise.resolve();
+      skip(overlay);
+
+      expect(document.getElementById('intro')).toBeNull();
+      expect(signal.aborted).toBe(true);
+      await done;
+    }
   });
 
   it('starts fetching the scene at decision time, but only when it plays', () => {
@@ -84,7 +112,7 @@ describe('intro-gate', () => {
 
     await gate.start(Promise.resolve({ playIntro }));
 
-    expect(playIntro).toHaveBeenCalledWith(overlay);
+    expect(playIntro).toHaveBeenCalledWith(overlay, { signal: expect.any(AbortSignal) });
     expect(document.getElementById('intro')).toBeNull();
   });
 

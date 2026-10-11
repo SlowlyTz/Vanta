@@ -18,7 +18,9 @@ export default function SearchPage(params, pageScope) {
   const initialQuery = getQueryFromHash();
   const container = createElement('div', { className: 'page-container content-section search-page' });
 
-  const resultsGrid = createElement('div', { className: 'grid-container' });
+  const resultsGrid = createElement('div', { className: 'grid-container', id: 'search-results' });
+  // Tells screen readers how a search went; the grid alone says nothing.
+  const resultCount = createElement('p', { className: 'visually-hidden', role: 'status', 'aria-live': 'polite' });
   const statusContainer = createElement('div', { className: 'search-empty-state' },
     createElement('h3', {}, 'Finde deine Lieblingsinhalte'),
     createElement('p', {}, 'Tippe den Namen eines Films oder einer Serie in das Suchfeld ein.')
@@ -47,6 +49,10 @@ export default function SearchPage(params, pageScope) {
       if (runId !== searchRunId) return;
 
       resultsGrid.innerHTML = '';
+
+      resultCount.textContent = results.length === 0
+        ? `Keine Treffer für „${query}“`
+        : `${results.length} Treffer für „${query}“`;
 
       if (results.length === 0) {
         statusContainer.innerHTML = '';
@@ -90,9 +96,12 @@ export default function SearchPage(params, pageScope) {
   };
 
   const searchInput = createElement('input', {
-    type: 'text',
+    type: 'search',
     className: 'search-input-field',
     placeholder: 'Filme oder Serien suchen...',
+    'aria-label': 'Filme oder Serien suchen',
+    'aria-controls': 'search-results',
+    enterkeyhint: 'search',
     value: initialQuery,
     onInput: handleInput,
     autocomplete: 'off',
@@ -100,7 +109,8 @@ export default function SearchPage(params, pageScope) {
   });
 
   const searchWrapper = createElement('div', { className: 'search-container' },
-    createElement('div', { className: 'search-input-wrapper' }, searchInput),
+    createElement('div', { className: 'search-input-wrapper', role: 'search' }, searchInput),
+    resultCount,
     resultsGrid,
     statusContainer
   );

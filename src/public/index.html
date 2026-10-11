@@ -66,11 +66,14 @@
   <!-- Opening scene cover, see intro-gate.js -->
   <div id="intro" aria-hidden="true"><canvas></canvas></div>
 
+  <!-- Keyboard users can jump past the navigation (visible on focus only). -->
+  <a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+
   <!-- Root Container for dynamic page loading -->
   <div id="app"></div>
 
   <!-- Shared Notification System -->
-  <div id="toast-container"></div>
+  <div id="toast-container" role="status" aria-live="polite"></div>
 
   <!-- Application Entry -->
   <script type="module" src="/js/app.js"></script>

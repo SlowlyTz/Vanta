@@ -92,7 +92,8 @@ export class Router {
 
     this.main = createElement('main', {
       className: 'app-main',
-      id: 'main-content'
+      id: 'main-content',
+      tabindex: '-1'
     });
 
     this.shell = createElement('div', { className: 'app-shell' },

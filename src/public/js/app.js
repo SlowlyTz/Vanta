@@ -33,8 +33,19 @@ router.add('#/favorites', () => import('./pages/profile.page.js'), { styles: ['p
 router.add('#/player/:id', () => import('./pages/player.page.js'), { styles: ['player'], requiresAuth: true });
 router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js'), { styles: ['watch-party', 'player'], requiresAuth: true });
 
+// The skip link must not change the hash (the router would take it for a
+// route); it moves focus to the page itself.
+function bindSkipLink() {
+  document.querySelector('.skip-link')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    const main = document.getElementById('main-content');
+    main?.focus({ preventScroll: false });
+  });
+}
+
 // Initialise client router on page load
 document.addEventListener('DOMContentLoaded', () => {
+  bindSkipLink();
   mountWatchPartyInvitationOverlay();
   mountOfflineOverlay();
   mountUpdateOverlay();
