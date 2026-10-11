@@ -32,7 +32,7 @@
     STORAGE_KEY: STORAGE_KEY,
     MIN_INTERVAL_MS: MIN_INTERVAL_MS,
     shouldPlay: shouldPlay,
-    load: function () { return import('/vendor/intro/vanta-intro.js'); },
+    load: function () { return import('/vendor/scenes/vanta-intro.js'); },
     start: function (loading) {
       var overlay = window.document.getElementById('intro');
       if (!overlay) return Promise.resolve();

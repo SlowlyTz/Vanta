@@ -15,7 +15,7 @@ function loadGate({ hash = '#/home', lastPlayedAt = null, now = 1_000_000_000, l
   // The script kicks off the real import() when it decides to play; keep
   // that from reaching the network by pre-stubbing what it reads.
   window.__introLoad = load || (() => new Promise(() => {}));
-  new Function('window', source.replace("import('/vendor/intro/vanta-intro.js')", 'window.__introLoad()'))(window);
+  new Function('window', source.replace("import('/vendor/scenes/vanta-intro.js')", 'window.__introLoad()'))(window);
   return window.VantaIntroGate;
 }
 

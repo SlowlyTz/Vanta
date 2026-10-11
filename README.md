@@ -36,12 +36,11 @@ COOKIE_SECURE=false
 TMDB_API_KEY=
 ```
 
-Build the player, the opening scene and the watch-party countdown once:
+Build the player and the two three.js scenes (opening scene, watch-party countdown) once:
 
 ```bash
 npm run player:build
-npm run intro:build
-npm run countdown:build
+npm run scenes:build
 ```
 
 Start the development server:
@@ -57,7 +56,7 @@ npm run build
 npm start
 ```
 
-`npm run build` builds the player, the opening scene, the watch-party countdown and the web app itself; the last step bundles `src/public/` with Vite into `dist/` (not committed). In production the server refuses to start without `dist/index.html`.
+`npm run build` builds the player, the two three.js scenes and the web app itself; the last step bundles `src/public/` with Vite into `dist/` (not committed). In production the server refuses to start without `dist/index.html`.
 
 Only the styles every page needs are linked from `index.html`. Each area with styles of its own (login, admin, requests and reports, profile, publishers, trailer scroller, watch party, player) has a bundle in `src/public/css/bundles/` that the router loads with the page and waits for before showing it (`js/utils/pageStyles.js`, route option `styles`). The build turns every bundle into one hashed file; the server reads them from `dist/.vite/manifest.json` and names them in `index.html`. The player's own stylesheet (`/vendor/player/vanta-player.css`) comes with the player bundle.
 
@@ -72,9 +71,9 @@ Which files the server hands out depends on `NODE_ENV`:
 
 In production the server also hashes the client code (`dist/` and `src/public/` without images and fonts) into a build id at startup. It writes that id into `index.html`, sends it as `X-Vanta-Build` with every response, in `APP_SOCKET_READY` and from `GET /api/version`. A tab whose own id differs (checked on open, on every API call, on each app-socket reconnect, when the tab becomes visible and when a page chunk fails to load) gets a blocking „Neue Version verfügbar“ overlay whose „Update“ button reloads past every cache. A server-only change or a plain restart keeps the id, so it never asks anyone to reload for nothing; in development there is no id and no check.
 
-In both modes text responses are gzip/brotli compressed and hashed player chunks under `/vendor/player/` are immutable, while the unhashed entries (`vanta-player.js`, `vanta-intro.js`) are revalidated so a rebuild takes effect at once. Images under `/assets/` are cached for a day.
+In both modes text responses are gzip/brotli compressed and hashed player chunks under `/vendor/player/` are immutable, while the unhashed entries (`vanta-player.js`, `vanta-intro.js`, `vanta-countdown.js`) are revalidated so a rebuild takes effect at once. Images under `/assets/` are cached for a day.
 
-The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; the opening scene from `src/intro/` into `src/public/vendor/intro/`; the watch-party countdown from `src/countdown/` into `src/public/vendor/countdown/`. All three keep fixed paths because the app loads them by URL at runtime, and their outputs are committed. Particle code shared by the two three.js scenes lives in `src/shared/particles/`. DOM-free helpers used by the web app, the player bundle and the server alike (clock format, member colours, party states, episode codes, request scopes, party size) live in `src/public/js/shared/`: the app loads them as they are, the player bundles them and Node imports them directly.
+The player is built separately from `src/player/` and compiled with Vite into `src/public/vendor/player/`; hls.js is a chunk of its own there that only loads when a stream is played as HLS. The opening scene (`src/intro/`) and the watch-party countdown (`src/countdown/`) are built together by `src/scenes.vite.config.js` into `src/public/vendor/scenes/`, so three.js and the particle code in `src/shared/particles/` are one shared chunk (about 530 kB) instead of being bundled into each scene. The entries keep fixed paths because the app loads them by URL at runtime, and the outputs are committed. DOM-free helpers used by the web app, the player bundle and the server alike (clock format, member colours, party states, episode codes, request scopes, party size) live in `src/public/js/shared/`: the app loads them as they are, the player bundles them and Node imports them directly.
 
 The Outfit font is self-hosted: the woff2 files live in `src/public/assets/fonts/`, the `@font-face` rules in `src/public/css/fonts.css`. Nothing is loaded from Google Fonts.
 
@@ -127,7 +126,7 @@ VANTA adds app-level workflows and playback features on top of Jellyfin:
   - **Loading progress**: the loading cover, the seek/buffer spinner and the party's ready button show a real percentage with the time left: buffered seconds plus the bytes of the HLS segment downloading right now, against four seconds of video. Before the first byte it shows Jellyfin's transcoding progress through the segment it needs (`GET /api/media/playback/:id/transcode-progress`, from the session's completion and encoding frame rate), and while Jellyfin reports nothing yet an estimate from earlier load times in this browser, marked „ca.“. The seek spinner stays until playback really moves on.
   - **Stream limit**: switching audio track, quality or to HLS names the session it replaces, so it never counts as a second stream; a real stream-limit error shows a popup and returns home.
 - **Mobile-first player behavior**: the player never demands landscape; its fullscreen button turns a phone's video sideways where the browser allows it (Android) and fills the screen on an iPhone, keeping the VANTA controls instead of falling back to the native iOS video player.
-- **Opening scene**: a three.js particle animation of the VANTA logo covers every page load before anything of the app is visible. It plays at most once per ten minutes per browser (`localStorage` key `vanta.intro.lastPlayedAt`) and is skipped on `#/player/…` and `#/watch-party/…` deep links. Source in `src/intro/`, built to `src/public/vendor/intro/`.
+- **Opening scene**: a three.js particle animation of the VANTA logo covers every page load before anything of the app is visible. It plays at most once per ten minutes per browser (`localStorage` key `vanta.intro.lastPlayedAt`) and is skipped on `#/player/…` and `#/watch-party/…` deep links. Source in `src/intro/`, built to `src/public/vendor/scenes/`.
 - **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata.
 - **Publisher/studio hubs**: curated publisher views for studios and services such as Disney, Warner Bros., Netflix, Apple TV, Prime Video, and HBO.
 - **Admin user tools**: manage Jellyfin users from VANTA, including user details, password changes, library access, local bans, and VANTA-specific stream limits. A ban takes effect at once: the user's sessions end, their Jellyfin tokens are revoked, open apps and watch parties are disconnected, and every tab lands on the login with the reason. Every authenticated request checks the ban list (kept in memory, re-read within a second when `db/user/banned.json` changes).
@@ -192,5 +191,5 @@ The renditions are shared by all users, so every request is checked against the 
 - In production, `SESSION_SECRET` must be set to a long, random value.
 - If VANTA is served behind HTTPS, set `COOKIE_SECURE=true`. Behind a reverse proxy, `TRUST_PROXY` decides which proxies may pass on the visitor's address and protocol (`X-Forwarded-For`/`-Proto`); the default trusts loopback and private networks, which covers a proxy on the same host or LXC bridge. Set it to `false` when VANTA is reachable directly.
 - `TMDB_API_KEY` and `JELLYFIN_API_KEY` are required; the server will not start without them. Create the Jellyfin key under Dashboard > API Keys.
-- After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date; the same goes for `src/intro/` and `npm run intro:build`, and for `src/countdown/` and `npm run countdown:build`.
+- After changing files in `src/player/`, run `npm run player:build` so `src/public/vendor/player/` stays up to date; after changes in `src/intro/`, `src/countdown/` or `src/shared/particles/`, run `npm run scenes:build`.
 - VANTA is not a full Jellyfin Web replacement. Its focus is a custom, streamlined streaming and media browsing experience.

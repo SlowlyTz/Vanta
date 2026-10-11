@@ -1,6 +1,6 @@
 import { formatClock } from '../../shared/time.js';
 
-export const COUNTDOWN_MODULE_URL = '/vendor/countdown/vanta-countdown.js';
+export const COUNTDOWN_MODULE_URL = '/vendor/scenes/vanta-countdown.js';
 export const OWNER_SYNC_INTERVAL_MS = 5000;
 export const AUTO_SYNC_NOTIFICATION_COOLDOWN_MS = 15_000;
 

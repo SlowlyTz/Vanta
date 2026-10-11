@@ -10,9 +10,10 @@
     "refresh": "node scripts/refresh-catalog.js",
     "player:build": "vite build --config src/player/vite.config.js",
     "player:watch": "vite build --watch --config src/player/vite.config.js",
-    "intro:build": "vite build --config src/intro/vite.config.js",
-    "countdown:build": "vite build --config src/countdown/vite.config.js",
-    "build": "npm run player:build && npm run intro:build && npm run countdown:build && vite build",
+    "scenes:build": "vite build --config src/scenes.vite.config.js",
+    "intro:build": "npm run scenes:build",
+    "countdown:build": "npm run scenes:build",
+    "build": "npm run player:build && npm run scenes:build && vite build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
