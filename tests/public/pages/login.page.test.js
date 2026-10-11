@@ -232,4 +232,17 @@ describe('LoginPage', () => {
       vi.useRealTimers();
     }
   });
+
+  it('shows why the server ended the last session', () => {
+    sessionStorage.setItem('vanta.sessionNotice', JSON.stringify({ message: 'Dein Konto wurde gesperrt.', reason: 'Account geteilt' }));
+
+    const container = LoginPage();
+    const banner = container.querySelector('.login-error');
+
+    expect(banner.classList.contains('hidden')).toBe(false);
+    expect(banner.querySelector('.login-error-message').textContent).toBe('Dein Konto wurde gesperrt.');
+    expect(banner.querySelector('.login-error-reason').textContent).toBe('Account geteilt');
+    expect(sessionStorage.getItem('vanta.sessionNotice')).toBeNull();
+    expect(LoginPage().querySelector('.login-error').classList.contains('hidden')).toBe(true);
+  });
 });

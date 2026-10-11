@@ -128,7 +128,7 @@ VANTA adds app-level workflows and playback features on top of Jellyfin:
 - **Opening scene**: a three.js particle animation of the VANTA logo covers every page load before anything of the app is visible. It plays at most once per ten minutes per browser (`localStorage` key `vanta.intro.lastPlayedAt`) and is skipped on `#/player/…` and `#/watch-party/…` deep links. Source in `src/intro/`, built to `src/public/vendor/intro/`.
 - **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata.
 - **Publisher/studio hubs**: curated publisher views for studios and services such as Disney, Warner Bros., Netflix, Apple TV, Prime Video, and HBO.
-- **Admin user tools**: manage Jellyfin users from VANTA, including user details, password changes, library access, local bans, and VANTA-specific stream limits.
+- **Admin user tools**: manage Jellyfin users from VANTA, including user details, password changes, library access, local bans, and VANTA-specific stream limits. A ban takes effect at once: the user's sessions end, their Jellyfin tokens are revoked, open apps and watch parties are disconnected, and every tab lands on the login with the reason. Every authenticated request checks the ban list (kept in memory, re-read within a second when `db/user/banned.json` changes).
 - **User rules outside Jellyfin**: local ban lists, rejected-request lists, and per-user VANTA settings stored separately from Jellyfin.
 - **Profile hub**: VANTA profile area for continue watching, watch history, favorites, and user-facing account actions.
 - **Server-side Jellyfin gateway**: browser requests go through the Express backend with HTTP-only sessions, normalized media data, image/media proxying, and playback reporting.

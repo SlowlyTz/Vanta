@@ -94,6 +94,18 @@ describe('createAppSocket', () => {
     expect(FakeWebSocket.instances).toHaveLength(2);
   });
 
+  it('verbindet nicht neu, wenn der Server die Sitzung beendet hat', () => {
+    vi.useFakeTimers();
+    const onReconnecting = vi.fn();
+    createAppSocket({ onReconnecting });
+
+    FakeWebSocket.instances[0].emit('close', { code: 4001 });
+    vi.advanceTimersByTime(5000);
+
+    expect(onReconnecting).not.toHaveBeenCalled();
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
   it('close() verhindert Reconnect und schließt bewusst', () => {
     vi.useFakeTimers();
     const onReconnecting = vi.fn();

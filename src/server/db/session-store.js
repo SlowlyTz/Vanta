@@ -125,6 +125,28 @@ export class SqliteSessionStore extends session.Store {
     }).catch(error => callback?.(error));
   }
 
+  // Ends every session of one user (a ban). Resolves to the removed sessions'
+  // data, so the caller can revoke their Jellyfin tokens as well.
+  async destroyByUserId(userId) {
+    await this.ready;
+    if (!userId) return [];
+    const removed = [];
+    const statement = this.db.prepare('SELECT sid, data FROM sessions');
+    try {
+      while (statement.step()) {
+        const { sid, data } = statement.getAsObject();
+        let sess = null;
+        try { sess = JSON.parse(data); } catch { continue; }
+        if (sess?.userId === userId) removed.push({ sid, session: sess });
+      }
+    } finally {
+      statement.free();
+    }
+    for (const { sid } of removed) this.run('DELETE FROM sessions WHERE sid = ?', [sid]);
+    if (removed.length > 0) this.persist();
+    return removed.map(entry => entry.session);
+  }
+
   length(callback) {
     this.ready.then(() => {
       callback(null, this.row('SELECT COUNT(*) AS count FROM sessions')?.count ?? 0);

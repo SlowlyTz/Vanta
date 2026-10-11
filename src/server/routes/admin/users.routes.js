@@ -3,6 +3,7 @@ import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { JellyfinAdminUsersService } from '../../services/jellyfin/admin-users.service.js';
 import { UserBanService } from '../../services/user-ban.service.js';
+import { revokeUserAccess } from '../../services/session-revocation.service.js';
 import { UserSettingsService } from '../../services/user-settings.service.js';
 import { streamSessionService } from '../../services/stream-session.service.js';
 
@@ -118,6 +119,9 @@ router.post('/:userId/ban', asyncHandler(async (req, res) => {
     userId: req.session.userId,
     username: req.session.username
   });
+
+  // Out at once, not only at the next login: sessions, tokens and sockets.
+  await revokeUserAccess(userId, entry);
 
   return res.json({ ban: entry });
 }));

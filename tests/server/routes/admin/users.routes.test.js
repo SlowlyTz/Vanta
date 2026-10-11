@@ -18,7 +18,12 @@ vi.mock('../../../../src/server/services/jellyfin/admin-users.service.js', () =>
   }
 }));
 
-vi.mock('../../../../src/server/services/user-ban.service.js', () => ({
+vi.mock('../../../../src/server/services/session-revocation.service.js', () => ({
+  revokeUserAccess: vi.fn(async () => ({ sessions: 1 }))
+}));
+
+vi.mock('../../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   UserBanService: {
     getBan: vi.fn(),
     ban: vi.fn(),
@@ -44,6 +49,7 @@ import { JellyfinAdminUsersService } from '../../../../src/server/services/jelly
 import { UserBanService } from '../../../../src/server/services/user-ban.service.js';
 import { UserSettingsService } from '../../../../src/server/services/user-settings.service.js';
 import { streamSessionService } from '../../../../src/server/services/stream-session.service.js';
+import { revokeUserAccess } from '../../../../src/server/services/session-revocation.service.js';
 
 function createApp({ authenticated = true, session = {} } = {}) {
   const app = express();
@@ -95,7 +101,8 @@ describe('Admin Users Routes', () => {
       JellyfinAdminUsersService.listUsers.mockResolvedValue([
         { Id: 'u1', Name: 'alice', Policy: { IsAdministrator: false, EnableAllFolders: true, EnabledFolders: [] } }
       ]);
-      UserBanService.getBan.mockReturnValue({ reason: 'Account geteilt' });
+      // Only the listed user is banned, not the admin asking.
+      UserBanService.getBan.mockImplementation(id => (id === 'u1' ? { reason: 'Account geteilt' } : null));
       UserSettingsService.getMaxConcurrentStreams.mockReturnValue(2);
       streamSessionService.getActiveCount.mockReturnValue(1);
 
@@ -218,6 +225,7 @@ describe('Admin Users Routes', () => {
         userId: 'admin-1',
         username: 'admin'
       });
+      expect(revokeUserAccess).toHaveBeenCalledWith('u1', { userId: 'u1', reason: 'Account geteilt' });
     });
   });
 

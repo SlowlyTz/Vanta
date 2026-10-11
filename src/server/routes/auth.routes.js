@@ -4,7 +4,7 @@ import { UserBanService } from '../services/user-ban.service.js';
 import { KnownUsersService } from '../services/known-users.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createDeviceId, forgetTokenDevice, registerTokenDevice } from '../services/jellyfin/client.js';
-import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
+import { destroyInvalidSession, endBannedSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
 import { loginThrottle, formatLockDuration } from '../services/login-throttle.service.js';
 
 const router = express.Router();
@@ -99,7 +99,7 @@ router.get('/me', asyncHandler(async (req, res) => {
   if (req.session && req.session.accessToken && req.session.userId) {
     const ban = UserBanService.getBan(req.session.userId);
     if (ban) {
-      return destroyInvalidSession(req, res, BAN_MESSAGE);
+      return endBannedSession(req, res, ban);
     }
 
     try {

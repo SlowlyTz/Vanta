@@ -46,6 +46,28 @@ describe('request()', () => {
     expect(window.location.hash).toBe('#/login');
   });
 
+  it('leaves the ban reason for the login page when a 401 says BANNED', async () => {
+    sessionStorage.clear();
+    window.location.hash = '#/home';
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({
+      status: 401,
+      body: { error: 'Dein Konto wurde gesperrt.', code: 'BANNED', reason: 'Spam' }
+    }));
+
+    await expect(request('/api/media/library')).rejects.toMatchObject({ status: 401, code: 'BANNED' });
+
+    expect(window.location.hash).toBe('#/login');
+    expect(JSON.parse(sessionStorage.getItem('vanta.sessionNotice'))).toEqual({ message: 'Dein Konto wurde gesperrt.', reason: 'Spam' });
+    sessionStorage.clear();
+  });
+
+  it('leaves no notice for an ordinary expired session', async () => {
+    sessionStorage.clear();
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({ status: 401, body: { error: 'Unauthorized' } }));
+    await expect(request('/api/media/library')).rejects.toMatchObject({ status: 401 });
+    expect(sessionStorage.getItem('vanta.sessionNotice')).toBeNull();
+  });
+
   it('passes through code, limit and activeStreams for a 429 stream-limit error', async () => {
     global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({
       status: 429,

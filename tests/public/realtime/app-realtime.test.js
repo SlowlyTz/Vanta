@@ -65,5 +65,16 @@ describe('initAppRealtime', () => {
     // Erneutes Login öffnet einen neuen Socket.
     emitAuth({ isAuthenticated: true });
     expect(createAppSocket).toHaveBeenCalledTimes(2);
+
+    // Ein Ban beendet die Sitzung: Login mit Grund, auch mitten in der Wiedergabe.
+    window.location.hash = '#/player/item-1';
+    const unauthorized = vi.fn();
+    window.addEventListener('vanta:auth-unauthorized', unauthorized);
+    createAppSocket.mock.calls[1][0].onMessage({ type: 'SESSION_ENDED', code: 'BANNED', error: 'Dein Konto wurde gesperrt.', reason: 'Spam' });
+    expect(unauthorized).toHaveBeenCalledTimes(1);
+    expect(window.location.hash).toBe('#/login');
+    expect(JSON.parse(sessionStorage.getItem('vanta.sessionNotice'))).toEqual({ message: 'Dein Konto wurde gesperrt.', reason: 'Spam' });
+    window.removeEventListener('vanta:auth-unauthorized', unauthorized);
+    sessionStorage.clear();
   });
 });

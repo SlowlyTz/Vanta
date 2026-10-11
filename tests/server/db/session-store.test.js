@@ -40,6 +40,22 @@ describe('SqliteSessionStore', () => {
     expect(await promisify(store, 'get', 'sid-1')).toBeNull();
   });
 
+  it('ends every session of one user and hands back their data', async () => {
+    clock = 1_000_000;
+    const store = createStore();
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1', accessToken: 't1' });
+    await promisify(store, 'set', 'b', { cookie: {}, userId: 'u2', accessToken: 't2' });
+    await promisify(store, 'set', 'c', { cookie: {}, userId: 'u1', accessToken: 't3' });
+
+    const removed = await store.destroyByUserId('u1');
+
+    expect(removed.map(sess => sess.accessToken).sort()).toEqual(['t1', 't3']);
+    expect(await promisify(store, 'get', 'a')).toBeNull();
+    expect(await promisify(store, 'get', 'c')).toBeNull();
+    expect(await promisify(store, 'get', 'b')).not.toBeNull();
+    expect(await store.destroyByUserId(null)).toEqual([]);
+  });
+
   it('expires sessions by their cookie expiry and session cookies after a day', async () => {
     clock = 1_000_000;
     const store = createStore();

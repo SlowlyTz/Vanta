@@ -1,6 +1,6 @@
 import { BUILD_HEADER, reportServerBuild } from '../utils/appVersion.js';
+import { endClientSession } from '../utils/sessionNotice.js';
 
-const AUTH_UNAUTHORIZED_EVENT = 'vanta:auth-unauthorized';
 const NETWORK_ERROR_EVENT = 'vanta:network-error';
 
 const createApiError = (message, response, options = {}) => {
@@ -47,13 +47,10 @@ export async function request(url, options = {}) {
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));
-      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true });
+      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true, code: errJson.code, reason: errJson.reason });
 
-      window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
-
-      if (window.location.hash !== '#/login') {
-        window.location.hash = '#/login';
-      }
+      // A ban ends the session on the server; the login page explains why.
+      endClientSession(errJson.code === 'BANNED' ? { message: errJson.error, reason: errJson.reason } : null);
 
       throw error;
     }

@@ -13,7 +13,8 @@ vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
   }
 }));
 
-vi.mock('../../../src/server/services/user-ban.service.js', () => ({
+vi.mock('../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   UserBanService: {
     getBan: vi.fn()
   }
@@ -219,6 +220,7 @@ describe('Auth Routes', () => {
       const res = await request(appWithSession({ accessToken: 'token-1', userId: 'user-1', username: 'alice' })).get('/me');
 
       expect(res.status).toBe(401);
+      expect(res.body).toEqual({ error: 'Dein Konto wurde gesperrt.', code: 'BANNED', reason: 'Account geteilt' });
       expect(AuthService.getCurrentUser).not.toHaveBeenCalled();
       expect(KnownUsersService.remember).not.toHaveBeenCalled();
     });

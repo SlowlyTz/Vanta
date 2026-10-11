@@ -1,7 +1,11 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
+import { UserBanService } from '../services/user-ban.service.js';
 import { BUILD_ID } from '../config/build.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
+
+// Application close code: the session is gone, reconnecting is pointless.
+export const SESSION_ENDED_CLOSE = 4001;
 
 export class AppSocketHub {
   constructor() {
@@ -15,7 +19,9 @@ export class AppSocketHub {
       if (url.pathname !== '/ws/app') return;
 
       sessionMiddleware(req, {}, () => {
-        if (!req.session?.userId) {
+        // A banned user's session normally ends with the ban; this covers a
+        // ban written by hand while the session was still around.
+        if (!req.session?.userId || UserBanService.isBanned(req.session.userId)) {
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
@@ -71,6 +77,17 @@ export class AppSocketHub {
     const sockets = this.connectionsByUser.get(userId);
     if (!sockets) return;
     for (const ws of sockets) this.sendTo(ws, payload);
+  }
+
+  // Tells every open app of one user that its session is over (a ban), then
+  // hangs up; the client shows the login with the reason.
+  endUserSessions(userId, payload) {
+    const sockets = this.connectionsByUser.get(userId);
+    if (!sockets) return;
+    for (const ws of [...sockets]) {
+      this.sendTo(ws, { type: 'SESSION_ENDED', ...payload });
+      ws.close(SESSION_ENDED_CLOSE, 'Session ended');
+    }
   }
 }
 

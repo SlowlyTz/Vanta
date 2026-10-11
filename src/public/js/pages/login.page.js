@@ -3,6 +3,7 @@ import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 import { formatClock } from '../shared/time.js';
+import { takeSessionNotice } from '../utils/sessionNotice.js';
 
 const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
 const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
@@ -279,6 +280,10 @@ export default function LoginPage() {
       createElement('div', { className: 'login-visual-overlay' })
     )
   );
+
+  // A session the server ended (a ban) left its reason for this page.
+  const notice = takeSessionNotice();
+  if (notice) showLoginError(notice.message, notice.reason);
 
   return container;
 }

@@ -3,6 +3,7 @@ import { createAppSocket } from './app.socket.js';
 import { watchPartyInvitationStore } from '../store/watch-party-invitations.store.js';
 import { reportServerBuild } from '../utils/appVersion.js';
 import { notificationsStore } from '../store/notifications.store.js';
+import { endClientSession } from '../utils/sessionNotice.js';
 
 let socket = null;
 
@@ -17,6 +18,12 @@ export function initAppRealtime() {
             reportServerBuild(message.build, message.version);
             // A reconnect may have missed changes.
             notificationsStore.refresh();
+            return;
+          }
+          // The server ended this session (a ban): out to the login at once,
+          // even mid-stream.
+          if (message?.type === 'SESSION_ENDED') {
+            endClientSession({ message: message.error, reason: message.reason });
             return;
           }
           if (message?.type === 'NOTIFICATIONS_CHANGED') {

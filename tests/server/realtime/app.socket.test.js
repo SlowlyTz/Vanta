@@ -146,4 +146,23 @@ describe('AppSocketHub', () => {
 
     expect(ws.sent).toEqual([]);
   });
+
+  it('tells every app of a user that the session ended and hangs up', () => {
+    const hub = new AppSocketHub();
+    const make = () => ({ readyState: 1, OPEN: 1, send: vi.fn(), close: vi.fn() });
+    const a = make();
+    const b = make();
+    const other = make();
+    hub.register('u1', a);
+    hub.register('u1', b);
+    hub.register('u2', other);
+
+    hub.endUserSessions('u1', { code: 'BANNED', reason: 'x' });
+
+    for (const ws of [a, b]) {
+      expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({ type: 'SESSION_ENDED', code: 'BANNED', reason: 'x' });
+      expect(ws.close).toHaveBeenCalledWith(4001, 'Session ended');
+    }
+    expect(other.send).not.toHaveBeenCalled();
+  });
 });

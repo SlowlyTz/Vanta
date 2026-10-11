@@ -8,23 +8,56 @@ const DEFAULT_USER_DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db', 'us
 
 const emptyBannedList = () => ({ users: [] });
 
-export function createUserBanService({ dbDir = DEFAULT_USER_DB_DIR } = {}) {
-  const bannedFile = join(dbDir, 'banned.json');
+export const BANNED_MESSAGE = 'Dein Konto wurde gesperrt.';
 
-  function readBannedList() {
-    if (!fs.existsSync(bannedFile)) return emptyBannedList();
+// What a banned user is told, by every API route and the app socket alike;
+// the client shows it on the login page.
+export const bannedPayload = (ban) => ({
+  error: BANNED_MESSAGE,
+  code: 'BANNED',
+  reason: ban?.reason || null
+});
+
+// Every authenticated request asks whether its user is banned, so the list is
+// kept in memory. The file is looked at again at most once per `recheckMs`
+// and only re-read when it changed, so an edit by hand still takes effect
+// within a second; the service's own writes update the copy directly.
+export function createUserBanService({ dbDir = DEFAULT_USER_DB_DIR, recheckMs = 1000, now = () => Date.now() } = {}) {
+  const bannedFile = join(dbDir, 'banned.json');
+  let cached = null; // { list, mtimeMs, checkedAt }
+
+  function loadFromDisk() {
+    let stat = null;
+    try {
+      stat = fs.statSync(bannedFile);
+    } catch {
+      return { list: emptyBannedList(), mtimeMs: null };
+    }
+    if (cached && cached.mtimeMs === stat.mtimeMs) return { list: cached.list, mtimeMs: stat.mtimeMs };
 
     try {
       const parsed = JSON.parse(fs.readFileSync(bannedFile, 'utf8'));
-      return { users: Array.isArray(parsed.users) ? parsed.users : [] };
+      return { list: { users: Array.isArray(parsed.users) ? parsed.users : [] }, mtimeMs: stat.mtimeMs };
     } catch (error) {
       console.warn('[UserBanService] Could not read banned.json:', error.message);
-      return emptyBannedList();
+      // Not cached: the next look reads again instead of keeping an empty list.
+      return { list: emptyBannedList(), mtimeMs: null };
     }
+  }
+
+  function readBannedList() {
+    const time = now();
+    if (cached && time - cached.checkedAt < recheckMs) return cached.list;
+    const { list, mtimeMs } = loadFromDisk();
+    cached = mtimeMs === null ? null : { list, mtimeMs, checkedAt: time };
+    return list;
   }
 
   function writeBannedList(list) {
     writeFileAtomicSync(bannedFile, `${JSON.stringify(list, null, 2)}\n`, { encoding: 'utf8' });
+    let mtimeMs = null;
+    try { mtimeMs = fs.statSync(bannedFile).mtimeMs; } catch { /* re-read next time */ }
+    cached = mtimeMs === null ? null : { list, mtimeMs, checkedAt: now() };
   }
 
   return {

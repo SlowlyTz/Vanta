@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
+import { UserBanService } from '../services/user-ban.service.js';
 import { registerTokenDevice } from '../services/jellyfin/client.js';
 import { startWatchPartyCleanup } from '../services/watch-party.service.js';
 import { connectionRegistryMethods } from './watch-party/connectionRegistry.js';
@@ -26,7 +27,9 @@ export class WatchPartySocketHub {
       if (!url.pathname.startsWith('/ws/watch-party/')) return;
 
       sessionMiddleware(req, {}, () => {
-        if (!req.session?.userId) {
+        // A banned user's session normally ends with the ban; this covers a
+        // ban written by hand while the session was still around.
+        if (!req.session?.userId || UserBanService.isBanned(req.session.userId)) {
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
