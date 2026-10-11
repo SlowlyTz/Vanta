@@ -179,6 +179,12 @@ The directory is git-ignored and safe to delete at any time; missing renditions 
 
 The renditions are shared by all users, so every request is checked against the user's access first: movies and series through the catalogue and the user's libraries, everything else (seasons, episodes, people) by asking Jellyfin once per user and item (remembered for ten minutes). A title from a library the user cannot see gets the placeholder. Image responses are `Cache-Control: private`. Resizing needs the `sharp` package (installed with `npm install`); if its native binary cannot be loaded, VANTA logs a warning at startup and proxies images straight from Jellyfin as before.
 
+## Operations
+
+- `GET /api/health` (no session needed) answers `200 {"status":"ok"}` with the version, uptime, Jellyfin's reachability and whether the catalogue is ready, or `503` with `"degraded"` while Jellyfin cannot be reached. Jellyfin is pinged at most every ten seconds however often it is polled.
+- SIGINT/SIGTERM (pm2, systemd, Ctrl+C) close the sockets, write every database and exit within 1.5 s. An uncaught exception writes the databases and exits so the process manager restarts it; unhandled promise rejections are logged.
+- Unknown `/api/*` paths answer a JSON 404. The access log leaves out the query of playback proxy requests and masks token-like parameters elsewhere.
+
 ## Important Notes
 
 - In production, `SESSION_SECRET` must be set to a long, random value.

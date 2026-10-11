@@ -38,3 +38,20 @@ const shutdown = createShutdown({
 });
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+// A rejected promise nobody awaited is a bug, but not a reason to stop
+// serving everyone; it is logged with its stack. An uncaught exception leaves
+// the process in an unknown state: the databases are written, then it exits
+// and the process manager starts it again.
+process.on('unhandledRejection', (reason) => {
+  console.error('[Unhandled Rejection]', reason instanceof Error ? reason.stack : reason);
+});
+process.on('uncaughtException', (error) => {
+  console.error('[Uncaught Exception]', error?.stack || error);
+  try {
+    flushDatabase();
+    sessionStore.close();
+  } finally {
+    process.exit(1);
+  }
+});
