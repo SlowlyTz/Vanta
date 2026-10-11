@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
 import { UserBanService } from '../services/user-ban.service.js';
+import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat } from './hardening.js';
 import { BUILD_ID } from '../config/build.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
 
@@ -9,7 +10,7 @@ export const SESSION_ENDED_CLOSE = 4001;
 
 export class AppSocketHub {
   constructor() {
-    this.wss = new WebSocketServer({ noServer: true });
+    this.wss = new WebSocketServer({ noServer: true, maxPayload: WS_MAX_PAYLOAD });
     this.connectionsByUser = new Map(); // userId -> Set<ws>
   }
 
@@ -17,13 +18,16 @@ export class AppSocketHub {
     server.on('upgrade', (req, socket, head) => {
       const url = new URL(req.url, 'http://localhost');
       if (url.pathname !== '/ws/app') return;
+      if (!isAllowedOrigin(req)) {
+        rejectUpgrade(socket, 403, 'Forbidden');
+        return;
+      }
 
       sessionMiddleware(req, {}, () => {
         // A banned user's session normally ends with the ban; this covers a
         // ban written by hand while the session was still around.
         if (!req.session?.userId || UserBanService.isBanned(req.session.userId)) {
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-          socket.destroy();
+          rejectUpgrade(socket, 401, 'Unauthorized');
           return;
         }
 
@@ -33,7 +37,10 @@ export class AppSocketHub {
       });
     });
 
+    startHeartbeat(this.wss);
+
     this.wss.on('connection', (ws, req) => {
+      limitMessageRate(ws);
       const user = {
         userId: req.session.userId,
         username: req.session.username
