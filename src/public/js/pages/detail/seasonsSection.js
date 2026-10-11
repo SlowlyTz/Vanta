@@ -1,6 +1,7 @@
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { MediaCard } from '../../components/mediaCard.js';
+import { EmptyState, ErrorState } from '../../components/emptyState.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
 
 export function buildSeasonsSection(item, seasons) {
@@ -22,9 +23,7 @@ export function buildSeasonsSection(item, seasons) {
 
       if (episodes.length === 0) {
         episodeGrid.appendChild(
-          createElement('div', { className: 'search-empty-state', style: { gridColumn: '1/-1' } },
-            createElement('p', {}, 'Keine Episoden in dieser Staffel gefunden.')
-          )
+          EmptyState({ message: 'Keine Episoden in dieser Staffel gefunden.', style: { gridColumn: '1/-1' } })
         );
       } else {
         episodes.forEach(episode => {
@@ -36,9 +35,7 @@ export function buildSeasonsSection(item, seasons) {
       console.error(err);
       episodeGrid.innerHTML = '';
       episodeGrid.appendChild(
-        createElement('div', { className: 'search-empty-state', style: { gridColumn: '1/-1' } },
-          createElement('p', {}, 'Fehler beim Laden der Episoden.')
-        )
+        ErrorState({ title: null, message: 'Fehler beim Laden der Episoden.', style: { gridColumn: '1/-1' } })
       );
     } finally {
       setSectionBusy(episodeGrid, false);

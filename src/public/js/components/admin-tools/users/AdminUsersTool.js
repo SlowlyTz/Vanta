@@ -6,6 +6,7 @@ import { appStore } from '../../../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../../loader.js';
 import { createAdminUserRow } from './adminUserRow.js';
 import { createAdminUserDetailView } from './adminUserDetailView.js';
+import { EmptyState } from '../../emptyState.js';
 import { openAdminModal } from '../adminModal.js';
 
 // Baut eine Signatur aus allen in der Zeile sichtbaren Feldern. renderList()
@@ -70,9 +71,7 @@ export function createAdminUsersTool() {
 
     if (filtered.length === 0) {
       listEl.appendChild(
-        createElement('div', { className: 'search-empty-state' },
-          createElement('p', {}, users.length === 0 ? 'Keine Nutzer gefunden' : 'Keine Treffer für diese Suche')
-        )
+        EmptyState({ message: users.length === 0 ? 'Keine Nutzer gefunden' : 'Keine Treffer für diese Suche' })
       );
       return;
     }

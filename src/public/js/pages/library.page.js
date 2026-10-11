@@ -7,6 +7,7 @@ import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/rou
 import { whenConnected } from '../utils/whenConnected.js';
 import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
 import { resolvePageScope } from '../utils/pageScope.js';
+import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 // Batch size per request; a multiple of every grid column count so each
@@ -107,21 +108,14 @@ export default function LibraryPage(params, pageScope) {
   const renderEmpty = () => {
     bodySlot.innerHTML = '';
     bodySlot.appendChild(
-      createElement('div', { className: 'search-empty-state' },
-        createElement('h3', {}, 'Keine Inhalte gefunden'),
-        createElement('p', {}, 'In dieser Kategorie sind aktuell keine Einträge vorhanden.')
-      )
+      EmptyState({ title: 'Keine Inhalte gefunden', message: 'In dieser Kategorie sind aktuell keine Einträge vorhanden.' })
     );
   };
 
   const renderError = (msg, retry) => {
     status.innerHTML = '';
     status.appendChild(
-      createElement('div', { className: 'search-empty-state library-error' },
-        createElement('h3', {}, 'Fehler beim Laden'),
-        createElement('p', {}, msg || 'Die Inhalte konnten nicht geladen werden.'),
-        createElement('button', { className: 'btn-primary', onClick: retry }, 'Erneut versuchen')
-      )
+      ErrorState({ message: msg || 'Die Inhalte konnten nicht geladen werden.', retry, className: 'library-error' })
     );
   };
 

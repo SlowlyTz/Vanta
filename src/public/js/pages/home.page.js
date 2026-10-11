@@ -8,6 +8,7 @@ import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 import { resolvePageScope } from '../utils/pageScope.js';
+import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { whenConnected } from '../utils/whenConnected.js';
 
 const HOME_ROUTE = '#/home';
@@ -113,14 +114,11 @@ export default function HomePage(params, pageScope) {
     container.innerHTML = '';
     container.appendChild(
       createElement('div', { className: 'content-section' },
-        createElement('div', { className: 'search-empty-state' },
-          createElement('h3', {}, 'Verbindung fehlgeschlagen'),
-          createElement('p', {}, msg || 'Der Jellyfin-Server konnte nicht erreicht werden.'),
-          createElement('button', {
-            className: 'btn-primary',
-            onClick: loadData
-          }, 'Erneut versuchen')
-        )
+        ErrorState({
+          title: 'Verbindung fehlgeschlagen',
+          message: msg || 'Der Jellyfin-Server konnte nicht erreicht werden.',
+          retry: loadData
+        })
       )
     );
   };
@@ -229,10 +227,7 @@ export default function HomePage(params, pageScope) {
     if (!showSectionLoaders && !hasContent(data)) {
       container.appendChild(
         createElement('div', { className: 'content-section' },
-          createElement('div', { className: 'search-empty-state' },
-            createElement('h3', {}, 'Keine Medien vorhanden'),
-            createElement('p', {}, 'Auf deinem Jellyfin-Server wurden keine Medien gefunden.')
-          )
+          EmptyState({ title: 'Keine Medien vorhanden', message: 'Auf deinem Jellyfin-Server wurden keine Medien gefunden.' })
         )
       );
       return;

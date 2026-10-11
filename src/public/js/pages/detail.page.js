@@ -11,6 +11,7 @@ import { buildSeasonsSection } from './detail/seasonsSection.js';
 import { loadDetailData } from './detail/detailData.js';
 import { buildHelpLinks } from './detail/helpLinks.js';
 import { resolvePageScope } from '../utils/pageScope.js';
+import { ErrorState } from '../components/emptyState.js';
 import { extractYouTubeVideoId, openTrailerModal } from '../components/trailerModal.js';
 
 function getYouTubeTrailerId(item) {
@@ -158,14 +159,10 @@ export default function DetailPage({ id }, pageScope) {
       container.innerHTML = '';
       container.appendChild(
         createElement('div', { className: 'content-section' },
-          createElement('div', { className: 'search-empty-state' },
-            createElement('h3', {}, 'Fehler beim Laden'),
-            createElement('p', {}, error.message || 'Die Details konnten nicht abgerufen werden.'),
-            createElement('button', {
-              className: 'btn-primary',
-              onClick: () => { window.location.hash = '#/home'; }
-            }, 'Zurück zur Startseite')
-          )
+          ErrorState({
+            message: error.message || 'Die Details konnten nicht abgerufen werden.',
+            action: { label: 'Zurück zur Startseite', onClick: () => { window.location.hash = '#/home'; } }
+          })
         )
       );
     } finally {

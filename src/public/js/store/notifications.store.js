@@ -1,4 +1,5 @@
 import { NotificationsApi } from '../api/notifications.api.js';
+import { Store } from './store.js';
 
 const REFRESH_MS = 60_000;
 const EMPTY = { mine: { requests: 0, reports: 0 }, admin: null };
@@ -7,29 +8,18 @@ const EMPTY = { mine: { requests: 0, reports: 0 }, admin: null };
 // the user's own requests and reports decided since they last looked, and for
 // admins what still waits for a decision. Refreshed on start, when the app
 // socket says something changed, when the tab comes back, and once a minute.
-class NotificationsStore {
+class NotificationsStore extends Store {
   constructor() {
+    super();
     this.summary = EMPTY;
-    this.listeners = new Set();
     this.timer = null;
     this.loading = null;
-  }
-
-  subscribe(listener) {
-    this.listeners.add(listener);
-    listener(this.getState());
-    return () => this.listeners.delete(listener);
   }
 
   getState() {
     const { mine, admin } = this.summary;
     const adminTotal = admin ? admin.requests + admin.reports : 0;
     return { ...this.summary, adminTotal, hasAdminWork: adminTotal > 0 };
-  }
-
-  notify() {
-    const state = this.getState();
-    for (const listener of this.listeners) listener(state);
   }
 
   async refresh() {

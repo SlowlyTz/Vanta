@@ -3,6 +3,7 @@ import { MediaApi } from '../../api/media.api.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../../utils/image.js';
 import { MediaCarousel } from '../../components/mediaCarousel.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
+import { EmptyState, ErrorState } from '../../components/emptyState.js';
 import { openModal } from '../../utils/modal.js';
 
 export function createActorModal({ currentItemId }) {
@@ -143,7 +144,7 @@ export function createActorModal({ currentItemId }) {
       modalContent.appendChild(
         createElement('div', { className: 'media-carousel-container' },
           createElement('h3', { className: 'carousel-title-text', style: { fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)' } }, 'Bekannt für'),
-          createElement('div', { className: 'search-empty-state', style: { minHeight: '100px' } }, 'Keine weiteren Titel in der Mediathek gefunden.')
+          EmptyState({ message: 'Keine weiteren Titel in der Mediathek gefunden.', style: { minHeight: '100px' } })
         )
       );
     }
@@ -226,10 +227,10 @@ export function createActorModal({ currentItemId }) {
       modalContent.innerHTML = '';
       modalContent.appendChild(createModalCloseButton());
       modalContent.appendChild(
-        createElement('div', { className: 'search-empty-state' },
-          createElement('h3', {}, 'Details konnten nicht geladen werden'),
-          createElement('p', {}, err.message || 'Die Person ist auf dem Server nicht näher dokumentiert.')
-        )
+        ErrorState({
+          title: 'Details konnten nicht geladen werden',
+          message: err.message || 'Die Person ist auf dem Server nicht näher dokumentiert.'
+        })
       );
     } finally {
       setSectionBusy(modalContent, false);

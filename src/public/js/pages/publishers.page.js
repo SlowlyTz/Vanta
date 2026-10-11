@@ -6,6 +6,7 @@ import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../con
 
 const MIN_STUDIO_TITLES = 3;
 import { resolvePageScope } from '../utils/pageScope.js';
+import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 export default function PublishersPage(params, pageScope) {
@@ -39,14 +40,7 @@ export default function PublishersPage(params, pageScope) {
   const renderError = (msg) => {
     bodySlot.innerHTML = '';
     bodySlot.appendChild(
-      createElement('div', { className: 'search-empty-state' },
-        createElement('h3', {}, 'Fehler beim Laden'),
-        createElement('p', {}, msg || 'Die Publisher konnten nicht geladen werden.'),
-        createElement('button', {
-          className: 'btn-primary',
-          onClick: loadStudios
-        }, 'Erneut versuchen')
-      )
+      ErrorState({ message: msg || 'Die Publisher konnten nicht geladen werden.', retry: loadStudios })
     );
   };
 
@@ -55,10 +49,7 @@ export default function PublishersPage(params, pageScope) {
 
     if (!studios || studios.length === 0) {
       bodySlot.appendChild(
-        createElement('div', { className: 'search-empty-state' },
-          createElement('h3', {}, 'Keine Publisher gefunden'),
-          createElement('p', {}, 'Es sind aktuell keine Publisher verfügbar.')
-        )
+        EmptyState({ title: 'Keine Publisher gefunden', message: 'Es sind aktuell keine Publisher verfügbar.' })
       );
       return;
     }

@@ -1,26 +1,15 @@
 import { AuthApi } from '../api/auth.api.js';
+import { Store } from './store.js';
 
-class AuthStore {
+class AuthStore extends Store {
   constructor() {
+    super({ emitOnSubscribe: false });
     this.user = null;
     this.loading = false;
-    this.listeners = new Set();
 
     window.addEventListener('vanta:auth-unauthorized', () => {
       this.clearSession();
     });
-  }
-
-  subscribe(listener) {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  notify() {
-    const state = this.getState();
-    for (const listener of this.listeners) {
-      listener(state);
-    }
   }
 
   getState() {

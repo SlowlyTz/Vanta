@@ -1,25 +1,15 @@
 import { WatchPartyApi } from '../api/watch-party.api.js';
 import { appStore } from './app.store.js';
+import { Store } from './store.js';
 
-class WatchPartyInvitationStore {
+class WatchPartyInvitationStore extends Store {
   constructor() {
+    super();
     this.invitations = new Map();
-    this.listeners = new Set();
-  }
-
-  subscribe(listener) {
-    this.listeners.add(listener);
-    listener(this.getState());
-    return () => this.listeners.delete(listener);
   }
 
   getState() {
     return { invitations: [...this.invitations.values()] };
-  }
-
-  notify() {
-    const state = this.getState();
-    for (const listener of this.listeners) listener(state);
   }
 
   async loadPending() {

@@ -5,6 +5,7 @@ import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { resolvePageScope } from '../utils/pageScope.js';
+import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 const LIMIT = 24;
@@ -88,23 +89,14 @@ export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope)
 
     if (tabState.error) {
       contentEl.appendChild(
-        createElement('div', { className: 'search-empty-state' },
-          createElement('h3', {}, 'Fehler beim Laden'),
-          createElement('p', {}, tabState.error),
-          createElement('button', {
-            className: 'btn-primary',
-            onClick: () => loadTab(state.activeTab, 1, { append: false })
-          }, 'Erneut versuchen')
-        )
+        ErrorState({ message: tabState.error, retry: () => loadTab(state.activeTab, 1, { append: false }) })
       );
       return;
     }
 
     if (tabState.loaded && tabState.items.length === 0) {
       contentEl.appendChild(
-        createElement('div', { className: 'search-empty-state' },
-          createElement('p', {}, tab.emptyText)
-        )
+        EmptyState({ message: tab.emptyText })
       );
       return;
     }
