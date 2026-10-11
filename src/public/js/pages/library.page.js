@@ -6,6 +6,7 @@ import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 import { whenConnected } from '../utils/whenConnected.js';
 import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 // Batch size per request; a multiple of every grid column count so each
@@ -13,7 +14,8 @@ import { PageHeading } from '../components/pageHeading.js';
 const BATCH_SIZE = 36;
 const LOAD_AHEAD_MARGIN = '900px';
 
-export default function LibraryPage(params) {
+export default function LibraryPage(params, pageScope) {
+  const scope = resolvePageScope(pageScope);
   const type = params.type || 'Movie';
   const genre = params.genreName || params.genre || null;
   const publisherId = params.publisherId || null;
@@ -56,9 +58,7 @@ export default function LibraryPage(params) {
   );
 
   const fetchPage = (page) => {
-    const args = [type, genre, studio, page, BATCH_SIZE];
-    if (publisherId) args.push({ publisherId });
-    return MediaApi.getLibrary(...args);
+    return MediaApi.getLibrary(type, genre, studio, page, BATCH_SIZE, { publisherId, signal: scope.signal });
   };
 
   const appendItems = (items) => {
@@ -131,6 +131,7 @@ export default function LibraryPage(params) {
       if (entries.some(entry => entry.isIntersecting)) loadMore();
     }, { rootMargin: `0px 0px ${LOAD_AHEAD_MARGIN} 0px` });
     observer.observe(sentinel);
+    scope.onLeave(() => observer?.disconnect());
   };
 
   const loadMore = async () => {

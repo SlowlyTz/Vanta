@@ -31,6 +31,8 @@ class FakeObserver {
   reach() { this.callback([{ isIntersecting: true }]); }
 }
 
+const withSignal = (extra = {}) => expect.objectContaining({ ...extra, signal: expect.any(AbortSignal) });
+
 describe('LibraryPage', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -56,7 +58,7 @@ describe('LibraryPage', () => {
     await flush();
 
     expect(MediaApi.getLibrary).toHaveBeenCalledTimes(1);
-    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie', null, null, 1, 36);
+    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie', null, null, 1, 36, withSignal());
     expect(container.querySelectorAll('.media-card')).toHaveLength(36);
     expect(container.querySelector('.library-sentinel')).toBeTruthy();
     expect(container.querySelector('.library-end')).toBeNull();
@@ -74,7 +76,7 @@ describe('LibraryPage', () => {
     expect(container.querySelector('.library-status .section-loader')).toBeTruthy();
     await flush();
     expect(container.querySelectorAll('.media-card')).toHaveLength(72);
-    expect(MediaApi.getLibrary).toHaveBeenLastCalledWith('Movie', null, null, 2, 36);
+    expect(MediaApi.getLibrary).toHaveBeenLastCalledWith('Movie', null, null, 2, 36, withSignal());
 
     observers[0].reach();
     await flush();
@@ -116,7 +118,7 @@ describe('LibraryPage', () => {
 
     observers[0].reach();
     await flush();
-    expect(MediaApi.getLibrary).toHaveBeenLastCalledWith('Movie', null, null, 4, 36);
+    expect(MediaApi.getLibrary).toHaveBeenLastCalledWith('Movie', null, null, 4, 36, withSignal());
     expect(getRouteState('#/movies').pages).toBe(4);
   });
 
@@ -166,7 +168,7 @@ describe('LibraryPage', () => {
     await flush();
 
     expect(container.querySelector('.page-heading-title').textContent).toBe('Warner Bros');
-    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 36, { publisherId: 'warner-bros' });
+    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 36, withSignal({ publisherId: 'warner-bros' }));
   });
 
   it('does not crash for an unknown publisherId and still calls the API', async () => {
@@ -177,6 +179,6 @@ describe('LibraryPage', () => {
     await flush();
 
     expect(container.querySelector('.page-heading-title')).toBeTruthy();
-    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 36, { publisherId: 'unknown-publisher' });
+    expect(MediaApi.getLibrary).toHaveBeenCalledWith('Movie,Series', null, null, 1, 36, withSignal({ publisherId: 'unknown-publisher' }));
   });
 });

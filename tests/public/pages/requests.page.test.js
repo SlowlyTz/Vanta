@@ -53,7 +53,7 @@ describe('RequestsPage', () => {
     await vi.advanceTimersByTimeAsync(400);
     await flush();
 
-    expect(RequestsApi.search).toHaveBeenCalledWith('sev');
+    expect(RequestsApi.search).toHaveBeenCalledWith('sev', { signal: expect.any(AbortSignal) });
     const hits = [...container.querySelectorAll('.request-result')];
     expect(hits.map(hit => hit.getAttribute('href'))).toEqual([
       '#/request-detail/tv/7', '#/request-detail/movie/8', '#/request-detail/movie/9'

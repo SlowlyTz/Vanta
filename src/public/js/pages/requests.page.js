@@ -4,6 +4,7 @@ import { appStore } from '../store/app.store.js';
 import { notificationsStore } from '../store/notifications.store.js';
 import { createSectionLoader } from '../components/loader.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import {
   loadRequestSearchState, saveRequestSearchState, clearRequestSearchState, getTmdbImageUrl, getScopeLabel
 } from './requests/helpers.js';
@@ -80,7 +81,8 @@ function myRequestCard(request, isNew) {
 
 // "Anfragen": search TMDB for a missing title and request it, or follow the
 // state of one's own requests.
-export default function RequestsPage(params = {}) {
+export default function RequestsPage(params = {}, pageScope) {
+  const scope = resolvePageScope(pageScope);
   const view = params.view === 'list' ? 'list' : 'new';
 
   const container = createElement('div', { className: 'page-container content-section' });
@@ -108,20 +110,15 @@ export default function RequestsPage(params = {}) {
   );
 
   const unsubscribe = notificationsStore.subscribe(({ mine }) => { mineDot.hidden = view === 'list' || !mine.requests; });
-  const stopWhenGone = () => {
-    if (container.isConnected) return;
-    unsubscribe();
-    window.removeEventListener('hashchange', stopWhenGone);
-  };
-  window.addEventListener('hashchange', stopWhenGone);
+  scope.onLeave(unsubscribe);
 
-  if (view === 'list') renderMine(page);
-  else renderSearch(page);
+  if (view === 'list') renderMine(page, scope);
+  else renderSearch(page, scope);
 
   return container;
 }
 
-function renderSearch(page) {
+function renderSearch(page, { signal }) {
   let debounce = null;
   let runId = 0;
   const restored = loadRequestSearchState();
@@ -163,7 +160,7 @@ function renderSearch(page) {
     loading.hidden = false;
     status.hidden = true;
     try {
-      const results = (await RequestsApi.search(query)) || [];
+      const results = (await RequestsApi.search(query, { signal })) || [];
       if (run !== runId) return;
       saveRequestSearchState(query, results);
       showResults(query, results);
@@ -204,7 +201,7 @@ function renderSearch(page) {
   }
 }
 
-function renderMine(page) {
+function renderMine(page, { signal }) {
   let requests = [];
   let previousSeenAt = 0;
   let filter = 'all';
@@ -239,7 +236,7 @@ function renderMine(page) {
     )));
   }
 
-  Promise.all([RequestsApi.getMyRequests(), notificationsStore.markSeen('requests')])
+  Promise.all([RequestsApi.getMyRequests({ signal }), notificationsStore.markSeen('requests')])
     .then(([loaded, seenAt]) => {
       requests = Array.isArray(loaded) ? loaded : [];
       previousSeenAt = seenAt;

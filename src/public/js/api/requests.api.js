@@ -1,18 +1,19 @@
 import { request } from './client.js';
 
 class RequestsApiClient {
-  static async search(query) {
-    return request(`/api/requests/search?q=${encodeURIComponent(query)}`);
+  static async search(query, { signal } = {}) {
+    return request(`/api/requests/search?q=${encodeURIComponent(query)}`, { signal });
   }
 
-  static async getDetails(tmdbId, tmdbType) {
-    return request(`/api/requests/details?tmdbId=${tmdbId}&tmdbType=${tmdbType}`);
+  static async getDetails(tmdbId, tmdbType, { signal } = {}) {
+    return request(`/api/requests/details?tmdbId=${tmdbId}&tmdbType=${tmdbType}`, { signal });
   }
 
-  static async crossCheck(tmdbId, tmdbType) {
+  static async crossCheck(tmdbId, tmdbType, { signal } = {}) {
     return request('/api/requests/cross-check', {
       method: 'POST',
-      body: { tmdbId, tmdbType }
+      body: { tmdbId, tmdbType },
+      signal
     });
   }
 
@@ -33,8 +34,8 @@ class RequestsApiClient {
     return request(`/api/requests/season?tmdbId=${encodeURIComponent(tmdbId)}&seasonNumber=${encodeURIComponent(seasonNumber)}`);
   }
 
-  static async getMyRequests() {
-    return request('/api/requests');
+  static async getMyRequests({ signal } = {}) {
+    return request('/api/requests', { signal });
   }
 
   static async getOpenRequests() {

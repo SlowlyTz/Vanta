@@ -9,6 +9,7 @@ import { createTitleStep } from './report/titleStep.js';
 import { createScopeStep } from './report/scopeStep.js';
 import { createProblemStep } from './report/problemStep.js';
 import { renderMyReports } from './report/myReports.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { iconElement } from './report/icons.js';
 
 const itemFromHash = () => {
@@ -19,7 +20,9 @@ const itemFromHash = () => {
 // "Meldung": report a problem with a title in the library. Three steps on one
 // page — the title, what exactly (series only), what is wrong — then send.
 // "Meine Meldungen" lists earlier reports with the admins' answer.
-export default function ReportPage({ view = 'new' } = {}) {
+export default function ReportPage({ view = 'new' } = {}, pageScope) {
+  const routeScope = resolvePageScope(pageScope);
+  const { signal } = routeScope;
   const activeView = view === 'mine' ? 'mine' : 'new';
   const state = { item: null, scope: 'all', seasonNumber: null, episodeNumber: null, scopeLabel: 'Ganze Serie', problem: null, message: '' };
 
@@ -54,17 +57,12 @@ export default function ReportPage({ view = 'new' } = {}) {
   );
 
   const unsubscribe = notificationsStore.subscribe(({ mine }) => { mineDot.hidden = activeView === 'mine' || !mine.reports; });
-  const stopWhenGone = () => {
-    if (container.isConnected) return;
-    unsubscribe();
-    window.removeEventListener('hashchange', stopWhenGone);
-  };
-  window.addEventListener('hashchange', stopWhenGone);
+  routeScope.onLeave(unsubscribe);
 
   if (activeView === 'mine') {
     const list = createElement('div', { className: 'report-list' }, createSectionLoader({ label: 'Meldungen werden geladen', compact: true }));
     page.appendChild(list);
-    Promise.all([ReportsApi.getMine(), notificationsStore.markSeen('reports')])
+    Promise.all([ReportsApi.getMine({ signal }), notificationsStore.markSeen('reports')])
       .then(([reports, previousSeenAt]) => renderMyReports(list, reports || [], { previousSeenAt }))
       .catch(error => {
         list.innerHTML = '';
@@ -175,7 +173,7 @@ export default function ReportPage({ view = 'new' } = {}) {
   // "Problem melden" on a title's page opens this with the title chosen.
   const presetId = itemFromHash();
   if (presetId) {
-    MediaApi.getItem(presetId)
+    MediaApi.getItem(presetId, { signal })
       .then(item => { if (item && ['Movie', 'Series'].includes(item.Type)) selectItem(item); })
       .catch(() => {});
   } else {

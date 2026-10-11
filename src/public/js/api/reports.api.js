@@ -5,7 +5,7 @@ export const ReportsApi = {
     method: 'POST',
     body: { itemId, scope, seasonNumber, episodeNumber, problem, message }
   }),
-  getMine: () => request('/api/reports'),
+  getMine: ({ signal } = {}) => request('/api/reports', { signal }),
   getOpen: () => request('/api/reports/admin/open'),
   getAll: () => request('/api/reports/admin/all'),
   resolve: id => request(`/api/reports/${encodeURIComponent(id)}/resolve`, { method: 'POST', body: {} }),

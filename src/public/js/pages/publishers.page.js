@@ -5,9 +5,11 @@ import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../constants/featuredPublishers.js';
 
 const MIN_STUDIO_TITLES = 3;
+import { resolvePageScope } from '../utils/pageScope.js';
 import { PageHeading } from '../components/pageHeading.js';
 
-export default function PublishersPage() {
+export default function PublishersPage(params, pageScope) {
+  const { signal } = resolvePageScope(pageScope);
   const container = createElement('div', { className: 'page-container content-section' });
 
   const bodySlot = createElement('div', { className: 'publishers-body' });
@@ -21,7 +23,7 @@ export default function PublishersPage() {
     bodySlot.appendChild(createSectionLoader({ label: 'Publisher werden geladen' }));
 
     try {
-      const studios = await MediaApi.getStudios();
+      const studios = await MediaApi.getStudios({ signal });
       renderStudios(studios);
     } catch (error) {
       if (error.isAuthError) return;

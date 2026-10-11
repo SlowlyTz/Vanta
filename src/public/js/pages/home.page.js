@@ -7,6 +7,7 @@ import { MediaCarousel } from '../components/mediaCarousel.js';
 import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { whenConnected } from '../utils/whenConnected.js';
 
 const HOME_ROUTE = '#/home';
@@ -25,7 +26,9 @@ function shuffleArray(arr) {
   return arr;
 }
 
-export default function HomePage() {
+export default function HomePage(params, pageScope) {
+  const scope = resolvePageScope(pageScope);
+  const { signal } = scope;
   const container = createElement('div', { className: 'page-container' });
   container.dataset.edgeTop = 'true';
   let sectionsContainer = null;
@@ -84,7 +87,7 @@ export default function HomePage() {
     );
 
     try {
-      const raw = await MediaApi.getHome();
+      const raw = await MediaApi.getHome({ signal });
       const data = {
         hero: shuffleArray([...(raw.movies || []), ...(raw.series || [])]).slice(0, 8),
         resume: raw.resume || [],
@@ -195,7 +198,7 @@ export default function HomePage() {
 
   const loadSectionGroups = () => {
     HOME_SECTION_GROUPS.forEach(group => {
-      MediaApi.getHomeSectionGroup(group.key)
+      MediaApi.getHomeSectionGroup(group.key, { signal })
         .then(result => {
           const sections = result.sections || [];
           sectionGroupResults.set(group.key, sections);
@@ -238,7 +241,7 @@ export default function HomePage() {
     const heroItems = data.hero || [];
 
     if (heroItems.length > 0) {
-      const heroEl = HeroCarousel({ items: heroItems });
+      const heroEl = HeroCarousel({ items: heroItems, pageScope: scope });
       if (heroEl) container.appendChild(heroEl);
     }
 

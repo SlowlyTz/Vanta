@@ -1,5 +1,11 @@
 import { BUILD_HEADER, reportServerBuild } from '../utils/appVersion.js';
 import { endClientSession } from '../utils/sessionNotice.js';
+import { PAGE_LEFT } from '../utils/pageScope.js';
+
+// A request of a page that was left never settles: nothing is left to show
+// its result, and an error would only pop up a toast for a page that is gone.
+const leftBehind = (signal) => signal?.aborted && signal.reason === PAGE_LEFT;
+const never = () => new Promise(() => {});
 
 const NETWORK_ERROR_EVENT = 'vanta:network-error';
 
@@ -16,7 +22,10 @@ const createApiError = (message, response, options = {}) => {
   return error;
 };
 
+// `options.signal` (usually a page scope's) aborts the request; see above.
 export async function request(url, options = {}) {
+  if (leftBehind(options.signal)) return never();
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
@@ -73,6 +82,7 @@ export async function request(url, options = {}) {
 
     return await response.text();
   } catch (error) {
+    if (leftBehind(options.signal)) return never();
     if (!error.silent) {
       console.error(`[API Request Error] ${url}:`, error.message);
     }

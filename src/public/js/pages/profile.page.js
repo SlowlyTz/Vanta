@@ -4,6 +4,7 @@ import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 const LIMIT = 24;
@@ -12,19 +13,19 @@ const TABS = [
   {
     key: 'continue',
     label: 'Weiter ansehen',
-    load: (page) => MediaApi.getProfileContinueWatching(page, LIMIT),
+    load: (page, options) => MediaApi.getProfileContinueWatching(page, LIMIT, options),
     emptyText: 'Du hast aktuell keine begonnenen Inhalte.'
   },
   {
     key: 'history',
     label: 'History',
-    load: (page) => MediaApi.getProfileHistory(page, LIMIT),
+    load: (page, options) => MediaApi.getProfileHistory(page, LIMIT, options),
     emptyText: 'Du hast noch keine vollständig angesehenen Inhalte.'
   },
   {
     key: 'favorites',
     label: 'Favoriten',
-    load: (page) => MediaApi.getProfileFavorites(page, LIMIT),
+    load: (page, options) => MediaApi.getProfileFavorites(page, LIMIT, options),
     emptyText: 'Du hast noch keine Favoriten markiert.'
   }
 ];
@@ -33,7 +34,8 @@ function createEmptyPageState() {
   return { items: [], page: 0, totalPages: 0, loading: false, loaded: false, error: null };
 }
 
-export default function ProfilePage({ initialTab = 'continue' } = {}) {
+export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope) {
+  const { signal } = resolvePageScope(pageScope);
   const container = createElement('div', { className: 'page-container content-section profile-page' });
 
   const validInitialTab = TABS.some(tab => tab.key === initialTab) ? initialTab : TABS[0].key;
@@ -138,7 +140,7 @@ export default function ProfilePage({ initialTab = 'continue' } = {}) {
 
     try {
       const tab = TABS.find(t => t.key === tabKey);
-      const result = await tab.load(page);
+      const result = await tab.load(page, { signal });
       tabState.items = append ? [...tabState.items, ...result.items] : result.items;
       tabState.page = result.page;
       tabState.totalPages = result.totalPages;

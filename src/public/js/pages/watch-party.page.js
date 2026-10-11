@@ -8,9 +8,10 @@ import { bindCountdown } from './watch-party/countdown.js';
 import { bindNotifications } from './watch-party/notifications.js';
 import { bindPlayerMount } from './watch-party/playerMount.js';
 import { bindSync } from './watch-party/sync.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { bindSocketHandlers } from './watch-party/socketHandlers.js';
 
-export default function WatchPartyPage({ partyId }) {
+export default function WatchPartyPage({ partyId }, pageScope) {
   const ctx = createWatchPartyContext({ partyId });
 
   bindLifecycle(ctx);
@@ -25,6 +26,7 @@ export default function WatchPartyPage({ partyId }) {
   bindSocketHandlers(ctx);
 
   window.addEventListener('hashchange', ctx.handleHashChange);
+  resolvePageScope(pageScope).onLeave(() => ctx.cleanup());
   ctx.init();
 
   return ctx.container;

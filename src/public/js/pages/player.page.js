@@ -3,8 +3,10 @@ import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';
 import { router } from '../router.js';
 import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 
-export default function PlayerPage({ id }) {
+export default function PlayerPage({ id }, pageScope) {
+  const scope = resolvePageScope(pageScope);
   const container = createElement('div', {
     className: 'player-page vanta-player-root'
   });
@@ -155,7 +157,10 @@ export default function PlayerPage({ id }) {
   };
 
   lockViewport();
+  // The hash change stops playback at once; leaving the page (also to
+  // another episode, which stays on #/player) is the guarantee.
   window.addEventListener('hashchange', handleHashChange);
+  scope.onLeave(cleanup);
   initialize();
 
   return container;

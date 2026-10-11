@@ -8,6 +8,7 @@ import { createAdminHeader } from '../../../src/public/js/pages/admin/adminHeade
 import { listAdminTools } from '../../../src/public/js/components/admin-tools/AdminToolRegistry.js';
 import AdminPage from '../../../src/public/js/pages/admin.page.js';
 import { NotificationsApi } from '../../../src/public/js/api/notifications.api.js';
+import { createPageScope } from '../../../src/public/js/utils/pageScope.js';
 import { notificationsStore } from '../../../src/public/js/store/notifications.store.js';
 
 vi.mock('../../../src/public/js/api/auth.api.js', () => ({
@@ -69,11 +70,19 @@ async function flush() {
   for (let i = 0; i < 6; i++) await Promise.resolve();
 }
 
-// Leaves the admin area the way the router sees it: a new hash, then the
-// hashchange event.
+// Renders the page in its own scope, the way the router does.
+let adminScope = null;
+function renderAdmin(params) {
+  adminScope = createPageScope();
+  return AdminPage(params, adminScope);
+}
+
+// Leaves the admin area the way the router does: a new hash, the hashchange
+// event, then the page's scope ends.
 function leaveAdmin(hash = '#/home') {
   window.history.replaceState(null, '', hash);
   window.dispatchEvent(new Event('hashchange'));
+  adminScope?.leave();
 }
 
 // The open area lives in a layer on document.body, not inside the page.
@@ -134,7 +143,7 @@ describe('AdminPage', () => {
 
   describe('Menü (#/admin)', () => {
     it('renders one card per registered area and nothing else', async () => {
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       const tools = listAdminTools();
@@ -160,7 +169,7 @@ describe('AdminPage', () => {
     });
 
     it('renders straight away for a session that already knows the role', () => {
-      const container = AdminPage();
+      const container = renderAdmin();
 
       expect(container.querySelector('.admin-page-loading')).toBeNull();
       expect(container.querySelector('.admin-menu-grid')).toBeTruthy();
@@ -168,7 +177,7 @@ describe('AdminPage', () => {
     });
 
     it('navigates to the area’s own route when a card is clicked', async () => {
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       const usersCard = Array.from(container.querySelectorAll('.admin-menu-card'))
@@ -181,7 +190,7 @@ describe('AdminPage', () => {
     it('shows open requests and reports together as a badge on the Anfragen card', async () => {
       NotificationsApi.getSummary.mockResolvedValue({ mine: { requests: 0, reports: 0 }, admin: { requests: 1, reports: 2 } });
 
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       const badge = container.querySelector('.admin-menu-badge');
@@ -192,7 +201,7 @@ describe('AdminPage', () => {
     it('renders without a badge when nothing waits or the count cannot be loaded', async () => {
       NotificationsApi.getSummary.mockRejectedValue(new Error('offline'));
 
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       expect(container.querySelectorAll('.admin-menu-card')).toHaveLength(listAdminTools().length);
@@ -200,7 +209,7 @@ describe('AdminPage', () => {
     });
 
     it('falls back to the menu for a section that is not registered', async () => {
-      const container = AdminPage({ section: 'does-not-exist' });
+      const container = renderAdmin({ section: 'does-not-exist' });
       await flush();
 
       expect(container.querySelector('.admin-menu-grid')).toBeTruthy();
@@ -212,7 +221,7 @@ describe('AdminPage', () => {
     it('opens the requests area as a layer over the menu on a deep link, without sliding', async () => {
       RequestsApi.getOpenRequests.mockResolvedValue([makeRequest()]);
 
-      const container = AdminPage({ section: 'requests' });
+      const container = renderAdmin({ section: 'requests' });
       await flush();
 
       expect(container.querySelector('.admin-menu-grid')).toBeTruthy();
@@ -226,7 +235,7 @@ describe('AdminPage', () => {
     it('opens only the users area and loads it', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
 
       expect(layer().querySelector('.admin-users-view')).toBeTruthy();
@@ -235,7 +244,7 @@ describe('AdminPage', () => {
     });
 
     it('renders the settings area without a search bar, since it has no filter', async () => {
-      AdminPage({ section: 'settings' });
+      renderAdmin({ section: 'settings' });
       await flush();
 
       expect(layer().querySelector('.admin-settings-panel')).toBeTruthy();
@@ -244,7 +253,7 @@ describe('AdminPage', () => {
     });
 
     it('titles the layer with the area label and its description, under a Zurück button', async () => {
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
 
       expect(layer().querySelector('.admin-layer-back').textContent).toContain('Zurück');
@@ -253,7 +262,7 @@ describe('AdminPage', () => {
     });
 
     it('names the search bar after the area it belongs to', async () => {
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
       expect(createAdminHeader.mock.calls[0][0]).toMatchObject({
         placeholder: 'Nutzer durchsuchen…',
@@ -266,7 +275,7 @@ describe('AdminPage', () => {
         users: [makeUser({ id: 'u1', name: 'alice' }), makeUser({ id: 'u2', name: 'bob' })]
       });
 
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
 
       expect(layer().querySelectorAll('.admin-user-row')).toHaveLength(2);
@@ -280,7 +289,7 @@ describe('AdminPage', () => {
     });
 
     it('renders a search bar only for the users area', async () => {
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
       expect(layer().querySelector('.admin-header-bar')).toBeTruthy();
       leaveAdmin();
@@ -288,7 +297,7 @@ describe('AdminPage', () => {
       for (const section of ['requests', 'settings']) {
         window.history.replaceState(null, '', '#/admin');
         createAdminHeader.mockClear();
-        AdminPage({ section });
+        renderAdmin({ section });
         await flush();
         expect(layer().querySelector('.admin-header-bar')).toBeNull();
         expect(createAdminHeader).not.toHaveBeenCalled();
@@ -298,7 +307,7 @@ describe('AdminPage', () => {
 
     it('slides an area in when the hash moves from the menu to it, and back out on the way back', async () => {
       vi.useFakeTimers();
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       expect(container.handleHashChange('#/admin/requests')).toBe(true);
@@ -319,7 +328,7 @@ describe('AdminPage', () => {
 
     it('steps back through the history from an area opened from the menu', async () => {
       const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       container.handleHashChange('#/admin/users');
@@ -334,7 +343,7 @@ describe('AdminPage', () => {
     it('redirects a non-admin from the cached session, with no spinner and no layout', () => {
       authStore.getState.mockReturnValue({ user: { id: 'u1', isAdmin: false } });
 
-      const container = AdminPage();
+      const container = renderAdmin();
 
       expect(appStore.showToast).toHaveBeenCalledWith('Kein Zugriff', 'error');
       expect(window.location.hash).toBe('#/home');
@@ -348,7 +357,7 @@ describe('AdminPage', () => {
       let resolveUser;
       AuthApi.getCurrentUser.mockReturnValue(new Promise(resolve => { resolveUser = resolve; }));
 
-      const container = AdminPage();
+      const container = renderAdmin();
 
       expect(container.querySelector('.admin-page-loading')).toBeTruthy();
       expect(container.querySelector('.admin-page-layout')).toBeNull();
@@ -364,7 +373,7 @@ describe('AdminPage', () => {
       authStore.getState.mockReturnValue({ user: null });
       AuthApi.getCurrentUser.mockResolvedValue({ user: { id: 'u1', isAdmin: false } });
 
-      const container = AdminPage();
+      const container = renderAdmin();
       await flush();
 
       expect(appStore.showToast).toHaveBeenCalledWith('Kein Zugriff', 'error');
@@ -377,7 +386,7 @@ describe('AdminPage', () => {
       AuthApi.getCurrentUser.mockRejectedValue(new Error('network error'));
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      AdminPage();
+      renderAdmin();
       await flush();
 
       expect(appStore.showToast).toHaveBeenCalledWith('Kein Zugriff', 'error');
@@ -386,10 +395,10 @@ describe('AdminPage', () => {
       consoleError.mockRestore();
     });
 
-    it('tears down only once and takes its own hashchange listener with it', async () => {
+    it('tears down only once when the page is left', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
 
       layer().querySelector('.admin-user-row-summary').click();
@@ -398,8 +407,7 @@ describe('AdminPage', () => {
       leaveAdmin();
       await flush();
 
-      // Nach dem Abbau darf ein weiterer Routenwechsel nichts mehr auslösen:
-      // der Listener hat sich selbst entfernt.
+      // Nach dem Abbau darf ein weiterer Routenwechsel nichts mehr auslösen.
       AdminUsersApi.listUsers.mockClear();
       leaveAdmin('#/search');
       await flush();
@@ -410,7 +418,7 @@ describe('AdminPage', () => {
     it('closes a ban confirmation that is still open when the route changes', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser({ id: 'u1', name: 'alice' })] });
 
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
 
       layer().querySelector('.admin-user-row-summary').click();
@@ -434,7 +442,7 @@ describe('AdminPage', () => {
       let resolveMe;
       AuthApi.getCurrentUser.mockReturnValue(new Promise(resolve => { resolveMe = resolve; }));
 
-      AdminPage();
+      renderAdmin();
       leaveAdmin('#/search');
       resolveMe({ user: { id: 'u9', isAdmin: false } });
       await flush();
@@ -446,7 +454,7 @@ describe('AdminPage', () => {
     it('closes the user detail modal when the route changes', async () => {
       AdminUsersApi.listUsers.mockResolvedValue({ users: [makeUser()] });
 
-      AdminPage({ section: 'users' });
+      renderAdmin({ section: 'users' });
       await flush();
 
       layer().querySelector('.admin-user-row-summary').click();
@@ -455,8 +463,8 @@ describe('AdminPage', () => {
       leaveAdmin();
       await flush();
 
-      // Der Router hat keinen Unmount-Hook — das Modal hängt an document.body
-      // und bliebe sonst über den Seitenwechsel hinaus stehen.
+      // Das Modal hängt an document.body und bliebe ohne den Abbau beim
+      // Verlassen der Seite über den Seitenwechsel hinaus stehen.
       expect(document.querySelector('.admin-user-dialog-detail')).toBeNull();
       // Und kein Nachladen mehr, nachdem die Seite abgebaut ist.
       expect(AdminUsersApi.listUsers).toHaveBeenCalledTimes(1);

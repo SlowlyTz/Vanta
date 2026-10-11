@@ -10,6 +10,7 @@ import { createActorModal } from './detail/actorModal.js';
 import { buildSeasonsSection } from './detail/seasonsSection.js';
 import { loadDetailData } from './detail/detailData.js';
 import { buildHelpLinks } from './detail/helpLinks.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { extractYouTubeVideoId, openTrailerModal } from '../components/trailerModal.js';
 
 function getYouTubeTrailerId(item) {
@@ -87,7 +88,8 @@ function createFavoriteButton(item) {
   return container;
 }
 
-export default function DetailPage({ id }) {
+export default function DetailPage({ id }, pageScope) {
+  const { signal } = resolvePageScope(pageScope);
   const container = createElement('div', { className: 'page-container' });
   container.dataset.edgeTop = 'true';
   const actorModal = createActorModal({ currentItemId: id });
@@ -98,7 +100,7 @@ export default function DetailPage({ id }) {
     container.appendChild(createSectionLoader({ label: 'Details werden geladen' }));
 
     try {
-      const { item, similar, seasons, normalized } = await loadDetailData(id);
+      const { item, similar, seasons, normalized } = await loadDetailData(id, { signal });
       const youtubeTrailerId = getYouTubeTrailerId(item);
 
       const actors = normalized.actors || [];

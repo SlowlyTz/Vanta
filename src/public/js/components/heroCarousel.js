@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { createMetaIcon } from './metaIcons.js';
 import { getItemImageUrl } from '../utils/image.js';
 import { formatYear, formatTicksToDuration } from '../utils/format.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 
 const SLIDE_INTERVAL = 8000;
 
@@ -18,7 +19,7 @@ function createMetaPill({ className, icon, text }) {
   );
 }
 
-export function HeroCarousel({ items = [] }) {
+export function HeroCarousel({ items = [], pageScope = null }) {
   if (!items || items.length === 0) return null;
 
   const container = createElement('div', { className: 'home-hero hero-carousel' });
@@ -183,6 +184,7 @@ export function HeroCarousel({ items = [] }) {
   }
 
   container.destroyCarousel = cleanup;
+  resolvePageScope(pageScope).onLeave(cleanup);
 
   return container;
 }

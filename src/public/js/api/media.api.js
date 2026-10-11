@@ -1,44 +1,45 @@
 import { request } from './client.js';
 
 export const MediaApi = {
-  getHome() {
-    return request('/api/media/home');
+  // Read calls take `{ signal }` (a page scope's) as their last argument.
+  getHome({ signal } = {}) {
+    return request('/api/media/home', { signal });
   },
 
-  getHomeSectionGroup(group) {
-    return request(`/api/media/home-sections/${encodeURIComponent(group)}`);
+  getHomeSectionGroup(group, { signal } = {}) {
+    return request(`/api/media/home-sections/${encodeURIComponent(group)}`, { signal });
   },
 
-  search(query) {
-    return request(`/api/media/search?q=${encodeURIComponent(query)}`);
+  search(query, { signal } = {}) {
+    return request(`/api/media/search?q=${encodeURIComponent(query)}`, { signal });
   },
 
-  getItem(id) {
-    return request(`/api/media/item/${id}`);
+  getItem(id, { signal } = {}) {
+    return request(`/api/media/item/${id}`, { signal });
   },
 
-  getSimilar(id) {
-    return request(`/api/media/item/${id}/similar`);
+  getSimilar(id, { signal } = {}) {
+    return request(`/api/media/item/${id}/similar`, { signal });
   },
 
-  getSeasons(id) {
-    return request(`/api/media/item/${id}/seasons`);
+  getSeasons(id, { signal } = {}) {
+    return request(`/api/media/item/${id}/seasons`, { signal });
   },
 
-  getEpisodes(id, seasonId) {
+  getEpisodes(id, seasonId, { signal } = {}) {
     let url = `/api/media/item/${id}/episodes`;
     if (seasonId) {
       url += `?seasonId=${seasonId}`;
     }
-    return request(url);
+    return request(url, { signal });
   },
 
   getGenres(type) {
     return request(`/api/media/genres?type=${type}`);
   },
 
-  getStudios() {
-    return request('/api/media/studios');
+  getStudios({ signal } = {}) {
+    return request('/api/media/studios', { signal });
   },
 
   getLibrary(type, genre = null, studio = null, page = 1, limit = 50, options = {}) {
@@ -52,7 +53,7 @@ export const MediaApi = {
     if (options.publisherId) {
       url += `&publisher=${encodeURIComponent(options.publisherId)}`;
     }
-    return request(url);
+    return request(url, { signal: options.signal });
   },
 
   getPerson(id) {
@@ -141,16 +142,16 @@ export const MediaApi = {
     return request(`/api/media/trailers?${params.toString()}`);
   },
 
-  getProfileContinueWatching(page = 1, limit = 24) {
-    return request(`/api/media/profile/continue-watching?page=${page}&limit=${limit}`);
+  getProfileContinueWatching(page = 1, limit = 24, { signal } = {}) {
+    return request(`/api/media/profile/continue-watching?page=${page}&limit=${limit}`, { signal });
   },
 
-  getProfileHistory(page = 1, limit = 24) {
-    return request(`/api/media/profile/history?page=${page}&limit=${limit}`);
+  getProfileHistory(page = 1, limit = 24, { signal } = {}) {
+    return request(`/api/media/profile/history?page=${page}&limit=${limit}`, { signal });
   },
 
-  getProfileFavorites(page = 1, limit = 24) {
-    return request(`/api/media/profile/favorites?page=${page}&limit=${limit}`);
+  getProfileFavorites(page = 1, limit = 24, { signal } = {}) {
+    return request(`/api/media/profile/favorites?page=${page}&limit=${limit}`, { signal });
   },
 
   favoriteItem(id) {

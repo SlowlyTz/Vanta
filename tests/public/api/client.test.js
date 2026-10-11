@@ -68,6 +68,30 @@ describe('request()', () => {
     expect(sessionStorage.getItem('vanta.sessionNotice')).toBeNull();
   });
 
+  it('never settles a request of a page that was left, and shows nothing for it', async () => {
+    const { createPageScope } = await import('../../../src/public/js/utils/pageScope.js');
+    const scope = createPageScope();
+    global.fetch = vi.fn((url, { signal }) => new Promise((resolve, reject) => {
+      signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+    }));
+    const networkError = vi.fn();
+    window.addEventListener('vanta:network-error', networkError);
+
+    let settled = false;
+    request('/api/media/home', { signal: scope.signal }).then(() => { settled = true; }, () => { settled = true; });
+    scope.leave();
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(settled).toBe(false);
+    expect(networkError).not.toHaveBeenCalled();
+
+    // Started after leaving: not even sent.
+    global.fetch.mockClear();
+    request('/api/media/home', { signal: scope.signal });
+    expect(global.fetch).not.toHaveBeenCalled();
+    window.removeEventListener('vanta:network-error', networkError);
+  });
+
   it('passes through code, limit and activeStreams for a 429 stream-limit error', async () => {
     global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({
       status: 429,

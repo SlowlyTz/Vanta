@@ -226,7 +226,7 @@ describe('DetailPage prefetch cache', () => {
     DetailPage({ id: 'item-1' });
     await flush();
 
-    expect(MediaApi.getItem).toHaveBeenCalledWith('item-1');
+    expect(MediaApi.getItem).toHaveBeenCalledWith('item-1', { signal: expect.any(AbortSignal) });
   });
 });
 

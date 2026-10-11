@@ -4,6 +4,7 @@ import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
 import { checkServerBuild } from './utils/appVersion.js';
 import { Navbar } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
+import { createPageScope, runInPageScope, setActivePageScope } from './utils/pageScope.js';
 
 // Focuses the page's [data-autofocus] element once it is attached to the document.
 // Pages cannot do this themselves: their factory runs while the element is still
@@ -32,6 +33,15 @@ export class Router {
     this.navbar = null;
     this.main = null;
     this.unsubscribeAuth = null;
+    this.currentScope = null;
+  }
+
+  // Ends the shown page's scope: its listeners, timers, observers and
+  // requests stop before its DOM goes.
+  leaveCurrentPage() {
+    const scope = this.currentScope;
+    this.currentScope = null;
+    scope?.leave();
   }
 
   add(path, pageLoader, options = {}) {
@@ -166,6 +176,11 @@ export class Router {
   }
 
   async handleRoute() {
+    // A newer navigation that finishes its awaits first wins; an older one
+    // that resumes afterwards must not put its page over it.
+    const navigation = (this.navigationId = (this.navigationId || 0) + 1);
+    const superseded = () => navigation !== this.navigationId;
+
     let hash = window.location.hash || '#/home';
 
     if (!hash.startsWith('#/')) {
@@ -188,6 +203,7 @@ export class Router {
       const check = await authStore.checkAuth();
       isAuthenticated = check;
       user = authStore.getState().user;
+      if (superseded()) return;
     }
 
     if (route.requiresAuth && !isAuthenticated) {
@@ -213,8 +229,19 @@ export class Router {
     try {
       const pageParams = { ...route.defaultParams, ...params };
       const pageComponentModule = await route.pageLoader();
-      const pageElement = pageComponentModule.default(pageParams);
+      if (superseded()) return;
+      const scope = createPageScope();
+      let pageElement;
+      try {
+        pageElement = runInPageScope(scope, () => pageComponentModule.default(pageParams, scope));
+      } catch (error) {
+        scope.leave();
+        throw error;
+      }
 
+      this.leaveCurrentPage();
+      this.currentScope = scope;
+      setActivePageScope(scope);
       this.updateShellState(hash, user);
       this.currentPage = pageElement;
       await this.renderPage(pageElement, pageUsesShell);

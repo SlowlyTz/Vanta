@@ -8,6 +8,7 @@ import { listAdminTools, createAdminTool } from '../components/admin-tools/Admin
 import { closeAllAdminModals } from '../components/admin-tools/adminModal.js';
 import { createAdminMenu } from './admin/adminMenu.js';
 import { createAdminHeader } from './admin/adminHeader.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { openAdminLayer } from './admin/adminLayer.js';
 
 // Beschriftung der Suchleiste je Bereich. Bereiche ohne setFilter (Anfragen,
@@ -36,7 +37,7 @@ const isAdminHash = hash => hash === '#/admin' || SECTION_HASH.test(hash);
 // (nur requiresAuth), also prüft die Seite selbst, ob der Nutzer Admin ist.
 // Der eigentliche Schutz sitzt serverseitig in requireFreshAdmin — dieser
 // Check ist reine UX.
-export default function AdminPage({ section = null } = {}) {
+export default function AdminPage({ section = null } = {}, pageScope) {
   const container = createElement('div', { className: 'admin-page page-container content-section' });
 
   let open = null;
@@ -52,14 +53,12 @@ export default function AdminPage({ section = null } = {}) {
     layer.close({ immediate });
   };
 
-  // Der Router verwirft Seiten ohne Unmount-Hook (main.innerHTML = ''). Alles,
-  // was diese Seite außerhalb ihres Containers hinterlässt — die Ebene eines
-  // Bereichs, das Nutzer-Detailmodal samt Escape-Handler — muss deshalb weg,
-  // sobald die Route die Admin-Verwaltung verlässt.
+  // Alles, was diese Seite außerhalb ihres Containers hinterlässt — die Ebene
+  // eines Bereichs, das Nutzer-Detailmodal samt Escape-Handler — muss weg,
+  // sobald der Router die Admin-Verwaltung verlässt.
   function teardown() {
     if (torndown) return;
     torndown = true;
-    window.removeEventListener('hashchange', handleForeignHash);
     closeSection({ immediate: true });
     unsubscribers.splice(0).forEach(unsubscribe => unsubscribe());
     // Modals live on document.body, which the router never clears — the user
@@ -67,11 +66,7 @@ export default function AdminPage({ section = null } = {}) {
     closeAllAdminModals();
   }
 
-  function handleForeignHash() {
-    if (!isAdminHash(window.location.hash)) teardown();
-  }
-
-  window.addEventListener('hashchange', handleForeignHash);
+  resolvePageScope(pageScope).onLeave(teardown);
 
   const denyAccess = () => {
     if (torndown) return;

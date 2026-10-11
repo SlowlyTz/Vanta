@@ -37,7 +37,7 @@ describe('ProfilePage', () => {
     ProfilePage();
     await flush();
 
-    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 24);
+    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
     expect(MediaApi.getProfileHistory).not.toHaveBeenCalled();
     expect(MediaApi.getProfileFavorites).not.toHaveBeenCalled();
   });
@@ -50,7 +50,7 @@ describe('ProfilePage', () => {
     const container = ProfilePage({ initialTab: 'favorites' });
     await flush();
 
-    expect(MediaApi.getProfileFavorites).toHaveBeenCalledWith(1, 24);
+    expect(MediaApi.getProfileFavorites).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
     expect(MediaApi.getProfileContinueWatching).not.toHaveBeenCalled();
     expect(MediaApi.getProfileHistory).not.toHaveBeenCalled();
 
@@ -66,7 +66,7 @@ describe('ProfilePage', () => {
     ProfilePage({ initialTab: 'not-a-real-tab' });
     await flush();
 
-    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 24);
+    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
   });
 
   it('shows only the tab-content loader while header and tabs stay visible', async () => {
@@ -122,7 +122,7 @@ describe('ProfilePage', () => {
     historyButton.click();
     await flush();
 
-    expect(MediaApi.getProfileHistory).toHaveBeenCalledWith(1, 24);
+    expect(MediaApi.getProfileHistory).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
   });
 
@@ -176,7 +176,7 @@ describe('ProfilePage', () => {
     favButton.click();
     await flush();
 
-    expect(MediaApi.getProfileFavorites).toHaveBeenCalledWith(1, 24);
+    expect(MediaApi.getProfileFavorites).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
   });
 
@@ -204,7 +204,7 @@ describe('ProfilePage', () => {
     loadMoreBtn.click();
     await flush();
 
-    expect(MediaApi.getProfileContinueWatching).toHaveBeenLastCalledWith(2, 24);
+    expect(MediaApi.getProfileContinueWatching).toHaveBeenLastCalledWith(2, 24, { signal: expect.any(AbortSignal) });
     expect(container.querySelectorAll('.media-card')).toHaveLength(4);
     expect(container.querySelector('.profile-load-more')).toBeNull();
   });

@@ -2,9 +2,11 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 
-export default function SearchPage() {
+export default function SearchPage(params, pageScope) {
+  const { signal } = resolvePageScope(pageScope);
   let debounceTimeout = null;
   let searchRunId = 0;
 
@@ -41,7 +43,7 @@ export default function SearchPage() {
     resultsGrid.appendChild(createSectionLoader({ label: `Suche nach "${query}"...` }));
 
     try {
-      const results = await MediaApi.search(query);
+      const results = await MediaApi.search(query, { signal });
       if (runId !== searchRunId) return;
 
       resultsGrid.innerHTML = '';

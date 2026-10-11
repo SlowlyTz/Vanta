@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 
-export function HorizontalCarousel({ title, items = [], trackClass = '', containerClass = '', href = null, actionLabel = 'Alle anzeigen' }) {
+export function HorizontalCarousel({ title, items = [], trackClass = '', containerClass = '', href = null, actionLabel = 'Alle anzeigen', pageScope = null }) {
   if (!items || items.length === 0) return null;
 
   const prevBtn = createElement('button', {
@@ -120,16 +121,19 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
 
   listContainer.addEventListener('scroll', requestArrowUpdate, { passive: true });
 
+  const scope = resolvePageScope(pageScope);
   if (typeof ResizeObserver !== 'undefined') {
     const resizeObserver = new ResizeObserver(requestArrowUpdate);
     resizeObserver.observe(listContainer);
     listContainer._carouselResizeObserver = resizeObserver;
+    scope.onLeave(() => resizeObserver.disconnect());
   } else {
-    window.addEventListener('resize', requestArrowUpdate);
+    scope.listen(window, 'resize', requestArrowUpdate);
   }
 
   requestArrowUpdate();
-  setTimeout(requestArrowUpdate, 100);
+  const settleTimer = setTimeout(requestArrowUpdate, 100);
+  scope.onLeave(() => clearTimeout(settleTimer));
 
   return container;
 }
