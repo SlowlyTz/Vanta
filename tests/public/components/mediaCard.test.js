@@ -24,9 +24,9 @@ describe('MediaCard', () => {
     };
 
     const card = MediaCard({ item: series, sourceType: 'profile' });
-    card.click();
 
-    expect(window.location.hash).toBe('#/item/s1');
+    expect(card.tagName).toBe('A');
+    expect(card.getAttribute('href')).toBe('#/item/s1');
   });
 
   it('shows the series name, SERIE badge and season count instead of an episode label', () => {
@@ -50,9 +50,8 @@ describe('MediaCard', () => {
     const movie = { Id: 'm1', Type: 'Movie', Name: 'Inception', ProductionYear: 2010 };
 
     const card = MediaCard({ item: movie });
-    card.click();
 
-    expect(window.location.hash).toBe('#/item/m1');
+    expect(card.getAttribute('href')).toBe('#/item/m1');
   });
 
   it('gives the poster image a srcset, sizes and async decoding without changing the src', () => {
@@ -118,5 +117,27 @@ describe('MediaCard', () => {
     dialog.querySelector('.confirm-dialog-confirm').click();
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('remembers where to come back to on a plain click only', async () => {
+    const { consumeReturnMarker } = await import('../../../src/public/js/utils/routeState.js');
+    window.location.hash = '#/movies';
+    const card = MediaCard({ item: { Id: 'm1', Type: 'Movie', Name: 'Inception' }, sourceType: 'library' });
+
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
+    expect(consumeReturnMarker('#/movies')).toBeNull();
+
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(consumeReturnMarker('#/movies')).toMatchObject({ itemId: 'm1' });
+  });
+
+  it('keeps the played toggle out of the link, so both stay operable', () => {
+    const episode = { Id: 'e1', Type: 'Episode', Name: 'Pilot', SeriesName: 'Dark', ParentIndexNumber: 1, IndexNumber: 1, UserData: { Played: false } };
+    const card = MediaCard({ item: episode, landscape: true, playedToggle: true });
+
+    expect(card.tagName).toBe('DIV');
+    expect(card.querySelector('a.media-card-link').getAttribute('href')).toBe('#/item/e1');
+    expect(card.querySelector('a .played-toggle')).toBeNull();
+    expect(card.querySelector('.played-toggle')).toBeTruthy();
   });
 });

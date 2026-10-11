@@ -19,6 +19,31 @@
   transform-style: preserve-3d;
 }
 
+/* The card (or its inner link, next to a played toggle) is a link. */
+a.media-card,
+.media-card-link {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.media-card-link {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+a.media-card:focus,
+.media-card-link:focus {
+  outline: none;
+}
+
+a.media-card:focus-visible .media-card-image-container,
+.media-card-link:focus-visible .media-card-image-container {
+  outline: 3px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 3px;
+}
+
 /* Landscape Mode (Continue Watching, Backdrops) */
 .media-card.landscape .media-card-image-container {
   aspect-ratio: 16/9;

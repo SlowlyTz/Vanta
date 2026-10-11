@@ -89,6 +89,26 @@
   transition: transform var(--transition-fast), opacity var(--transition-fast);
 }
 
+.cast-card-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.cast-card-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 4px;
+}
+
 .cast-card:hover {
   transform: translateY(-3px) scale(1.03);
   opacity: 0.95;

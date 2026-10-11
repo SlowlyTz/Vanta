@@ -141,8 +141,7 @@ describe('ProfilePage', () => {
     expect(seriesCard).toBeTruthy();
     expect(seriesCard.textContent).not.toMatch(/S\d{2}E\d{2}/);
 
-    seriesCard.click();
-    expect(window.location.hash).toBe('#/item/s1');
+    expect(seriesCard.getAttribute('href')).toBe('#/item/s1');
   });
 
   it('renders one series card per grouped series in History and navigates to its detail route', async () => {
@@ -161,8 +160,7 @@ describe('ProfilePage', () => {
     const seriesCard = container.querySelector('.media-card');
     expect(seriesCard.querySelector('.media-card-badge').textContent).toBe('SERIE');
 
-    seriesCard.click();
-    expect(window.location.hash).toBe('#/item/s2');
+    expect(seriesCard.getAttribute('href')).toBe('#/item/s2');
   });
 
   it('loads the Favoriten tab when clicked', async () => {

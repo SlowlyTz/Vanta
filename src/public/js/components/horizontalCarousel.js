@@ -24,13 +24,18 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
   const listContainer = createElement('div', {
     className: `carousel-track ${trackClass}`,
     tabindex: '0',
-    role: 'list'
+    role: 'list',
+    'aria-label': title || undefined
   });
 
   items.forEach(item => {
-    if (item) {
-      listContainer.appendChild(item);
-    }
+    if (!item) return;
+    // A link or button keeps its own role; it gets a list item around it.
+    const listItem = item.matches('a[href], button')
+      ? createElement('div', { className: 'carousel-list-item' }, item)
+      : item;
+    if (!listItem.hasAttribute('role')) listItem.setAttribute('role', 'listitem');
+    listContainer.appendChild(listItem);
   });
 
   const getMaxScroll = () => Math.max(0, listContainer.scrollWidth - listContainer.clientWidth);

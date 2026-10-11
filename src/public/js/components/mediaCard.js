@@ -71,26 +71,11 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   // Watched state, like Jellyfin's check on the card: a plain badge, or the
   // toggle itself where the card offers "mark as played" (episodes).
   const isPlayed = item.UserData?.Played === true;
-  if (playedToggle) {
-    imageContainerChildren.push(createPlayedToggle(item, {
-      compact: true,
-      onChange: (played) => {
-        card.classList.toggle('is-played', played);
-        if (played) card.querySelector('.media-progress-bar')?.remove();
-      }
-    }));
-  } else if (isPlayed) {
+  if (!playedToggle && isPlayed) {
     imageContainerChildren.push(createPlayedBadge());
   }
 
-  const card = createElement('div', {
-    className: `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}`,
-    dataset: { itemId: item.Id },
-    onClick: () => {
-      markReturnFromDetail({ itemId: item.Id, sourceType });
-      window.location.hash = `#/item/${item.Id}`;
-    }
-  },
+  const content = [
     createElement('div', { className: 'media-card-image-container' },
       imageContainerChildren
     ),
@@ -98,6 +83,35 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
       createElement('div', { className: 'media-card-title' }, cardTitle),
       cardSubtitle ? createElement('div', { className: 'media-card-subtitle' }, cardSubtitle) : null
     )
+  ];
+
+  // The card is a real link: keyboard, screen readers, a TV remote and
+  // "open in new tab" all work. Only a plain click marks where to come back
+  // to; a click with a modifier opens another tab and leaves this page as is.
+  const linkAttributes = {
+    href: `#/item/${item.Id}`,
+    onClick: (event) => {
+      if (event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      markReturnFromDetail({ itemId: item.Id, sourceType });
+    }
+  };
+  const className = `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}`;
+
+  if (!playedToggle) {
+    return createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id } }, content);
+  }
+
+  // A button cannot sit inside a link: with the played toggle the card is a
+  // box holding the link and, over its image, the toggle.
+  const card = createElement('div', { className: `${className} has-played-toggle`, dataset: { itemId: item.Id } },
+    createElement('a', { ...linkAttributes, className: 'media-card-link' }, content),
+    createPlayedToggle(item, {
+      compact: true,
+      onChange: (played) => {
+        card.classList.toggle('is-played', played);
+        if (played) card.querySelector('.media-progress-bar')?.remove();
+      }
+    })
   );
 
   return card;
