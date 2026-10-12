@@ -53,7 +53,7 @@ export function createImageAccess({
       if (libraryId) {
         try {
           const visible = await visibleLibraries(userId, token);
-          return visible.includes(libraryId);
+          return visible === null || visible.includes(libraryId);
         } catch {
           // No library list (Jellyfin down, nothing cached): ask per item.
         }

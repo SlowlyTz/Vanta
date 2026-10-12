@@ -32,6 +32,11 @@ describe('image access', () => {
     expect(fetchItem).not.toHaveBeenCalled();
   });
 
+  it('lets a user with access to every library see every catalogue title', async () => {
+    const { access } = setup({ libraries: { k1: 'lib-kids-hidden' }, visible: null });
+    expect(await ask(access, 'k1')).toBe(true);
+  });
+
   it('asks Jellyfin once for anything else and remembers the answer for a while', async () => {
     const { access, fetchItem, advance } = setup({ jellyfin: 404 });
     expect(await ask(access, 'episode-1')).toBe(false);

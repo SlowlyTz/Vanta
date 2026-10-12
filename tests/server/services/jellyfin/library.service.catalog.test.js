@@ -26,9 +26,9 @@ const LIBRARIES = [
   { id: 'lib-s', name: 'S', collectionType: 'tvshows' }
 ];
 
-// Jellyfin is only asked which libraries the user may see; every browsing
-// call must be answered by the mirror.
-const viewsFor = (...ids) => ({ Items: ids.map(Id => ({ Id })) });
+// Jellyfin is only asked which libraries the user may see (their access
+// policy); every browsing call must be answered by the mirror.
+const viewsFor = (...ids) => ({ Policy: { EnableAllFolders: false, EnabledFolders: ids } });
 
 async function fillCatalog() {
   const db = createCatalogDb({ SQL });
@@ -48,14 +48,14 @@ describe('LibraryService with a filled catalogue', () => {
     setActiveCatalogReader(null);
   });
 
-  it('answers getMovies/getSeries from the mirror after one Views lookup', async () => {
+  it('answers getMovies/getSeries from the mirror after one access lookup', async () => {
     const movies = await LibraryService.getMovies('u1', 't');
     const series = await LibraryService.getSeries('u1', 't');
 
     expect(movies.map(i => i.Id)).toEqual(['m1', 'm2']);
     expect(series.map(i => i.Id)).toEqual(['s1']);
     expect(jellyfinJson).toHaveBeenCalledTimes(1);
-    expect(jellyfinJson).toHaveBeenCalledWith('/Users/u1/Views', { token: 't' });
+    expect(jellyfinJson).toHaveBeenCalledWith('/Users/u1', { token: 't' });
   });
 
   it('hides libraries the user cannot see', async () => {
@@ -70,6 +70,14 @@ describe('LibraryService with a filled catalogue', () => {
     expect(genres).toEqual([{ Name: 'Drama' }]);
   });
 
+  it('applies no library filter to a user with access to every library', async () => {
+    jellyfinJson.mockResolvedValue({ Policy: { EnableAllFolders: true, EnabledFolders: [] } });
+
+    const page = await LibraryService.getLibrary('u3', 't', 'Movie', null, null, 1, 1);
+
+    expect(page.totalRecordCount).toBe(2);
+  });
+
   it('serves search, genres, studios, library pages and the trailer index locally', async () => {
     expect((await LibraryService.search('u1', 't', 'du')).map(i => i.Id)).toEqual(['m1']);
     expect(await LibraryService.getGenres('u1', 't', 'Series')).toEqual([{ Name: 'Drama' }]);
@@ -78,7 +86,7 @@ describe('LibraryService with a filled catalogue', () => {
     expect((await LibraryService.getLibraryByStudioNames('u1', 't', 'Movie,Series', ['Netflix'])).items.map(i => i.Id)).toEqual(['s1']);
     expect((await LibraryService.getAllMoviesAndSeries('u1', 't')).length).toBe(3);
 
-    // Everything above shares the single cached Views lookup.
+    // Everything above shares the single cached access lookup.
     expect(jellyfinJson).toHaveBeenCalledTimes(1);
   });
 
