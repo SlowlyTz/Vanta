@@ -72,3 +72,96 @@
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
+
+/* Sleep timer: the last minute counts down in a card at the top right. */
+.vanta-sleep-notice {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 58;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 10px 10px 10px 14px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 14px;
+  background: rgb(18 18 22 / 0.88);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+  color: #fff;
+  font: 500 0.92rem Outfit, system-ui, sans-serif;
+  animation: vanta-sleep-in 220ms ease;
+}
+
+.vanta-sleep-notice[hidden] {
+  display: none;
+}
+
+.vanta-sleep-notice-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+.vanta-sleep-notice strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-sleep-notice-cancel {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0b0b0d;
+  font: 650 0.85rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.vanta-sleep-notice-cancel:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+@keyframes vanta-sleep-in {
+  from { opacity: 0; transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vanta-sleep-notice { animation: none; }
+}
+
+.vanta-sleep-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vanta-sleep-custom-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vanta-sleep-custom-field input {
+  width: 64px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+  font: 600 0.95rem Outfit, system-ui, sans-serif;
+  text-align: center;
+}
+
+.vanta-sleep-custom-start {
+  margin-left: auto;
+}
+
+.vanta-sleep-custom-row .vanta-settings-segment {
+  min-width: 36px;
+  padding: 0 12px;
+  background: rgb(255 255 255 / 0.08);
+}

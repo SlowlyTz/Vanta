@@ -28,6 +28,7 @@ import { bindPreferences } from './preferences.js';
 import { createHelpOverlay } from './help.js';
 import { bindSegments } from './segments.js';
 import { bindStillWatching } from './stillWatching.js';
+import { bindSleepTimer } from './sleepTimer.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -37,6 +38,7 @@ export async function mountVantaPlayer(options) {
   bindLoadIndicator(context);
   bindReporterAndOrientation(context);
   bindSourceSwitchIntegration(context);
+  bindSleepTimer(context);
   bindMenus(context);
   bindPlayerEvents(context);
   bindTransportControls(context);

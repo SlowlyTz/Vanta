@@ -5,7 +5,10 @@ import { router } from '../router.js';
 import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { preferencesStore } from '../store/preferences.store.js';
-import { createIdleCarry } from '../utils/stillWatchingCarry.js';
+import { createPlayerCarry } from '../utils/playerCarry.js';
+
+// `#/item/<id>` (also with a query) names the detail page playback started from.
+const originItemId = (hash) => /^#\/item\/([^/?]+)/.exec(hash || '')?.[1] || null;
 
 export default function PlayerPage({ id }, pageScope) {
   const scope = resolvePageScope(pageScope);
@@ -17,10 +20,18 @@ export default function PlayerPage({ id }, pageScope) {
   let playableId = id;
   let cleaningUp = false;
   let scrollLockY = 0;
-  // Playback without input so far; carried over to the next episode, so
-  // "Schaust du noch?" also comes during a long autoplay chain.
-  const idleCarry = createIdleCarry();
-  let idleMs = idleCarry.take();
+  // Carried over to the next episode: playback without input so far (so
+  // "Schaust du noch?" also comes during a long autoplay chain), the sleep
+  // timer, and the detail page playback was started from.
+  const playerCarry = createPlayerCarry();
+  const carried = playerCarry.take();
+  let idleMs = carried.idleMs || 0;
+  let sleepState = carried.sleep || null;
+  const previousItemId = originItemId(router.previousHash);
+  const originId = carried.originId || previousItemId || id;
+  // Came straight from that detail page: it is the history entry below this
+  // one (episode switches replace the entry), so going back lands there.
+  const originInHistory = carried.originId ? Boolean(carried.originInHistory) : Boolean(previousItemId);
 
   const handleTouchMove = event => {
     if (event.target.closest('media-player, button')) return;
@@ -63,7 +74,7 @@ export default function PlayerPage({ id }, pageScope) {
   // episodes in-player doesn't leave a trail of stale player entries that "Zurück"
   // would have to click through before reaching the series page.
   const navigateToEpisode = episodeId => {
-    idleCarry.give(idleMs);
+    playerCarry.give({ idleMs, sleep: sleepState, originId, originInHistory });
     window.history.replaceState(
       window.history.state,
       '',
@@ -145,6 +156,16 @@ export default function PlayerPage({ id }, pageScope) {
           afterMs: preferencesStore.get('stillWatchingHours') * 60 * 60 * 1000,
           initialIdleMs: idleMs,
           onIdleChange: value => { idleMs = value; }
+        },
+        sleepTimer: {
+          initial: sleepState,
+          onChange: state => { sleepState = state.mode === 'off' ? null : state; }
+        },
+        // The sleep timer ran out: stop and show the title playback started from.
+        onSleep: async () => {
+          await cleanup();
+          if (originInHistory) window.history.back();
+          else window.location.replace(`#/item/${originId}`);
         },
         episodeBrowser: episodeContext ? {
           enabled: true,

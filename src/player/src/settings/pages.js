@@ -223,3 +223,48 @@ export function renderParticipantsPage(body, { watchParty, pendingBan }) {
   });
   body.appendChild(list);
 }
+
+// The sleep timer: presets, "bis zum Ende" and a custom time in minutes
+// (− and + work with a remote as well as the number field).
+export function renderSleepTimerPage(body, { presets, current, endLabel, customMin, customMax, onSelect, onCustom }, flyout) {
+  renderOptionsPage(body, {
+    options: presets.map(preset => ({
+      id: preset.id,
+      label: preset.id === 'end' ? endLabel : preset.label,
+      selected: preset.id === current
+    })),
+    onSelect
+  }, flyout);
+
+  let minutes = 45;
+  const section = document.createElement('div');
+  section.className = 'vanta-settings-section vanta-sleep-custom';
+  section.innerHTML = `
+    <div class="vanta-settings-section-title">Eigene Zeit</div>
+    <div class="vanta-sleep-custom-row">
+      <button type="button" class="vanta-settings-segment vanta-settings-focusable" data-step="-5" aria-label="5 Minuten weniger">−</button>
+      <label class="vanta-sleep-custom-field">
+        <input type="number" class="vanta-settings-focusable" inputmode="numeric" min="${customMin}" max="${customMax}" value="${minutes}" aria-label="Minuten">
+        <span>Min.</span>
+      </label>
+      <button type="button" class="vanta-settings-segment vanta-settings-focusable" data-step="5" aria-label="5 Minuten mehr">+</button>
+      <button type="button" class="vanta-settings-segment vanta-settings-focusable vanta-sleep-custom-start">Starten</button>
+    </div>`;
+  const input = section.querySelector('input');
+  const clamp = value => Math.min(customMax, Math.max(customMin, Math.round(Number(value) || customMin)));
+  section.querySelectorAll('[data-step]').forEach(button => {
+    button.addEventListener('click', () => {
+      minutes = clamp(Number(input.value) + Number(button.dataset.step));
+      input.value = String(minutes);
+    });
+  });
+  input.addEventListener('change', () => {
+    minutes = clamp(input.value);
+    input.value = String(minutes);
+  });
+  section.querySelector('.vanta-sleep-custom-start').addEventListener('click', () => {
+    onCustom(clamp(input.value));
+    flyout.back();
+  });
+  body.appendChild(section);
+}

@@ -38,6 +38,8 @@ export class Router {
     this.main = null;
     this.unsubscribeAuth = null;
     this.currentScope = null;
+    this.currentHash = null;
+    this.previousHash = null;
   }
 
   // Ends the shown page's scope: its listeners, timers, observers and
@@ -205,6 +207,12 @@ export class Router {
     if (!match) {
       window.location.hash = '#/home';
       return;
+    }
+
+    // Where the user came from (the player returns there after its sleep timer).
+    if (hash !== this.currentHash) {
+      this.previousHash = this.currentHash || null;
+      this.currentHash = hash;
     }
 
     const { route, params } = match;

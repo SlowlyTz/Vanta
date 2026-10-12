@@ -44,6 +44,8 @@ export function bindNextEpisode(context) {
     const currentEpisodeId = episodeBrowser.context.currentEpisodeId;
     if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
     if (watchParty?.enabled && watchParty.isNextEpisodeCancelled?.()) return;
+    // A sleep timer "bis zum Ende" closes the player instead.
+    if (context.sleepTimer?.blocksNextEpisode()) return;
 
     const duration = context.knownDuration || player.duration;
     const outro = findOutro(context.segments);

@@ -6,6 +6,13 @@ import { escapeHtml } from '../html.js';
 // slides in from the right while the flyout animates to the new size.
 
 const CLOSE_DURATION_MS = 180;
+const NON_TEXT_INPUTS = new Set(['checkbox', 'radio', 'button', 'submit', 'range']);
+
+const isTextField = element => {
+  if (!element) return false;
+  if (element.isContentEditable || element.tagName === 'TEXTAREA') return true;
+  return element.tagName === 'INPUT' && !NON_TEXT_INPUTS.has((element.getAttribute('type') || 'text').toLowerCase());
+};
 const PAGE_DURATION_MS = 280;
 const SWIPE_CLOSE_PX = 70;
 
@@ -253,10 +260,17 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
       items[(index + step + items.length) % items.length].focus();
       return;
     }
-    if ((event.key === 'ArrowLeft' || event.key === 'Backspace') && stack.length > 1) {
+    // In a text or number field (the sleep timer's minutes) Backspace and
+    // the left/right arrows edit the value.
+    const typing = isTextField(document.activeElement);
+    if ((event.key === 'ArrowLeft' || event.key === 'Backspace') && stack.length > 1 && !typing) {
       event.preventDefault();
       event.stopPropagation();
       goBack();
+      return;
+    }
+    if (typing && (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Backspace')) {
+      event.stopPropagation();
       return;
     }
     if (event.key === 'ArrowRight' && document.activeElement?.classList.contains('vanta-settings-row')) {

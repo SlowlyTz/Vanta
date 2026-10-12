@@ -27,7 +27,9 @@ export async function createPlayerContext(options) {
     loadTranscodeProgress = null,
     deferInitialLoad = false,
     fullscreenTarget = null,
-    stillWatching = null
+    stillWatching = null,
+    sleepTimer = null,
+    onSleep = null
   } = options;
 
   await customElements.whenDefined('media-player');
@@ -65,6 +67,8 @@ export async function createPlayerContext(options) {
     deferInitialLoad,
     fullscreenTarget,
     stillWatching,
+    sleepTimerOptions: sleepTimer,
+    onSleep,
     iosLike,
     dom,
     player,

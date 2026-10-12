@@ -4,7 +4,8 @@ import { createAudioController } from '../audio.js';
 import { formatEpisodeCode, findEpisode } from '../episodes.js';
 import { createSettingsFlyout } from '../settings/flyout.js';
 import { createPartyCard } from '../settings/partyCard.js';
-import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSubtitlesPage } from '../settings/pages.js';
+import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSleepTimerPage, renderSubtitlesPage } from '../settings/pages.js';
+import { SLEEP_PRESETS, CUSTOM_MINUTES_MIN, CUSTOM_MINUTES_MAX } from '../sleepTimer.js';
 import { bindNextEpisode } from './nextEpisodeBinding.js';
 import { MAX_PARTY_MEMBERS } from '../../../public/js/shared/watchParty.js';
 
@@ -16,6 +17,7 @@ const ROW_ICONS = {
   episodes: '<svg viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm0 5h2v2H4v-2zm0 5h2v2H4v-2zm4-10h12v2H8V6zm0 5h12v2H8v-2zm0 5h12v2H8v-2z"/></svg>',
   audio: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h3v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h3a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z"/></svg>',
   help: '<svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg>',
+  sleep: '<svg viewBox="0 0 24 24"><path d="M12.3 2a10 10 0 1 0 9.7 12.6A8 8 0 0 1 12.3 2z"/></svg>',
   participants: '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zM8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3zm8 0c-.31 0-.62.02-.91.06 1.18.84 1.91 1.95 1.91 3.19V18h4v-2c0-1.66-2.33-3-5-3z"/></svg>'
 };
 
@@ -128,6 +130,7 @@ export function bindMenus(context) {
       icon: ROW_ICONS.participants,
       hidden: !watchParty?.enabled
     },
+    { page: 'sleep', label: 'Sleep-Timer', value: context.sleepTimer?.label() || '', icon: ROW_ICONS.sleep, hidden: !context.sleepTimer },
     { id: 'help', label: 'Hilfe', value: 'Tasten & Gesten', icon: ROW_ICONS.help, onSelect: () => context.openHelp?.() }
   ]);
 
@@ -184,6 +187,28 @@ export function bindMenus(context) {
         context: episodeBrowser.context,
         readonly: Boolean(episodeBrowser.readonly),
         onSelectEpisode: episodeBrowser.onSelectEpisode
+      }, flyout)
+    });
+  }
+
+  if (context.sleepTimer) {
+    const sleepTimer = context.sleepTimer;
+    const isEpisode = Boolean(episodeBrowser?.enabled);
+    settings.registerPage('sleep', {
+      title: 'Sleep-Timer',
+      render: (body, flyout) => renderSleepTimerPage(body, {
+        presets: SLEEP_PRESETS,
+        current: sleepTimer.mode() === 'off' ? 'off' : sleepTimer.mode() === 'end' ? 'end' : null,
+        endLabel: isEpisode ? 'Bis zum Ende der Folge' : 'Bis zum Ende des Films',
+        customMin: CUSTOM_MINUTES_MIN,
+        customMax: CUSTOM_MINUTES_MAX,
+        onSelect: id => {
+          const preset = SLEEP_PRESETS.find(entry => entry.id === id);
+          if (id === 'off') sleepTimer.cancel();
+          else if (id === 'end') sleepTimer.set({ mode: 'end' });
+          else if (preset?.minutes) sleepTimer.set({ mode: 'duration', remainingMs: preset.minutes * 60_000 });
+        },
+        onCustom: minutes => sleepTimer.set({ mode: 'duration', remainingMs: minutes * 60_000 })
       }, flyout)
     });
   }
