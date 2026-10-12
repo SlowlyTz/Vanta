@@ -274,6 +274,8 @@ export class Router {
         window.scrollTo(0, 0);
       }
       this.updateShellState(hash, user);
+      // The TV focus engine puts the focus on the new page.
+      window.dispatchEvent(new CustomEvent('vanta:page-shown', { detail: { hash, page: pageElement, scope } }));
     } catch (error) {
       console.error('[Router Navigation Error]', error);
       // A page chunk a newer deploy has replaced fails to load; if that is

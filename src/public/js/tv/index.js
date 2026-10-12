@@ -1,6 +1,7 @@
 import { ensurePageStyles } from '../utils/pageStyles.js';
 import { normalizeKey, registerTizenKeys } from './keys.js';
 import { createBackHandler } from './back.js';
+import { bindFocusEngine, createFocusEngine } from './focusEngine.js';
 
 // Everything the 10-foot interface needs on top of the normal app; loaded
 // only in TV mode (see app.js).
@@ -17,6 +18,9 @@ export async function startTvMode({ sidebar = null } = {}) {
     back();
   });
 
+  const focus = createFocusEngine();
+  bindFocusEngine(focus);
+
   await ensurePageStyles(['tv']);
-  return { back };
+  return { back, focus };
 }

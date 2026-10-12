@@ -56,3 +56,8 @@ html.tv-mode .media-card.tv-focus .media-card-image-container {
   transform: scale(var(--tv-focus-scale));
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
+
+/* Rows scroll with the focus; their arrow buttons are for mice. */
+html.tv-mode .carousel-arrow {
+  display: none !important;
+}

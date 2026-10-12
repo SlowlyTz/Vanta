@@ -23,6 +23,8 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
 
   const listContainer = createElement('div', {
     className: `carousel-track ${trackClass}`,
+    // A row for the TV focus engine: left/right stay in it.
+    'data-tv-row': '',
     tabindex: '0',
     role: 'list',
     'aria-label': title || undefined
