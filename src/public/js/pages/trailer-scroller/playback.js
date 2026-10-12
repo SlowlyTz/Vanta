@@ -1,6 +1,9 @@
 import { setActiveIndex, getVisibleRange, shouldLoadMore } from '../trailer-scroller.state.js';
 
-const PLAYER_BUFFER = 2;
+// Only the trailer in view has a player. Neighbours kept warm as their own
+// YouTube embeds made playback stall after a few trailers (each embed holds
+// its own player and connection); one embed at a time plays reliably.
+const PLAYER_BUFFER = 0;
 
 export function bindPlayback(ctx) {
   const ensurePlayer = async (index, runId) => {

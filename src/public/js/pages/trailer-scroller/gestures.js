@@ -1,4 +1,14 @@
+// On a TV the remote's up/down always change the trailer (the focus sits on
+// the trailer's buttons, which would otherwise keep the keys), and the focus
+// follows onto the new trailer's "Details".
+const isTv = () => document.documentElement.classList.contains('tv-mode');
+
 export function bindGestures(ctx) {
+  const focusActiveTrailer = () => {
+    const button = ctx.track.querySelector('.trailer-slide.is-active .trailer-action-detail');
+    button?.focus({ preventScroll: true });
+  };
+
   ctx.handleKeydown = event => {
     if (ctx.shareModal && event.key === 'Escape') {
       event.preventDefault();
@@ -7,6 +17,14 @@ export function bindGestures(ctx) {
     }
 
     if (ctx.state.introOpen) return;
+    if (isTv() && !ctx.shareModal && (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.keyCode === 40 || event.keyCode === 38)) {
+      if (document.activeElement?.closest?.('.tv-sidebar')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const direction = event.key === 'ArrowUp' || event.keyCode === 38 ? -1 : 1;
+      Promise.resolve(ctx.navigateRelative(direction)).then(() => window.setTimeout(focusActiveTrailer, 60));
+      return;
+    }
     if (document.activeElement && ['INPUT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement.tagName)) return;
 
     switch (event.key) {
@@ -57,14 +75,15 @@ export function bindGestures(ctx) {
 
   ctx.onCleanup(() => {
     if (ctx.intersectionObserver) ctx.intersectionObserver.disconnect();
-    window.removeEventListener('keydown', ctx.handleKeydown);
+    window.removeEventListener('keydown', ctx.handleKeydown, true);
     window.removeEventListener('hashchange', ctx.handleHashChange);
     window.removeEventListener('pageshow', ctx.resyncActivePlayer);
     window.removeEventListener('focus', ctx.resyncActivePlayer);
     document.removeEventListener('visibilitychange', ctx.handleVisibilityChange);
   });
 
-  window.addEventListener('keydown', ctx.handleKeydown);
+  // Capture: ahead of the TV focus engine, which would move the focus instead.
+  window.addEventListener('keydown', ctx.handleKeydown, true);
   window.addEventListener('hashchange', ctx.handleHashChange);
   window.addEventListener('pageshow', ctx.resyncActivePlayer);
   window.addEventListener('focus', ctx.resyncActivePlayer);

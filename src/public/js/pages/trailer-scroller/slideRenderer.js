@@ -1,6 +1,7 @@
 import { createElement } from '../../utils/dom.js';
 import { createScrollerIcon } from './context.js';
 import { createMetaIcon } from '../../components/metaIcons.js';
+import { getBackdropUrlFor } from '../../utils/image.js';
 
 export function bindSlideRenderer(ctx) {
   ctx.updateChrome = () => {
@@ -188,11 +189,19 @@ export function bindSlideRenderer(ctx) {
     );
     const card = createElement('article', { className: 'trailer-card', 'aria-labelledby': titleId }, videoContainer, info);
 
+    // The title's backdrop, darkened, fills the slide behind the trailer;
+    // without one the trailer's own thumbnail does.
+    const ambientUrl = trailer.backdropImageTag
+      ? getBackdropUrlFor({ Id: trailer.itemId, BackdropImageTags: [trailer.backdropImageTag] }, Math.min(window.innerWidth, 1280))
+      : `https://img.youtube.com/vi/${trailer.youtubeVideoId}/hqdefault.jpg`;
+    const ambient = createElement('div', { className: 'trailer-slide-ambient', 'aria-hidden': 'true' },
+      createElement('img', { src: ambientUrl, alt: '', loading: 'lazy', decoding: 'async' }));
+
     const slide = createElement('div', {
       className: 'trailer-slide',
       'data-index': index,
       'data-id': trailer.id
-    }, card);
+    }, ambient, card);
 
     return slide;
   }

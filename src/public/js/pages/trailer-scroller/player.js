@@ -194,7 +194,11 @@ export class YouTubePlayerManager {
           if (onReady) onReady(event);
         },
         onError: (event) => {
-          if (attempt.settled) return;
+          // After onReady too: a private or blocked video only fails once it is asked to play.
+          if (attempt.settled) {
+            if (this.players.get(containerId) === attempt.player && onError) onError(event);
+            return;
+          }
           // Leaving the attempt in `pending` would make the failure permanent — dropping it
           // lets the next sync run retry this slide.
           this._settleAttempt(containerId, null);

@@ -18,7 +18,8 @@ html.trailer-scroller-active #app {
 
 .trailer-scroller-page {
   --scroller-navbar-gap: 10px;
-  --scroller-page-offset: calc(92px + var(--scroller-navbar-gap));
+  /* The navbar (64 px) and the gap above the page: the rest is the feed. */
+  --scroller-page-offset: calc(64px + var(--scroller-navbar-gap));
   --scroller-accent: rgb(var(--abyss-accent));
   --scroller-accent-cyan: rgb(var(--abyss-accent));
   --scroller-border: rgba(255, 255, 255, 0.1);

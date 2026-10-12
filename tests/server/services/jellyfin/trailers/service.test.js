@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TrailersService } from '../../../../../src/server/services/jellyfin/trailers.service.js';
+import { TrailersService, isYouTubeVideoPlayable, clearYouTubeAvailabilityCache } from '../../../../../src/server/services/jellyfin/trailers.service.js';
 
 vi.mock('../../../../../src/server/services/jellyfin/client.js', () => ({
   jellyfinJson: vi.fn()
@@ -28,6 +28,7 @@ describe('TrailersService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     TrailersService.clearCatalogCache();
+    TrailersService.isPlayable = async () => true;
   });
 
   describe('loadAllTrailerItems', () => {
@@ -208,5 +209,36 @@ describe('TrailersService', () => {
         method: 'DELETE'
       });
     });
+  });
+
+  describe('unplayable trailers', () => {
+    it('leaves out trailers YouTube no longer plays and still fills the page', async () => {
+      LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(5));
+      TrailersService.isPlayable = async videoId => !videoId.endsWith('001');
+      const req = { session: {} };
+      const result = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 4 });
+      expect(result.items).toHaveLength(4);
+      expect(result.items.some(item => item.youtubeVideoId.endsWith('001'))).toBe(false);
+      expect(result.hasMore).toBe(false);
+    });
+  });
+});
+
+describe('isYouTubeVideoPlayable', () => {
+  beforeEach(() => clearYouTubeAvailabilityCache());
+
+  it('reads private or removed videos from the oEmbed answer and remembers it', async () => {
+    const fetchImpl = vi.fn(async url => ({ status: url.includes('PRIVATE0000') ? 403 : 200 }));
+    expect(await isYouTubeVideoPlayable('PRIVATE0000', { fetchImpl })).toBe(false);
+    expect(await isYouTubeVideoPlayable('PUBLIC00000', { fetchImpl })).toBe(true);
+    expect(await isYouTubeVideoPlayable('PRIVATE0000', { fetchImpl })).toBe(false);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('counts a video as playable when YouTube cannot be asked', async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error('offline'); });
+    expect(await isYouTubeVideoPlayable('XXXXXXXXXXX', { fetchImpl })).toBe(true);
+    const down = vi.fn(async () => ({ status: 503 }));
+    expect(await isYouTubeVideoPlayable('YYYYYYYYYYY', { fetchImpl: down })).toBe(true);
   });
 });
