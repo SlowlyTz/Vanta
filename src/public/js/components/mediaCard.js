@@ -117,12 +117,12 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   const className = `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}${inWatchlist ? ' in-watchlist' : ''}`;
 
   if (!playedToggle) {
-    return createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id } }, content);
+    return createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id, itemType: item.Type } }, content);
   }
 
   // A button cannot sit inside a link: with the played toggle the card is a
   // box holding the link and, over its image, the toggle.
-  const card = createElement('div', { className: `${className} has-played-toggle`, dataset: { itemId: item.Id } },
+  const card = createElement('div', { className: `${className} has-played-toggle`, dataset: { itemId: item.Id, itemType: item.Type } },
     createElement('a', { ...linkAttributes, className: 'media-card-link' }, content),
     createPlayedToggle(item, {
       compact: true,

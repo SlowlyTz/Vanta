@@ -9,7 +9,7 @@ export function bindShell(ctx) {
     ctx.debounceTimer = window.setTimeout(() => ctx.performSearch(ctx.searchInput.value), SEARCH_DEBOUNCE_MS);
   });
 
-  ctx.setOpen = async nextOpen => {
+  ctx.setOpen = async (nextOpen, { item = null } = {}) => {
     if (ctx.open === nextOpen) return;
     ctx.open = nextOpen;
 
@@ -32,6 +32,7 @@ export function bindShell(ctx) {
         if (!ctx.open) return;
         if (snapshot) ctx.showResumeChoice(snapshot);
         else ctx.showPickMediaView();
+        if (!snapshot && item) await ctx.handleSelect(item);
       } catch (error) {
         console.error('[Watch Party Resumable Check Error]', error);
         if (ctx.open) ctx.showPickMediaView();

@@ -252,7 +252,8 @@ export default function HomePage(params, pageScope) {
       const resumeCarousel = MediaCarousel({
         title: 'Weiter schauen',
         items: data.resume,
-        landscape: true
+        landscape: true,
+        resumeRow: true
       });
       if (resumeCarousel) sectionsContainer.appendChild(resumeCarousel);
     }

@@ -176,5 +176,19 @@ export const MediaApi = {
     return request(`/api/media/item/${encodeURIComponent(id)}/played`, {
       method: 'DELETE'
     });
+  },
+
+  // The started or next episode of a series: { episode } (null when none).
+  getNextUp(seriesId) {
+    return request(`/api/media/item/${encodeURIComponent(seriesId)}/next-up`);
+  },
+
+  // Takes a title out of "Weiter schauen"; answers { undo } for restoreResume.
+  removeFromResume(id) {
+    return request(`/api/media/resume/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
+  restoreResume(undo) {
+    return request('/api/media/resume/restore', { method: 'POST', body: { undo } });
   }
 };

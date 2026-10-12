@@ -85,6 +85,8 @@ export function HeroCarousel({ items = [], pageScope = null }) {
 
     const content = createElement('div', {
       className: `home-hero-content hero-slide-content${index === 0 ? ' active' : ''}`,
+      // Long press or right click opens the media menu (mediaActions.js).
+      dataset: { mediaActions: '', itemId: item.Id, itemType: item.Type, itemTitle: item.Name },
       role: 'group',
       'aria-roledescription': 'Folie',
       'aria-label': `${index + 1} von ${items.length}: ${item.Name}`,

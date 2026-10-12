@@ -19,6 +19,7 @@ export async function createMemoryDb() {
       user_id TEXT NOT NULL, item_id TEXT NOT NULL, item_type TEXT NOT NULL CHECK(item_type IN ('Movie', 'Series')),
       added_at INTEGER NOT NULL, PRIMARY KEY (user_id, item_id)
     );
+    CREATE TABLE resume_hidden (user_id TEXT NOT NULL, series_id TEXT NOT NULL, hidden_at INTEGER NOT NULL, PRIMARY KEY (user_id, series_id));
   `);
   const all = (sql, params) => {
     const statement = sqlite.prepare(sql);

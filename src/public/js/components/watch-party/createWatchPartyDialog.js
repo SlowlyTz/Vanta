@@ -17,6 +17,8 @@ export function createWatchPartyDialog() {
   return {
     element: ctx.backdrop,
     open: () => ctx.setOpen(true),
+    // Opens straight on this title (a series asks for the episode).
+    openWith: item => (item ? ctx.setOpen(true, { item }) : ctx.setOpen(true)),
     close: () => ctx.setOpen(false),
     isOpen: () => ctx.open
   };

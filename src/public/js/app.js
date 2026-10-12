@@ -5,6 +5,7 @@ import { mountOfflineOverlay } from './components/offlineOverlay.js';
 import { mountUpdateOverlay } from './components/updateOverlay.js';
 import { registerServiceWorker } from './utils/service-worker.js';
 import { initDetailPrefetch } from './utils/prefetch.js';
+import { initMediaActions } from './components/mediaActions.js';
 
 // Define routing mappings using dynamic ES modules imports
 router.add('#/login', () => import('./pages/login.page.js'), { styles: ['login'], guestOnly: true });
@@ -54,4 +55,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initAppRealtime();
   router.init();
   initDetailPrefetch();
+  initMediaActions();
 });

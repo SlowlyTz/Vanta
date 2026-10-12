@@ -220,6 +220,17 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id, added_at);
 `);
 
+// Series a user took out of "Weiter schauen". Jellyfin has no switch for
+// that; the series comes back once an episode is played after hidden_at.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS resume_hidden (
+    user_id TEXT NOT NULL,
+    series_id TEXT NOT NULL,
+    hidden_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, series_id)
+  );
+`);
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,

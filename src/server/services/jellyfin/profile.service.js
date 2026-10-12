@@ -1,5 +1,6 @@
 import { jellyfinJson } from './client.js';
 import { COMMON_ITEM_FIELDS } from './fields.js';
+import { visibleResumeItems } from '../resume-visibility.js';
 
 const GROUPED_BATCH_SIZE = 200;
 // Caps how many raw Jellyfin rows we scan to build one grouped profile list.
@@ -102,7 +103,7 @@ async function groupProfileItems(userId, token, rawItems) {
   });
 }
 
-async function fetchGroupedProfilePage(userId, token, { filters, includeItemTypes, sortBy, sortOrder, page, limit }) {
+async function fetchGroupedProfilePage(userId, token, { filters, includeItemTypes, sortBy, sortOrder, page, limit, keep = items => items }) {
   let rawItems = [];
   let startIndex = 0;
 
@@ -124,7 +125,7 @@ async function fetchGroupedProfilePage(userId, token, { filters, includeItemType
     if (batch.length < GROUPED_BATCH_SIZE) break;
   }
 
-  const groupedItems = await groupProfileItems(userId, token, rawItems);
+  const groupedItems = await groupProfileItems(userId, token, keep(rawItems));
   const startOffset = (page - 1) * limit;
 
   return {
@@ -141,7 +142,8 @@ export class ProfileService {
       sortBy: 'DatePlayed',
       sortOrder: 'Descending',
       page,
-      limit
+      limit,
+      keep: items => visibleResumeItems(userId, items)
     });
   }
 

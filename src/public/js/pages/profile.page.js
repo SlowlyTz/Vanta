@@ -114,6 +114,7 @@ export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope)
     }
 
     const grid = createElement('div', { className: 'library-grid' });
+    if (state.activeTab === 'continue') grid.dataset.resumeRow = 'true';
     tabState.items.forEach(item => {
       const cardEl = MediaCard({ item, landscape: false, sourceType: 'profile' });
       if (cardEl) grid.appendChild(cardEl);

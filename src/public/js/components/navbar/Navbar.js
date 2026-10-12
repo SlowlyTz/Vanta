@@ -6,6 +6,7 @@ import { isNavLinkActive } from './activeNav.js';
 import { createWatchPartyDialog } from '../watch-party/createWatchPartyDialog.js';
 import { createSettingsDialog } from './settingsDialog.js';
 import { notificationsStore } from '../../store/notifications.store.js';
+import { OPEN_WATCH_PARTY_EVENT } from '../mediaActions.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -71,6 +72,8 @@ export function Navbar({ onLogout, onChangePassword }) {
   });
 
   const watchPartyDialog = createWatchPartyDialog();
+  // "Watch Party starten" from a media context menu, with that title.
+  window.addEventListener(OPEN_WATCH_PARTY_EVENT, event => watchPartyDialog.openWith(event.detail?.item));
 
   const topTabs = createTopTabs({ onNavigate: () => setMobileNavOpen(false) });
   const topActions = createTopActions({ onOpenWatchParty: () => watchPartyDialog.open() });

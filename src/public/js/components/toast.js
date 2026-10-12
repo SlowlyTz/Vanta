@@ -1,5 +1,7 @@
 export class Toast {
-  static show(message, type = 'info', duration = 4000) {
+  // `action` ({ label, onClick }) adds a button such as "Rückgängig"; the
+  // toast then stays a little longer and closes once it is used.
+  static show(message, type = 'info', duration = 4000, { action = null } = {}) {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
@@ -27,14 +29,30 @@ export class Toast {
     textEl.textContent = String(message ?? '');
     toast.append(iconEl, textEl);
 
-    container.appendChild(toast);
-
-    // Trigger slide out before removing
-    setTimeout(() => {
+    const dismiss = () => {
+      if (toast.classList.contains('fade-out')) return;
       toast.classList.add('fade-out');
       toast.addEventListener('animationend', () => {
         toast.remove();
       });
-    }, duration);
+    };
+
+    if (action?.label) {
+      const actionButton = document.createElement('button');
+      actionButton.type = 'button';
+      actionButton.className = 'toast-action';
+      actionButton.textContent = action.label;
+      actionButton.addEventListener('click', () => {
+        dismiss();
+        action.onClick?.();
+      });
+      toast.appendChild(actionButton);
+    }
+
+    container.appendChild(toast);
+
+    // Trigger slide out before removing
+    setTimeout(dismiss, action?.label ? Math.max(duration, 6000) : duration);
+    return { dismiss };
   }
 }

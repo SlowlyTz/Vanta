@@ -5,6 +5,7 @@ import { ItemsService } from './items.service.js';
 import { findNextEpisode } from '../../../player/src/nextEpisode.js';
 import { getActiveCatalogReader } from '../catalog/reader.js';
 import { getVisibleLibraryIds } from '../catalog/visibility.js';
+import { visibleResumeItems } from '../resume-visibility.js';
 
 const NEXT_EPISODE_PROGRESS_THRESHOLD = 90;
 
@@ -85,7 +86,7 @@ export class LibraryService {
     });
 
     const resolved = await Promise.all(
-      (data.Items || []).map(item => resolveResumeItem(userId, token, item))
+      visibleResumeItems(userId, data.Items || []).map(item => resolveResumeItem(userId, token, item))
     );
 
     return dedupeById(resolved.filter(Boolean));
