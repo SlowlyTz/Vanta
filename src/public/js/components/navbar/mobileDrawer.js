@@ -59,7 +59,7 @@ function showSubmenuError(submenu, message) {
 // settings) sits in the card pinned to the bottom.
 const DRAWER_SECTIONS = [
   { label: 'Entdecken', keys: ['home', 'movies', 'series', 'publishers', 'scroller'] },
-  { label: 'Mehr', keys: ['requests', 'report'] }
+  { label: 'Mehr', keys: ['watchlist', 'requests', 'report'] }
 ];
 
 const initialOf = name => (String(name || '').trim().charAt(0) || '?').toUpperCase();

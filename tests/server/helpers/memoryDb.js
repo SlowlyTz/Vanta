@@ -15,6 +15,10 @@ export async function createMemoryDb() {
     );
     CREATE TABLE notification_seen (user_id TEXT NOT NULL, kind TEXT NOT NULL, seen_at INTEGER NOT NULL, PRIMARY KEY (user_id, kind));
     CREATE TABLE user_preferences (user_id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL);
+    CREATE TABLE watchlist (
+      user_id TEXT NOT NULL, item_id TEXT NOT NULL, item_type TEXT NOT NULL CHECK(item_type IN ('Movie', 'Series')),
+      added_at INTEGER NOT NULL, PRIMARY KEY (user_id, item_id)
+    );
   `);
   const all = (sql, params) => {
     const statement = sqlite.prepare(sql);

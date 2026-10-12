@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
+import { WatchlistApi } from '../api/watchlist.api.js';
 import { appStore } from '../store/app.store.js';
 import { setSectionBusy } from '../components/loader.js';
 import { createHeroSkeleton, createCarouselSkeleton } from '../components/skeleton.js';
@@ -88,10 +89,15 @@ export default function HomePage(params, pageScope) {
     );
 
     try {
-      const raw = await MediaApi.getHome({ signal });
+      // "Meine Liste" is a nicety: without it the page still loads.
+      const [raw, watchlist] = await Promise.all([
+        MediaApi.getHome({ signal }),
+        WatchlistApi.list({ signal }).then(result => result.items || []).catch(() => [])
+      ]);
       const data = {
         hero: shuffleArray([...(raw.movies || []), ...(raw.series || [])]).slice(0, 8),
         resume: raw.resume || [],
+        watchlist,
         sections: []
       };
 
@@ -125,7 +131,7 @@ export default function HomePage(params, pageScope) {
 
   const hasContent = (data) => {
     const hasHero = data.hero && data.hero.length > 0;
-    const hasResume = data.resume && data.resume.length > 0;
+    const hasResume = (data.resume && data.resume.length > 0) || (data.watchlist && data.watchlist.length > 0);
     const hasSections = data.sections && data.sections.length > 0;
     return hasHero || hasResume || hasSections;
   };
@@ -249,6 +255,16 @@ export default function HomePage(params, pageScope) {
         landscape: true
       });
       if (resumeCarousel) sectionsContainer.appendChild(resumeCarousel);
+    }
+
+    if (data.watchlist && data.watchlist.length > 0) {
+      const watchlistCarousel = MediaCarousel({
+        title: 'Meine Liste',
+        items: data.watchlist,
+        landscape: false,
+        href: '#/watchlist'
+      });
+      if (watchlistCarousel) sectionsContainer.appendChild(watchlistCarousel);
     }
 
     if (data.sections) {

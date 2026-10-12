@@ -12,6 +12,7 @@ import { loadDetailData } from './detail/detailData.js';
 import { buildHelpLinks } from './detail/helpLinks.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { ErrorState } from '../components/emptyState.js';
+import { createWatchlistButton } from '../components/watchlistButton.js';
 import { extractYouTubeVideoId, openTrailerModal } from '../components/trailerModal.js';
 
 function getYouTubeTrailerId(item) {
@@ -90,7 +91,8 @@ function createFavoriteButton(item) {
 }
 
 export default function DetailPage({ id }, pageScope) {
-  const { signal } = resolvePageScope(pageScope);
+  const scope = resolvePageScope(pageScope);
+  const { signal } = scope;
   const container = createElement('div', { className: 'page-container' });
   container.dataset.edgeTop = 'true';
   const actorModal = createActorModal({ currentItemId: id });
@@ -132,6 +134,7 @@ export default function DetailPage({ id }, pageScope) {
       ].filter(Boolean);
 
       const favoriteButton = createFavoriteButton(item);
+      const watchlistButton = createWatchlistButton(item, { scope });
       // Series are marked per episode in the seasons section, like Jellyfin.
       const playedButton = item.Type === 'Movie' ? createPlayedToggle(item) : null;
 
@@ -139,6 +142,7 @@ export default function DetailPage({ id }, pageScope) {
         item: normalized,
         actions,
         favoriteButton,
+        watchlistButton,
         playedButton,
         castSection,
         seasonsSection,

@@ -1,0 +1,91 @@
+/* "Meine Liste": the button on the detail page and the mark on cards. */
+.watchlist-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 18px 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.watchlist-button:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.watchlist-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--abyss-accent), 0.25);
+}
+
+.watchlist-button[aria-pressed="true"] {
+  border-color: rgba(var(--abyss-accent), 0.5);
+}
+
+.watchlist-button-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.watchlist-button-mark {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgb(var(--abyss-accent));
+  color: var(--bg-primary);
+}
+
+.watchlist-button-mark svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* A small bookmark on cards of titles on the list. */
+.media-card-saved {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgb(var(--abyss-accent));
+}
+
+.media-card-saved svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.media-card.in-watchlist .media-card-saved {
+  display: grid;
+}
+
+@media (max-width: 560px) {
+  .watchlist-button-label {
+    display: none;
+  }
+
+  .watchlist-button {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+}

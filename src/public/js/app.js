@@ -29,6 +29,7 @@ router.add('#/admin/users', () => import('./pages/admin.page.js'), { styles: ['a
 router.add('#/admin/settings', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'settings' } });
 router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth: true });
 router.add('#/profile', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true });
+router.add('#/watchlist', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true, defaultParams: { initialTab: 'watchlist' } });
 router.add('#/favorites', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true, defaultParams: { initialTab: 'favorites' } });
 router.add('#/player/:id', () => import('./pages/player.page.js'), { styles: ['player'], requiresAuth: true });
 router.add('#/watch-party/:partyId', () => import('./pages/watch-party.page.js'), { styles: ['watch-party', 'player'], requiresAuth: true });

@@ -4,6 +4,17 @@ import { formatYear } from '../utils/format.js';
 import { markReturnFromDetail } from '../utils/routeState.js';
 import { createPlayedToggle } from './playedToggle.js';
 import { formatEpisodeCode } from '../shared/episodeCode.js';
+import { watchlistStore } from '../store/watchlist.store.js';
+import { BOOKMARK_ICON } from './watchlistButton.js';
+
+// Cards of titles on "Meine Liste" carry a small bookmark; when the list
+// changes, the cards on screen follow.
+watchlistStore.subscribe(({ ids }) => {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('.media-card[data-item-id]').forEach(card => {
+    card.classList.toggle('in-watchlist', ids.has(card.dataset.itemId));
+  });
+});
 
 export function MediaCard({ item, landscape = false, sourceType = null, playedToggle = false }) {
   if (!item) return null;
@@ -68,6 +79,13 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
     );
   }
 
+  const listable = item.Type === 'Movie' || item.Type === 'Series';
+  if (listable) {
+    const saved = createElement('span', { className: 'media-card-saved', title: 'In meiner Liste', 'aria-hidden': 'true' });
+    saved.innerHTML = BOOKMARK_ICON;
+    imageContainerChildren.push(saved);
+  }
+
   // Watched state, like Jellyfin's check on the card: a plain badge, or the
   // toggle itself where the card offers "mark as played" (episodes).
   const isPlayed = item.UserData?.Played === true;
@@ -95,7 +113,8 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
       markReturnFromDetail({ itemId: item.Id, sourceType });
     }
   };
-  const className = `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}`;
+  const inWatchlist = listable && watchlistStore.has(item.Id);
+  const className = `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}${inWatchlist ? ' in-watchlist' : ''}`;
 
   if (!playedToggle) {
     return createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id } }, content);

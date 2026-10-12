@@ -207,6 +207,19 @@ db.exec(`
   );
 `);
 
+// "Meine Liste": movies and series a user wants to watch later, kept apart
+// from the Jellyfin favourites.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS watchlist (
+    user_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    item_type TEXT NOT NULL CHECK(item_type IN ('Movie', 'Series')),
+    added_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, item_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id, added_at);
+`);
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,

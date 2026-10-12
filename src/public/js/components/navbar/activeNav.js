@@ -18,6 +18,8 @@ export function isNavLinkActive(link, currentHash) {
       return currentHash.startsWith('#/report');
     case 'search':
       return currentHash.startsWith('#/search');
+    case 'watchlist':
+      return currentHash.startsWith('#/watchlist');
     case 'favorites':
       return currentHash.startsWith('#/favorites');
     case 'profile':

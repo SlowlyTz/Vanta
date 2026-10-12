@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MediaApi } from '../../../src/public/js/api/media.api.js';
+import { WatchlistApi } from '../../../src/public/js/api/watchlist.api.js';
 import ProfilePage from '../../../src/public/js/pages/profile.page.js';
+
+vi.mock('../../../src/public/js/api/watchlist.api.js', () => ({
+  WatchlistApi: { list: vi.fn(), ids: vi.fn(async () => ({ ids: [] })) }
+}));
 
 vi.mock('../../../src/public/js/api/media.api.js', () => ({
   MediaApi: {
@@ -26,10 +31,11 @@ async function flush() {
 
 describe('ProfilePage', () => {
   beforeEach(() => {
+    window.history.replaceState(null, '', '#/profile');
     vi.clearAllMocks();
   });
 
-  it('loads Weiter ansehen initially', async () => {
+  it('loads Weiter schauen initially', async () => {
     MediaApi.getProfileContinueWatching.mockResolvedValue({
       items: [makeItem('1')], page: 1, limit: 24, totalItems: 1, totalPages: 1
     });
@@ -58,7 +64,7 @@ describe('ProfilePage', () => {
     expect(activeButton.textContent).toBe('Favoriten');
   });
 
-  it('falls back to Weiter ansehen when initialTab is unknown', async () => {
+  it('falls back to Weiter schauen when initialTab is unknown', async () => {
     MediaApi.getProfileContinueWatching.mockResolvedValue({
       items: [], page: 1, limit: 24, totalItems: 0, totalPages: 1
     });
@@ -76,7 +82,7 @@ describe('ProfilePage', () => {
     const container = ProfilePage();
 
     expect(container.querySelector('.page-heading-title').textContent).toBe('Profil');
-    expect(container.querySelectorAll('.profile-tab-button')).toHaveLength(3);
+    expect(container.querySelectorAll('.profile-tab-button')).toHaveLength(4);
     expect(container.querySelector('.profile-tab-content .section-loader')).toBeTruthy();
     expect(container.querySelector('.profile-tab-content').getAttribute('aria-busy')).toBe('true');
 
@@ -118,7 +124,7 @@ describe('ProfilePage', () => {
 
     expect(MediaApi.getProfileHistory).not.toHaveBeenCalled();
 
-    const historyButton = Array.from(container.querySelectorAll('.profile-tab-button')).find(b => b.textContent === 'History');
+    const historyButton = Array.from(container.querySelectorAll('.profile-tab-button')).find(b => b.textContent === 'Verlauf');
     historyButton.click();
     await flush();
 
@@ -126,7 +132,7 @@ describe('ProfilePage', () => {
     expect(container.querySelectorAll('.media-card')).toHaveLength(1);
   });
 
-  it('renders one series card per grouped series in Weiter ansehen and navigates to its detail route', async () => {
+  it('renders one series card per grouped series in Weiter schauen and navigates to its detail route', async () => {
     MediaApi.getProfileContinueWatching.mockResolvedValue({
       items: [makeSeries('s1'), makeItem('1')], page: 1, limit: 24, totalItems: 2, totalPages: 1
     });
@@ -153,7 +159,7 @@ describe('ProfilePage', () => {
     const container = ProfilePage();
     await flush();
 
-    const historyButton = Array.from(container.querySelectorAll('.profile-tab-button')).find(b => b.textContent === 'History');
+    const historyButton = Array.from(container.querySelectorAll('.profile-tab-button')).find(b => b.textContent === 'Verlauf');
     historyButton.click();
     await flush();
 
@@ -205,5 +211,38 @@ describe('ProfilePage', () => {
     expect(MediaApi.getProfileContinueWatching).toHaveBeenLastCalledWith(2, 24, { signal: expect.any(AbortSignal) });
     expect(container.querySelectorAll('.media-card')).toHaveLength(4);
     expect(container.querySelector('.profile-load-more')).toBeNull();
+  });
+
+  it('shows "Meine Liste" as its own tab', async () => {
+    WatchlistApi.list.mockResolvedValue({ items: [makeItem('w1'), makeSeries('w2')] });
+
+    const container = ProfilePage({ initialTab: 'watchlist' });
+    await flush();
+
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Meine Liste');
+    expect([...container.querySelectorAll('.media-card')].map(card => card.dataset.itemId)).toEqual(['w1', 'w2']);
+    expect(container.querySelector('.profile-load-more')).toBeNull();
+  });
+
+  it('explains an empty list', async () => {
+    WatchlistApi.list.mockResolvedValue({ items: [] });
+
+    const container = ProfilePage({ initialTab: 'watchlist' });
+    await flush();
+
+    expect(container.textContent).toContain('Deine Liste ist leer');
+  });
+});
+
+describe('ProfilePage addresses', () => {
+  it('opens "Verlauf" from #/profile?tab=history and keeps its own hash changes', async () => {
+    window.history.replaceState(null, '', '#/profile?tab=history');
+    const { default: Page } = await import('../../../src/public/js/pages/profile.page.js');
+    const container = Page();
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Verlauf');
+    expect(container.handleHashChange('#/favorites')).toBe(true);
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Favoriten');
+    expect(container.handleHashChange('#/home')).toBe(false);
+    window.history.replaceState(null, '', '#/profile');
   });
 });

@@ -66,7 +66,7 @@ describe('Navbar', () => {
 
     expect(sections).toEqual([
       { label: 'Entdecken', entries: ['Home', 'Filme', 'Serien', 'Publisher', 'Scroller'] },
-      { label: 'Mehr', entries: ['Anfragen', 'Meldung'] }
+      { label: 'Mehr', entries: ['Meine Liste', 'Anfragen', 'Meldung'] }
     ]);
   });
 

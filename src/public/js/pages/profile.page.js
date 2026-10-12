@@ -1,5 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
+import { WatchlistApi } from '../api/watchlist.api.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
@@ -16,6 +17,16 @@ const TABS = [
     label: 'Weiter ansehen',
     load: (page, options) => MediaApi.getProfileContinueWatching(page, LIMIT, options),
     emptyText: 'Du hast aktuell keine begonnenen Inhalte.'
+  },
+  {
+    key: 'watchlist',
+    label: 'Meine Liste',
+    // The whole list at once (it is short); newest first.
+    load: async (page, options) => {
+      const { items } = await WatchlistApi.list(options);
+      return { items: items || [], page: 1, totalPages: 1 };
+    },
+    emptyText: 'Deine Liste ist leer. Merke dir Filme und Serien über „Meine Liste“ auf ihrer Detailseite.'
   },
   {
     key: 'history',
@@ -45,6 +56,7 @@ export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope)
     activeTab: validInitialTab,
     pages: {
       continue: createEmptyPageState(),
+      watchlist: createEmptyPageState(),
       history: createEmptyPageState(),
       favorites: createEmptyPageState()
     }

@@ -6,7 +6,7 @@ import { createMetaIcon, metaIconFor } from './metaIcons.js';
 // Two lines on phones, a little more room on wide screens.
 const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
 
-export function DetailView({ item, actions, favoriteButton, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null, helpLinks = null }) {
+export function DetailView({ item, actions, favoriteButton, watchlistButton = null, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null, helpLinks = null }) {
   const container = createElement('div', { className: 'page-container' });
 
   const genreTags = (item.genres || []).map(genre =>
@@ -57,9 +57,12 @@ export function DetailView({ item, actions, favoriteButton, playedButton = null,
     ]));
   }
 
-  const actionButtons = (actions || []).map(action => {
+  // Stable keys let a TV remote come back from the player onto the button
+  // it left from (the first one is play/continue, whatever its label).
+  const actionButtons = (actions || []).map((action, index) => {
     const btn = createElement('button', {
       className: action.className || 'btn-primary',
+      dataset: { tvKey: index === 0 ? 'detail-play' : `detail-action-${index}` },
       onClick: action.onClick
     });
     if (action.icon) {
@@ -69,6 +72,10 @@ export function DetailView({ item, actions, favoriteButton, playedButton = null,
     }
     return btn;
   });
+
+  if (watchlistButton) {
+    actionButtons.push(watchlistButton);
+  }
 
   if (favoriteButton) {
     actionButtons.push(favoriteButton);

@@ -2,6 +2,7 @@ export const NAV_LINKS = [
   { key: 'home', label: 'Home', href: '#/home' },
   { key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie' },
   { key: 'series', label: 'Serien', href: '#/series', type: 'Series' },
+  { key: 'watchlist', label: 'Meine Liste', href: '#/watchlist' },
   { key: 'publishers', label: 'Publisher', href: '#/publishers', isStudios: true },
   { key: 'scroller', label: 'Scroller', href: '#/scroller' },
   { key: 'requests', label: 'Anfragen', href: '#/requests' },
