@@ -1,64 +1,151 @@
-/* Bibliothekszugriff: Umschalter "Alle / Ausgewählte", darunter Chips. */
-.admin-user-library-mode {
+/* Bibliothekszugriff: der Schalter "alle", darunter die Liste je Art. */
+.admin-library-field {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 12px;
 }
 
-.admin-user-choice-btn {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.84rem;
-  font-weight: 620;
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.admin-user-choice-btn.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.admin-user-library-grid {
+.admin-library-all {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
 }
 
-.admin-user-library-grid.hidden {
+.admin-library-all-text {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-library-all-text span,
+.admin-library-text span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+}
+
+.admin-library-bulk-row {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-library-bulk-row[hidden],
+.admin-library-list[hidden] {
   display: none;
 }
 
-.admin-user-library-toggle {
-  min-height: 34px;
-  padding: 0 14px;
+.admin-library-bulk {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.84rem;
-  font-weight: 580;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.admin-user-library-toggle.active {
-  background: rgba(139, 92, 246, 0.18);
-  border-color: rgba(167, 139, 250, 0.45);
-  color: #fff;
+.admin-library-bulk:hover,
+.admin-library-bulk:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
 }
 
-.admin-user-library-toggle.active::before {
-  content: '✓ ';
-  color: #c4b5fd;
+.admin-library-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-library-group {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-library-group-title {
+  padding: 0 2px 4px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-library-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.admin-library-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-library-row:has(.admin-library-check:checked) {
+  border-color: rgba(var(--abyss-accent), 0.4);
+}
+
+.admin-library-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-library-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.admin-library-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-library-previews {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.admin-library-previews img {
+  width: 26px;
+  height: 38px;
+  margin-left: -8px;
+  border: 2px solid rgba(20, 20, 24, 1);
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.admin-library-check {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  accent-color: rgb(var(--abyss-accent));
+  cursor: pointer;
+}
+
+.admin-library-summary {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.admin-library-summary.is-warning {
+  color: #f5c06b;
+}
+
+@media (max-width: 480px) {
+  .admin-library-previews {
+    display: none;
+  }
 }

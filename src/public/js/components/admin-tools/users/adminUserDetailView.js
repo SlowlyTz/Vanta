@@ -95,14 +95,31 @@ export function createAdminUserDetailView(user, {
 
   const renameField = buildRenameField(user);
   const passwordField = buildPasswordField();
-  const libraryField = buildLibraryField(user, libraries);
+  const libraryField = buildLibraryField(user, libraries, { onChange: () => updateSaveBar() });
   const streamField = buildStreamLimitField(user);
 
   const saveAllBtn = createElement('button', {
     className: 'btn-primary admin-user-save-all',
     type: 'button',
     onClick: () => handleSaveAll()
-  }, 'Speichern');
+  }, 'Änderungen speichern');
+
+  const discardBtn = createElement('button', {
+    className: 'admin-user-discard',
+    type: 'button',
+    onClick: () => onReload?.()
+  }, 'Verwerfen');
+
+  const fields = () => [renameField, passwordField, libraryField, streamField];
+  // The save bar only shows while something differs from what is saved.
+  const saveBar = createElement('div', { className: 'admin-user-save-bar', hidden: true },
+    createElement('span', { className: 'admin-user-save-bar-text' }, 'Ungespeicherte Änderungen'),
+    discardBtn,
+    saveAllBtn
+  );
+  function updateSaveBar() {
+    saveBar.hidden = !fields().some(field => field.hasChanged());
+  }
 
   async function handleSaveAll() {
     const name = renameField.getValue();
@@ -125,9 +142,17 @@ export function createAdminUserDetailView(user, {
       const password = passwordField.getValue();
       tasks.push({ label: 'Passwort', run: () => AdminUsersApi.setPassword(user.id, password) });
     }
+    let libraryUndo = null;
     if (libraryField.hasChanged()) {
       const { enableAllFolders, enabledFolders } = libraryField.getValue();
-      tasks.push({ label: 'Bibliothekszugriff', run: () => AdminUsersApi.setLibraryAccess(user.id, enableAllFolders, enabledFolders) });
+      const previous = libraryField.getOriginal();
+      tasks.push({
+        label: 'Bibliothekszugriff',
+        run: async () => {
+          await AdminUsersApi.setLibraryAccess(user.id, enableAllFolders, enabledFolders);
+          libraryUndo = previous;
+        }
+      });
     }
     if (streamField.hasChanged()) {
       const maxConcurrentStreams = streamField.getValue();
@@ -147,7 +172,23 @@ export function createAdminUserDetailView(user, {
 
     if (failedTasks.length === 0) {
       passwordField.clear();
-      notify?.('Änderungen gespeichert', 'success');
+      // A changed library access can be taken back from the toast.
+      const undo = libraryUndo ? {
+        action: {
+          label: 'Rückgängig',
+          onClick: async () => {
+            try {
+              await AdminUsersApi.setLibraryAccess(user.id, libraryUndo.enableAllFolders, libraryUndo.enabledFolders);
+              notify?.('Bibliothekszugriff zurückgesetzt', 'success');
+            } catch (error) {
+              notify?.(error.message || 'Rückgängig fehlgeschlagen', 'error');
+            }
+            await onReload?.();
+          }
+        }
+      } : null;
+      if (undo) notify?.('Änderungen gespeichert', 'success', undo);
+      else notify?.('Änderungen gespeichert', 'success');
     } else if (failedTasks.length === tasks.length) {
       const firstError = results.find(r => r.status === 'rejected')?.reason;
       notify?.(firstError?.message || 'Speichern fehlgeschlagen', 'error');
@@ -169,9 +210,10 @@ export function createAdminUserDetailView(user, {
     section('Konto', renameField.element, passwordField.element),
     section('Zugriff', libraryField.element),
     section('Streams', streamField.element),
-    dangerZone,
-    createElement('div', { className: 'admin-user-save-all-row' }, saveAllBtn)
+    dangerZone
   );
+  // Typing and clicking anywhere in the fields may change something.
+  for (const type of ['input', 'change', 'click']) body.addEventListener(type, () => queueMicrotask(updateSaveBar));
 
-  return createElement('div', { className: 'admin-user-detail-view' }, header, body);
+  return createElement('div', { className: 'admin-user-detail-view' }, header, body, saveBar);
 }

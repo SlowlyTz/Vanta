@@ -3,7 +3,8 @@ import { normalizeForSearch, ageRating, rankEntries, rankPeople } from './search
 
 const SORTS = {
   sortName: 'sort_name COLLATE NOCASE ASC, name COLLATE NOCASE ASC',
-  newest: 'date_created DESC, sort_name COLLATE NOCASE ASC'
+  newest: 'date_created DESC, sort_name COLLATE NOCASE ASC',
+  rating: 'community_rating IS NULL, community_rating DESC, date_created DESC'
 };
 
 const MIRRORED_TYPES = new Set(['Movie', 'Series']);
@@ -27,7 +28,7 @@ export function createCatalogReader(db) {
 
   // Builds the WHERE clause shared by every query. `libraryIds` null means
   // "no restriction" (admins), an empty array means "nothing visible".
-  const buildWhere = ({ types = [], libraryIds = null, genre = null, studios = [], withTrailer = false, query = null }) => {
+  const buildWhere = ({ types = [], libraryIds = null, genre = null, studios = [], withTrailer = false, withBackdrop = false, query = null }) => {
     const clauses = [];
     const params = [];
 
@@ -55,6 +56,7 @@ export function createCatalogReader(db) {
     }
 
     if (withTrailer) clauses.push('i.has_trailer = 1');
+    if (withBackdrop) clauses.push("json_extract(i.data, '$.BackdropImageTags[0]') IS NOT NULL");
 
     if (query) {
       // Wildcards in the user's text are matched literally, not interpreted.
@@ -146,17 +148,45 @@ export function createCatalogReader(db) {
     searchPeople: ({ query, libraryIds = null, limit = 12 }) =>
       rankPeople(entries(), { query, libraryIds, limit }),
 
-    // Titles with a backdrop for the screensaver: new and well rated ones
-    // first, in a random order. `random` is injectable for tests.
+    // Per library: how many titles, and the newest few with a poster (for the
+    // library access list of the admin area).
+    libraryStats: ({ previews = 3 } = {}) => {
+      const stats = {};
+      for (const row of db.prepare('SELECT library_id, COUNT(*) AS count FROM catalog_items GROUP BY library_id').all()) {
+        stats[row.library_id] = { count: row.count, previews: [] };
+      }
+      for (const item of select({ types: ['Movie', 'Series'] }, { sort: 'newest' })) {
+        const entry = stats[item.LibraryId];
+        if (!entry || entry.previews.length >= previews || !item.ImageTags?.Primary) continue;
+        entry.previews.push({ id: item.Id, tag: item.ImageTags.Primary });
+      }
+      return stats;
+    },
+
+    // The decades the user's films and series come from (1990, 2000 …),
+    // newest first: the search offers only those as a filter.
+    decades: ({ libraryIds = null } = {}) => {
+      const { where, params } = buildWhere({ types: ['Movie', 'Series'], libraryIds });
+      const clause = where ? `${where} AND i.production_year IS NOT NULL` : 'WHERE i.production_year IS NOT NULL';
+      return db.prepare(`SELECT DISTINCT (i.production_year / 10) * 10 AS decade FROM catalog_items i ${clause} ORDER BY decade DESC`)
+        .all(...params)
+        .map(row => Number(row.decade))
+        .filter(Number.isFinite);
+    },
+
+    // Titles with a backdrop for the screensaver: the newest and the best
+    // rated ones, in a random order. Only those two short lists are read from
+    // the database. `random` is injectable for tests.
     screensaver: ({ libraryIds = null, limit = 30, random = Math.random } = {}) => {
-      const withBackdrop = select({ types: ['Movie', 'Series'], libraryIds }, { sort: 'newest' })
-        .filter(item => Array.isArray(item.BackdropImageTags) && item.BackdropImageTags.length > 0);
-      const newest = withBackdrop.slice(0, limit);
-      const rated = [...withBackdrop].sort((a, b) => (b.CommunityRating || 0) - (a.CommunityRating || 0)).slice(0, limit);
-      const rest = withBackdrop.filter(item => !newest.includes(item) && !rated.includes(item));
-      const shuffle = list => list.map(item => [random(), item]).sort((a, b) => a[0] - b[0]).map(([, item]) => item);
-      const preferred = shuffle([...new Set([...newest, ...rated])]);
-      return [...preferred, ...shuffle(rest)].slice(0, limit);
+      const filters = { types: ['Movie', 'Series'], libraryIds, withBackdrop: true };
+      const newest = select(filters, { sort: 'newest', limit });
+      const rated = select(filters, { sort: 'rating', limit });
+      const byId = new Map([...newest, ...rated].map(item => [item.Id, item]));
+      return [...byId.values()]
+        .map(item => [random(), item])
+        .sort((a, b) => a[0] - b[0])
+        .map(([, item]) => item)
+        .slice(0, limit);
     },
 
     all: ({ libraryIds = null, withTrailer = false, limit = null } = {}) =>

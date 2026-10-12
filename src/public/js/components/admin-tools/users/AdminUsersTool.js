@@ -51,8 +51,9 @@ export function createAdminUsersTool() {
     listView
   );
 
-  const notify = (message, type = 'info') => {
-    appStore.showToast(message, type);
+  const notify = (message, type = 'info', options = undefined) => {
+    if (options) appStore.showToast(message, type, options);
+    else appStore.showToast(message, type);
   };
 
   const getFiltered = () => {

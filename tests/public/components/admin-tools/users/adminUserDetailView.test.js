@@ -29,7 +29,19 @@ function makeUser(overrides = {}) {
   };
 }
 
-const libraries = [{ id: 'lib-1', name: 'Movies' }, { id: 'lib-2', name: 'Series' }];
+const libraries = [
+  { id: 'lib-1', name: 'Movies', collectionType: 'movies', itemCount: 300, previews: [{ id: 'm1', tag: 't' }] },
+  { id: 'lib-2', name: 'Series', collectionType: 'tvshows', itemCount: 90, previews: [] },
+  { id: 'lib-3', name: 'Sammlungen', collectionType: 'boxsets', itemCount: null, previews: [] }
+];
+
+const allSwitch = view => view.querySelector('.admin-library-all input');
+const libraryCheck = (view, name) => [...view.querySelectorAll('.admin-library-row')]
+  .find(row => row.querySelector('strong').textContent === name).querySelector('input');
+const toggle = input => {
+  input.checked = !input.checked;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+};
 
 async function flush() {
   await Promise.resolve();
@@ -54,13 +66,12 @@ describe('createAdminUserDetailView', () => {
     document.querySelectorAll('.admin-user-dialog-overlay').forEach(el => el.remove());
   });
 
-  it('renders a header with name, stream counter, and no native radio/checkbox inputs', () => {
+  it('renders a header with name and stream counter', () => {
     const view = createAdminUserDetailView(makeUser({ activeStreams: 1, maxConcurrentStreams: 2 }), { libraries });
 
     expect(view.querySelector('.admin-user-detail-name').textContent).toBe('alice');
     expect(view.querySelector('.admin-user-stream-info').textContent).toBe('1/2 Streams');
     expect(view.querySelectorAll('input[type="radio"]')).toHaveLength(0);
-    expect(view.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
   });
 
   it('does not render its own back button (navigation is owned by the shared admin-tools header)', () => {
@@ -68,54 +79,48 @@ describe('createAdminUserDetailView', () => {
     expect(view.querySelector('.admin-view-back-button')).toBeNull();
   });
 
-  it('renders exactly one Speichern button for the whole form, at the bottom', () => {
+  it('shows the save bar only while something differs from what is saved', async () => {
     const view = createAdminUserDetailView(makeUser(), { libraries });
+    const bar = view.querySelector('.admin-user-save-bar');
+    expect(bar.hidden).toBe(true);
+    expect(bar.querySelector('.admin-user-save-all').textContent).toBe('Änderungen speichern');
 
-    const saveButtons = Array.from(view.querySelectorAll('button')).filter(b => b.textContent === 'Speichern');
-    expect(saveButtons).toHaveLength(1);
-    expect(saveButtons[0].classList.contains('admin-user-save-all')).toBe(true);
+    const [nameInput] = view.querySelectorAll('.admin-user-field-row input[type="text"]');
+    nameInput.value = 'bob';
+    nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await flush();
+    expect(bar.hidden).toBe(false);
 
-    const body = view.querySelector('.admin-user-detail-body');
-    expect(body.lastElementChild.contains(saveButtons[0])).toBe(true);
+    nameInput.value = 'alice';
+    nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await flush();
+    expect(bar.hidden).toBe(true);
   });
 
-  it('hides the library grid when "Alle Bibliotheken" is active', () => {
+  it('hides the library list while the user may see every library', () => {
     const view = createAdminUserDetailView(makeUser({ enableAllFolders: true }), { libraries });
 
-    const grid = view.querySelector('.admin-user-library-grid');
-    expect(grid.classList.contains('hidden')).toBe(true);
-    expect(grid.querySelectorAll('.admin-user-library-toggle')).toHaveLength(0);
+    expect(allSwitch(view).checked).toBe(true);
+    expect(view.querySelector('.admin-library-list').hidden).toBe(true);
+    expect(view.querySelector('.admin-library-summary').textContent).toBe('Sieht alle 3 Bibliotheken.');
   });
 
-  it('shows library toggle buttons with correct aria-pressed when "Ausgewählte Bibliotheken" is active', () => {
+  it('lists the libraries grouped by kind with their size, and sums up the choice', () => {
     const view = createAdminUserDetailView(makeUser({ enableAllFolders: false, enabledFolders: ['lib-1'] }), { libraries });
 
-    const grid = view.querySelector('.admin-user-library-grid');
-    expect(grid.classList.contains('hidden')).toBe(false);
+    const groups = [...view.querySelectorAll('.admin-library-group-title')].map(el => el.textContent);
+    expect(groups).toEqual(['Filme', 'Serien', 'Sonstiges']);
+    expect(libraryCheck(view, 'Movies').checked).toBe(true);
+    expect(libraryCheck(view, 'Series').checked).toBe(false);
+    expect(view.querySelector('.admin-library-row').textContent).toContain('300 Titel');
+    expect(view.querySelector('.admin-library-previews img')).toBeTruthy();
+    expect(view.querySelector('.admin-library-summary').textContent).toBe('Sieht 1 von 3 Bibliotheken · 300 Titel');
 
-    const toggles = Array.from(grid.querySelectorAll('.admin-user-library-toggle'));
-    expect(toggles).toHaveLength(2);
-    const movieToggle = toggles.find(b => b.textContent === 'Movies');
-    const seriesToggle = toggles.find(b => b.textContent === 'Series');
-    expect(movieToggle.getAttribute('aria-pressed')).toBe('true');
-    expect(seriesToggle.getAttribute('aria-pressed')).toBe('false');
-  });
+    toggle(libraryCheck(view, 'Movies'));
+    expect(view.querySelector('.admin-library-summary').textContent).toBe('Ohne Bibliothek sieht der Nutzer nichts.');
 
-  it('switching to "Ausgewählte Bibliotheken" reveals the toggle grid, switching back hides it', () => {
-    const view = createAdminUserDetailView(makeUser({ enableAllFolders: true }), { libraries });
-
-    const [allBtn, selectedBtn] = view.querySelectorAll('.admin-user-choice-btn');
-    const grid = view.querySelector('.admin-user-library-grid');
-
-    expect(allBtn.getAttribute('aria-pressed')).toBe('true');
-    selectedBtn.click();
-
-    expect(grid.classList.contains('hidden')).toBe(false);
-    expect(grid.querySelectorAll('.admin-user-library-toggle')).toHaveLength(2);
-    expect(selectedBtn.getAttribute('aria-pressed')).toBe('true');
-
-    allBtn.click();
-    expect(grid.classList.contains('hidden')).toBe(true);
+    [...view.querySelectorAll('.admin-library-bulk')].find(button => button.textContent === 'Alle auswählen').click();
+    expect(view.querySelector('.admin-library-summary').textContent).toBe('Sieht 3 von 3 Bibliotheken · 390 Titel');
   });
 
   it('does nothing and shows an info notice when Speichern is clicked without any changes', async () => {
@@ -192,8 +197,7 @@ describe('createAdminUserDetailView', () => {
   it('saves library access with enableAllFolders:true and an empty list when "Alle Bibliotheken" is chosen', async () => {
     const view = createAdminUserDetailView(makeUser({ enableAllFolders: false, enabledFolders: ['lib-1'] }), { libraries });
 
-    const [allBtn] = view.querySelectorAll('.admin-user-choice-btn');
-    allBtn.click();
+    toggle(allSwitch(view));
 
     getSaveButton(view).click();
     await flush();
@@ -204,13 +208,27 @@ describe('createAdminUserDetailView', () => {
   it('saves library access with the selected folder ids when specific libraries are chosen', async () => {
     const view = createAdminUserDetailView(makeUser({ enableAllFolders: false, enabledFolders: [] }), { libraries });
 
-    const toggles = Array.from(view.querySelectorAll('.admin-user-library-toggle'));
-    toggles.find(b => b.textContent === 'Series').click();
+    toggle(libraryCheck(view, 'Series'));
 
     getSaveButton(view).click();
     await flush();
 
     expect(AdminUsersApi.setLibraryAccess).toHaveBeenCalledWith('u1', false, ['lib-2']);
+  });
+
+  it('offers to take a saved library change back', async () => {
+    const notify = vi.fn();
+    const onReload = vi.fn();
+    const view = createAdminUserDetailView(makeUser({ enableAllFolders: false, enabledFolders: ['lib-1'] }), { libraries, notify, onReload });
+
+    toggle(libraryCheck(view, 'Series'));
+    getSaveButton(view).click();
+    await flush();
+
+    const [, , options] = notify.mock.calls.find(call => call[0] === 'Änderungen gespeichert');
+    await options.action.onClick();
+    expect(AdminUsersApi.setLibraryAccess).toHaveBeenLastCalledWith('u1', false, ['lib-1']);
+    expect(onReload).toHaveBeenCalled();
   });
 
   it('reports a partial failure when only some of the changed fields fail to save', async () => {

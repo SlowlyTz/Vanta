@@ -44,78 +44,171 @@ export function buildPasswordField() {
   };
 }
 
-export function buildLibraryField(user, libraries) {
+const LIBRARY_GROUPS = [
+  { key: 'movies', title: 'Filme', types: ['movies'] },
+  { key: 'tvshows', title: 'Serien', types: ['tvshows'] },
+  { key: 'other', title: 'Sonstiges', types: null }
+];
+
+const LIBRARY_ICONS = {
+  movies: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="m7 6-2-4M12 6l-2-4M17 6l-2-4"/>',
+  tvshows: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  boxsets: '<path d="M4 7h16v13H4z"/><path d="M7 4h10"/><path d="M9 1h6"/>',
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  other: '<path d="M3 7h6l2 2h10v10H3z"/>'
+};
+
+const libraryIcon = (type) => {
+  const icon = createElement('span', { className: 'admin-library-icon', 'aria-hidden': 'true' });
+  icon.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${LIBRARY_ICONS[type] || LIBRARY_ICONS.other}</svg>`;
+  return icon;
+};
+
+const countLabel = (count) => (Number.isFinite(count) ? `${new Intl.NumberFormat('de-DE').format(count)} Titel` : 'Anzahl unbekannt');
+
+// "alle 1 Bibliotheken" reads wrong; with none or one there is no count to give.
+export const allLibrariesLabel = (count) => {
+  if (count === 0) return 'Sieht alle Bibliotheken.';
+  if (count === 1) return 'Sieht alle Bibliotheken (zurzeit eine).';
+  return `Sieht alle ${count} Bibliotheken.`;
+};
+
+// Which libraries a user sees: everything, or a chosen list grouped by kind
+// (films, series, the rest) with how many titles each holds and a few
+// posters. `onChange` tells the view something changed (for its save bar).
+export function buildLibraryField(user, libraries, { onChange = () => {} } = {}) {
   let enableAll = Boolean(user.enableAllFolders);
   const originalEnabledFolders = new Set(user.enabledFolders || []);
   const selected = new Set(originalEnabledFolders);
 
-  const libraryGrid = createElement('div', { className: 'admin-user-library-grid' });
+  const list = createElement('div', { className: 'admin-library-list' });
+  const summary = createElement('p', { className: 'admin-library-summary', role: 'status' });
 
-  const allBtn = createElement('button', {
+  const allSwitch = createElement('input', {
+    type: 'checkbox',
+    role: 'switch',
+    className: 'settings-switch-input',
+    checked: enableAll,
+    'aria-label': 'Zugriff auf alle Bibliotheken',
+    onChange: event => {
+      enableAll = event.target.checked;
+      render();
+      onChange();
+    }
+  });
+
+  const allRow = createElement('label', { className: 'admin-library-all' },
+    createElement('span', { className: 'admin-library-all-text' },
+      createElement('strong', {}, 'Zugriff auf alle Bibliotheken'),
+      createElement('span', {}, 'Auch Bibliotheken, die später dazukommen.')
+    ),
+    createElement('span', { className: 'settings-switch' }, allSwitch, createElement('span', { className: 'settings-switch-track', 'aria-hidden': 'true' }))
+  );
+
+  const bulk = (label, pick) => createElement('button', {
     type: 'button',
-    className: `admin-user-choice-btn${enableAll ? ' active' : ''}`,
-    'aria-pressed': String(enableAll),
-    onClick: () => { enableAll = true; renderLibraryAccess(); }
-  }, 'Alle');
+    className: 'admin-library-bulk',
+    onClick: () => {
+      selected.clear();
+      if (pick) libraries.forEach(lib => selected.add(lib.id));
+      render();
+      onChange();
+    }
+  }, label);
+  const bulkRow = createElement('div', { className: 'admin-library-bulk-row' }, bulk('Alle auswählen', true), bulk('Keine', false));
 
-  const selectedBtn = createElement('button', {
-    type: 'button',
-    className: `admin-user-choice-btn${!enableAll ? ' active' : ''}`,
-    'aria-pressed': String(!enableAll),
-    onClick: () => { enableAll = false; renderLibraryAccess(); }
-  }, 'Nur ausgewählte');
+  const renderSummary = () => {
+    if (enableAll) {
+      summary.textContent = allLibrariesLabel(libraries?.length || 0);
+      summary.classList.remove('is-warning');
+      return;
+    }
+    const chosen = libraries.filter(lib => selected.has(lib.id));
+    const titles = chosen.reduce((sum, lib) => sum + (Number(lib.itemCount) || 0), 0);
+    if (chosen.length === 0) {
+      summary.textContent = 'Ohne Bibliothek sieht der Nutzer nichts.';
+      summary.classList.add('is-warning');
+      return;
+    }
+    summary.textContent = `Sieht ${chosen.length} von ${libraries.length} ${libraries.length === 1 ? 'Bibliothek' : 'Bibliotheken'} · ${new Intl.NumberFormat('de-DE').format(titles)} Titel`;
+    summary.classList.remove('is-warning');
+  };
 
-  const modeGroup = createElement('div', {
-    className: 'admin-user-library-mode',
-    role: 'group',
-    'aria-label': 'Bibliothekszugriff'
-  }, allBtn, selectedBtn);
+  const row = (lib) => {
+    const checkbox = createElement('input', {
+      type: 'checkbox',
+      className: 'admin-library-check',
+      checked: selected.has(lib.id),
+      onChange: event => {
+        if (event.target.checked) selected.add(lib.id);
+        else selected.delete(lib.id);
+        renderSummary();
+        onChange();
+      }
+    });
+    const previews = createElement('span', { className: 'admin-library-previews', 'aria-hidden': 'true' },
+      (lib.previews || []).map(preview => createElement('img', {
+        src: `/api/media/image/${encodeURIComponent(preview.id)}?type=Primary&maxWidth=200&tag=${encodeURIComponent(preview.tag)}`,
+        alt: '',
+        loading: 'lazy'
+      }))
+    );
+    return createElement('label', { className: 'admin-library-row' },
+      libraryIcon(lib.collectionType),
+      createElement('span', { className: 'admin-library-text' },
+        createElement('strong', {}, lib.name),
+        createElement('span', {}, countLabel(lib.itemCount))
+      ),
+      previews,
+      checkbox
+    );
+  };
 
-  function renderLibraryAccess() {
-    allBtn.className = `admin-user-choice-btn${enableAll ? ' active' : ''}`;
-    allBtn.setAttribute('aria-pressed', String(enableAll));
-    selectedBtn.className = `admin-user-choice-btn${!enableAll ? ' active' : ''}`;
-    selectedBtn.setAttribute('aria-pressed', String(!enableAll));
-
-    libraryGrid.innerHTML = '';
-    libraryGrid.classList.toggle('hidden', enableAll);
-
+  function render() {
+    list.replaceChildren();
+    list.hidden = enableAll;
+    bulkRow.hidden = enableAll;
+    renderSummary();
     if (enableAll) return;
 
     if (!libraries || libraries.length === 0) {
-      libraryGrid.appendChild(createElement('p', { className: 'admin-user-dialog-hint' }, 'Keine Bibliotheken gefunden'));
+      list.appendChild(createElement('p', { className: 'admin-user-dialog-hint' }, 'Keine Bibliotheken gefunden'));
       return;
     }
 
-    libraries.forEach(lib => {
-      const isActive = selected.has(lib.id);
-      const libraryButton = createElement('button', {
-        type: 'button',
-        className: `admin-user-library-toggle${isActive ? ' active' : ''}`,
-        'aria-pressed': String(isActive),
-        onClick: () => {
-          if (selected.has(lib.id)) selected.delete(lib.id);
-          else selected.add(lib.id);
-          renderLibraryAccess();
-        }
-      }, lib.name);
-      libraryGrid.appendChild(libraryButton);
-    });
+    for (const group of LIBRARY_GROUPS) {
+      const members = libraries.filter(lib => (group.types
+        ? group.types.includes(lib.collectionType)
+        : !LIBRARY_GROUPS.some(other => other.types?.includes(lib.collectionType))));
+      if (!members.length) continue;
+      list.appendChild(createElement('div', { className: 'admin-library-group' },
+        createElement('span', { className: 'admin-library-group-title' }, group.title),
+        ...members.map(row)
+      ));
+    }
   }
 
-  renderLibraryAccess();
+  render();
 
   return {
-    element: createElement('div', { className: 'admin-user-field-group' },
-      createElement('label', { className: 'admin-user-field-label' }, 'Bibliotheken'),
-      modeGroup,
-      libraryGrid
+    element: createElement('div', { className: 'admin-user-field-group admin-library-field' },
+      allRow,
+      bulkRow,
+      list,
+      summary
     ),
     getValue: () => ({
       enableAllFolders: enableAll,
       enabledFolders: enableAll ? [] : Array.from(selected)
     }),
-    hasChanged: () => enableAll !== Boolean(user.enableAllFolders) || !setsEqual(selected, originalEnabledFolders)
+    // What was saved before, for "Rückgängig".
+    getOriginal: () => ({ enableAllFolders: Boolean(user.enableAllFolders), enabledFolders: [...originalEnabledFolders] }),
+    // With "alle Bibliotheken" on, the ticks underneath do not count: switching
+    // it off, ticking around and on again changes nothing.
+    hasChanged: () => {
+      if (enableAll !== Boolean(user.enableAllFolders)) return true;
+      return !enableAll && !setsEqual(selected, originalEnabledFolders);
+    }
   };
 }
 

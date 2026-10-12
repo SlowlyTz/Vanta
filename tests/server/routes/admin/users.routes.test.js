@@ -3,12 +3,17 @@ import express from 'express';
 import request from 'supertest';
 import usersRoutes from '../../../../src/server/routes/admin/users.routes.js';
 
+vi.mock('../../../../src/server/services/catalog/reader.js', () => ({
+  getActiveCatalogReader: () => ({ libraryStats: () => ({ 'lib-1': { count: 393, previews: [{ id: 'm1', tag: 't' }] } }) })
+}));
+
 vi.mock('../../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: { isUserAdmin: vi.fn() }
 }));
 
 vi.mock('../../../../src/server/services/jellyfin/admin-users.service.js', () => ({
   JellyfinAdminUsersService: {
+    countLibraryItems: vi.fn(async () => 12),
     listUsers: vi.fn(),
     listLibraries: vi.fn(),
     updateUserName: vi.fn(),
@@ -127,15 +132,19 @@ describe('Admin Users Routes', () => {
   });
 
   describe('GET /libraries', () => {
-    it('normalizes VirtualFolders into id/name/collectionType', async () => {
+    it('normalizes VirtualFolders and adds how many titles each holds', async () => {
       JellyfinAdminUsersService.listLibraries.mockResolvedValue([
-        { ItemId: 'lib-1', Name: 'Movies', CollectionType: 'movies' }
+        { ItemId: 'lib-1', Name: 'Movies', CollectionType: 'movies' },
+        { ItemId: 'lib-2', Name: 'Sammlungen', CollectionType: 'boxsets' }
       ]);
 
       const res = await request(createApp()).get('/libraries');
 
       expect(res.status).toBe(200);
-      expect(res.body.libraries).toEqual([{ id: 'lib-1', name: 'Movies', collectionType: 'movies' }]);
+      expect(res.body.libraries).toEqual([
+        { id: 'lib-1', name: 'Movies', collectionType: 'movies', itemCount: 393, previews: [{ id: 'm1', tag: 't' }] },
+        { id: 'lib-2', name: 'Sammlungen', collectionType: 'boxsets', itemCount: 12, previews: [] }
+      ]);
     });
   });
 
