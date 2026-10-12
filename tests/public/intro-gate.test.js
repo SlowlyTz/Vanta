@@ -55,6 +55,19 @@ describe('intro-gate', () => {
     expect(document.documentElement.classList.contains('reduce-motion')).toBe(true);
   });
 
+  it('marks TV mode before the first paint and skips the scene there', () => {
+    window.history.replaceState(null, '', '/?tv=1#/home');
+    loadGate();
+    expect(document.documentElement.classList.contains('tv-mode')).toBe(true);
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    expect(localStorage.getItem('vanta.tvMode')).toBe('on');
+
+    window.history.replaceState(null, '', '/?tv=0#/home');
+    loadGate();
+    expect(document.documentElement.classList.contains('tv-mode')).toBe(false);
+    window.history.replaceState(null, '', '/#/home');
+  });
+
   it('treats a corrupt timestamp as never played', () => {
     loadGate({ lastPlayedAt: 'abc' });
     expect(document.documentElement.classList.contains('intro-off')).toBe(false);

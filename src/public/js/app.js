@@ -6,6 +6,7 @@ import { mountUpdateOverlay } from './components/updateOverlay.js';
 import { registerServiceWorker } from './utils/service-worker.js';
 import { initDetailPrefetch } from './utils/prefetch.js';
 import { initMediaActions } from './components/mediaActions.js';
+import { applyTvUrlOverride, isTvMode, markTvSuggested, setTvChoice, shouldSuggestTvMode } from './utils/tvMode.js';
 
 // Define routing mappings using dynamic ES modules imports
 router.add('#/login', () => import('./pages/login.page.js'), { styles: ['login'], guestOnly: true });
@@ -45,8 +46,28 @@ function bindSkipLink() {
   });
 }
 
+// A screen that looks like a TV but was not recognised for sure is asked
+// once; the answer is kept.
+async function suggestTvMode() {
+  if (!shouldSuggestTvMode()) return;
+  markTvSuggested();
+  const { confirmDialog } = await import('./components/confirmDialog.js');
+  const yes = await confirmDialog({
+    title: 'Fernseher erkannt?',
+    message: 'Sieht nach einem Fernseher aus. TV-Modus aktivieren? Du kannst das jederzeit in den Einstellungen unter „Darstellung“ ändern.',
+    confirmLabel: 'TV-Modus an',
+    cancelLabel: 'Nein'
+  });
+  if (!yes) return;
+  setTvChoice('on');
+  window.location.reload();
+}
+
 // Initialise client router on page load
 document.addEventListener('DOMContentLoaded', () => {
+  applyTvUrlOverride();
+  const tv = isTvMode();
+  if (tv) import('./tv/index.js').then(module => module.startTvMode());
   bindSkipLink();
   mountWatchPartyInvitationOverlay();
   mountOfflineOverlay();
@@ -56,4 +77,5 @@ document.addEventListener('DOMContentLoaded', () => {
   router.init();
   initDetailPrefetch();
   initMediaActions();
+  if (!tv) window.setTimeout(suggestTvMode, 3000);
 });

@@ -1,0 +1,58 @@
+/* TV mode (html.tv-mode): the 10-foot interface, read from a sofa and
+   driven with the arrow keys of a remote. Loaded only in TV mode. */
+html.tv-mode {
+  /* About 24 px at 1080p, scaling with the screen. */
+  font-size: clamp(18px, 1.25vw, 40px);
+  /* Overscan: TVs may cut off the outer edge of the picture. */
+  --tv-safe-x: 5vw;
+  --tv-safe-y: 5vh;
+  --tv-focus-scale: 1.08;
+  --tv-focus-ring: 0 0 0 4px #fff, 0 0 32px 6px rgba(255, 255, 255, 0.35);
+  scroll-behavior: auto;
+}
+
+/* Blur is expensive on TV chips. */
+html.tv-mode *,
+html.tv-mode *::before,
+html.tv-mode *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Fewer and shorter transitions; nothing reacts to a (missing) mouse. */
+html.tv-mode * {
+  transition-duration: 120ms !important;
+}
+
+html.tv-mode body {
+  cursor: none;
+}
+
+/* The focused element: larger, a white ring and a glow above the rest. */
+html.tv-mode :focus {
+  outline: none;
+}
+
+html.tv-mode .tv-focus,
+html.tv-mode :focus-visible {
+  position: relative;
+  z-index: 5;
+  outline: none;
+  box-shadow: var(--tv-focus-ring);
+  transform: scale(var(--tv-focus-scale));
+  transition: transform 120ms ease, box-shadow 120ms ease !important;
+}
+
+/* Cards show the focus on their picture, not on the whole link. */
+html.tv-mode .media-card:focus-visible,
+html.tv-mode .media-card.tv-focus {
+  box-shadow: none;
+  transform: none;
+}
+
+html.tv-mode .media-card:focus-visible .media-card-image-container,
+html.tv-mode .media-card.tv-focus .media-card-image-container {
+  box-shadow: var(--tv-focus-ring);
+  transform: scale(var(--tv-focus-scale));
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}

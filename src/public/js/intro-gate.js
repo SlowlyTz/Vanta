@@ -6,6 +6,10 @@
   var STORAGE_KEY = 'vanta.intro.lastPlayedAt';
   // The user's settings as the app last saw them (preferences.store.js).
   var PREFERENCES_KEY = 'vanta.preferences';
+  // TV mode per device (utils/tvMode.js); the pattern is TV_PATTERN of
+  // shared/tvDetect.js, repeated here because this script cannot import.
+  var TV_KEY = 'vanta.tvMode';
+  var TV_PATTERN = /SMART-TV|SmartTV|HbbTV|Web0S|webOS.*TV|Tizen.*TV|\bAFT[A-Z]|CrKey|GoogleTV|BRAVIA|Android.*\bTV\b|AndroidTV/i;
   var MIN_INTERVAL_MS = 10 * 60 * 1000;
   var WATCHDOG_MS = 12000;
   var SKIPPED_ROUTES = ['#/player/', '#/watch-party/'];
@@ -17,6 +21,8 @@
     // a user who switched the animation off.
     if (input.reducedMotion === true) return false;
     if (input.introOff === true) return false;
+    // TV chips are slow; the 10-foot interface starts without the scene.
+    if (input.tv === true) return false;
     var hash = input.hash || '';
     for (var i = 0; i < SKIPPED_ROUTES.length; i++) {
       if (hash.indexOf(SKIPPED_ROUTES[i]) === 0) return false;
@@ -36,6 +42,17 @@
     } catch (e) {
       return false;
     }
+  }
+
+  function tvMode() {
+    var choice = null;
+    try {
+      var param = new URLSearchParams(window.location.search).get('tv');
+      if (param === '1' || param === '0') window.localStorage.setItem(TV_KEY, param === '1' ? 'on' : 'off');
+      choice = window.localStorage.getItem(TV_KEY);
+    } catch (e) { /* private mode: detection only */ }
+    if (choice === 'on' || choice === 'off') return choice === 'on';
+    return TV_PATTERN.test(window.navigator ? window.navigator.userAgent : '');
   }
 
   function readPreferences() {
@@ -81,9 +98,11 @@
 
   var now = Date.now();
   var preferences = readPreferences();
+  var tv = tvMode();
+  if (tv) window.document.documentElement.classList.add('tv-mode');
   // "Weniger Bewegung" from the settings, before the first paint.
   if (preferences.reducedMotion === true) window.document.documentElement.classList.add('reduce-motion');
-  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true, reducedMotion: prefersReducedMotion() || preferences.reducedMotion === true, introOff: preferences.introAnimation === 'off' })) {
+  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true, reducedMotion: prefersReducedMotion() || preferences.reducedMotion === true, introOff: preferences.introAnimation === 'off', tv: tv })) {
     window.document.documentElement.classList.add('intro-off');
     return;
   }
