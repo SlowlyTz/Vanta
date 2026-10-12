@@ -22,6 +22,7 @@ import notificationsRoutes from './routes/notifications.routes.js';
 import preferencesRoutes from './routes/preferences.routes.js';
 import watchlistRoutes from './routes/watchlist.routes.js';
 import sessionsRoutes from './routes/sessions.routes.js';
+import pairingRoutes from './routes/pairing.routes.js';
 import { BUILD_ID, BUILD_HEADER } from './config/build.js';
 
 const app = express();
@@ -62,6 +63,7 @@ app.use(sessionMiddleware);
 app.use(staticAssets);
 
 // API and UI Routes
+app.use('/api/auth/pairing', pairingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/requests', requestsRoutes);

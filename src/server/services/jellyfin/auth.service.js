@@ -12,6 +12,20 @@ export class AuthService {
     });
   }
 
+  // Quick Connect (Jellyfin's sign-in by code): a device asks for a code,
+  // a signed-in user approves it, the device then signs in without a password.
+  static async quickConnectInitiate(deviceId) {
+    return jellyfinJson('/QuickConnect/Initiate', { method: 'POST', deviceId });
+  }
+
+  static async quickConnectAuthorize(code, { token, userId }) {
+    return jellyfinJson('/QuickConnect/Authorize', { method: 'POST', token, query: { code, userId } });
+  }
+
+  static async quickConnectLogin(secret, { deviceId }) {
+    return jellyfinJson('/Users/AuthenticateWithQuickConnect', { method: 'POST', deviceId, body: { Secret: secret } });
+  }
+
   // Ends the Jellyfin session behind a token, so it is useless afterwards.
   static async logout(token) {
     await jellyfinFetch('/Sessions/Logout', { token, method: 'POST' });

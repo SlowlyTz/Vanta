@@ -12,7 +12,10 @@ const PUBLIC_ROUTES = new Set([
   'auth.routes.js POST /logout',
   'page.routes.js GET *',
   'version.routes.js GET /',
-  'health.routes.js GET /'
+  'health.routes.js GET /',
+  // The TV asks for a pairing code and its status before anyone is signed in.
+  'pairing.routes.js POST /',
+  'pairing.routes.js GET /status'
 ]);
 
 // Routers that guard every route themselves (internal: loopback + key).

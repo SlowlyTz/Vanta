@@ -3,15 +3,14 @@ import { AuthService } from '../services/jellyfin/auth.service.js';
 import { UserBanService } from '../services/user-ban.service.js';
 import { KnownUsersService } from '../services/known-users.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { createDeviceId, forgetTokenDevice, registerTokenDevice } from '../services/jellyfin/client.js';
+import { createDeviceId, forgetTokenDevice } from '../services/jellyfin/client.js';
+import { REMEMBER_ME_MAX_AGE_MS, startUserSession } from '../services/session-login.js';
 import { destroyInvalidSession, endBannedSession, isUpstreamUnauthorized, requireAuth } from '../middleware/auth.middleware.js';
 import { loginThrottle, formatLockDuration } from '../services/login-throttle.service.js';
 
 const router = express.Router();
 
-// "Angemeldet bleiben": the cookie outlives the browser session for two
-// weeks; without it the session cookie has no maxAge at all.
-export const REMEMBER_ME_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+export { REMEMBER_ME_MAX_AGE_MS };
 
 const BAN_MESSAGE = 'Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.';
 const WRONG_CREDENTIALS = 'Benutzername oder Passwort ist falsch.';
@@ -25,13 +24,6 @@ const tooManyAttempts = (res, waitMs) => {
     retryAfterMs: waitMs
   });
 };
-
-// A fresh session id for every login, so an id someone planted or saw before
-// is worthless afterwards. Test doubles without regenerate keep theirs.
-const regenerateSession = (req) => new Promise((resolve, reject) => {
-  if (typeof req.session?.regenerate !== 'function') return resolve();
-  req.session.regenerate(error => (error ? reject(error) : resolve()));
-});
 
 // Jellyfin answers wrong credentials (and its own lockout) with a 4xx; no
 // status or a 5xx means it could not be asked, which is nobody's failed try.
@@ -71,30 +63,8 @@ router.post('/login', asyncHandler(async (req, res) => {
     return res.status(403).json({ error: BAN_MESSAGE, reason: ban.reason, code: 'BANNED' });
   }
 
-  const isAdmin = AuthService.isAdministrator(data.User);
-
-  await regenerateSession(req);
-  req.session.accessToken = data.AccessToken;
-  req.session.deviceId = deviceId;
-  registerTokenDevice(data.AccessToken, deviceId);
-  req.session.userId = data.User.Id;
-  req.session.username = data.User.Name;
-  req.session.isAdmin = isAdmin;
-  // Shown under "Geräte" in the settings.
-  req.session.device = { userAgent: String(req.get('user-agent') || '').slice(0, 300), loginAt: Date.now() };
-  if (rememberMe === true) {
-    req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE_MS;
-  }
-
-  KnownUsersService.remember({ userId: data.User.Id, username: data.User.Name });
-
-  return res.json({
-    user: {
-      id: data.User.Id,
-      name: data.User.Name,
-      isAdmin
-    }
-  });
+  const user = await startUserSession(req, data, deviceId, { rememberMe });
+  return res.json({ user });
 }));
 
 router.get('/me', asyncHandler(async (req, res) => {

@@ -4,6 +4,7 @@ import { appStore } from '../store/app.store.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 import { formatClock } from '../shared/time.js';
 import { takeSessionNotice } from '../utils/sessionNotice.js';
+import { createTvPairing } from './login/tvPairing.js';
 
 const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
 const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
@@ -18,7 +19,7 @@ const CHECK_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" 
 const EYE_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 5.2A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2"></path><path d="M6.6 6.6A17.4 17.4 0 0 0 2 12s3.5 7 10 7a10.7 10.7 0 0 0 4.4-.9"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>`;
 
-export default function LoginPage() {
+export default function LoginPage(params, pageScope) {
   const showLoginError = (message, reason) => {
     errorBanner.innerHTML = '';
     errorBanner.appendChild(createElement('p', { className: 'login-error-message' }, message));
@@ -284,6 +285,23 @@ export default function LoginPage() {
   // A session the server ended (a ban) left its reason for this page.
   const notice = takeSessionNotice();
   if (notice) showLoginError(notice.message, notice.reason);
+
+  // TV: the phone code first, the form with the on-screen keyboard on request.
+  if (document.documentElement.classList.contains('tv-mode')) {
+    container.classList.add('is-tv-login');
+    loginForm.classList.add('is-hidden-for-pairing');
+    const pairing = createTvPairing({
+      scope: pageScope,
+      onUsePassword: () => {
+        pairing.stop();
+        pairing.element.remove();
+        loginForm.classList.remove('is-hidden-for-pairing');
+        // VANTA's keyboard, not the TV's (which a focused field would open).
+        import('../components/tv/OnScreenKeyboard.js').then(module => module.openKeyboardFor(usernameInput));
+      }
+    });
+    loginForm.before(pairing.element);
+  }
 
   return container;
 }

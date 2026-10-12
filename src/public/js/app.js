@@ -29,6 +29,7 @@ router.add('#/admin', () => import('./pages/admin.page.js'), { styles: ['admin']
 router.add('#/admin/requests', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'requests' } });
 router.add('#/admin/users', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'users' } });
 router.add('#/admin/settings', () => import('./pages/admin.page.js'), { styles: ['admin'], requiresAuth: true, defaultParams: { section: 'settings' } });
+router.add('#/connect', () => import('./pages/connect.page.js'), { styles: ['login'], requiresAuth: true });
 router.add('#/item/:id', () => import('./pages/detail.page.js'), { requiresAuth: true });
 router.add('#/profile', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true });
 router.add('#/watchlist', () => import('./pages/profile.page.js'), { styles: ['profile'], requiresAuth: true, defaultParams: { initialTab: 'watchlist' } });

@@ -1,3 +1,4 @@
+import { unsubscribeBrowserPush } from '../utils/pushSubscription.js';
 import { AuthApi } from '../api/auth.api.js';
 import { Store } from './store.js';
 import { clearUserCaches } from '../utils/service-worker.js';
@@ -45,6 +46,8 @@ class AuthStore extends Store {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // The server forgets this device's push subscription; the browser must too.
+      unsubscribeBrowserPush().catch(() => {});
       clearUserCaches();
       this.user = null;
       this.notify();
@@ -65,6 +68,12 @@ class AuthStore extends Store {
   async changePassword(currentPassword, newPassword) {
     await AuthApi.changePassword(currentPassword, newPassword);
     return true;
+  }
+
+  // A sign-in that happened elsewhere (the TV paired by phone).
+  setUser(user) {
+    this.user = user;
+    this.notify();
   }
 
   async checkAuth() {
