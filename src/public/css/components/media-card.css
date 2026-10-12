@@ -49,6 +49,19 @@ a.media-card:focus-visible .media-card-image-container,
   aspect-ratio: 16/9;
 }
 
+/* Browsers without aspect-ratio (TVs before Chromium 88): the box takes its
+   height from padding; the picture is absolutely positioned anyway. */
+@supports not (aspect-ratio: 1 / 1) {
+  .media-card-image-container {
+    height: 0;
+    padding-top: 150%;
+  }
+
+  .media-card.landscape .media-card-image-container {
+    padding-top: 56.25%;
+  }
+}
+
 .media-card-image {
   position: absolute;
   top: 0;
@@ -155,3 +168,13 @@ a.media-card:focus-visible .media-card-image-container,
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+
+/* A started series: how much of it was seen, and its next episode. */
+.media-progress-bar.is-series {
+  height: 3px;
+}
+
+.media-card-subtitle.is-next-up {
+  color: rgb(var(--abyss-accent));
+  font-weight: 600;
+}

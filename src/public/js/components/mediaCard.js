@@ -6,6 +6,8 @@ import { createPlayedToggle } from './playedToggle.js';
 import { formatEpisodeCode } from '../shared/episodeCode.js';
 import { watchlistStore } from '../store/watchlist.store.js';
 import { BOOKMARK_ICON } from './watchlistButton.js';
+import { createPlayedBadge } from './playedBadge.js';
+import { observeCardUserData } from '../utils/cardUserData.js';
 
 // Cards of titles on "Meine Liste" carry a small bookmark; when the list
 // changes, the cards on screen follow.
@@ -117,7 +119,9 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   const className = `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}${inWatchlist ? ' in-watchlist' : ''}`;
 
   if (!playedToggle) {
-    return createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id, itemType: item.Type } }, content);
+    const link = createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id, itemType: item.Type } }, content);
+    observeCardUserData(link);
+    return link;
   }
 
   // A button cannot sit inside a link: with the played toggle the card is a
@@ -134,10 +138,4 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   );
 
   return card;
-}
-
-function createPlayedBadge() {
-  const badge = createElement('div', { className: 'media-card-played', title: 'Gesehen', 'aria-label': 'Gesehen' });
-  badge.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
-  return badge;
 }

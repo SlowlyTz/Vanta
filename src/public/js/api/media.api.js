@@ -190,5 +190,14 @@ export const MediaApi = {
 
   restoreResume(undo) {
     return request('/api/media/resume/restore', { method: 'POST', body: { undo } });
+  },
+
+  // { id: { played, progress, next, seriesProgress } } for the cards on screen.
+  getUserData(ids) {
+    return request(`/api/media/userdata?ids=${ids.map(encodeURIComponent).join(',')}`);
+  },
+
+  refreshUserData() {
+    return request('/api/media/userdata/refresh', { method: 'POST' });
   }
 };

@@ -33,24 +33,30 @@
 .watchlist-button-icon {
   position: relative;
   display: inline-flex;
+  width: 18px;
+  height: 18px;
+  margin-right: 2px;
 }
 
+/* The plus or check sits on the bookmark's lower corner, cut out of it by a
+   ring in the button's own colour. */
 .watchlist-button-mark {
   position: absolute;
-  right: -6px;
-  bottom: -5px;
+  right: -5px;
+  bottom: -4px;
   display: grid;
   place-items: center;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   background: rgb(var(--abyss-accent));
+  box-shadow: 0 0 0 2px #2a2a30;
   color: var(--bg-primary);
 }
 
 .watchlist-button-mark svg {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 
 /* A small bookmark on cards of titles on the list. */
@@ -88,4 +94,9 @@
     padding: 0;
     justify-content: center;
   }
+}
+
+/* Next to the "gesehen" check, which sits in the same corner. */
+.media-card.is-played .media-card-saved {
+  left: 40px;
 }
