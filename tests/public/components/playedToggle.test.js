@@ -126,3 +126,16 @@ describe('createPlayedToggle', () => {
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
   });
 });
+
+describe('played toggle follows changes made elsewhere', () => {
+  it('turns with a played event for its item, e.g. its series marked unwatched', async () => {
+    const { createPlayedToggle, PLAYED_CHANGED_EVENT } = await import('../../../src/public/js/components/playedToggle.js');
+    const button = createPlayedToggle({ Id: 'ep1', Type: 'Episode', UserData: { Played: true } }, { compact: true });
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    window.dispatchEvent(new CustomEvent(PLAYED_CHANGED_EVENT, { detail: { id: 'ep1', played: false, cascade: true } }));
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(button.getAttribute('aria-label')).toBe('Als gesehen markieren');
+    window.dispatchEvent(new CustomEvent(PLAYED_CHANGED_EVENT, { detail: { id: 'other', played: true } }));
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+  });
+});
