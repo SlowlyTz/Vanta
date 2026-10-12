@@ -122,4 +122,16 @@ describe('request()', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener.mock.calls[0][0].detail).toEqual({ build: 'build-b' });
   });
+
+  it('ignores the build of an answer the browser may have kept', async () => {
+    const listener = vi.fn();
+    window.addEventListener('vanta:server-build', listener);
+    const headers = { 'X-Vanta-Build': 'old-build', 'cache-control': 'private, max-age=300', 'content-type': 'application/json' };
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, headers: { get: name => headers[name] ?? null }, json: async () => ({}) });
+
+    await request('/api/media/segments/x');
+    window.removeEventListener('vanta:server-build', listener);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
 });

@@ -52,7 +52,11 @@ export async function request(url, options = {}) {
       throw networkError;
     }
 
-    reportServerBuild(response.headers?.get?.(BUILD_HEADER));
+    // An answer the browser may keep (max-age) can come from its cache and
+    // name the build of a deploy ago; only fresh answers tell the build.
+    if (!/max-age=[1-9]/.test(response.headers?.get?.('cache-control') || '')) {
+      reportServerBuild(response.headers?.get?.(BUILD_HEADER));
+    }
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));
