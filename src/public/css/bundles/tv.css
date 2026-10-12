@@ -253,3 +253,92 @@ html.tv-mode .heart-container:focus-within {
   border-radius: 999px;
   box-shadow: var(--tv-focus-ring);
 }
+
+/* The on-screen keyboard. */
+html.tv-mode .osk-rows {
+  display: grid;
+  gap: 0.5rem;
+}
+
+html.tv-mode .osk-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0.5rem;
+}
+
+html.tv-mode .osk-key {
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+}
+
+html.tv-mode .osk-key.is-wide {
+  grid-column: span 3;
+}
+
+html.tv-mode .osk-key.tv-focus,
+html.tv-mode .osk-key:focus-visible {
+  background: #fff;
+  color: #0b0b0d;
+  transform: scale(1.12);
+}
+
+html.tv-mode .osk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+html.tv-mode .osk-dialog {
+  width: min(46rem, 90vw);
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  background: #151519;
+}
+
+html.tv-mode .osk-title {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+html.tv-mode .osk-preview {
+  min-height: 3rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 1.4rem;
+}
+
+/* Search: keyboard left, field and results right. */
+html.tv-mode .search-page.is-tv-search {
+  display: grid;
+  grid-template-columns: minmax(24rem, 30rem) 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+html.tv-mode .tv-search-keyboard {
+  position: sticky;
+  top: var(--tv-safe-y);
+  padding-top: var(--tv-safe-y);
+}
+
+html.tv-mode .is-tv-search .search-input-wrapper {
+  margin-top: var(--tv-safe-y);
+  max-width: none;
+}
+
+html.tv-mode .is-tv-search .grid-container {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}

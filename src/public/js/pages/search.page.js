@@ -7,6 +7,7 @@ import { resolvePageScope } from '../utils/pageScope.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createActorModal } from './detail/actorModal.js';
 import { recentSearches } from '../utils/recentSearches.js';
+import { createOnScreenKeyboard } from '../components/tv/OnScreenKeyboard.js';
 
 const SEARCH_DELAY_MS = 450;
 
@@ -137,8 +138,14 @@ export default function SearchPage(params, pageScope) {
     );
   };
 
+  // A newer search cancels the request of the one before.
+  let runController = null;
+  signal.addEventListener?.('abort', () => runController?.abort(), { once: true });
   const performSearch = async () => {
     const runId = ++searchRunId;
+    runController?.abort();
+    runController = new AbortController();
+    const runSignal = runController.signal;
     peopleSlot.replaceChildren();
 
     if (!hasCriteria()) {
@@ -154,10 +161,10 @@ export default function SearchPage(params, pageScope) {
     statusContainer.classList.add('hidden');
     resultsGrid.innerHTML = '';
     setSectionBusy(resultsGrid, true);
-    resultsGrid.appendChild(createSectionLoader({ label: state.q ? `Suche nach "${state.q}"...` : 'Titel werden gesucht ...' }));
+    resultsGrid.appendChild(createSectionLoader({ label: state.q ? `Suche nach „${state.q}“ …` : 'Titel werden gesucht …' }));
 
     try {
-      const { items = [], people = [] } = await MediaApi.searchFull(state.q, state, { signal });
+      const { items = [], people = [] } = await MediaApi.searchFull(state.q, state, { signal: runSignal });
       if (runId !== searchRunId) return;
 
       resultsGrid.innerHTML = '';
@@ -175,7 +182,7 @@ export default function SearchPage(params, pageScope) {
       if (items.length === 0) {
         showStatus('Keine Ergebnisse gefunden', activeFilterCount(state)
           ? 'Mit diesen Filtern gibt es keine Treffer. Lockere die Filter oder ändere die Suche.'
-          : `Für "${state.q}" gibt es keine Treffer.`);
+          : `Für „${state.q}“ gibt es keine Treffer.`);
       } else {
         items.forEach(item => {
           const cardEl = MediaCard({ item, landscape: false, sourceType: 'search' });
@@ -183,7 +190,7 @@ export default function SearchPage(params, pageScope) {
         });
       }
     } catch (error) {
-      if (runId !== searchRunId) return;
+      if (runId !== searchRunId || error.name === 'AbortError') return;
       if (error.isAuthError) return;
 
       console.error('[Search Page Error]', error);
@@ -208,7 +215,7 @@ export default function SearchPage(params, pageScope) {
   const searchInput = createElement('input', {
     type: 'search',
     className: 'search-input-field',
-    placeholder: 'Filme, Serien oder Personen suchen...',
+    placeholder: 'Filme, Serien oder Personen suchen …',
     'aria-label': 'Filme, Serien oder Personen suchen',
     'aria-controls': 'search-results',
     enterkeyhint: 'search',
@@ -276,6 +283,20 @@ export default function SearchPage(params, pageScope) {
 
   const typeChips = chipGroup({ label: 'Typ', options: TYPE_OPTIONS, isActive: value => state.type === value, onPick: value => { state.type = value; } });
   const decadeChips = chipGroup({ label: 'Jahrzehnt', options: DECADE_OPTIONS, isActive: value => state.decade === value, onPick: value => { state.decade = value; } });
+  // Only decades the library has titles from ("Älter" for anything before
+  // the 1970s); without an answer all stay.
+  MediaApi.getDecades?.()
+    .then(({ decades } = {}) => {
+      if (!Array.isArray(decades)) return;
+      const present = new Set(decades.map(String));
+      const older = decades.some(decade => decade <= 1960);
+      decadeChips.element.querySelectorAll('[data-value]').forEach(chip => {
+        const value = chip.dataset.value;
+        if (!value || value === state.decade) return;
+        chip.hidden = value === '1960' ? !older : !present.has(value);
+      });
+    })
+    .catch(() => {});
   const fskChips = chipGroup({ label: 'Altersfreigabe', options: FSK_OPTIONS, isActive: value => state.fsk === value, onPick: value => { state.fsk = value; } });
   const genreSlot = createElement('div', { className: 'search-filter-chips' }, createElement('span', { className: 'search-filter-hint' }, 'Genres werden geladen …'));
 
@@ -335,6 +356,28 @@ export default function SearchPage(params, pageScope) {
     resultsGrid,
     statusContainer
   );
+
+  // TV: two zones. Left the field, the on-screen keyboard under it, then
+  // filters and recent searches; right the results, which up/down move
+  // through (a column) and left leaves for the keyboard again.
+  if (document.documentElement.classList.contains('tv-mode')) {
+    const keyboard = createOnScreenKeyboard({ input: searchInput, shift: false });
+    // The field shows what is typed; the remote types with the keys below it.
+    searchInput.setAttribute('tabindex', '-1');
+    const inputWrapper = searchWrapper.querySelector('.search-input-wrapper');
+    const filterBar = searchWrapper.querySelector('.search-filter-bar');
+    const panel = createElement('div', { className: 'tv-search-keyboard', 'data-osk-inline': '', 'data-tv-group': 'keyboard' },
+      inputWrapper, keyboard.element, filterBar, filterPanel, recentSlot);
+    const results = createElement('div', { className: 'tv-search-results', 'data-tv-group': 'results', 'data-tv-column': '', 'data-tv-backdrop': '' },
+      resultCount, peopleSlot, resultsGrid, statusContainer);
+    container.classList.add('is-tv-search');
+    panel.querySelector('.osk-key')?.setAttribute('data-tv-autofocus', '');
+    container.append(panel, results);
+    filterButtonCount.textContent = activeFilterCount(state) ? String(activeFilterCount(state)) : '';
+    scope.onLeave?.(() => { if (debounceTimeout) clearTimeout(debounceTimeout); });
+    performSearch();
+    return container;
+  }
 
   container.appendChild(searchWrapper);
   filterButtonCount.textContent = activeFilterCount(state) ? String(activeFilterCount(state)) : '';

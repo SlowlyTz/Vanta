@@ -161,10 +161,17 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
 }
 
 // Wires the engine to the keyboard and the router.
-export function bindFocusEngine(engine, { win = window } = {}) {
+export function bindFocusEngine(engine, { win = window, openKeyboard = null } = {}) {
   const onKey = event => {
     if ((event.key === 'Enter' || event.keyCode === 13) && !event.defaultPrevented) {
       const target = event.target;
+      // OK on a text field opens the on-screen keyboard (unless the page has
+      // one of its own next to it).
+      if (openKeyboard && isTypingTarget(target) && target.tagName === 'INPUT' && !target.closest('[data-osk-inline]') && !target.closest('.osk-dialog')) {
+        event.preventDefault();
+        openKeyboard(target);
+        return;
+      }
       if (target?.matches?.('input[type="checkbox"], input[type="radio"], [data-tv-focusable]')) {
         event.preventDefault();
         target.click();

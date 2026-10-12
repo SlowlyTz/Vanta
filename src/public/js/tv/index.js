@@ -20,8 +20,20 @@ export async function startTvMode({ sidebar = null } = {}) {
   });
 
   const focus = createFocusEngine();
-  bindFocusEngine(focus);
+  bindFocusEngine(focus, {
+    openKeyboard: input => import('../components/tv/OnScreenKeyboard.js').then(module => module.openKeyboardFor(input)),
+    openActions: card => import('../components/mediaActions.js').then(module => {
+      const rect = card.getBoundingClientRect();
+      module.openMediaActions(card, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, source: 'remote' });
+    })
+  });
   bindFocusBackdrop();
+
+  // A pointer remote (LG Magic Remote) shows its cursor while it moves; the
+  // arrow keys hide it again.
+  const root = document.documentElement;
+  window.addEventListener('pointermove', () => root.classList.add('tv-pointer'), { passive: true });
+  window.addEventListener('keydown', () => root.classList.remove('tv-pointer'), true);
 
   await ensurePageStyles(['tv']);
   return { back, focus };
