@@ -62,7 +62,28 @@ function buildH264CodecProfile(maxHeight) {
   return { Type: 'Video', Codec: 'h264', Conditions: conditions };
 }
 
-export function buildBrowserDeviceProfile({ forceHlsTranscoding = false, maxHeight = null } = {}) {
+// Samsung (Tizen) and LG (webOS) TVs play HEVC, AC3/E-AC3 and MKV
+// themselves; sending those as they are saves Jellyfin the transcode. Only
+// for platforms recognised for sure; a file the TV cannot play after all
+// falls back to HLS in the player.
+const TV_DIRECT_PLATFORMS = new Set(['tizen', 'webos']);
+
+export const isTvDirectPlatform = platform => TV_DIRECT_PLATFORMS.has(platform);
+
+function buildHevcCodecProfile(maxHeight) {
+  const conditions = [
+    { Condition: 'NotEquals', Property: 'IsAnamorphic', Value: 'true', IsRequired: false },
+    { Condition: 'LessThanEqual', Property: 'VideoLevel', Value: '153', IsRequired: false },
+    { Condition: 'NotEquals', Property: 'IsInterlaced', Value: 'true', IsRequired: false }
+  ];
+  if (Number.isInteger(maxHeight) && maxHeight > 0) {
+    conditions.push({ Condition: 'LessThanEqual', Property: 'Height', Value: String(maxHeight), IsRequired: false });
+  }
+  return { Type: 'Video', Codec: 'hevc', Conditions: conditions };
+}
+
+export function buildBrowserDeviceProfile({ forceHlsTranscoding = false, maxHeight = null, tvPlatform = null } = {}) {
+  if (isTvDirectPlatform(tvPlatform)) return buildTvDeviceProfile({ forceHlsTranscoding, maxHeight, tvPlatform });
   const hlsProfile = {
     Type: 'Video',
     Container: 'ts',
@@ -107,5 +128,20 @@ export function buildBrowserDeviceProfile({ forceHlsTranscoding = false, maxHeig
     ContainerProfiles: [],
     CodecProfiles: [buildH264CodecProfile(maxHeight)],
     SubtitleProfiles: subtitleProfiles
+  };
+}
+
+// The profile of a TV browser that plays more than a desktop one (see above).
+function buildTvDeviceProfile({ forceHlsTranscoding, maxHeight, tvPlatform }) {
+  const base = buildBrowserDeviceProfile({ forceHlsTranscoding, maxHeight });
+  return {
+    ...base,
+    Name: `VANTA TV (${tvPlatform})`,
+    MaxStreamingBitrate: 80000000,
+    DirectPlayProfiles: forceHlsTranscoding ? [] : [
+      { Type: 'Video', Container: 'mp4,m4v,mov,mkv,webm', VideoCodec: 'h264,hevc', AudioCodec: 'aac,mp3,ac3,eac3' }
+    ],
+    TranscodingProfiles: base.TranscodingProfiles.map(profile => ({ ...profile, AudioCodec: 'aac,ac3,eac3', MaxAudioChannels: '6' })),
+    CodecProfiles: [...base.CodecProfiles, buildHevcCodecProfile(maxHeight)]
   };
 }

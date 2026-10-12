@@ -1,5 +1,6 @@
 import { AUTH_HEADER_NAME, JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
+import { detectTv } from '../../../public/js/shared/tvDetect.js';
 
 export const PLAYBACK_HEADER_TIMEOUT_MS = 45 * 1000;
 
@@ -12,12 +13,14 @@ export class PlaybackApiService {
     audioStreamIndex = null,
     mediaSourceId = null
   } = {}) {
-    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding, maxHeight });
+    const tv = detectTv(userAgent);
+    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding, maxHeight, tvPlatform: tv.platform });
+    const tvDirect = deviceProfile.Name.startsWith('VANTA TV');
 
     const baseBody = {
       UserId: userId,
-      MaxStreamingBitrate: maxStreamingBitrate ?? 40_000_000,
-      MaxAudioChannels: 2,
+      MaxStreamingBitrate: maxStreamingBitrate ?? (tvDirect ? 80_000_000 : 40_000_000),
+      MaxAudioChannels: tvDirect ? 6 : 2,
       EnableDirectPlay: !forceHlsTranscoding,
       EnableDirectStream: !forceHlsTranscoding,
       EnableTranscoding: true,

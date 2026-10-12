@@ -93,6 +93,44 @@ describe('Playback Routes stream-limit integration', () => {
       expect(PlaybackApiService.stopEncoding).toHaveBeenCalledWith('token', 'old-session_1');
     });
 
+    it('erzwingt HLS für Browser, die kein sicher erkannter Samsung-/LG-Fernseher sind', async () => {
+      const agents = [
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+        'Mozilla/5.0 (Linux; Android 12; AFTKA) AppleWebKit/537.36 Chrome/120.0 Safari/537.36',
+        'Mozilla/5.0 (Linux; Android 11; BRAVIA 4K) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'
+      ];
+      for (const agent of agents) await request(createApp()).get('/item-1').set('User-Agent', agent);
+      for (const call of PlaybackApiService.getPlaybackInfo.mock.calls) {
+        expect(call[3]).toMatchObject({ forceHlsTranscoding: true });
+      }
+      expect(PlaybackService.resolvePlayback.mock.calls.every(call => call[2].forceHlsTranscoding === true)).toBe(true);
+    });
+
+    it('erlaubt Tizen- und webOS-Fernsehern die Direktwiedergabe', async () => {
+      const agents = [
+        'Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36',
+        'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36 WebAppManager'
+      ];
+      for (const agent of agents) {
+        const res = await request(createApp()).get('/item-1').set('User-Agent', agent);
+        expect(res.status).toBe(200);
+      }
+      for (const call of PlaybackApiService.getPlaybackInfo.mock.calls) {
+        expect(call[3]).toMatchObject({ forceHlsTranscoding: false });
+      }
+      expect(PlaybackService.resolvePlayback.mock.calls.every(call => call[2].forceHlsTranscoding === false)).toBe(true);
+    });
+
+    it('bleibt beim Fernseher bei HLS, wenn der Player HLS anfragt (Fallback)', async () => {
+      await request(createApp()).get('/item-1?mode=hls').set('User-Agent', 'Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) TV Safari/537.36');
+      expect(PlaybackApiService.getPlaybackInfo.mock.calls[0][3]).toMatchObject({ forceHlsTranscoding: true });
+    });
+
+    it('lehnt das Profil "direct" ausserhalb von Fernsehern weiter ab', async () => {
+      const res = await request(createApp()).get('/item-1?qualityProfile=direct').set('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120.0');
+      expect(res.status).toBe(400);
+    });
+
     it('reicht eine gewählte Tonspur an Jellyfin und die Antwort weiter', async () => {
       await request(createApp()).get('/item-1?audioStreamIndex=3');
       expect(PlaybackApiService.getPlaybackInfo).toHaveBeenCalledTimes(1);

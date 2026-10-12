@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createSourceSwitch } from '../../../../src/player/src/sourceSwitch.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createSourceSwitch, DIRECT_CAN_PLAY_TIMEOUT_MS } from '../../../../src/player/src/sourceSwitch.js';
 import {
   MockEventTarget,
   setupGlobals,
@@ -64,5 +64,31 @@ describe('createSourceSwitch · Error Handling', () => {
     expect(sourceSwitch.isSwitching()).toBe(false);
     expect(sourceSwitch.getAutoplayBlocked()).toBe(true);
     expect(callbacks.setLoading).toHaveBeenLastCalledWith(false);
+  });
+
+  it('gives up on a direct source that never becomes playable, so the HLS fallback takes over', async () => {
+    vi.useFakeTimers();
+    try {
+      const loadPromise = sourceSwitch.loadPlayback({ url: '/video', delivery: 'http', playMethod: 'DirectPlay', container: 'mkv' }, { isBoot: true });
+      const settled = expect(loadPromise).rejects.toThrow(/timed out/);
+      await vi.advanceTimersByTimeAsync(DIRECT_CAN_PLAY_TIMEOUT_MS + 10);
+      await settled;
+      expect(sourceSwitch.isSwitching()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('waits on an HLS source without a time limit (a transcode can take a while)', async () => {
+    vi.useFakeTimers();
+    try {
+      let rejected = false;
+      sourceSwitch.loadPlayback({ url: '/master.m3u8', delivery: 'hls' }, { isBoot: true }).catch(() => { rejected = true; });
+      await vi.advanceTimersByTimeAsync(DIRECT_CAN_PLAY_TIMEOUT_MS * 3);
+      expect(rejected).toBe(false);
+      expect(sourceSwitch.isSwitching()).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
