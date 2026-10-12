@@ -274,3 +274,34 @@ describe('DetailPage help links', () => {
     expect(container.querySelector('.detail-help-links')).toBeNull();
   });
 });
+
+describe('DetailPage load errors', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetDetailPrefetch();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it('says a title is not available when the server answers 404', async () => {
+    const error = Object.assign(new Error('Titel nicht gefunden'), { status: 404 });
+    MediaApi.getItem.mockRejectedValue(error);
+
+    const container = DetailPage({ id: 'gone' });
+    await flush();
+
+    expect(container.querySelector('[role="alert"] h3').textContent).toBe('Dieser Titel ist nicht verfügbar');
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('keeps the generic error for other failures', async () => {
+    MediaApi.getItem.mockRejectedValue(Object.assign(new Error('Failed to fetch item details'), { status: 500 }));
+
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(container.querySelector('[role="alert"] h3').textContent).toBe('Fehler beim Laden');
+    expect(container.textContent).toContain('Failed to fetch item details');
+  });
+});

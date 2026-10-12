@@ -154,13 +154,20 @@ export default function DetailPage({ id }, pageScope) {
     } catch (error) {
       if (error.isAuthError) return;
 
-      console.error('[Detail Page Load Error]', error);
-      appStore.showToast('Fehler beim Laden der Details', 'error');
+      // An unknown or not shared title is no failure worth a toast.
+      const notFound = error.status === 404;
+      if (!notFound) {
+        console.error('[Detail Page Load Error]', error);
+        appStore.showToast('Fehler beim Laden der Details', 'error');
+      }
       container.innerHTML = '';
       container.appendChild(
         createElement('div', { className: 'content-section' },
           ErrorState({
-            message: error.message || 'Die Details konnten nicht abgerufen werden.',
+            title: notFound ? 'Dieser Titel ist nicht verfügbar' : undefined,
+            message: notFound
+              ? 'Es gibt ihn nicht (mehr), oder er ist für dich nicht freigegeben.'
+              : error.message || 'Die Details konnten nicht abgerufen werden.',
             action: { label: 'Zurück zur Startseite', onClick: () => { window.location.hash = '#/home'; } }
           })
         )
