@@ -21,6 +21,7 @@ import reportsRoutes from './routes/reports.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import preferencesRoutes from './routes/preferences.routes.js';
 import watchlistRoutes from './routes/watchlist.routes.js';
+import sessionsRoutes from './routes/sessions.routes.js';
 import { BUILD_ID, BUILD_HEADER } from './config/build.js';
 
 const app = express();
@@ -68,6 +69,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/watchlist', watchlistRoutes);
+app.use('/api/sessions', sessionsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/watch-parties', watchPartyRoutes);
 app.use('/api/watch-party-invitations', watchPartyInvitationsRoutes);

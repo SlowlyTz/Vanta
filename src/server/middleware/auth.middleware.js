@@ -26,6 +26,10 @@ export const endBannedSession = (req, res, ban) => {
   return destroyInvalidSession(req, res, error, extra);
 };
 
+// "Zuletzt aktiv" under "Geräte". Updated at most this often, since every
+// change to the session writes it to the store.
+export const LAST_SEEN_STEP_MS = 5 * 60 * 1000;
+
 export const requireAuth = (req, res, next) => {
   if (!req.session || !req.session.accessToken || !req.session.userId) {
     return res.status(401).json({ error: 'Unauthorized: Session invalid or expired' });
@@ -34,6 +38,8 @@ export const requireAuth = (req, res, next) => {
   if (ban) return endBannedSession(req, res, ban);
   // After a restart the token's device is known again from the session.
   registerTokenDevice(req.session.accessToken, req.session.deviceId);
+  const now = Date.now();
+  if (!(now - (Number(req.session.lastSeenAt) || 0) < LAST_SEEN_STEP_MS)) req.session.lastSeenAt = now;
   next();
 };
 

@@ -582,15 +582,15 @@ function Ve(e) {
 	return e?.code === "STREAM_LIMIT_REACHED" || e?.status === 429;
 }
 async function He(e) {
-	let { root: t, itemId: n, title: r, subtitle: i = "", poster: a, resumePosition: o = 0, resolvePlayback: s, reportPlayback: c, onBack: l, watchParty: u = null, episodeBrowser: d = null, preferences: f = null, loadSegments: p = null, onPlaybackError: m = null, loadTranscodeProgress: h = null, deferInitialLoad: g = !1, fullscreenTarget: _ = null, stillWatching: v = null, sleepTimer: y = null, onSleep: b = null } = e;
+	let { root: t, itemId: n, title: r, subtitle: i = "", poster: a, resumePosition: o = 0, resolvePlayback: s, reportPlayback: c, onBack: l, watchParty: u = null, episodeBrowser: d = null, preferences: f = null, loadSegments: p = null, onPlaybackError: m = null, loadTranscodeProgress: h = null, deferInitialLoad: g = !1, fullscreenTarget: _ = null, stillWatching: v = null, sleepTimer: y = null, onSleep: b = null, userPreferences: x = null, onUserPreferenceChange: S = null } = e;
 	await customElements.whenDefined("media-player");
-	let x = ge(), S = Be(t, {
+	let C = ge(), w = Be(t, {
 		title: r,
 		subtitle: i,
 		poster: a
-	}), { player: C } = S;
-	u?.enabled && (C.autoplay = !1);
-	let w = {
+	}), { player: T } = w;
+	u?.enabled && (T.autoplay = !1);
+	let E = {
 		root: t,
 		itemId: n,
 		title: r,
@@ -598,7 +598,7 @@ async function He(e) {
 		poster: a,
 		resumePosition: o,
 		resolvePlayback: (e, t = {}) => s(e, {
-			...w.streamSelection(),
+			...E.streamSelection(),
 			...t
 		}),
 		reportPlayback: c,
@@ -614,9 +614,11 @@ async function He(e) {
 		stillWatching: v,
 		sleepTimerOptions: y,
 		onSleep: b,
-		iosLike: x,
-		dom: S,
-		player: C,
+		userPreferences: x,
+		onUserPreferenceChange: S,
+		iosLike: C,
+		dom: w,
+		player: T,
 		disposers: [],
 		ui: Oe(t),
 		destroyed: !1,
@@ -625,27 +627,27 @@ async function He(e) {
 		ownerEchoSuppressionDepth: 0,
 		echoTokens: Ne()
 	};
-	return w.handleFatalPlaybackError = (e) => !Ve(e) || typeof w.onPlaybackError != "function" ? !1 : (w.onPlaybackError(e), !0), w.streamSelection = () => {
-		let e = {}, t = w.audioMenu?.getCurrentIndex?.(), n = w.sourceSwitch?.getCurrentPlayback?.();
-		Number.isInteger(t) && n ? (e.audioStreamIndex = t, n.mediaSourceId && (e.mediaSourceId = n.mediaSourceId)) : w.preferences?.get().audioLanguage && (e.audioLanguage = w.preferences.get().audioLanguage);
-		let r = w.qualityMenu?.getCurrentId?.();
+	return E.handleFatalPlaybackError = (e) => !Ve(e) || typeof E.onPlaybackError != "function" ? !1 : (E.onPlaybackError(e), !0), E.streamSelection = () => {
+		let e = {}, t = E.audioMenu?.getCurrentIndex?.(), n = E.sourceSwitch?.getCurrentPlayback?.();
+		Number.isInteger(t) && n ? (e.audioStreamIndex = t, n.mediaSourceId && (e.mediaSourceId = n.mediaSourceId)) : E.preferences?.get().audioLanguage && (e.audioLanguage = E.preferences.get().audioLanguage);
+		let r = E.qualityMenu?.getCurrentId?.() || x?.defaultQuality;
 		return r && r !== "auto" && (e.qualityProfile = r), e;
-	}, w.listen = (e, t, n, r) => {
-		e.addEventListener(t, n, r), w.disposers.push(() => e.removeEventListener(t, n, r));
-	}, w.beginOwnerEchoSuppression = () => {
-		w.ownerEchoSuppressionDepth += 1;
-	}, w.endOwnerEchoSuppression = (e = 250) => {
+	}, E.listen = (e, t, n, r) => {
+		e.addEventListener(t, n, r), E.disposers.push(() => e.removeEventListener(t, n, r));
+	}, E.beginOwnerEchoSuppression = () => {
+		E.ownerEchoSuppressionDepth += 1;
+	}, E.endOwnerEchoSuppression = (e = 250) => {
 		window.setTimeout(() => {
-			w.ownerEchoSuppressionDepth = Math.max(0, w.ownerEchoSuppressionDepth - 1);
+			E.ownerEchoSuppressionDepth = Math.max(0, E.ownerEchoSuppressionDepth - 1);
 		}, e);
-	}, w.watchPartyPhase = () => u?.phase || (u?.enabled ? "playback" : null), w.isDeferredReadyRoom = () => w.watchPartyPhase() === "ready-room", w.canControlWatchParty = () => u?.enabled ? !!u.canControl : !0, w.canEmitOwnerControl = (e) => e && w.echoTokens.consume(e) ? !1 : !!u?.enabled && w.canControlWatchParty() && w.watchPartyPhase() === "playback" && w.ownerEchoSuppressionDepth === 0, w.refreshWatchPartyControlAccess = () => {
+	}, E.watchPartyPhase = () => u?.phase || (u?.enabled ? "playback" : null), E.isDeferredReadyRoom = () => E.watchPartyPhase() === "ready-room", E.canControlWatchParty = () => u?.enabled ? !!u.canControl : !0, E.canEmitOwnerControl = (e) => e && E.echoTokens.consume(e) ? !1 : !!u?.enabled && E.canControlWatchParty() && E.watchPartyPhase() === "playback" && E.ownerEchoSuppressionDepth === 0, E.refreshWatchPartyControlAccess = () => {
 		u?.enabled && (je({
 			root: t,
 			watchParty: u
-		}), w.mediaSession?.refresh(), w.refreshSegmentButton?.());
-	}, u?.enabled && (u.onParticipantsChange = w.refreshWatchPartyControlAccess), w.refreshWatchPartyControlAccess(), w.syncInlinePlayback = () => {
-		x && _e(t);
-	}, x && (t.classList.add("is-ios", "supports-ios-inline-fullscreen"), w.syncInlinePlayback()), xe() || t.classList.add("no-pip"), w;
+		}), E.mediaSession?.refresh(), E.refreshSegmentButton?.());
+	}, u?.enabled && (u.onParticipantsChange = E.refreshWatchPartyControlAccess), E.refreshWatchPartyControlAccess(), E.syncInlinePlayback = () => {
+		C && _e(t);
+	}, C && (t.classList.add("is-ios", "supports-ios-inline-fullscreen"), E.syncInlinePlayback()), xe() || t.classList.add("no-pip"), E;
 }
 //#endregion
 //#region src/player/src/orientation.js
@@ -2044,14 +2046,18 @@ function Fn(e) {
 function In(e, { loadSegments: t }) {
 	let { player: n, root: r, listen: i } = e;
 	e.segments = [];
-	let a = r.querySelector(".vanta-player-skip-segment"), o = null, s = () => !e.watchParty?.enabled || e.canControlWatchParty(), c = () => {
+	let a = r.querySelector(".vanta-player-skip-segment"), o = null, s = () => !e.watchParty?.enabled || e.canControlWatchParty(), c = /* @__PURE__ */ new Set(), l = () => !!e.userPreferences?.autoSkipIntro && !e.watchParty?.enabled, u = () => {
 		let t = s() ? Pn(e.segments, Number(n.currentTime)) : null;
+		if (t && l() && !c.has(t)) {
+			c.add(t), q(n, t.endMs / 1e3, { endEpsilon: .25 });
+			return;
+		}
 		t !== o && (o = t, a && (t ? (a.querySelector(".vanta-player-skip-segment-label").textContent = Mn[t.type], a.hidden = !1, a.offsetWidth, a.classList.add("is-visible")) : (a.classList.remove("is-visible"), a.hidden = !0)));
 	};
 	return a && i(a, "click", (e) => {
-		e.stopPropagation(), !(!o || !s()) && (q(n, o.endMs / 1e3, { endEpsilon: .25 }), c());
-	}), i(n, "time-update", c), e.refreshSegmentButton = c, typeof t == "function" && Promise.resolve().then(() => t()).then((t) => {
-		e.destroyed || (e.segments = Array.isArray(t?.segments) ? t.segments : [], c());
+		e.stopPropagation(), !(!o || !s()) && (q(n, o.endMs / 1e3, { endEpsilon: .25 }), u());
+	}), i(n, "time-update", u), e.refreshSegmentButton = u, typeof t == "function" && Promise.resolve().then(() => t()).then((t) => {
+		e.destroyed || (e.segments = Array.isArray(t?.segments) ? t.segments : [], u());
 	}).catch(() => {}), e;
 }
 var Ln = 1e3, Rn = [
@@ -2330,12 +2336,12 @@ function er({ root: e, onConfirm: t, onDismiss: n, countdownMs: r = Qn }) {
 		o = performance.now(), D(r / 1e3), a = window.requestAnimationFrame(O);
 	}
 	function te(e, t = {}) {
-		let { controls: n = !0, message: r = null, skipAt: i = null, getCurrentTime: a = null } = t;
+		let { controls: n = !0, message: r = null, skipAt: i = null, getCurrentTime: a = null, autoAdvance: o = !0 } = t;
 		A(), u = e, d = n, p = document.activeElement, m.hidden = !1;
-		let o = e.kind === "next-season";
-		_.textContent = o ? "Nächste Staffel" : "Nächste Folge", v.textContent = rn(e.episode), y.textContent = e.episode?.Name || "Unbenannte Folge", e.episode?.SeriesName ? (b.textContent = e.episode.SeriesName, b.hidden = !1) : b.hidden = !0;
-		let s = $n(e.episode);
-		s ? (h.style.backgroundImage = `url("${s.replaceAll("\"", "%22")}")`, h.hidden = !1) : (h.style.backgroundImage = "", h.hidden = !0), w.textContent = o ? "Nächste Staffel starten" : "Nächste Folge starten", N(r), E(0), ee(i, a), f && d && w.focus();
+		let s = e.kind === "next-season";
+		_.textContent = s ? "Nächste Staffel" : "Nächste Folge", v.textContent = rn(e.episode), y.textContent = e.episode?.Name || "Unbenannte Folge", e.episode?.SeriesName ? (b.textContent = e.episode.SeriesName, b.hidden = !1) : b.hidden = !0;
+		let c = $n(e.episode);
+		c ? (h.style.backgroundImage = `url("${c.replaceAll("\"", "%22")}")`, h.hidden = !1) : (h.style.backgroundImage = "", h.hidden = !0), w.textContent = s ? "Nächste Staffel starten" : "Nächste Folge starten", N(r), E(0), o ? ee(i, a) : D(NaN), f && d && w.focus();
 	}
 	T.addEventListener("click", () => {
 		let e = u;
@@ -2393,9 +2399,10 @@ function tr(e) {
 		let c = Zn(i.context, t);
 		if (!c) return;
 		a.markShown(t);
-		let l = Yn(r);
+		let l = Yn(r), u = r?.enabled || e.userPreferences?.autoplayNextEpisode !== !1;
 		e.nextEpisodePrompt.show(c, {
 			controls: l,
+			autoAdvance: u,
 			message: l ? null : Ie,
 			skipAt: qn(Gn({
 				duration: o,
@@ -3202,8 +3209,19 @@ function Ir({ key: e = Mr, storage: t = "local" } = {}, { backend: n = Fr(t) } =
 function Lr(e) {
 	let { player: t, listen: n } = e, r = Ir(e.preferencesConfig || void 0);
 	e.preferences = r;
-	let { volume: i, muted: a } = r.get();
-	return Number.isFinite(i) && (t.volume = Math.min(1, Math.max(0, i))), t.muted = !!a, n(t, "volume-change", () => {
+	let i = e.userPreferences;
+	if (i && !e.watchParty?.enabled) {
+		let t = {};
+		"audioLanguage" in i && (t.audioLanguage = i.audioLanguage), "subtitleLanguage" in i && (t.subtitleLanguage = i.subtitleLanguage), Object.keys(t).length && r.update(t);
+		let n = r.update;
+		r.update = (t) => {
+			n(t);
+			let r = {};
+			"audioLanguage" in t && (r.audioLanguage = t.audioLanguage), "subtitleLanguage" in t && (r.subtitleLanguage = t.subtitleLanguage), Object.keys(r).length && e.onUserPreferenceChange?.(r);
+		};
+	}
+	let { volume: a, muted: o } = r.get();
+	return Number.isFinite(a) && (t.volume = Math.min(1, Math.max(0, a))), t.muted = !!o, n(t, "volume-change", () => {
 		r.update({
 			volume: Number(t.volume),
 			muted: !!t.muted

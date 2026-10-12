@@ -1,4 +1,5 @@
 import { COUNTDOWN_MODULE_URL, countdownMetaParts, formatPosition } from './helpers.js';
+import { prefersReducedMotion } from '../../utils/motion.js';
 
 // Close to the start a timer is too coarse; the last few milliseconds are
 // waited out frame by frame against the server clock.
@@ -13,14 +14,6 @@ export function countdownDigit(remainingMs, durationMs = 5000) {
 
 export function overlayOpacity(remainingMs) {
   return Math.min(1, Math.max(0, remainingMs / FADE_WINDOW_MS));
-}
-
-function prefersReducedMotion() {
-  try {
-    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-  } catch {
-    return false;
-  }
 }
 
 export function bindCountdown(ctx) {

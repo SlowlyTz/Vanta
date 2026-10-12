@@ -39,7 +39,7 @@ describe('bindSegments', () => {
   let root;
   afterEach(() => root?.remove());
 
-  const setup = async ({ canControl = true, party = false, segments = [intro] } = {}) => {
+  const setup = async ({ canControl = true, party = false, segments = [intro], userPreferences = null } = {}) => {
     root = document.createElement('div');
     root.innerHTML = '<button class="vanta-player-skip-segment" hidden><span class="vanta-player-skip-segment-label"></span></button>';
     document.body.appendChild(root);
@@ -51,6 +51,7 @@ describe('bindSegments', () => {
       destroyed: false,
       watchParty: party ? { enabled: true } : null,
       canControlWatchParty: () => canControl,
+      userPreferences,
       listen: (target, event, handler) => target.addEventListener(event, handler)
     };
     bindSegments(context, { loadSegments: () => Promise.resolve({ segments }) });
@@ -79,5 +80,26 @@ describe('bindSegments', () => {
     const { context, button } = await setup({ segments: [] });
     expect(context.segments).toEqual([]);
     expect(button.hidden).toBe(true);
+  });
+
+  it('überspringt das Intro von selbst, wenn der Nutzer das will, und nur einmal', async () => {
+    const { player } = await setup({ userPreferences: { autoSkipIntro: true } });
+    expect(player.currentTime).toBe(110);
+    player.currentTime = 40;
+    player.dispatchEvent(new Event('time-update'));
+    expect(player.currentTime).toBe(40);
+  });
+
+  it('überspringt einen Rückblick nicht von selbst, zeigt aber den Button', async () => {
+    const recap = { type: 'recap', startMs: 20_000, endMs: 90_000 };
+    const { player, button } = await setup({ segments: [recap], userPreferences: { autoSkipIntro: true } });
+    expect(player.currentTime).toBe(40);
+    expect(button.hidden).toBe(false);
+    expect(button.textContent).toContain('Rückblick überspringen');
+  });
+
+  it('überspringt in einer Party nie von selbst', async () => {
+    const { player } = await setup({ party: true, userPreferences: { autoSkipIntro: true } });
+    expect(player.currentTime).toBe(40);
   });
 });

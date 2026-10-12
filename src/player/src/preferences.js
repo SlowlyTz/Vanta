@@ -16,6 +16,15 @@ export const DEFAULT_PREFERENCES = Object.freeze({
 
 const SAVE_DELAY_MS = 400;
 
+// The server keeps a language as a bare two- or three-letter code ("ger",
+// "pt"); a regional tag from a track ("pt-BR", "en_US") is cut to its
+// language instead of being refused there. Anything else is not a language.
+export function normalizeLanguageCode(language) {
+  if (language === null || language === undefined || language === '') return null;
+  const primary = String(language).trim().toLowerCase().split(/[-_]/)[0];
+  return /^[a-z]{2,3}$/.test(primary) ? primary : undefined;
+}
+
 function resolveStorage(kind) {
   try {
     return kind === 'session' ? globalThis.sessionStorage : globalThis.localStorage;
@@ -63,6 +72,29 @@ export function bindPreferences(context) {
   const { player, listen } = context;
   const store = createPreferenceStore(context.preferencesConfig || undefined);
   context.preferences = store;
+  // The languages follow the user from device to device: a language set on
+  // the server wins over this device's, and a choice here goes back to the
+  // server. The server's null only means "nothing chosen yet" there, so it
+  // leaves this device's choice alone.
+  const user = context.userPreferences;
+  if (user && !context.watchParty?.enabled) {
+    const seeded = {};
+    for (const field of ['audioLanguage', 'subtitleLanguage']) {
+      if (typeof user[field] === 'string' && user[field]) seeded[field] = user[field];
+    }
+    if (Object.keys(seeded).length) store.update(seeded);
+    const update = store.update;
+    store.update = patch => {
+      update(patch);
+      const languages = {};
+      for (const field of ['audioLanguage', 'subtitleLanguage']) {
+        if (!(field in patch)) continue;
+        const code = normalizeLanguageCode(patch[field]);
+        if (code !== undefined) languages[field] = code;
+      }
+      if (Object.keys(languages).length) context.onUserPreferenceChange?.(languages);
+    };
+  }
 
   const { volume, muted } = store.get();
   if (Number.isFinite(volume)) player.volume = Math.min(1, Math.max(0, volume));

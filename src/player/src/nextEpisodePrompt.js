@@ -1,5 +1,6 @@
 import { formatEpisodeCode } from './episodes.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './player/markup.js';
+import { normalizeKey } from '../../public/js/tv/keys.js';
 
 const DEFAULT_COUNTDOWN_MS = 10_000;
 
@@ -12,8 +13,10 @@ function episodeImageUrl(episode) {
 // `onConfirm(next, { auto })` fires on the button (auto: false) and when the
 // countdown runs out (auto: true). Without `controls` (watch-party viewers)
 // both buttons are hidden, but the countdown still runs, so everyone sees the
-// same prompt; the embedder decides who actually switches.
-export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownMs = DEFAULT_COUNTDOWN_MS }) {
+// same prompt; the embedder decides who actually switches. `mayTakeFocus`
+// says whether the prompt may move the focus to its button when it appears
+// (not on a TV, not over an open menu or dialog).
+export function createNextEpisodePrompt({ root, onConfirm, onDismiss, mayTakeFocus = () => true, countdownMs = DEFAULT_COUNTDOWN_MS }) {
   let timeoutId = null;
   let animationFrameId = null;
   let startedAt = 0;
@@ -187,7 +190,8 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
       controls: withControls = true,
       message: infoMessage = null,
       skipAt = null,
-      getCurrentTime = null
+      getCurrentTime = null,
+      autoAdvance = true
     } = options;
     clearTimers();
     active = next;
@@ -220,9 +224,10 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
 
     applyControls(infoMessage);
     setProgress(0);
-    startCountdown(skipAt, getCurrentTime);
+    if (autoAdvance) startCountdown(skipAt, getCurrentTime);
+    else setRemaining(NaN);
 
-    if (lastInputWasKeyboard && controls) confirmButton.focus();
+    if (lastInputWasKeyboard && controls && mayTakeFocus()) confirmButton.focus();
   }
 
   dismissButton.addEventListener('click', () => {
@@ -239,8 +244,11 @@ export function createNextEpisodePrompt({ root, onConfirm, onDismiss, countdownM
   document.addEventListener('pointerdown', trackInputModality, true);
   document.addEventListener('mousedown', trackInputModality, true);
 
+  // Escape, or Back on a TV remote, closes the prompt (and leaves the player
+  // where it is). A menu that took the key first keeps it.
   const handleDocumentKeydown = event => {
-    if (event.key !== 'Escape' || element.hidden) return;
+    if (element.hidden || event.defaultPrevented || normalizeKey(event) !== 'back') return;
+    event.preventDefault();
     event.stopPropagation();
     const dismissed = active;
     hide();

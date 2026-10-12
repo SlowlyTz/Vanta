@@ -165,4 +165,21 @@ describe('AppSocketHub', () => {
     }
     expect(other.send).not.toHaveBeenCalled();
   });
+
+  it('ends only the apps of one signed-out session', () => {
+    const hub = new AppSocketHub();
+    const make = (sessionId) => ({ readyState: 1, OPEN: 1, send: vi.fn(), close: vi.fn(), sessionId });
+    const phone = make('s-phone');
+    const tv = make('s-tv');
+    hub.register('u1', phone);
+    hub.register('u1', tv);
+
+    hub.endSession('u1', 's-tv', { error: 'Abgemeldet' });
+    hub.endSession('u2', 's-phone', { error: 'Abgemeldet' });
+
+    expect(JSON.parse(tv.send.mock.calls[0][0])).toEqual({ type: 'SESSION_ENDED', error: 'Abgemeldet' });
+    expect(tv.close).toHaveBeenCalledWith(4001, 'Session ended');
+    expect(phone.send).not.toHaveBeenCalled();
+    expect(phone.close).not.toHaveBeenCalled();
+  });
 });

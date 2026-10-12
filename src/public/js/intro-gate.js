@@ -4,6 +4,8 @@
 // scene itself (with three.js) is only fetched when it actually plays.
 (function (window) {
   var STORAGE_KEY = 'vanta.intro.lastPlayedAt';
+  // The user's settings as the app last saw them (preferences.store.js).
+  var PREFERENCES_KEY = 'vanta.preferences';
   var MIN_INTERVAL_MS = 10 * 60 * 1000;
   var WATCHDOG_MS = 12000;
   var SKIPPED_ROUTES = ['#/player/', '#/watch-party/'];
@@ -11,8 +13,10 @@
   function shouldPlay(input) {
     // Offline there is nothing to load; the offline page should show at once.
     if (input.online === false) return false;
-    // A system that asks for reduced motion gets no particle flight.
+    // A system that asks for reduced motion gets no particle flight, nor does
+    // a user who switched the animation off.
     if (input.reducedMotion === true) return false;
+    if (input.introOff === true) return false;
     var hash = input.hash || '';
     for (var i = 0; i < SKIPPED_ROUTES.length; i++) {
       if (hash.indexOf(SKIPPED_ROUTES[i]) === 0) return false;
@@ -32,6 +36,10 @@
     } catch (e) {
       return false;
     }
+  }
+
+  function readPreferences() {
+    try { return JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) || 'null') || {}; } catch (e) { return {}; }
   }
 
   function markPlayed(now) {
@@ -72,7 +80,10 @@
   window.VantaIntroGate = gate;
 
   var now = Date.now();
-  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true, reducedMotion: prefersReducedMotion() })) {
+  var preferences = readPreferences();
+  // "Weniger Bewegung" from the settings, before the first paint.
+  if (preferences.reducedMotion === true) window.document.documentElement.classList.add('reduce-motion');
+  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true, reducedMotion: prefersReducedMotion() || preferences.reducedMotion === true, introOff: preferences.introAnimation === 'off' })) {
     window.document.documentElement.classList.add('intro-off');
     return;
   }

@@ -6,6 +6,7 @@ import { Navbar } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
 import { createPageScope, runInPageScope, setActivePageScope } from './utils/pageScope.js';
 import { ensurePageStyles } from './utils/pageStyles.js';
+import { prefersReducedMotion } from './utils/motion.js';
 
 // Focuses the page's [data-autofocus] element once it is attached to the document.
 // Pages cannot do this themselves: their factory runs while the element is still
@@ -283,7 +284,7 @@ export class Router {
 }
 
 function waitForRouteExit() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (prefersReducedMotion()) {
     return Promise.resolve();
   }
 

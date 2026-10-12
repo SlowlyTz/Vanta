@@ -3,7 +3,7 @@ import initSqlJs from 'sql.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { SqliteSessionStore } from '../../../src/server/db/session-store.js';
+import { SqliteSessionStore, publicSessionId } from '../../../src/server/db/session-store.js';
 
 const SQL = await initSqlJs();
 const DAY = 24 * 60 * 60 * 1000;
@@ -38,6 +38,24 @@ describe('SqliteSessionStore', () => {
 
     await promisify(store, 'destroy', 'sid-1');
     expect(await promisify(store, 'get', 'sid-1')).toBeNull();
+  });
+
+  it('lists a user\'s sessions under public ids and ends one of them', async () => {
+    clock = 1_000_000;
+    const store = createStore();
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1', accessToken: 't1', device: { userAgent: 'Firefox', loginAt: 5 } });
+    await promisify(store, 'set', 'b', { cookie: {}, userId: 'u1', accessToken: 't2' });
+    await promisify(store, 'set', 'c', { cookie: {}, userId: 'u2' });
+
+    const sessions = await store.listByUserId('u1');
+    expect(sessions.map(s => s.id).sort()).toEqual([publicSessionId('a'), publicSessionId('b')].sort());
+    expect(sessions.find(s => s.id === publicSessionId('a'))).toMatchObject({ userAgent: 'Firefox', loginAt: 5 });
+    expect(publicSessionId('a')).not.toContain('a'.repeat(2));
+
+    expect(await store.destroyOne('u2', publicSessionId('a'))).toBeNull();
+    expect(await store.destroyOne('u1', publicSessionId('a'))).toMatchObject({ accessToken: 't1' });
+    expect(await promisify(store, 'get', 'a')).toBeNull();
+    expect(await promisify(store, 'get', 'b')).not.toBeNull();
   });
 
   it('ends every session of one user and hands back their data', async () => {
@@ -96,5 +114,49 @@ describe('SqliteSessionStore', () => {
     const second = createStore({ file });
     expect(await promisify(second, 'get', 'sid')).toEqual({ cookie: {}, userId: 'u1' });
     fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('lists only live sessions and ends all others in one pass', async () => {
+    clock = 1_000_000;
+    const store = createStore();
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1', accessToken: 't1' });
+    await promisify(store, 'set', 'b', { cookie: {}, userId: 'u1', accessToken: 't2' });
+    await promisify(store, 'set', 'c', { cookie: {}, userId: 'u1', accessToken: 't3' });
+    await promisify(store, 'set', 'old', { cookie: { expires: new Date(clock + 1000).toISOString() }, userId: 'u1' });
+    await promisify(store, 'set', 'd', { cookie: {}, userId: 'u2' });
+
+    clock += 2000;
+    expect((await store.listByUserId('u1')).map(s => s.sid).sort()).toEqual(['a', 'b', 'c']);
+    expect(await store.livePublicIds()).toEqual(new Set(['a', 'b', 'c', 'd'].map(publicSessionId)));
+
+    const ended = await store.destroyOthers('u1', { keep: publicSessionId('a') });
+    expect(ended.map(entry => entry.session.accessToken).sort()).toEqual(['t2', 't3']);
+    expect(ended.map(entry => entry.id).sort()).toEqual([publicSessionId('b'), publicSessionId('c')].sort());
+    expect((await store.listByUserId('u1')).map(s => s.sid)).toEqual(['a']);
+    expect(await promisify(store, 'get', 'd')).not.toBeNull();
+  });
+
+  it('does not bring an ended session back through a late save', async () => {
+    clock = 1_000_000;
+    const store = createStore();
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1' });
+    await store.destroyOne('u1', publicSessionId('a'));
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1', lastSeenAt: 5 });
+    expect(await promisify(store, 'get', 'a')).toBeNull();
+
+    await promisify(store, 'set', 'b', { cookie: {}, userId: 'u1' });
+    await promisify(store, 'destroy', 'b');
+    await promisify(store, 'set', 'b', { cookie: {}, userId: 'u1' });
+    expect(await promisify(store, 'get', 'b')).toBeNull();
+  });
+
+  it('removes expired sessions on cleanup and says how many', async () => {
+    clock = 1_000_000;
+    const store = createStore();
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1' });
+    await store.ready;
+    expect(store.cleanup()).toBe(0);
+    clock += DAY + 1;
+    expect(store.cleanup()).toBe(1);
   });
 });

@@ -7,7 +7,7 @@ vi.mock('../../../src/server/services/user-ban.service.js', async (importOrigina
   UserBanService: { getBan: vi.fn() }
 }));
 
-import { requireAuth } from '../../../src/server/middleware/auth.middleware.js';
+import { requireAuth, LAST_SEEN_STEP_MS } from '../../../src/server/middleware/auth.middleware.js';
 import { UserBanService } from '../../../src/server/services/user-ban.service.js';
 
 function createApp(session) {
@@ -30,6 +30,20 @@ describe('requireAuth', () => {
   it('lets a valid session through', async () => {
     const { app } = createApp({ userId: 'u1', accessToken: 't' });
     expect((await request(app).get('/private')).status).toBe(200);
+  });
+
+  it('notes when the session was last used, at most every few minutes', () => {
+    const session = { userId: 'u1', accessToken: 't' };
+    const next = vi.fn();
+    requireAuth({ session }, {}, next);
+    expect(session.lastSeenAt).toBeGreaterThan(0);
+    const first = session.lastSeenAt;
+    requireAuth({ session }, {}, next);
+    expect(session.lastSeenAt).toBe(first);
+    session.lastSeenAt = first - LAST_SEEN_STEP_MS;
+    requireAuth({ session }, {}, next);
+    expect(session.lastSeenAt).toBeGreaterThanOrEqual(first);
+    expect(next).toHaveBeenCalledTimes(3);
   });
 
   it('refuses a request without a session', async () => {

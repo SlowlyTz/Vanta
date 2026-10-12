@@ -5,10 +5,11 @@ import path from 'node:path';
 const source = fs.readFileSync(path.join(process.cwd(), 'src/public/js/intro-gate.js'), 'utf8');
 const TEN_MINUTES = 10 * 60 * 1000;
 
-function loadGate({ hash = '#/home', lastPlayedAt = null, now = 1_000_000_000, load } = {}) {
+function loadGate({ hash = '#/home', lastPlayedAt = null, now = 1_000_000_000, load, preferences = null } = {}) {
   document.documentElement.className = '';
   document.body.innerHTML = '<div id="intro"><canvas></canvas></div><div id="app"></div>';
   localStorage.clear();
+  if (preferences) localStorage.setItem('vanta.preferences', JSON.stringify(preferences));
   if (lastPlayedAt !== null) localStorage.setItem('vanta.intro.lastPlayedAt', String(lastPlayedAt));
   window.location.hash = hash;
   vi.spyOn(Date, 'now').mockReturnValue(now);
@@ -42,6 +43,16 @@ describe('intro-gate', () => {
     loadGate({ lastPlayedAt: 1_000_000_000 - TEN_MINUTES });
     expect(document.documentElement.classList.contains('intro-off')).toBe(false);
     expect(localStorage.getItem('vanta.intro.lastPlayedAt')).toBe('1000000000');
+  });
+
+  it('honours the settings: no intro, and less motion before the first paint', () => {
+    loadGate({ preferences: { introAnimation: 'off' } });
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    expect(document.documentElement.classList.contains('reduce-motion')).toBe(false);
+
+    loadGate({ preferences: { reducedMotion: true } });
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    expect(document.documentElement.classList.contains('reduce-motion')).toBe(true);
   });
 
   it('treats a corrupt timestamp as never played', () => {

@@ -3,13 +3,14 @@ import { createMetaIcon } from './metaIcons.js';
 import { getItemImageUrl, getBackdropUrlFor } from '../utils/image.js';
 import { formatYear, formatTicksToDuration } from '../utils/format.js';
 import { resolvePageScope } from '../utils/pageScope.js';
+import { prefersReducedMotion } from '../utils/motion.js';
 
 const SLIDE_INTERVAL = 8000;
 
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 
-const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+
 
 function getHeroLogoUrl(item) {
   if (!item?.ImageTags?.Logo) return null;

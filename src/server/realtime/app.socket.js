@@ -4,6 +4,7 @@ import { UserBanService } from '../services/user-ban.service.js';
 import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat } from './hardening.js';
 import { BUILD_ID } from '../config/build.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
+import { publicSessionId } from '../db/session-store.js';
 
 // Application close code: the session is gone, reconnecting is pointless.
 export const SESSION_ENDED_CLOSE = 4001;
@@ -46,6 +47,8 @@ export class AppSocketHub {
         username: req.session.username
       };
 
+      // Which session the socket belongs to, for signing out one device.
+      ws.sessionId = req.sessionID ? publicSessionId(req.sessionID) : null;
       this.register(user.userId, ws);
       this.sendTo(ws, { type: 'APP_SOCKET_READY', serverTimeMs: Date.now(), build: BUILD_ID, version: APP_VERSION });
 
@@ -92,6 +95,18 @@ export class AppSocketHub {
     const sockets = this.connectionsByUser.get(userId);
     if (!sockets) return;
     for (const ws of [...sockets]) {
+      this.sendTo(ws, { type: 'SESSION_ENDED', ...payload });
+      ws.close(SESSION_ENDED_CLOSE, 'Session ended');
+    }
+  }
+
+  // The same for the open apps of one session (signed out from another
+  // device); `sessionId` is the public id.
+  endSession(userId, sessionId, payload) {
+    const sockets = this.connectionsByUser.get(userId);
+    if (!sockets || !sessionId) return;
+    for (const ws of [...sockets]) {
+      if (ws.sessionId !== sessionId) continue;
       this.sendTo(ws, { type: 'SESSION_ENDED', ...payload });
       ws.close(SESSION_ENDED_CLOSE, 'Session ended');
     }

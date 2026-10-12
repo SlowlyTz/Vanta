@@ -104,6 +104,19 @@ describe('createNextEpisodePrompt', () => {
     prompt.destroy();
   });
 
+  it('startet ohne Autoplay nicht von selbst', () => {
+    const onConfirm = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm, onDismiss: vi.fn(), countdownMs: 1000 });
+    prompt.show(makeNext(), { autoAdvance: false });
+
+    flushFrame(5000);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(prompt.element.hidden).toBe(false);
+    prompt.confirmButton.click();
+    expect(onConfirm).toHaveBeenCalledWith(expect.anything(), { auto: false });
+    prompt.destroy();
+  });
+
   it('ist per Escape schließbar und ruft onDismiss auf, unabhängig vom Fokus', () => {
     const onDismiss = vi.fn();
     const prompt = createNextEpisodePrompt({ root, onConfirm: vi.fn(), onDismiss });
@@ -134,6 +147,47 @@ describe('createNextEpisodePrompt', () => {
     prompt.show(makeNext());
 
     expect(document.activeElement).toBe(prompt.confirmButton);
+    prompt.destroy();
+  });
+
+  it('verschiebt den Fokus nicht, wenn der Einbettende es nicht erlaubt (TV, offenes Menü)', () => {
+    const prompt = createNextEpisodePrompt({ root, onConfirm: vi.fn(), onDismiss: vi.fn(), mayTakeFocus: () => false });
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+
+    prompt.show(makeNext());
+
+    expect(prompt.element.contains(document.activeElement)).toBe(false);
+    prompt.destroy();
+  });
+
+  it('schließt mit der Zurück-Taste einer TV-Fernbedienung und hält sie von der App fern', () => {
+    const onDismiss = vi.fn();
+    const appBack = vi.fn();
+    window.addEventListener('keydown', appBack);
+    const prompt = createNextEpisodePrompt({ root, onConfirm: vi.fn(), onDismiss });
+    prompt.show(makeNext());
+
+    const event = new KeyboardEvent('keydown', { key: 'Unidentified', bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'keyCode', { value: 461 });
+    document.body.dispatchEvent(event);
+
+    expect(onDismiss).toHaveBeenCalled();
+    expect(prompt.element.hidden).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(appBack).not.toHaveBeenCalled();
+    window.removeEventListener('keydown', appBack);
+    prompt.destroy();
+  });
+
+  it('lässt Zurück einem offenen Menü, das die Taste schon genommen hat', () => {
+    const onDismiss = vi.fn();
+    const prompt = createNextEpisodePrompt({ root, onConfirm: vi.fn(), onDismiss });
+    prompt.show(makeNext());
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    event.preventDefault();
+    document.dispatchEvent(event);
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(prompt.element.hidden).toBe(false);
     prompt.destroy();
   });
 

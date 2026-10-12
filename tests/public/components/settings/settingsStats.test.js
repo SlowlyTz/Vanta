@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createSettingsOverview } from '../../../../src/public/js/components/navbar/settingsOverview.js';
-import { createSettingsStatsLoader } from '../../../../src/public/js/components/settings/settingsStats.js';
+import { createSettingsStatsLoader, resetSettingsStatsCache } from '../../../../src/public/js/components/settings/settingsStats.js';
 
 vi.mock('../../../../src/public/js/api/media.api.js', () => ({
   MediaApi: { getLibrary: vi.fn() }
@@ -10,6 +10,7 @@ describe('createSettingsStatsLoader', () => {
   let MediaApi;
 
   beforeEach(async () => {
+    resetSettingsStatsCache();
     ({ MediaApi } = await import('../../../../src/public/js/api/media.api.js'));
     MediaApi.getLibrary.mockReset();
   });

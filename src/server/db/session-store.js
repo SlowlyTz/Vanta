@@ -3,6 +3,7 @@ import initSqlJs from 'sql.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'crypto';
 import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,6 +15,9 @@ const CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
 // Sessions without a cookie maxAge (browser session cookies) still need to
 // leave the store eventually; a day of inactivity is what Jellyfin allows too.
 const SESSION_COOKIE_TTL_MS = 24 * 60 * 60 * 1000;
+// A request that was still running when its session was ended must not save
+// it back afterwards; ended ids are remembered this long.
+const ENDED_MEMORY_MS = 60 * 60 * 1000;
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS sessions (
@@ -23,6 +27,10 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires);
 `;
+
+// What a client may see of a session id: enough to tell sessions apart,
+// useless to take one over.
+export const publicSessionId = (sid) => crypto.createHash('sha256').update(String(sid)).digest('hex').slice(0, 16);
 
 const expiresOf = (sess, now) => {
   const expires = sess?.cookie?.expires;
@@ -42,6 +50,7 @@ export class SqliteSessionStore extends session.Store {
     this.file = file;
     this.now = now;
     this.persistTimer = null;
+    this.ended = new Map(); // sid -> when it was destroyed
     this.ready = (SQL ? Promise.resolve(SQL) : initSqlJs()).then(sql => {
       const existing = this.file && fs.existsSync(this.file) ? fs.readFileSync(this.file) : null;
       this.db = existing ? new sql.Database(existing) : new sql.Database();
@@ -49,7 +58,8 @@ export class SqliteSessionStore extends session.Store {
       this.cleanup();
       return this;
     });
-    this.cleanupTimer = setInterval(() => { this.cleanup(); this.persist(); }, CLEANUP_INTERVAL_MS);
+    // Expired sessions leave the store (and the file) every quarter hour.
+    this.cleanupTimer = setInterval(() => { if (this.cleanup() > 0) this.persist(); }, CLEANUP_INTERVAL_MS);
     this.cleanupTimer.unref?.();
   }
 
@@ -67,9 +77,38 @@ export class SqliteSessionStore extends session.Store {
     }
   }
 
+  // Answers how many expired sessions it removed.
   cleanup() {
-    if (!this.db) return;
+    for (const [sid, at] of this.ended) if (this.now() - at >= ENDED_MEMORY_MS) this.ended.delete(sid);
+    if (!this.db) return 0;
     this.run('DELETE FROM sessions WHERE expires <= ?', [this.now()]);
+    return this.db.getRowsModified();
+  }
+
+  // Removes sessions for good: a late save of the same id is ignored.
+  remove(sids) {
+    for (const sid of sids) {
+      this.run('DELETE FROM sessions WHERE sid = ?', [sid]);
+      this.ended.set(sid, this.now());
+    }
+  }
+
+  // Every stored session that has not expired, parsed.
+  liveSessions() {
+    const sessions = [];
+    const statement = this.db.prepare('SELECT sid, data, expires FROM sessions WHERE expires > ?');
+    try {
+      statement.bind([this.now()]);
+      while (statement.step()) {
+        const { sid, data, expires } = statement.getAsObject();
+        let sess = null;
+        try { sess = JSON.parse(data); } catch { continue; }
+        if (sess) sessions.push({ sid, sess, expires });
+      }
+    } finally {
+      statement.free();
+    }
+    return sessions;
   }
 
   schedulePersist() {
@@ -100,6 +139,7 @@ export class SqliteSessionStore extends session.Store {
 
   set(sid, sess, callback) {
     this.ready.then(() => {
+      if (this.ended.has(sid)) return callback?.(null);
       this.run(
         'INSERT INTO sessions (sid, expires, data) VALUES (?, ?, ?) ON CONFLICT(sid) DO UPDATE SET expires = excluded.expires, data = excluded.data',
         [sid, expiresOf(sess, this.now()), JSON.stringify(sess)]
@@ -119,7 +159,7 @@ export class SqliteSessionStore extends session.Store {
 
   destroy(sid, callback) {
     this.ready.then(() => {
-      this.run('DELETE FROM sessions WHERE sid = ?', [sid]);
+      this.remove([sid]);
       this.schedulePersist();
       callback?.(null);
     }).catch(error => callback?.(error));
@@ -130,21 +170,55 @@ export class SqliteSessionStore extends session.Store {
   async destroyByUserId(userId) {
     await this.ready;
     if (!userId) return [];
-    const removed = [];
-    const statement = this.db.prepare('SELECT sid, data FROM sessions');
-    try {
-      while (statement.step()) {
-        const { sid, data } = statement.getAsObject();
-        let sess = null;
-        try { sess = JSON.parse(data); } catch { continue; }
-        if (sess?.userId === userId) removed.push({ sid, session: sess });
-      }
-    } finally {
-      statement.free();
-    }
-    for (const { sid } of removed) this.run('DELETE FROM sessions WHERE sid = ?', [sid]);
+    const removed = this.liveSessions().filter(entry => entry.sess.userId === userId);
+    this.remove(removed.map(entry => entry.sid));
     if (removed.length > 0) this.persist();
-    return removed.map(entry => entry.session);
+    return removed.map(entry => entry.sess);
+  }
+
+  // The live sessions of one user, for "Geräte": an id derived from the
+  // session id (never the id itself), the device the user logged in with,
+  // when, and when it was last used.
+  async listByUserId(userId) {
+    await this.ready;
+    if (!userId) return [];
+    return this.liveSessions()
+      .filter(entry => entry.sess.userId === userId)
+      .map(({ sid, sess, expires }) => ({
+        id: publicSessionId(sid),
+        sid,
+        userAgent: sess.device?.userAgent || null,
+        loginAt: sess.device?.loginAt || null,
+        lastSeenAt: sess.lastSeenAt || null,
+        expires: Number(expires) || null
+      }));
+  }
+
+  // The public ids of every live session (to drop what belonged to ended ones).
+  async livePublicIds() {
+    await this.ready;
+    return new Set(this.liveSessions().map(entry => publicSessionId(entry.sid)));
+  }
+
+  // Ends one session of a user by its public id; answers the session data.
+  async destroyOne(userId, publicId) {
+    const [ended] = await this.destroyOthers(userId, { only: publicId });
+    return ended?.session ?? null;
+  }
+
+  // "Alle anderen abmelden" in one pass: ends the user's sessions except
+  // `keep` (or only `only`); answers [{ id, session }] of the ended ones.
+  async destroyOthers(userId, { keep = null, only = null } = {}) {
+    await this.ready;
+    if (!userId) return [];
+    const ended = this.liveSessions()
+      .filter(entry => entry.sess.userId === userId)
+      .map(entry => ({ sid: entry.sid, id: publicSessionId(entry.sid), session: entry.sess }))
+      .filter(entry => (only ? entry.id === only : entry.id !== keep));
+    if (ended.length === 0) return [];
+    this.remove(ended.map(entry => entry.sid));
+    this.persist();
+    return ended.map(({ id, session }) => ({ id, session }));
   }
 
   length(callback) {

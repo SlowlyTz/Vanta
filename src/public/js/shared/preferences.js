@@ -11,6 +11,12 @@ export const PREFERENCE_SPEC = Object.freeze({
   screensaverMinutes: { default: 10, values: [5, 10, 20, 30] },
   autoplayNextEpisode: { default: true, type: 'boolean' },
   autoSkipIntro: { default: false, type: 'boolean' },
+  // The quality a stream starts with; 'auto' lets the server decide.
+  defaultQuality: { default: 'auto', values: ['auto', '1080p', '720p', '480p', '360p'] },
+  // Jellyfin language codes ("ger", "eng"); null = the file's default
+  // track, and for subtitles: none.
+  audioLanguage: { default: null, type: 'language' },
+  subtitleLanguage: { default: null, type: 'language' },
   introAnimation: { default: 'auto', values: ['auto', 'off'] },
   reducedMotion: { default: false, type: 'boolean' }
 });
@@ -21,6 +27,7 @@ export const DEFAULT_PREFERENCES = Object.freeze(
 
 const isValid = (spec, value) => {
   if (spec.type === 'boolean') return typeof value === 'boolean';
+  if (spec.type === 'language') return value === null || (typeof value === 'string' && /^[a-z]{2,3}$/.test(value));
   return spec.values.includes(value);
 };
 

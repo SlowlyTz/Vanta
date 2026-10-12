@@ -80,6 +80,8 @@ router.post('/login', asyncHandler(async (req, res) => {
   req.session.userId = data.User.Id;
   req.session.username = data.User.Name;
   req.session.isAdmin = isAdmin;
+  // Shown under "Geräte" in the settings.
+  req.session.device = { userAgent: String(req.get('user-agent') || '').slice(0, 300), loginAt: Date.now() };
   if (rememberMe === true) {
     req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE_MS;
   }

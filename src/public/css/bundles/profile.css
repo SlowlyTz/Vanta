@@ -1,2 +1,8 @@
 /* Profile hub. */
 @import '../pages/profile.css';
+
+/* The user's library in numbers, under the heading. */
+.profile-library-stats {
+  max-width: 520px;
+  margin: 0 auto var(--spacing-lg);
+}

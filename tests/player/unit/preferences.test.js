@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { bindPreferences, createPreferenceStore, DEFAULT_PREFERENCES } from '../../../src/player/src/preferences.js';
+import { bindPreferences, createPreferenceStore, DEFAULT_PREFERENCES, normalizeLanguageCode } from '../../../src/player/src/preferences.js';
 
 function memoryStorage(initial = {}) {
   const data = { ...initial };
@@ -77,5 +77,67 @@ describe('bindPreferences', () => {
     bindPreferences(context);
     // The solo volume (0.1) does not leak into the party.
     expect(player.volume).toBe(0.5);
+  });
+
+  it('übernimmt die Sprachen des Nutzers vom Server und meldet Änderungen zurück', () => {
+    vi.stubGlobal('localStorage', memoryStorage({ 'vanta.player.prefs': JSON.stringify({ audioLanguage: 'jpn' }) }));
+    const player = new EventTarget();
+    Object.assign(player, { volume: 0.8, muted: false });
+    const onUserPreferenceChange = vi.fn();
+    const context = {
+      player, disposers: [], listen: () => {},
+      userPreferences: { audioLanguage: 'ger', subtitleLanguage: null },
+      onUserPreferenceChange
+    };
+    bindPreferences(context);
+    expect(context.preferences.get()).toMatchObject({ audioLanguage: 'ger', subtitleLanguage: null });
+
+    context.preferences.update({ subtitleLanguage: 'eng' });
+    expect(onUserPreferenceChange).toHaveBeenLastCalledWith({ subtitleLanguage: 'eng' });
+    context.preferences.update({ volume: 0.2 });
+    expect(onUserPreferenceChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('lässt die lokale Wahl stehen, wenn der Server noch keine Sprache kennt (null)', () => {
+    vi.stubGlobal('localStorage', memoryStorage({ 'vanta.player.prefs': JSON.stringify({ audioLanguage: 'jpn', subtitleLanguage: 'eng' }) }));
+    const player = new EventTarget();
+    Object.assign(player, { volume: 0.8, muted: false });
+    const context = {
+      player, disposers: [], listen: () => {},
+      userPreferences: { audioLanguage: null, subtitleLanguage: null },
+      onUserPreferenceChange: vi.fn()
+    };
+    bindPreferences(context);
+    expect(context.preferences.get()).toMatchObject({ audioLanguage: 'jpn', subtitleLanguage: 'eng' });
+    expect(context.onUserPreferenceChange).not.toHaveBeenCalled();
+  });
+
+  it('meldet regionale Codes als Sprache statt sie zu verwerfen', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const player = new EventTarget();
+    Object.assign(player, { volume: 0.8, muted: false });
+    const onUserPreferenceChange = vi.fn();
+    const context = { player, disposers: [], listen: () => {}, userPreferences: {}, onUserPreferenceChange };
+    bindPreferences(context);
+
+    context.preferences.update({ subtitleLanguage: 'pt-BR' });
+    expect(onUserPreferenceChange).toHaveBeenLastCalledWith({ subtitleLanguage: 'pt' });
+    // This device keeps the exact track language.
+    expect(context.preferences.get().subtitleLanguage).toBe('pt-BR');
+    context.preferences.update({ subtitleLanguage: null });
+    expect(onUserPreferenceChange).toHaveBeenLastCalledWith({ subtitleLanguage: null });
+    context.preferences.update({ audioLanguage: 'Klingonisch!' });
+    expect(onUserPreferenceChange).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('normalizeLanguageCode', () => {
+  it('kürzt Regionen weg und erkennt Unbrauchbares', () => {
+    expect(normalizeLanguageCode('pt-BR')).toBe('pt');
+    expect(normalizeLanguageCode('en_US')).toBe('en');
+    expect(normalizeLanguageCode('GER')).toBe('ger');
+    expect(normalizeLanguageCode(null)).toBeNull();
+    expect(normalizeLanguageCode('')).toBeNull();
+    expect(normalizeLanguageCode('deutsch')).toBeUndefined();
   });
 });

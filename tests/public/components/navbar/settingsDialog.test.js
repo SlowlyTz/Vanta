@@ -10,6 +10,18 @@ vi.mock('../../../../src/public/js/api/auth.api.js', () => ({
 vi.mock('../../../../src/public/js/api/media.api.js', () => ({
   MediaApi: { getLibrary: vi.fn().mockResolvedValue({ totalItems: 0 }) }
 }));
+vi.mock('../../../../src/public/js/api/notifications.api.js', () => ({
+  NotificationsApi: {
+    getPreferences: vi.fn(async () => ({ push: true, kinds: [{ kind: 'request_update', push: true, inApp: true }], devices: 0 })),
+    savePreferences: vi.fn(async patch => ({ push: true, kinds: [{ kind: 'request_update', push: false, inApp: true }] }))
+  }
+}));
+vi.mock('../../../../src/public/js/api/sessions.api.js', () => ({
+  SessionsApi: { list: vi.fn(async () => ({ sessions: [{ id: 'a', current: true, userAgent: 'Firefox/128.0 (X11; Linux)' }, { id: 'b', current: false }] })), end: vi.fn(async () => ({})) }
+}));
+vi.mock('../../../../src/public/js/api/preferences.api.js', () => ({
+  PreferencesApi: { get: vi.fn(), update: vi.fn(async patch => patch) }
+}));
 
 async function flush() {
   await Promise.resolve();
@@ -170,5 +182,100 @@ describe('settingsDialog version', () => {
   it('shows the app release to every user', () => {
     const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
     expect(dialog.element.querySelector('.settings-version').textContent).toBe(`VANTA · Version ${APP_VERSION}`);
+  });
+});
+
+describe('settingsDialog hub', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    AuthApi.getCurrentUser.mockResolvedValue({ user: { isAdmin: false } });
+    window.scrollTo = vi.fn();
+  });
+
+  afterEach(() => {
+    closeAllModals();
+    document.body.style.position = '';
+    document.body.style.top = '';
+  });
+
+  const flushAll = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  it('groups the areas and shows a status on each row', async () => {
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    dialog.setSettingsOpen(true);
+    await flushAll();
+
+    const titles = [...dialog.settingsDialog.querySelectorAll('.settings-panel-root .settings-section-title')].map(el => el.textContent);
+    expect(titles).toEqual(['Konto', 'App', 'Verwaltung']);
+    const statuses = Object.fromEntries([...dialog.settingsDialog.querySelectorAll('.settings-panel-root .settings-option')]
+      .map(row => [row.querySelector('.settings-option-label').textContent, row.querySelector('.settings-option-status')?.textContent]));
+    expect(statuses.Geräte).toBe('2 Geräte');
+    expect(statuses.Wiedergabe).toBe('Autoplay an');
+    expect(statuses.Benachrichtigungen).toBe('Aus');
+  });
+
+  it('opens an area as its own page with a back button', async () => {
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    dialog.setSettingsOpen(true);
+    dialog.setSettingsView('devices');
+    await flushAll();
+
+    expect(dialog.settingsDialog.querySelector('.settings-dialog-title').textContent).toBe('Geräte');
+    const panel = dialog.settingsDialog.querySelector('.settings-panel-devices');
+    expect(panel.hidden).toBe(false);
+    expect(panel.textContent).toContain('Firefox auf Linux');
+    expect(panel.querySelectorAll('.settings-device-row .settings-inline-button')).toHaveLength(1);
+    expect(panel.textContent).toContain('Alle anderen abmelden');
+    dialog.settingsDialog.querySelector('[aria-label="Zurück"]').click();
+    expect(dialog.settingsDialog.dataset.view).toBe('root');
+  });
+
+  it('saves a notification choice per kind', async () => {
+    const { NotificationsApi } = await import('../../../../src/public/js/api/notifications.api.js');
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    dialog.setSettingsOpen(true);
+    dialog.setSettingsView('notifications');
+    await flushAll();
+
+    const pushSwitch = dialog.settingsDialog.querySelector('.settings-kind-row .settings-switch-input');
+    pushSwitch.checked = false;
+    pushSwitch.dispatchEvent(new Event('change'));
+    expect(NotificationsApi.savePreferences).toHaveBeenCalledWith({ kinds: [{ kind: 'request_update', push: false }] });
+  });
+
+  it('keeps playback settings for the account', async () => {
+    const { PreferencesApi } = await import('../../../../src/public/js/api/preferences.api.js');
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    dialog.setSettingsOpen(true);
+    dialog.setSettingsView('playback');
+
+    const option = [...dialog.settingsDialog.querySelectorAll('.settings-panel-playback .settings-segmented-option')].find(button => button.textContent === '720p');
+    option.click();
+    await flushAll();
+    expect(PreferencesApi.update).toHaveBeenCalledWith({ defaultQuality: '720p' });
+  });
+});
+
+describe('settingsDialog on a TV', () => {
+  afterEach(() => {
+    closeAllModals();
+    document.documentElement.classList.remove('tv-mode');
+  });
+
+  it('shows an area beside the list as soon as its row has the focus', () => {
+    document.documentElement.classList.add('tv-mode');
+    window.matchMedia = window.matchMedia || (() => ({ matches: false, addEventListener() {} }));
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    document.body.appendChild(dialog.element);
+    dialog.setSettingsOpen(true);
+    expect(dialog.settingsDialog.dataset.view).toBe('playback');
+    const appearance = [...dialog.settingsDialog.querySelectorAll('.settings-option')].find(row => /Darstellung/.test(row.textContent));
+    appearance.focus();
+    expect(dialog.settingsDialog.dataset.view).toBe('appearance');
+    // Push and the password are not offered on a TV.
+    const hidden = [...dialog.settingsDialog.querySelectorAll('.settings-option')].filter(row => row.hidden).map(row => row.textContent);
+    expect(hidden.join(' ')).toMatch(/Benachrichtigungen/);
+    expect(hidden.join(' ')).toMatch(/Passwort/);
+    dialog.element.remove();
   });
 });

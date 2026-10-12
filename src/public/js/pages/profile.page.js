@@ -1,6 +1,8 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { WatchlistApi } from '../api/watchlist.api.js';
+import { watchlistStore } from '../store/watchlist.store.js';
+import { removeCard } from '../components/mediaActions.js';
 import { MediaCard } from '../components/mediaCard.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
@@ -8,13 +10,15 @@ import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
+import { createSettingsOverview } from '../components/navbar/settingsOverview.js';
+import { createSettingsStatsLoader } from '../components/settings/settingsStats.js';
 
 const LIMIT = 24;
 
 const TABS = [
   {
     key: 'continue',
-    label: 'Weiter ansehen',
+    label: 'Weiter schauen',
     load: (page, options) => MediaApi.getProfileContinueWatching(page, LIMIT, options),
     emptyText: 'Du hast aktuell keine begonnenen Inhalte.'
   },
@@ -30,7 +34,7 @@ const TABS = [
   },
   {
     key: 'history',
-    label: 'History',
+    label: 'Verlauf',
     load: (page, options) => MediaApi.getProfileHistory(page, LIMIT, options),
     emptyText: 'Du hast noch keine vollständig angesehenen Inhalte.'
   },
@@ -46,9 +50,22 @@ function createEmptyPageState() {
   return { items: [], page: 0, totalPages: 0, loading: false, loaded: false, error: null };
 }
 
+// Each tab has its address, so the navigation marks it and a reload keeps it.
+const TAB_HASHES = { continue: '#/profile', watchlist: '#/watchlist', history: '#/profile?tab=history', favorites: '#/favorites' };
+
+const tabFromHash = (hash) => {
+  const [path, query = ''] = hash.split('?');
+  if (path === '#/watchlist') return 'watchlist';
+  if (path === '#/favorites') return 'favorites';
+  if (path === '#/profile') return new URLSearchParams(query).get('tab') === 'history' ? 'history' : 'continue';
+  return null;
+};
+
 export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope) {
   const { signal } = resolvePageScope(pageScope);
-  const container = createElement('div', { className: 'page-container content-section profile-page' });
+  // "Verlauf" has no route of its own: #/profile?tab=history.
+  if (initialTab === 'continue' && tabFromHash(window.location.hash || '') === 'history') initialTab = 'history';
+  const container = createElement('div', { className: 'page-container content-section profile-page', 'data-tv-backdrop': '' });
 
   const validInitialTab = TABS.some(tab => tab.key === initialTab) ? initialTab : TABS[0].key;
 
@@ -68,13 +85,17 @@ export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope)
   const profileHeader = PageHeading({ title: 'Profil', subtitle: displayName });
 
   const tabButtons = new Map();
-  const tabsNav = createElement('div', { className: 'profile-tabs' });
+  const tabsNav = createElement('div', { className: 'profile-tabs', 'data-tv-row': '' });
 
   TABS.forEach(tab => {
     const button = createElement('button', {
       className: 'profile-tab-button',
       type: 'button',
-      onClick: () => setActiveTab(tab.key)
+      onClick: () => {
+        setActiveTab(tab.key);
+        // Without a new history entry; the router leaves the page standing.
+        if (tabFromHash(window.location.hash || '') !== tab.key) window.location.replace(TAB_HASHES[tab.key]);
+      }
     }, tab.label);
     tabButtons.set(tab.key, button);
     tabsNav.appendChild(button);
@@ -177,11 +198,41 @@ export default function ProfilePage({ initialTab = 'continue' } = {}, pageScope)
     }
   };
 
+  // What the user's libraries hold (moved here from the settings).
+  const libraryStats = createSettingsOverview();
+  libraryStats.element.classList.add('profile-library-stats');
+  createSettingsStatsLoader(libraryStats).load();
+
   container.appendChild(profileHeader);
+  container.appendChild(libraryStats.element);
   container.appendChild(tabsNav);
   container.appendChild(contentEl);
 
   setActiveTab(state.activeTab);
+
+  // A title taken off the list (context menu) leaves the "Meine Liste" tab.
+  const unsubscribeWatchlist = watchlistStore.subscribe(({ ids }) => {
+    if (!watchlistStore.isLoaded()) return;
+    const listState = state.pages.watchlist;
+    const kept = listState.items.filter(item => ids.has(item.Id));
+    if (kept.length === listState.items.length) return;
+    listState.items = kept;
+    if (state.activeTab === 'watchlist') {
+      contentEl.querySelectorAll('[data-item-id]').forEach(card => {
+        if (!ids.has(card.dataset.itemId)) removeCard(card);
+      });
+      if (!kept.length) window.setTimeout(renderTabContent, 280);
+    }
+  });
+  resolvePageScope(pageScope).onLeave(() => unsubscribeWatchlist());
+
+  // A change between the profile's own addresses stays on this page.
+  container.handleHashChange = (hash) => {
+    const tab = tabFromHash(hash);
+    if (!tab) return false;
+    if (tab !== state.activeTab) setActiveTab(tab);
+    return true;
+  };
 
   return container;
 }

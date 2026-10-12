@@ -29,7 +29,12 @@ export async function createPlayerContext(options) {
     fullscreenTarget = null,
     stillWatching = null,
     sleepTimer = null,
-    onSleep = null
+    onSleep = null,
+    // The user's settings from the server (see shared/preferences.js):
+    // { defaultQuality, audioLanguage, subtitleLanguage, autoplayNextEpisode,
+    // autoSkipIntro } and where a changed language goes back to.
+    userPreferences = null,
+    onUserPreferenceChange = null
   } = options;
 
   await customElements.whenDefined('media-player');
@@ -69,6 +74,8 @@ export async function createPlayerContext(options) {
     stillWatching,
     sleepTimerOptions: sleepTimer,
     onSleep,
+    userPreferences,
+    onUserPreferenceChange,
     iosLike,
     dom,
     player,
@@ -98,7 +105,8 @@ export async function createPlayerContext(options) {
       if (current.mediaSourceId) selection.mediaSourceId = current.mediaSourceId;
     }
     else if (context.preferences?.get().audioLanguage) selection.audioLanguage = context.preferences.get().audioLanguage;
-    const quality = context.qualityMenu?.getCurrentId?.();
+    // Until the viewer picks one, the stream starts in their default quality.
+    const quality = context.qualityMenu?.getCurrentId?.() || userPreferences?.defaultQuality;
     if (quality && quality !== 'auto') selection.qualityProfile = quality;
     return selection;
   };

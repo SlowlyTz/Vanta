@@ -10,6 +10,8 @@ describe('shared preferences', () => {
     expect(sanitizePreferences({ stillWatchingHours: 6, screensaverMinutes: 7, screensaverEnabled: 'yes', admin: true }))
       .toEqual({ stillWatchingHours: 6 });
     expect(sanitizePreferences(null)).toEqual({});
+    expect(sanitizePreferences({ audioLanguage: 'ger', subtitleLanguage: null, defaultQuality: '4k' })).toEqual({ audioLanguage: 'ger', subtitleLanguage: null });
+    expect(sanitizePreferences({ audioLanguage: 'Deutsch!' })).toEqual({});
   });
 
   it('fills in defaults around stored values', () => {

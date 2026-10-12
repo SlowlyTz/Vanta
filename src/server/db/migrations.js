@@ -32,4 +32,25 @@ export const migrateRequestsTable = (sqlite) => {
   return added;
 };
 
-export { REQUEST_COLUMNS };
+// Columns added to push_subscriptions after it shipped: the session (public
+// id) a device subscribed in, so signing that session out ends its pushes.
+const PUSH_SUBSCRIPTION_COLUMNS = [
+  ['session_id', 'TEXT']
+];
+
+// The same for any table: adds what is missing, answers the names added.
+export const addMissingColumns = (sqlite, table, columns) => {
+  const existing = getColumnNames(sqlite, table);
+  if (existing.size === 0) return [];
+  const added = [];
+  for (const [name, definition] of columns) {
+    if (existing.has(name)) continue;
+    sqlite.run(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+    added.push(name);
+  }
+  return added;
+};
+
+export const migratePushSubscriptionsTable = (sqlite) => addMissingColumns(sqlite, 'push_subscriptions', PUSH_SUBSCRIPTION_COLUMNS);
+
+export { REQUEST_COLUMNS, PUSH_SUBSCRIPTION_COLUMNS };

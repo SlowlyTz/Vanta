@@ -152,6 +152,8 @@ export default function PlayerPage({ id }, pageScope) {
         }),
         resumePosition,
         onBack: goBack,
+        userPreferences: preferencesStore.getState(),
+        onUserPreferenceChange: patch => { preferencesStore.update(patch).catch(() => {}); },
         stillWatching: {
           afterMs: preferencesStore.get('stillWatchingHours') * 60 * 60 * 1000,
           initialIdleMs: idleMs,
