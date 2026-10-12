@@ -361,6 +361,14 @@ describe('RequestsService.reject', () => {
     dbState.requestById = undefined;
     await expect(RequestsService.reject(999)).rejects.toMatchObject({ status: 404 });
   });
+
+  it('writes nothing when the request already has that status', async () => {
+    dbState.statusUpdates = [];
+    await rejectRequest({ id: 12, tmdb_id: 70523, tmdb_type: 'tv', title: 'Dark', request_scope: 'season', season_number: 1, status: 'rejected', seasons: null });
+    dbState.requestById = { ...dbState.requestById, status: 'approved' };
+    await RequestsService.approve(12);
+    expect(dbState.statusUpdates).toEqual([]);
+  });
 });
 
 describe('banned list cache', () => {

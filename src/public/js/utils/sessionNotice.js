@@ -1,4 +1,5 @@
 import { clearUserCaches } from './service-worker.js';
+import { unsubscribeBrowserPush } from './pushSubscription.js';
 
 // A message for the login page from a session that ended on the server's
 // side (a ban): whoever learns about it first (an API response or the app
@@ -31,6 +32,9 @@ export function takeSessionNotice() {
 export function endClientSession(notice = null) {
   if (notice) {
     storeSessionNotice(notice);
+    // A session that ended (expired, signed out elsewhere, banned) takes the
+    // push subscription along, so the next account here does not inherit it.
+    unsubscribeBrowserPush().catch(() => {});
     clearUserCaches();
   }
   window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));

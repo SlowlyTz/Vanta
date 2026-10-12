@@ -166,4 +166,57 @@
     );
   });
 
+  // Web Push (see push.service.js): the payload holds only what the
+  // notification shows. A click opens that page in an open VANTA window, or
+  // a new one.
+  self.addEventListener('push', function (event) {
+    var data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (e) { data = { body: event.data && event.data.text() }; }
+    var title = data.title || 'VANTA';
+    var options = {
+      body: data.body || '',
+      icon: '/assets/logo-vanta.png',
+      badge: '/assets/logo-vanta.png',
+      tag: data.tag || undefined,
+      data: { url: data.url || '/#/home' }
+    };
+    if (data.image) options.image = data.image;
+    event.waitUntil(self.registration.showNotification(title, options));
+  });
+
+  self.addEventListener('notificationclick', function (event) {
+    event.notification.close();
+    var target = new URL((event.notification.data && event.notification.data.url) || '/#/home', self.location.origin);
+    if (target.origin !== self.location.origin) target = new URL('/#/home', self.location.origin);
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windows) {
+        for (var i = 0; i < windows.length; i++) {
+          var client = windows[i];
+          if (new URL(client.url).origin !== self.location.origin) continue;
+          // The page moves itself (a hash change, no reload).
+          client.postMessage({ type: 'vanta:navigate', url: target.pathname + target.search + target.hash });
+          return client.focus ? client.focus() : client;
+        }
+        return self.clients.openWindow(target.href);
+      })
+    );
+  });
+
+  // The browser replaced the subscription: tell the server the new one. Only
+  // works while the session cookie is valid; else it renews on the next visit.
+  self.addEventListener('pushsubscriptionchange', function (event) {
+    var options = event.oldSubscription && event.oldSubscription.options;
+    if (!options) return;
+    event.waitUntil(
+      self.registration.pushManager.subscribe(options).then(function (subscription) {
+        return fetch('/api/notifications/subscriptions', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: subscription.toJSON() })
+        });
+      }).catch(function () {})
+    );
+  });
+
 })(self);

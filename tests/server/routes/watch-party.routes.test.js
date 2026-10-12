@@ -4,6 +4,9 @@ import request from 'supertest';
 import watchPartyRoutes from '../../../src/server/routes/watch-party.routes.js';
 import { errorHandler } from '../../../src/server/middleware/error.middleware.js';
 
+vi.mock('../../../src/server/services/notification-triggers.js', () => ({
+  NotificationTriggers: { requestDecided: vi.fn(), adminWork: vi.fn(), reportHandled: vi.fn(), watchPartyInvite: vi.fn() }
+}));
 vi.mock('../../../src/server/services/watch-party.service.js', () => ({
   WatchPartyService: {
     createParty: vi.fn(),

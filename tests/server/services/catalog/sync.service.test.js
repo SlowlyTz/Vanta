@@ -307,7 +307,13 @@ describe('CatalogSync', () => {
       await flush();
 
       expect(afterRun).toHaveBeenCalledTimes(2);
-      expect(afterRun.mock.calls[1][0].items.map(item => item.Id)).toEqual(['m1', 'm2']);
+      const second = afterRun.mock.calls[1][0];
+      expect(second.items.map(item => item.Id)).toEqual(['m1', 'm2']);
+      expect(second.added.map(item => item.Id)).toEqual(['m2']);
+      expect(second.updated.map(item => item.Id)).toEqual(['m1']);
+      expect(second.previousCount).toBe(2);
+      expect(second.previousSuccessAt).toBe(record.startedAt);
+      expect(afterRun.mock.calls[0][0]).toMatchObject({ previousCount: 0, previousSuccessAt: null });
     });
 
     it('is called with an empty list when nothing changed and not at all on a failed run', async () => {
@@ -351,9 +357,9 @@ describe('cast and crew', () => {
     const { db, sync } = setup([movie('m1', { People: people })]);
     await sync.runFull();
 
-    expect(rows(db, 'SELECT person_id, name, role, kind FROM catalog_item_people ORDER BY person_id')).toEqual([
-      { person_id: 'p1', name: 'Al Pacino', role: 'Vincent Hanna', kind: 'Actor' },
-      { person_id: 'p2', name: 'Michael Mann', role: null, kind: 'Director' }
+    expect(rows(db, 'SELECT person_id, name, image_tag FROM catalog_item_people ORDER BY person_id')).toEqual([
+      { person_id: 'p1', name: 'Al Pacino', image_tag: 'tag1' },
+      { person_id: 'p2', name: 'Michael Mann', image_tag: null }
     ]);
     expect(JSON.parse(rows(db, 'SELECT data FROM catalog_items')[0].data).People).toBeUndefined();
   });
@@ -381,5 +387,34 @@ describe('cast and crew', () => {
     snapshot.items = [movie('m2')];
     await sync.runFull();
     expect(rows(db, 'SELECT COUNT(*) AS n FROM catalog_item_people')[0].n).toBe(0);
+  });
+
+  it('fills in the cast of titles stored without one, without counting them as updated', async () => {
+    const hook = vi.fn();
+    const { db, sync, snapshot } = setup([movie('m1'), movie('m2')], LIBRARIES, 1444, { afterRun: hook });
+    await sync.runFull();
+    snapshot.items = [movie('m1', { People: people }), movie('m2', { Name: 'Neu' })];
+
+    const record = await sync.runUpdate();
+    await flush();
+
+    expect(record).toMatchObject({ updated: 1, unchanged: 1 });
+    expect(hook.mock.calls.at(-1)[0].updated.map(item => item.Id)).toEqual(['m2']);
+    expect(rows(db, 'SELECT COUNT(*) AS n FROM catalog_item_people WHERE item_id = ?', 'm1')[0].n).toBe(2);
+  });
+});
+
+describe('CatalogSync newly read fields', () => {
+  it('stores a field read for the first time quietly, and counts later changes of it', async () => {
+    const { db, sync, snapshot } = setup([series('s1')]);
+    await sync.runFull();
+
+    snapshot.items = [series('s1', { DateLastMediaAdded: '2026-10-01T00:00:00Z' })];
+    expect((await sync.runUpdate())).toMatchObject({ updated: 0, unchanged: 1 });
+    expect(JSON.parse(rows(db, 'SELECT data FROM catalog_items')[0].data).DateLastMediaAdded).toBe('2026-10-01T00:00:00Z');
+
+    // A new episode moves the date: now the series changed.
+    snapshot.items = [series('s1', { DateLastMediaAdded: '2026-10-12T00:00:00Z' })];
+    expect((await sync.runUpdate())).toMatchObject({ updated: 1 });
   });
 });

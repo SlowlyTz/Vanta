@@ -52,4 +52,9 @@ export default {
   IMAGE_CACHE_MAX_BYTES: Number.parseInt(process.env.IMAGE_CACHE_MAX_MB || '', 10) > 0
     ? Number.parseInt(process.env.IMAGE_CACHE_MAX_MB, 10) * 1024 * 1024
     : null,
+  // Optional: Web Push keys. Without them VANTA makes its own pair on the
+  // first start and keeps it in requests.db (app_settings).
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:admin@usevanta.de',
 };

@@ -25,7 +25,16 @@ export async function getCatalog() {
     // passed, not only the changed titles: files that already exist cost one
     // stat each, and a cache that was emptied or never filled gets warmed on
     // the next run instead of on the first visitor.
-    afterRun: () => images.warm(reader.all(), { token: env.JELLYFIN_API_KEY })
+    afterRun: async (details) => {
+      // Loaded on demand: the notifications bring requests.db with them.
+      const [{ NotificationTriggers }, { Housekeeping }] = await Promise.all([
+        import('../notification-triggers.js'),
+        import('../housekeeping.service.js')
+      ]);
+      NotificationTriggers.catalogRun(details);
+      Housekeeping.run();
+      await images.warm(reader.all(), { token: env.JELLYFIN_API_KEY });
+    }
   });
   const scheduler = createCatalogScheduler({ sync, settings });
   setActiveCatalogReader(reader);

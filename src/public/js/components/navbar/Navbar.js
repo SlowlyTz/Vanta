@@ -7,6 +7,7 @@ import { createWatchPartyDialog } from '../watch-party/createWatchPartyDialog.js
 import { createSettingsDialog } from './settingsDialog.js';
 import { notificationsStore } from '../../store/notifications.store.js';
 import { OPEN_WATCH_PARTY_EVENT } from '../mediaActions.js';
+import { createNotificationBell } from '../notificationBell.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -57,6 +58,8 @@ function createTopActions({ onOpenWatchParty }) {
     }, createTopbarIcon(action.key));
   });
 
+  // The bell sits before the profile.
+  buttons.splice(buttons.length - 1, 0, createNotificationBell().element);
   const element = createElement('div', { className: 'navbar-top-actions' }, buttons);
   return { element };
 }

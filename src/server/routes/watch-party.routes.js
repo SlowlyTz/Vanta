@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { watchPartySocketHub } from '../realtime/watch-party.socket.js';
 import { appSocketHub } from '../realtime/app.socket.js';
+import { NotificationTriggers } from '../services/notification-triggers.js';
 
 const router = express.Router();
 
@@ -144,6 +145,7 @@ router.post('/:partyId/invitations', requireAuth, asyncHandler(async (req, res) 
     type: 'WATCH_PARTY_INVITATION',
     invitation
   });
+  NotificationTriggers.watchPartyInvite(invitation, req.session.username);
 
   return res.status(201).json({ invitation });
 }));

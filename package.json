@@ -30,6 +30,7 @@
     "sql.js": "^1.14.1",
     "three": "^0.186.0",
     "vidstack": "^0.6.15",
+    "web-push": "^3.6.7",
     "ws": "^8.21.0"
   },
   "devDependencies": {

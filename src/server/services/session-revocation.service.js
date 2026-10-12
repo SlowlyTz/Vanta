@@ -13,6 +13,8 @@ export async function revokeUserAccess(userId, ban, {
   auth = AuthService,
   appSockets = appSocketHub,
   partySockets = watchPartySocketHub,
+  // Loaded on demand: the push service brings the database with it.
+  loadPush = () => import('./push.service.js').then(module => module.PushService),
   log = console
 } = {}) {
   let sessions = [];
@@ -38,6 +40,13 @@ export async function revokeUserAccess(userId, ban, {
     partySockets.closeAllUserConnections(userId);
   } catch (error) {
     log.error?.('[Ban] could not close the sockets:', error.message);
+  }
+
+  // No more pushes to any of their devices.
+  try {
+    (await loadPush()).removeAllFor(userId);
+  } catch (error) {
+    log.warn?.('[Ban] push subscriptions not removed:', error.message);
   }
 
   return { sessions: sessions.length };

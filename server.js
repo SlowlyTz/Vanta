@@ -8,6 +8,7 @@ import { flushDatabase } from './src/server/db/database.js';
 import { sessionStore } from './src/server/config/session.js';
 import { createShutdown } from './src/server/shutdown.js';
 import { rejectUnknownUpgrades } from './src/server/realtime/hardening.js';
+import { NotificationTriggers } from './src/server/services/notification-triggers.js';
 
 const PORT = env.PORT || 3000;
 const server = http.createServer(app);
@@ -18,6 +19,8 @@ rejectUnknownUpgrades(server, path => path === '/ws/app' || path.startsWith('/ws
 
 server.listen(PORT, () => {
   console.log(`[Server] running on port ${PORT} in ${env.NODE_ENV} mode`);
+  // A new version tells those who asked for it (once per version).
+  NotificationTriggers.appStarted();
 });
 
 // The catalogue mirror fills and refreshes itself in the background; a failure

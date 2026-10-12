@@ -98,10 +98,13 @@ export class ReportsService {
     return getAllReports.all().map(normalizeReport);
   }
 
-  static setStatus(id, status, handledBy) {
+  // Answers the report and whether its status really changed; the same
+  // status again writes nothing.
+  static decide(id, status, handledBy) {
     const report = getReportById.get(id);
     if (!report) throw httpError('Meldung nicht gefunden', 404);
+    if (report.status === status) return { report: normalizeReport(report), changed: false };
     updateReportStatus.run(status, handledBy || null, Date.now(), id);
-    return normalizeReport(getReportById.get(id));
+    return { report: normalizeReport(getReportById.get(id)), changed: true };
   }
 }

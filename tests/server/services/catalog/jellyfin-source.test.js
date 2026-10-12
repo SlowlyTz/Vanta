@@ -82,7 +82,7 @@ describe('createJellyfinCatalogSource', () => {
     await createJellyfinCatalogSource({ fetchJson }).listLibraryItems('lib-m');
 
     const fields = calls.find(c => c.path === '/Items').options.query.Fields;
-    for (const needed of ['ProviderIds', 'Genres', 'Studios', 'DateCreated', 'RemoteTrailers', 'ExternalUrls', 'CriticRating', 'SortName', 'ImageTags']) {
+    for (const needed of ['ProviderIds', 'Genres', 'Studios', 'DateCreated', 'DateLastMediaAdded', 'RemoteTrailers', 'ExternalUrls', 'CriticRating', 'SortName', 'ImageTags']) {
       expect(fields).toContain(needed);
     }
   });

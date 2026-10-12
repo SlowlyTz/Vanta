@@ -156,6 +156,14 @@ router.post('/logout', (req, res) => {
     AuthService.logout(token).catch(error => console.warn('[Logout] Jellyfin session not ended:', error.message));
   }
   forgetTokenDevice(token);
+  // This device gets no more pushes for the account it left (loaded on
+  // demand: the push service brings the database with it).
+  const { pushEndpoint, userId } = req.session || {};
+  if (pushEndpoint && userId) {
+    import('../services/push.service.js')
+      .then(({ PushService }) => PushService.unsubscribe(userId, pushEndpoint))
+      .catch(error => console.warn('[Logout] push subscription not removed:', error.message));
+  }
   req.session.destroy((err) => {
     if (err) {
       console.error('[Logout Error]', err);

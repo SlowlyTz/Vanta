@@ -5,6 +5,7 @@ import { RequestsService } from '../services/requests.service.js';
 import { TmdbService } from '../services/tmdb.service.js';
 import { sendRequestCreated } from '../services/discord-webhook.service.js';
 import { notifyNotificationsChanged } from '../realtime/app.socket.js';
+import { NotificationTriggers } from '../services/notification-triggers.js';
 import { normalizeScopeSelection, toScopeInteger } from '../services/request-scope.js';
 
 const router = express.Router();
@@ -154,6 +155,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   sendRequestCreated(request, media).catch((error) => {
     console.error('[Discord Webhook] Trigger fehlgeschlagen:', error.message);
   });
+  NotificationTriggers.adminWork({ kind: 'request', username, title: request.title, url: '/#/admin/requests' });
 }));
 
 // Get user's requests
@@ -175,19 +177,22 @@ router.get('/admin/all', requireAuth, requireFreshAdmin, asyncHandler(async (req
   res.json(requests);
 }));
 
-// Approve request (admin only)
-router.post('/:id/approve', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
-  const request = await RequestsService.approve(req.params.id);
+// A decision tells the requester only when it changed the status (a second
+// click on "Annehmen" stays quiet).
+const decide = (decision) => asyncHandler(async (req, res) => {
+  const before = await RequestsService.getById(req.params.id);
+  const request = await RequestsService[decision](req.params.id);
   res.json(request);
+  if (before?.status === request?.status) return;
   notifyNotificationsChanged();
-}));
+  NotificationTriggers.requestDecided(request);
+});
+
+// Approve request (admin only)
+router.post('/:id/approve', requireAuth, requireFreshAdmin, decide('approve'));
 
 // Reject request (admin only). Only a rejected whole title bans further requests;
 // a rejected season or episode can be asked for again.
-router.post('/:id/reject', requireAuth, requireFreshAdmin, asyncHandler(async (req, res) => {
-  const request = await RequestsService.reject(req.params.id);
-  res.json(request);
-  notifyNotificationsChanged();
-}));
+router.post('/:id/reject', requireAuth, requireFreshAdmin, decide('reject'));
 
 export default router;

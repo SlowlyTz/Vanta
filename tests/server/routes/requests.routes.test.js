@@ -3,6 +3,9 @@ import express from 'express';
 import request from 'supertest';
 import requestsRoutes from '../../../src/server/routes/requests.routes.js';
 
+vi.mock('../../../src/server/services/notification-triggers.js', () => ({
+  NotificationTriggers: { requestDecided: vi.fn(), adminWork: vi.fn(), reportHandled: vi.fn(), watchPartyInvite: vi.fn() }
+}));
 vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: { isUserAdmin: vi.fn() }
 }));
@@ -44,6 +47,7 @@ import { AuthService } from '../../../src/server/services/jellyfin/auth.service.
 import { RequestsService } from '../../../src/server/services/requests.service.js';
 import { TmdbService } from '../../../src/server/services/tmdb.service.js';
 import { sendRequestCreated } from '../../../src/server/services/discord-webhook.service.js';
+import { NotificationTriggers } from '../../../src/server/services/notification-triggers.js';
 import { clearAdminCheckCache } from '../../../src/server/middleware/auth.middleware.js';
 
 const TV_SEASONS = [
@@ -532,6 +536,23 @@ describe('Requests Routes', () => {
 
       expect(res.status).toBe(200);
       expect(sendRequestCreated).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('approve / reject tell the requester only about a real change', () => {
+    it('notifies on a new decision', async () => {
+      RequestsService.getById.mockResolvedValue({ id: 1, status: 'pending' });
+      RequestsService.approve.mockResolvedValue({ id: 1, status: 'approved' });
+      await request(createApp()).post('/1/approve');
+      expect(NotificationTriggers.requestDecided).toHaveBeenCalledWith({ id: 1, status: 'approved' });
+    });
+
+    it('stays quiet when the request already had that status', async () => {
+      RequestsService.getById.mockResolvedValue({ id: 1, status: 'rejected' });
+      RequestsService.reject.mockResolvedValue({ id: 1, status: 'rejected' });
+      const res = await request(createApp()).post('/1/reject');
+      expect(res.status).toBe(200);
+      expect(NotificationTriggers.requestDecided).not.toHaveBeenCalled();
     });
   });
 });

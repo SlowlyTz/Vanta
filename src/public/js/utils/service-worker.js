@@ -2,6 +2,12 @@
 // outside the Vite build so the worker URL stays stable across deploys.
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+  // A click on a push notification while VANTA is open: go to its page.
+  navigator.serviceWorker.addEventListener?.('message', event => {
+    if (event.data?.type !== 'vanta:navigate' || typeof event.data.url !== 'string') return;
+    const hash = event.data.url.includes('#') ? event.data.url.slice(event.data.url.indexOf('#')) : '#/home';
+    if (hash.startsWith('#/')) window.location.hash = hash;
+  });
   return navigator.serviceWorker.register('/sw.js').catch(error => {
     console.warn('[SW] registration failed:', error?.message || error);
     return null;

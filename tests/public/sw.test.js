@@ -174,3 +174,43 @@ describe('sw.js', () => {
     expect(worker.caches.stores.has('vanta-assets-v1')).toBe(false);
   });
 });
+
+describe('service worker: push', () => {
+  const pushWorker = () => {
+    const worker = loadWorker([]);
+    worker.self.registration = { showNotification: vi.fn(async () => {}) };
+    worker.self.clients.matchAll = vi.fn(async () => []);
+    worker.self.clients.openWindow = vi.fn(async () => {});
+    return worker;
+  };
+
+  it('shows a pushed notification with its page', async () => {
+    const worker = pushWorker();
+    let job;
+    worker.listeners.push({
+      data: { json: () => ({ title: 'Neue Folge', body: 'Dark S02E03', url: '/#/item/s1', tag: 'new_episode', image: '/api/media/image/s1' }) },
+      waitUntil: p => { job = p; }
+    });
+    await job;
+    expect(worker.self.registration.showNotification).toHaveBeenCalledWith('Neue Folge', expect.objectContaining({
+      body: 'Dark S02E03', tag: 'new_episode', image: '/api/media/image/s1', data: { url: '/#/item/s1' }
+    }));
+  });
+
+  it('moves an open window to the page, or opens one', async () => {
+    const worker = pushWorker();
+    const client = { url: 'http://localhost/#/home', postMessage: vi.fn(), focus: vi.fn(async () => client) };
+    worker.self.clients.matchAll.mockResolvedValue([client]);
+    let job;
+    const notification = { close: vi.fn(), data: { url: '/#/item/s1' } };
+    worker.listeners.notificationclick({ notification, waitUntil: p => { job = p; } });
+    await job;
+    expect(client.postMessage).toHaveBeenCalledWith({ type: 'vanta:navigate', url: '/#/item/s1' });
+    expect(client.focus).toHaveBeenCalled();
+
+    worker.self.clients.matchAll.mockResolvedValue([]);
+    worker.listeners.notificationclick({ notification: { close: vi.fn(), data: { url: 'https://evil.example/#/x' } }, waitUntil: p => { job = p; } });
+    await job;
+    expect(worker.self.clients.openWindow).toHaveBeenCalledWith('http://localhost/#/home');
+  });
+});

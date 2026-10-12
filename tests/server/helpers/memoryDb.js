@@ -1,7 +1,7 @@
 import initSqlJs from 'sql.js';
 
 // An in-memory stand-in for src/server/db/database.js with the tables the
-// report and notification services use, and the same prepare() surface.
+// services under test use, and the same prepare() surface.
 export async function createMemoryDb() {
   const SQL = await initSqlJs();
   const sqlite = new SQL.Database();
@@ -20,6 +20,16 @@ export async function createMemoryDb() {
       added_at INTEGER NOT NULL, PRIMARY KEY (user_id, item_id)
     );
     CREATE TABLE resume_hidden (user_id TEXT NOT NULL, series_id TEXT NOT NULL, hidden_at INTEGER NOT NULL, PRIMARY KEY (user_id, series_id));
+    CREATE TABLE push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, endpoint TEXT NOT NULL UNIQUE, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+      user_agent TEXT, created_at INTEGER NOT NULL, last_success_at INTEGER, failure_count INTEGER NOT NULL DEFAULT 0, session_id TEXT
+    );
+    CREATE TABLE notification_preferences (user_id TEXT NOT NULL, kind TEXT NOT NULL, push INTEGER NOT NULL DEFAULT 1, in_app INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (user_id, kind));
+    CREATE TABLE notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
+      url TEXT, image_item_id TEXT, created_at INTEGER NOT NULL, read_at INTEGER
+    );
+    CREATE TABLE app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
   `);
   const all = (sql, params) => {
     const statement = sqlite.prepare(sql);

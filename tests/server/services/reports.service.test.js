@@ -63,10 +63,16 @@ describe('ReportsService', () => {
   it('lets an admin resolve or dismiss a report, which takes it out of the open list', async () => {
     const report = await ReportsService.create(user, { itemId: SERIES_ID, problem: 'bad-quality' });
 
-    const resolved = ReportsService.setStatus(report.id, 'resolved', 'admin');
+    const { report: resolved, changed } = ReportsService.decide(report.id, 'resolved', 'admin');
+    expect(changed).toBe(true);
     expect(resolved).toMatchObject({ status: 'resolved', handled_by: 'admin' });
     expect(ReportsService.getOpen()).toHaveLength(0);
     expect(ReportsService.getAll()).toHaveLength(1);
-    expect(() => ReportsService.setStatus(999, 'dismissed', 'admin')).toThrow('Meldung nicht gefunden');
+    expect(() => ReportsService.decide(999, 'dismissed', 'admin')).toThrow('Meldung nicht gefunden');
+
+    // The same decision again changes nothing.
+    const again = ReportsService.decide(report.id, 'resolved', 'other-admin');
+    expect(again.changed).toBe(false);
+    expect(again.report).toMatchObject({ status: 'resolved', handled_by: 'admin', updated_at: resolved.updated_at });
   });
 });
