@@ -100,7 +100,7 @@ describe('HomePage restore', () => {
     expect(container.querySelector('.home-hero-skeleton')).toBeNull();
   });
 
-  it('renders an empty-state block for a section with no items but an emptyMessage', async () => {
+  it('leaves out a section with no items, even with an emptyMessage', async () => {
     MediaApi.getHome.mockResolvedValue({ movies: [], series: [], resume: [] });
     MediaApi.getHomeSectionGroup.mockImplementation(group => {
       if (group !== 'now-playing') return Promise.resolve({ sections: [] });
@@ -118,10 +118,8 @@ describe('HomePage restore', () => {
     const container = HomePage();
     await flushPromises();
 
-    const emptySection = container.querySelector('.media-section-empty');
-    expect(emptySection).toBeTruthy();
-    expect(emptySection.querySelector('.carousel-title-text').textContent).toBe('Jetzt im Kino');
-    expect(emptySection.querySelector('.section-empty-message').textContent).toBe('Keine aktuellen Kinofilme in deiner Mediathek.');
+    expect(container.textContent).not.toContain('Jetzt im Kino');
+    expect(container.textContent).not.toContain('Keine aktuellen Kinofilme');
   });
 
   it('still skips a section with no items and no emptyMessage', async () => {

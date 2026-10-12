@@ -16,6 +16,7 @@ export const TOP_TABS = [
 ];
 
 export const TOP_ACTIONS = [
+  { key: 'screensaver', label: 'Bildschirmschoner starten' },
   { key: 'group', label: 'Gruppe' },
   { key: 'search', label: 'Suche', href: '#/search' },
   { key: 'profile', label: 'Profil', href: '#/profile' }

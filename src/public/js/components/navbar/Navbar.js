@@ -8,6 +8,8 @@ import { createSettingsDialog } from './settingsDialog.js';
 import { notificationsStore } from '../../store/notifications.store.js';
 import { OPEN_WATCH_PARTY_EVENT } from '../mediaActions.js';
 import { createNotificationBell } from '../notificationBell.js';
+import { startScreensaver } from '../screensaver.js';
+import { getCurrentPageScope } from '../../utils/pageScope.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -40,6 +42,13 @@ function createTopTabs({ onNavigate }) {
   return { element, updateActive };
 }
 
+// Opens the screensaver at once, on any page; leaving the page ends it.
+export const startScreensaverNow = () => startScreensaver({ pageScope: getCurrentPageScope() });
+
+const ACTION_HANDLERS = {
+  screensaver: () => startScreensaverNow()
+};
+
 function createTopActions({ onOpenWatchParty }) {
   const buttons = TOP_ACTIONS.map(action => {
     const attrs = {
@@ -54,7 +63,8 @@ function createTopActions({ onOpenWatchParty }) {
     return createElement('button', {
       ...attrs,
       type: 'button',
-      onClick: action.key === 'group' ? () => onOpenWatchParty?.() : undefined
+      title: action.key === 'screensaver' ? action.label : undefined,
+      onClick: action.key === 'group' ? () => onOpenWatchParty?.() : ACTION_HANDLERS[action.key]
     }, createTopbarIcon(action.key));
   });
 

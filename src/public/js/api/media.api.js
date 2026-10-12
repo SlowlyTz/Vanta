@@ -209,6 +209,14 @@ export const MediaApi = {
     return request(`/api/media/userdata?ids=${ids.map(encodeURIComponent).join(',')}`);
   },
 
+  getDecades() {
+    return request('/api/media/search/decades');
+  },
+
+  getScreensaverItems(limit = 30) {
+    return request(`/api/media/screensaver?limit=${limit}`);
+  },
+
   refreshUserData() {
     return request('/api/media/userdata/refresh', { method: 'POST' });
   }

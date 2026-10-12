@@ -1,6 +1,8 @@
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { WatchlistApi } from '../api/watchlist.api.js';
+import { watchlistStore } from '../store/watchlist.store.js';
+import { hiddenResumeIds, removeCard } from '../components/mediaActions.js';
 import { appStore } from '../store/app.store.js';
 import { setSectionBusy } from '../components/loader.js';
 import { createHeroSkeleton, createCarouselSkeleton } from '../components/skeleton.js';
@@ -11,6 +13,8 @@ import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/rou
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { whenConnected } from '../utils/whenConnected.js';
+import { preferencesStore } from '../store/preferences.store.js';
+import { createIdleWatch, startScreensaver } from '../components/screensaver.js';
 
 const HOME_ROUTE = '#/home';
 const HOME_SECTION_GROUPS = [
@@ -31,7 +35,7 @@ function shuffleArray(arr) {
 export default function HomePage(params, pageScope) {
   const scope = resolvePageScope(pageScope);
   const { signal } = scope;
-  const container = createElement('div', { className: 'page-container' });
+  const container = createElement('div', { className: 'page-container home-page', 'data-tv-backdrop': '' });
   container.dataset.edgeTop = 'true';
   let sectionsContainer = null;
   let currentData = null;
@@ -72,7 +76,16 @@ export default function HomePage(params, pageScope) {
     if (restoreTarget) {
       const cached = getRouteState(HOME_ROUTE);
       if (cached?.data) {
-        renderHome(cached.data);
+        // What changed meanwhile (taken out of "Weiter schauen", off the list)
+        // stays out.
+        const data = {
+          ...cached.data,
+          resume: (cached.data.resume || []).filter(item => !hiddenResumeIds.has(item.Id)),
+          watchlist: (cached.data.watchlist || []).filter(item => !watchlistStore.isLoaded?.() || watchlistStore.has(item.Id))
+        };
+        currentData = data;
+        saveRouteState(HOME_ROUTE, { ...cached, data });
+        renderHome(data);
         restoreScrollPosition(restoreTarget);
         return;
       }
@@ -147,19 +160,9 @@ export default function HomePage(params, pageScope) {
     return skeleton;
   };
 
-  const renderEmptySection = (section) => (
-    createElement('div', { className: 'media-carousel-container media-section-empty' },
-      createElement('div', { className: 'carousel-header' },
-        createElement('h3', { className: 'carousel-title-text' }, section.title)
-      ),
-      createElement('p', { className: 'section-empty-message' }, section.emptyMessage)
-    )
-  );
-
+  // A row without titles is left out instead of standing there empty.
   const renderSection = (section) => {
-    if (!section.items || section.items.length === 0) {
-      return section.emptyMessage ? renderEmptySection(section) : null;
-    }
+    if (!section.items || section.items.length === 0) return null;
 
     if (section.type === 'featured') {
       return FeaturedMediaCarousel({
@@ -265,7 +268,10 @@ export default function HomePage(params, pageScope) {
         landscape: false,
         href: '#/watchlist'
       });
-      if (watchlistCarousel) sectionsContainer.appendChild(watchlistCarousel);
+      if (watchlistCarousel) {
+        watchlistCarousel.dataset.watchlistRow = '';
+        sectionsContainer.appendChild(watchlistCarousel);
+      }
     }
 
     if (data.sections) {
@@ -284,7 +290,55 @@ export default function HomePage(params, pageScope) {
     container.appendChild(sectionsContainer);
   };
 
+  // The screensaver after a while without input on this page (settings:
+  // on/off and how long, applied as soon as they change). It never keeps
+  // the device awake.
+  const bindScreensaver = () => {
+    let watch = null;
+    let current = null;
+    const apply = (prefs) => {
+      const wanted = prefs.screensaverEnabled ? prefs.screensaverMinutes : null;
+      if (wanted === current) return;
+      current = wanted;
+      watch?.stop();
+      watch = null;
+      if (!wanted) return;
+      const idle = createIdleWatch({
+        timeoutMs: wanted * 60 * 1000,
+        onIdle: async () => {
+          if (!container.isConnected || signal.aborted) return;
+          idle.stop();
+          const handle = await startScreensaver({
+            pageScope: scope,
+            onClose: () => {
+              if (!signal.aborted && watch === idle) idle.start();
+            }
+          });
+          if (!handle && !signal.aborted && watch === idle) idle.start();
+        }
+      });
+      watch = idle;
+      idle.start();
+    };
+    apply(preferencesStore.getState());
+    const unsubscribe = preferencesStore.subscribe(apply);
+    scope.onLeave(() => {
+      unsubscribe?.();
+      watch?.stop();
+    });
+  };
+
+  // A title taken off "Meine Liste" (context menu, another tab) leaves its row.
+  const unsubscribeWatchlist = watchlistStore.subscribe(({ ids }) => {
+    if (!watchlistStore.isLoaded?.()) return;
+    container.querySelectorAll('[data-watchlist-row] [data-item-id]').forEach(card => {
+      if (!ids.has(card.dataset.itemId)) removeCard(card);
+    });
+  });
+  scope.onLeave(() => unsubscribeWatchlist());
+
   loadData();
+  bindScreensaver();
 
   return container;
 }

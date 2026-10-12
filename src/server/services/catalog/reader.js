@@ -146,6 +146,19 @@ export function createCatalogReader(db) {
     searchPeople: ({ query, libraryIds = null, limit = 12 }) =>
       rankPeople(entries(), { query, libraryIds, limit }),
 
+    // Titles with a backdrop for the screensaver: new and well rated ones
+    // first, in a random order. `random` is injectable for tests.
+    screensaver: ({ libraryIds = null, limit = 30, random = Math.random } = {}) => {
+      const withBackdrop = select({ types: ['Movie', 'Series'], libraryIds }, { sort: 'newest' })
+        .filter(item => Array.isArray(item.BackdropImageTags) && item.BackdropImageTags.length > 0);
+      const newest = withBackdrop.slice(0, limit);
+      const rated = [...withBackdrop].sort((a, b) => (b.CommunityRating || 0) - (a.CommunityRating || 0)).slice(0, limit);
+      const rest = withBackdrop.filter(item => !newest.includes(item) && !rated.includes(item));
+      const shuffle = list => list.map(item => [random(), item]).sort((a, b) => a[0] - b[0]).map(([, item]) => item);
+      const preferred = shuffle([...new Set([...newest, ...rated])]);
+      return [...preferred, ...shuffle(rest)].slice(0, limit);
+    },
+
     all: ({ libraryIds = null, withTrailer = false, limit = null } = {}) =>
       select({ types: ['Movie', 'Series'], libraryIds, withTrailer }, { limit }),
 

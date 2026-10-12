@@ -14,9 +14,9 @@ const LIBRARIES = [
 
 const ITEMS = [
   { Id: 'm1', Type: 'Movie', Name: 'Dune', SortName: 'dune', LibraryId: 'lib-a', DateCreated: '2026-03-01', Genres: ['Sci-Fi', 'Drama'], Studios: [{ Name: 'Warner Bros.' }], ProviderIds: { Tmdb: '438631', Imdb: 'tt1160419' }, RemoteTrailers: [{ Url: 'x' }] },
-  { Id: 'm2', Type: 'Movie', Name: 'Heat', SortName: 'heat', LibraryId: 'lib-a', DateCreated: '2026-01-01', Genres: ['Drama'], Studios: [{ Name: 'Warner Bros.' }], ProviderIds: { Tmdb: '949' } },
+  { Id: 'm2', Type: 'Movie', Name: 'Heat', SortName: 'heat', LibraryId: 'lib-a', DateCreated: '2026-01-01', Genres: ['Drama'], Studios: [{ Name: 'Warner Bros.' }], ProviderIds: { Tmdb: '949' }, BackdropImageTags: ['b2'], CommunityRating: 8 },
   { Id: 'm3', Type: 'Movie', Name: 'Alien', SortName: 'alien', OriginalTitle: 'Alien', LibraryId: 'lib-b', DateCreated: '2026-02-01', Genres: ['Horror', 'Sci-Fi'], Studios: [{ Name: '20th Century Fox' }], ProviderIds: { Tmdb: '348' } },
-  { Id: 's1', Type: 'Series', Name: 'Dark', SortName: 'dark', LibraryId: 'lib-s', DateCreated: '2026-04-01', Genres: ['Drama'], Studios: [{ Name: 'Netflix' }], ProviderIds: { Tmdb: '70523' }, RemoteTrailers: [{ Url: 'y' }] },
+  { Id: 's1', Type: 'Series', Name: 'Dark', SortName: 'dark', LibraryId: 'lib-s', DateCreated: '2026-04-01', Genres: ['Drama'], Studios: [{ Name: 'Netflix' }], ProviderIds: { Tmdb: '70523' }, RemoteTrailers: [{ Url: 'y' }], BackdropImageTags: ['b1'] },
   { Id: 's2', Type: 'Series', Name: 'Der Pass', SortName: 'pass', LibraryId: 'lib-s', DateCreated: '2025-12-01', Genres: ['Krimi'], Studios: [] }
 ];
 
@@ -106,6 +106,30 @@ describe('CatalogReader', () => {
 
     it('respects the visible libraries', () => {
       expect(reader.search({ query: 'a', libraryIds: ['lib-s'] }).every(item => item.Type === 'Series')).toBe(true);
+    });
+  });
+
+  describe('decades', () => {
+    it('lists nothing for titles without a year or libraries the user cannot see', () => {
+      expect(reader.decades()).toEqual([]);
+      expect(reader.decades({ libraryIds: [] })).toEqual([]);
+    });
+  });
+
+  describe('screensaver', () => {
+    it('only offers titles with a backdrop the user may see', () => {
+      const items = reader.screensaver({ random: () => 0.5 });
+      expect(items.map(item => item.Id).sort()).toEqual(['m2', 's1']);
+      expect(reader.screensaver({ libraryIds: ['lib-s'] }).map(item => item.Id)).toEqual(['s1']);
+      expect(reader.screensaver({ libraryIds: [] })).toEqual([]);
+    });
+
+    it('picks among the newest and the best rated titles only', () => {
+      // limit 1: the newest with a backdrop is Dark, the best rated Heat.
+      const rising = () => { let n = 0; return () => (n += 1); };
+      const falling = () => { let n = 0; return () => (n -= 1); };
+      expect(ids(reader.screensaver({ limit: 1, random: rising() }))).toEqual(['s1']);
+      expect(ids(reader.screensaver({ limit: 1, random: falling() }))).toEqual(['m2']);
     });
   });
 

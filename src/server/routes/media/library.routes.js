@@ -6,11 +6,18 @@ import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { UserDataService } from '../../services/user-data.service.js';
+import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
+import { requireValidId } from '../../utils/ids.js';
 
 // A list restored after a detail visit asks for everything it showed at once:
 // up to 20 batches of 36 cards.
 export const MAX_LIBRARY_LIMIT = 720;
-import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
+
+// Titles the search page shows; with "ungesehen" more are looked at first,
+// so the watched ones can drop out before the list is cut.
+const SEARCH_LIMIT = 60;
+const UNWATCHED_POOL = 200;
+const USER_DATA_BATCH = 100;
 
 const router = express.Router();
 
@@ -71,17 +78,32 @@ export function parseSearchFilters(query = {}) {
 
 router.get('/search/full', requireAuth, jellyfinRoute('Media Search Error', 'Failed to search media items', async (req, res) => {
   const { userId, accessToken } = req.session;
-  const query = String(req.query.q || '').slice(0, 100);
+  const query = String(req.query.q || '').slice(0, 100).trim();
   const filters = parseSearchFilters(req.query);
   const hasFilter = filters.types.length || filters.genres.length || filters.decade !== null || filters.maxAge !== null || filters.unwatched;
-  if (!query.trim() && !hasFilter) return res.json({ items: [], people: [] });
+  if (!query && !hasFilter) return res.json({ items: [], people: [] });
 
-  const result = await LibraryService.searchFull(userId, accessToken, query, { ...filters, peopleToo: Boolean(query.trim()) });
+  const result = await LibraryService.searchFull(userId, accessToken, query, { ...filters, peopleToo: Boolean(query) },
+    { limit: filters.unwatched ? UNWATCHED_POOL : SEARCH_LIMIT });
   if (filters.unwatched && result.items.length) {
-    const state = await UserDataService.forItems(userId, accessToken, result.items.map(item => item.Id));
+    const ids = result.items.map(item => item.Id);
+    const state = {};
+    for (let i = 0; i < ids.length; i += USER_DATA_BATCH) {
+      Object.assign(state, await UserDataService.forItems(userId, accessToken, ids.slice(i, i + USER_DATA_BATCH)));
+    }
     result.items = result.items.filter(item => state[item.Id]?.played !== true);
   }
+  result.items = result.items.slice(0, SEARCH_LIMIT);
   return res.json(result);
+}));
+
+router.get('/search/decades', requireAuth, jellyfinRoute('Media Decades Error', 'Failed to fetch decades', async (req, res) => {
+  res.json({ decades: await LibraryService.getDecades(req.session.userId, req.session.accessToken) });
+}));
+
+router.get('/screensaver', requireAuth, jellyfinRoute('Screensaver Error', 'Bildschirmschoner konnte nicht geladen werden', async (req, res) => {
+  const limit = Math.max(1, Math.min(60, parseInt(req.query.limit) || 30));
+  res.json({ items: await LibraryService.getScreensaverItems(req.session.userId, req.session.accessToken, limit) });
 }));
 
 router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Failed to fetch item details', async (req, res) => {
@@ -117,26 +139,22 @@ router.get('/item/:id/episodes', requireAuth, jellyfinRoute('Media Episodes Erro
   return res.json(episodes);
 }));
 
-const setPlayed = (played) => asyncHandler(async (req, res) => {
+// "Als gesehen markieren" and back, for a film, an episode, a season or a
+// whole series (Jellyfin applies it to every episode below). The progress
+// cache of the user starts over, so every card shows the new state.
+const setPlayed = (played) => jellyfinRoute('Media Played Error', played ? 'Failed to mark as played' : 'Failed to mark as unplayed', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  try {
-    const userData = played
-      ? await PlaybackApiService.markPlayed(userId, accessToken, id)
-      : await PlaybackApiService.markUnplayed(userId, accessToken, id);
-    return res.json({ played, userData });
-  } catch (error) {
-    console.error('[Media Played Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: played ? 'Failed to mark as played' : 'Failed to mark as unplayed' });
-  }
+  const userData = played
+    ? await PlaybackApiService.markPlayed(userId, accessToken, id)
+    : await PlaybackApiService.markUnplayed(userId, accessToken, id);
+  UserDataService.forget(userId);
+  return res.json({ played, userData });
 });
 
-router.post('/item/:id/played', requireAuth, setPlayed(true));
-router.delete('/item/:id/played', requireAuth, setPlayed(false));
+router.post('/item/:id/played', requireAuth, requireValidId, setPlayed(true));
+router.delete('/item/:id/played', requireAuth, requireValidId, setPlayed(false));
 
 router.get('/genres', requireAuth, jellyfinRoute('Media Genres Error', 'Failed to fetch genres', async (req, res) => {
   const { userId, accessToken } = req.session;

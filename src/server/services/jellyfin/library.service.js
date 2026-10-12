@@ -6,8 +6,21 @@ import { findNextEpisode } from '../../../player/src/nextEpisode.js';
 import { getActiveCatalogReader } from '../catalog/reader.js';
 import { getVisibleLibraryIds } from '../catalog/visibility.js';
 import { visibleResumeItems } from '../resume-visibility.js';
+import { itemMatchesFilters } from '../catalog/search.js';
 
 const NEXT_EPISODE_PROGRESS_THRESHOLD = 90;
+
+// "Weiter schauen" shows this many; more are fetched, since hidden series
+// and finished episodes drop out before the row is cut to size.
+export const RESUME_LIMIT = 12;
+const RESUME_FETCH_LIMIT = 36;
+// Only what can be played on: films and episodes (never a season or a
+// series as such).
+const RESUMABLE_TYPES = ['Movie', 'Episode', 'Video'];
+
+// The search without the catalogue filters what Jellyfin found itself, so
+// it asks for more than it shows.
+const FALLBACK_SEARCH_POOL = 200;
 
 // Browsing reads come from the local catalogue mirror whenever it is filled;
 // Jellyfin stays the fallback for a fresh install and for everything per-user
@@ -62,6 +75,10 @@ async function resolveResumeItem(userId, token, item) {
   return next?.episode || null;
 }
 
+// An entry of the row may only be a film or an episode; the next episode
+// found above carries no Type when Jellyfin left it out.
+const isResumableEntry = (item) => !item?.Type || RESUMABLE_TYPES.includes(item.Type);
+
 function dedupeById(items) {
   const seen = new Set();
   const result = [];
@@ -76,20 +93,25 @@ function dedupeById(items) {
 }
 
 export class LibraryService {
+  // Resolved a row's worth at a time (each near-finished episode costs a
+  // look at its series), until the row is full or nothing is left.
   static async getResumeItems(userId, token) {
     const data = await getItems(userId, token, {
       Filters: 'IsResumable',
+      IncludeItemTypes: RESUMABLE_TYPES.join(','),
       Recursive: 'true',
       SortBy: 'DatePlayed',
       SortOrder: 'Descending',
-      Limit: 12
+      Limit: RESUME_FETCH_LIMIT
     });
 
-    const resolved = await Promise.all(
-      visibleResumeItems(userId, data.Items || []).map(item => resolveResumeItem(userId, token, item))
-    );
-
-    return dedupeById(resolved.filter(Boolean));
+    const candidates = visibleResumeItems(userId, (data.Items || []).filter(isResumableEntry));
+    let result = [];
+    for (let i = 0; i < candidates.length && result.length < RESUME_LIMIT; i += RESUME_LIMIT) {
+      const resolved = await Promise.all(candidates.slice(i, i + RESUME_LIMIT).map(item => resolveResumeItem(userId, token, item)));
+      result = dedupeById([...result, ...resolved.filter(item => item && isResumableEntry(item))]);
+    }
+    return result.slice(0, RESUME_LIMIT);
   }
 
   static async getMovies(userId, token) {
@@ -137,22 +159,43 @@ export class LibraryService {
   }
 
   // The search page: ranked titles (typo-tolerant, filtered) and matching
-  // people. Without the catalogue Jellyfin answers the titles alone.
-  static async searchFull(userId, token, query, filters = {}) {
+  // people. Without the catalogue Jellyfin answers the titles alone, with
+  // the same filters applied to what it found.
+  static async searchFull(userId, token, query, filters = {}, { limit = 60 } = {}) {
+    const text = String(query || '').trim();
     const mirrored = await fromCatalog(userId, token, (reader, libraryIds) => ({
-      items: reader.search({ query, libraryIds, filters, limit: 60 }),
-      people: filters.peopleToo === false ? [] : reader.searchPeople({ query, libraryIds })
+      items: reader.search({ query: text, libraryIds, filters, limit }),
+      people: filters.peopleToo === false ? [] : reader.searchPeople({ query: text, libraryIds })
     }));
     if (mirrored) return mirrored;
 
-    if (!query) return { items: [], people: [] };
-    const data = await getItems(userId, token, {
-      SearchTerm: query,
+    const hasFilter = filters.types?.length || filters.genres?.length || Number.isFinite(filters.decade) || Number.isFinite(filters.maxAge) || filters.unwatched;
+    if (!text && !hasFilter) return { items: [], people: [] };
+    const params = {
       IncludeItemTypes: filters.types?.length ? filters.types.join(',') : 'Movie,Series',
       Recursive: 'true',
-      Limit: 60
-    });
-    return { items: data.Items || [], people: [] };
+      Fields: `${COMMON_ITEM_FIELDS},OfficialRating`,
+      Limit: FALLBACK_SEARCH_POOL
+    };
+    // A text search keeps Jellyfin's own order; a filter alone goes by name.
+    if (text) params.SearchTerm = text;
+    else Object.assign(params, { SortBy: 'SortName', SortOrder: 'Ascending' });
+    if (filters.genres?.length) params.Genres = filters.genres.join('|');
+    if (filters.unwatched) params.Filters = 'IsUnplayed';
+    const data = await jellyfinJson(`/Users/${userId}/Items`, { token, query: params });
+    const items = (data.Items || []).filter(item => itemMatchesFilters(item, filters)).slice(0, limit);
+    return { items, people: [] };
+  }
+
+  // The screensaver's titles; without the catalogue there are none.
+  static async getScreensaverItems(userId, token, limit = 30) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) => reader.screensaver({ libraryIds, limit }));
+    return mirrored || [];
+  }
+
+  // Null without the catalogue: then every decade stays on offer.
+  static async getDecades(userId, token) {
+    return fromCatalog(userId, token, (reader, libraryIds) => reader.decades({ libraryIds }));
   }
 
   static async getGenres(userId, token, type) {
