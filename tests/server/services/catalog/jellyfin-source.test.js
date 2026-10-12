@@ -108,4 +108,28 @@ describe('createJellyfinCatalogSource', () => {
     const result = await createJellyfinCatalogSource({ fetchJson }).listLibraryItems('lib-m');
     expect(result).toEqual([]);
   });
+
+  it('asks Jellyfin not to fold movies into box sets', async () => {
+    const { fetchJson, calls } = fakeJellyfin({ 'lib-m': [item('m1')] });
+    await createJellyfinCatalogSource({ fetchJson }).listLibraryItems('lib-m');
+
+    expect(calls[0].options.query.CollapseBoxSetItems).toBe('false');
+  });
+
+  it('skips box sets and other types instead of failing the sync, and still pages correctly', async () => {
+    const log = { warn: vi.fn() };
+    const library = [
+      item('m1'),
+      item('b1', { Type: 'BoxSet' }),
+      item('s1', { Type: 'Series' }),
+      item('f1', { Type: 'Folder' }),
+      item('m2')
+    ];
+    const { fetchJson } = fakeJellyfin({ 'lib-m': library });
+
+    const items = await createJellyfinCatalogSource({ fetchJson, pageSize: 2, log }).listLibraryItems('lib-m');
+
+    expect(items.map(entry => entry.Id)).toEqual(['m1', 's1', 'm2']);
+    expect(log.warn).toHaveBeenCalledTimes(2);
+  });
 });
