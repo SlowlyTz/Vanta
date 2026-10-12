@@ -67,7 +67,11 @@ async function suggestTvMode() {
 document.addEventListener('DOMContentLoaded', () => {
   applyTvUrlOverride();
   const tv = isTvMode();
-  if (tv) import('./tv/index.js').then(module => module.startTvMode());
+  if (tv) {
+    import('./tv/index.js').then(module => module.startTvMode({
+      sidebar: { isOpen: () => router.tvSidebar?.isOpen() === true, close: () => router.tvSidebar?.close() }
+    }));
+  }
   bindSkipLink();
   mountWatchPartyInvitationOverlay();
   mountOfflineOverlay();

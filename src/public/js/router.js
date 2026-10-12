@@ -2,8 +2,9 @@ import { authStore } from './store/auth.store.js';
 import { createElement } from './utils/dom.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
 import { checkServerBuild } from './utils/appVersion.js';
-import { Navbar } from './components/navbar/Navbar.js';
+import { Navbar, startScreensaverNow } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
+import { TvSidebar } from './components/tv/TvSidebar.js';
 import { createPageScope, runInPageScope, setActivePageScope } from './utils/pageScope.js';
 import { ensurePageStyles } from './utils/pageStyles.js';
 import { prefersReducedMotion } from './utils/motion.js';
@@ -14,8 +15,12 @@ import { prefersReducedMotion } from './utils/motion.js';
 export function focusAutofocusTarget(pageElement) {
   if (!pageElement) return null;
 
+  // On a TV a focused text field opens the system keyboard; the focus engine
+  // starts there instead.
+  const tv = document.documentElement.classList.contains('tv-mode');
   for (const target of pageElement.querySelectorAll('[data-autofocus]')) {
     if (target.hidden || target.closest('[hidden], .hidden')) continue;
+    if (tv && target.matches('input, textarea')) return null;
     try {
       target.focus({ preventScroll: true });
     } catch {
@@ -99,6 +104,19 @@ export class Router {
       tabindex: '-1'
     });
 
+    // TV mode: a sidebar instead of the navbar and footer. The navbar is
+    // still made, for the dialogs it owns (settings, watch party).
+    if (document.documentElement.classList.contains('tv-mode')) {
+      this.tvSidebar = TvSidebar({
+        onOpenSettings: () => this.navbar.openSettings(),
+        onOpenWatchParty: () => this.navbar.openWatchParty(),
+        onOpenScreensaver: () => startScreensaverNow()
+      });
+      this.main.dataset.tvGroup = 'content';
+      this.shell = createElement('div', { className: 'app-shell tv-shell' }, this.tvSidebar.element, this.main);
+      return;
+    }
+
     this.shell = createElement('div', { className: 'app-shell' },
       this.navbar.element,
       this.main,
@@ -126,6 +144,7 @@ export class Router {
 
   updateShellState(hash = window.location.hash || '#/home', user = authStore.getState().user) {
     if (!this.navbar) return;
+    this.tvSidebar?.update({ currentHash: hash, user });
 
     this.navbar.update({
       currentHash: hash,
@@ -202,6 +221,12 @@ export class Router {
 
     if (!hash.startsWith('#/')) {
       hash = '#/home';
+    }
+
+    // The admin area is not part of the TV interface.
+    if (hash.startsWith('#/admin') && document.documentElement.classList.contains('tv-mode')) {
+      window.location.hash = '#/home';
+      return;
     }
 
     const match = this.findRoute(hash);

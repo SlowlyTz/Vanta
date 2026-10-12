@@ -172,13 +172,27 @@ export function bindFocusEngine(engine, { win = window } = {}) {
     event.preventDefault();
     engine.move(direction);
   };
+  // A page fills in after its data arrived: until something of it can take
+  // the focus (and as long as the viewer has not moved), try again.
+  let retry = null;
   const onPage = event => {
-    // The page has just been attached; its layout settles in the next frame.
-    win.requestAnimationFrame(() => engine.restore(event.detail?.hash));
+    win.clearTimeout(retry);
+    const hash = event.detail?.hash;
+    let tries = 0;
+    const attempt = () => {
+      engine.restore(hash);
+      const content = win.document.getElementById('main-content');
+      const landed = content?.contains(win.document.activeElement) || win.document.activeElement?.closest?.('[data-tv-focus-root]');
+      if (!landed && ++tries < 20) retry = win.setTimeout(attempt, 200);
+    };
+    win.requestAnimationFrame(attempt);
   };
+  const stopRetry = () => win.clearTimeout(retry);
+  win.addEventListener('keydown', stopRetry, true);
   win.addEventListener('keydown', onKey);
   win.addEventListener('vanta:page-shown', onPage);
   return () => {
+    win.removeEventListener('keydown', stopRetry, true);
     win.removeEventListener('keydown', onKey);
     win.removeEventListener('vanta:page-shown', onPage);
   };

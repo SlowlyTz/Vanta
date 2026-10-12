@@ -174,5 +174,11 @@ export function Navbar({ onLogout, onChangePassword }) {
     settingsDialog.setAdminBadge(adminTotal);
   });
 
-  return { element, update, setScrolled };
+  return {
+    element,
+    update,
+    setScrolled,
+    openSettings: () => settingsDialog.setSettingsOpen(true),
+    openWatchParty: () => watchPartyDialog.open()
+  };
 }

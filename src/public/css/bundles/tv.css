@@ -61,3 +61,132 @@ html.tv-mode .media-card.tv-focus .media-card-image-container {
 html.tv-mode .carousel-arrow {
   display: none !important;
 }
+
+/* The shell: sidebar left, content right, both inside the safe area. */
+html.tv-mode .tv-shell {
+  --tv-sidebar-width: 5.5rem;
+  min-height: 100vh;
+}
+
+html.tv-mode .tv-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  width: calc(var(--tv-sidebar-width) + var(--tv-safe-x));
+  padding: var(--tv-safe-y) 0.75rem var(--tv-safe-y) var(--tv-safe-x);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: linear-gradient(90deg, rgba(5, 5, 7, 0.96) 60%, rgba(5, 5, 7, 0));
+  overflow: hidden;
+  transition: width 160ms ease !important;
+}
+
+html.tv-mode .tv-sidebar:focus-within {
+  width: calc(16rem + var(--tv-safe-x));
+  background: linear-gradient(90deg, rgba(5, 5, 7, 0.98) 80%, rgba(5, 5, 7, 0.4));
+}
+
+html.tv-mode .tv-sidebar-brand img {
+  width: 3rem;
+  height: auto;
+  margin-left: 0.6rem;
+}
+
+html.tv-mode .tv-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+html.tv-mode .tv-sidebar-item[hidden] {
+  display: none;
+}
+
+html.tv-mode .tv-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: 0.8rem;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+html.tv-mode .tv-sidebar-link.active {
+  color: #fff;
+}
+
+html.tv-mode .tv-sidebar-link.active .tv-sidebar-icon::after {
+  content: '';
+  position: absolute;
+  left: -0.6rem;
+  top: 50%;
+  width: 4px;
+  height: 1.4rem;
+  border-radius: 2px;
+  background: #fff;
+  transform: translateY(-50%);
+}
+
+html.tv-mode .tv-sidebar-link.tv-focus,
+html.tv-mode .tv-sidebar-link:focus-visible {
+  background: #fff;
+  color: #0b0b0d;
+  box-shadow: none;
+  transform: none;
+}
+
+html.tv-mode .tv-sidebar-icon {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+html.tv-mode .tv-sidebar-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+html.tv-mode .tv-sidebar-label {
+  opacity: 0;
+  transition: opacity 120ms ease !important;
+}
+
+html.tv-mode .tv-sidebar:focus-within .tv-sidebar-label {
+  opacity: 1;
+}
+
+html.tv-mode .tv-shell .app-main {
+  padding-left: calc(var(--tv-sidebar-width) + var(--tv-safe-x) + 1rem);
+  padding-right: var(--tv-safe-x);
+  padding-bottom: var(--tv-safe-y);
+}
+
+html.tv-mode .tv-shell .page-container {
+  max-width: none;
+}
+
+html.tv-mode .skip-link {
+  display: none;
+}
+
+html.tv-mode .tv-sidebar-icon > * {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+html.tv-mode .tv-sidebar-icon svg {
+  width: 100%;
+  height: 100%;
+}
