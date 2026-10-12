@@ -1,0 +1,74 @@
+/* "Schaust du noch?" and the sleep timer warning: small panels over the paused video. */
+.vanta-still-watching {
+  position: absolute;
+  inset: 0;
+  z-index: 62;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(6 6 8 / 0.62);
+  color: #fff;
+  font-family: Outfit, system-ui, sans-serif;
+}
+
+.vanta-still-watching[hidden] {
+  display: none;
+}
+
+.vanta-player-root.is-still-watching .vanta-player-controls-layer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vanta-still-watching-panel {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 18px;
+  background: rgb(18 18 22 / 0.92);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.55);
+  text-align: center;
+}
+
+.vanta-still-watching-panel h2 {
+  font: 750 1.5rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-still-watching-panel p {
+  color: rgb(255 255 255 / 0.72);
+  font-size: 0.95rem;
+}
+
+.vanta-still-watching-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.vanta-still-watching-actions button {
+  flex: 1 1 0;
+  min-height: 48px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  font: 650 1rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.vanta-still-watching-actions .vanta-still-watching-yes {
+  border-color: transparent;
+  background: #fff;
+  color: #0b0b0d;
+}
+
+.vanta-still-watching-actions button:hover {
+  filter: brightness(1.1);
+}
+
+.vanta-still-watching-actions button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}

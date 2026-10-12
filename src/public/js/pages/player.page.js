@@ -4,6 +4,8 @@ import { loadEpisodeContext } from '../utils/episodeContext.js';
 import { router } from '../router.js';
 import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
 import { resolvePageScope } from '../utils/pageScope.js';
+import { preferencesStore } from '../store/preferences.store.js';
+import { createIdleCarry } from '../utils/stillWatchingCarry.js';
 
 export default function PlayerPage({ id }, pageScope) {
   const scope = resolvePageScope(pageScope);
@@ -15,6 +17,10 @@ export default function PlayerPage({ id }, pageScope) {
   let playableId = id;
   let cleaningUp = false;
   let scrollLockY = 0;
+  // Playback without input so far; carried over to the next episode, so
+  // "Schaust du noch?" also comes during a long autoplay chain.
+  const idleCarry = createIdleCarry();
+  let idleMs = idleCarry.take();
 
   const handleTouchMove = event => {
     if (event.target.closest('media-player, button')) return;
@@ -57,6 +63,7 @@ export default function PlayerPage({ id }, pageScope) {
   // episodes in-player doesn't leave a trail of stale player entries that "Zurück"
   // would have to click through before reaching the series page.
   const navigateToEpisode = episodeId => {
+    idleCarry.give(idleMs);
     window.history.replaceState(
       window.history.state,
       '',
@@ -134,6 +141,11 @@ export default function PlayerPage({ id }, pageScope) {
         }),
         resumePosition,
         onBack: goBack,
+        stillWatching: {
+          afterMs: preferencesStore.get('stillWatchingHours') * 60 * 60 * 1000,
+          initialIdleMs: idleMs,
+          onIdleChange: value => { idleMs = value; }
+        },
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,

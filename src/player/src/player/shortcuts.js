@@ -103,7 +103,7 @@ export function bindShortcuts(context) {
 
   listen(document, 'keydown', event => {
     if (event.defaultPrevented || context.destroyed) return;
-    if (context.settingsOpen || context.helpOpen || isTypingTarget(event.target)) return;
+    if (context.settingsOpen || context.helpOpen || context.stillWatchingOpen || isTypingTarget(event.target)) return;
     const id = shortcutForKey(event);
     if (!id) return;
     const entry = KEYBOARD_SHORTCUTS.find(shortcut => shortcut.id === id);

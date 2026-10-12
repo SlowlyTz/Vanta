@@ -27,6 +27,7 @@ import { createMediaSession } from './mediaSession.js';
 import { bindPreferences } from './preferences.js';
 import { createHelpOverlay } from './help.js';
 import { bindSegments } from './segments.js';
+import { bindStillWatching } from './stillWatching.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -46,6 +47,7 @@ export async function mountVantaPlayer(options) {
   bindSegments(context, { loadSegments: context.loadSegments });
   bindSyncControls(context);
   bindTimelineWatchdog(context);
+  bindStillWatching(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);
 }
