@@ -92,6 +92,8 @@ Run tests:
 npm test
 ```
 
+After `npm run build`, `npm run check:legacy` checks that the built scripts parse in Chromium 68 (the TV browsers below). With a running server, `npm run test:e2e` drives a headless Chromium through the TV interface (arrow keys only, at 1920, 1280 and 960 px) and the trailer scroller; it needs `VANTA_E2E_URL`, `VANTA_E2E_USER` and `VANTA_E2E_PASSWORD` and writes screenshots to `tests/e2e/output`.
+
 ### Versioning
 
 Every release has a number like `1.01`: the part after the dot counts up per release branch (`1.01`, `1.02`, …) until the next minor release (`1.1`). The number lives in `src/public/js/shared/version.js` (`APP_VERSION`); `package.json` carries the same number as semver (`1.01` is `1.0.1`, `1.1` is `1.1.0`), and a test keeps both in step. Bump both with every release.
@@ -132,7 +134,7 @@ VANTA adds app-level workflows and playback features on top of Jellyfin:
   - **Stream limit**: switching audio track, quality or to HLS names the session it replaces, so it never counts as a second stream; a real stream-limit error shows a popup and returns home.
 - **Mobile-first player behavior**: the player never demands landscape; its fullscreen button turns a phone's video sideways where the browser allows it (Android) and fills the screen on an iPhone, keeping the VANTA controls instead of falling back to the native iOS video player.
 - **Opening scene**: a three.js particle animation of the VANTA logo covers every page load before anything of the app is visible. It plays at most once per ten minutes per browser (`localStorage` key `vanta.intro.lastPlayedAt`) and is skipped on `#/player/…` and `#/watch-party/…` deep links. Source in `src/intro/`, built to `src/public/vendor/scenes/`.
-- **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata.
+- **Trailer scroller**: dedicated trailer feed using YouTube trailers derived from Jellyfin metadata; only the trailer in view has a player, and trailers YouTube no longer plays (private, removed) are left out (checked through YouTube's oEmbed answer, cached for a day).
 - **Publisher/studio hubs**: curated publisher views for studios and services such as Disney, Warner Bros., Netflix, Apple TV, Prime Video, and HBO.
 - **Admin user tools**: manage Jellyfin users from VANTA, including user details, password changes, library access, local bans, and VANTA-specific stream limits. A ban takes effect at once: the user's sessions end, their Jellyfin tokens are revoked, open apps and watch parties are disconnected, and every tab lands on the login with the reason. Every authenticated request checks the ban list (kept in memory, re-read within a second when `db/user/banned.json` changes).
 - **User rules outside Jellyfin**: local ban lists, rejected-request lists, and per-user VANTA settings stored separately from Jellyfin.
@@ -154,14 +156,15 @@ Push uses the Web Push standard with VAPID keys VANTA makes itself on the first 
 
 ## TV Mode
 
-On a Samsung (Tizen), LG (webOS), Android/Google TV or Fire TV browser VANTA switches to a 10-foot interface by itself; a screen that only looks like a TV is asked once, and every device can switch it under Einstellungen → Darstellung or with `?tv=1` / `?tv=0` in the address (kept per device in `localStorage`, `vanta.tvMode`).
+TV browsers from about 2020 on are supported (Chromium 68: webOS 5, Tizen 5.5 and newer): the build lowers the syntax to them and `js/polyfills.js` adds the few missing APIs. On a Samsung (Tizen), LG (webOS), Android/Google TV or Fire TV browser VANTA switches to a 10-foot interface by itself; a screen that only looks like a TV is asked once, and every device can switch it under Einstellungen → Darstellung or with `?tv=1` / `?tv=0` in the address (kept per device in `localStorage`, `vanta.tvMode`).
 
-- a sidebar instead of the navbar, larger type, a safe area against overscan, no blur
-- the arrow keys move the focus to the nearest element (rows keep left/right, rows and groups remember their last focus, open dialogs keep the focus, every page brings back its focus with „Zurück“); OK activates; Back closes a dialog, the sidebar or the player and asks before leaving the app from the home page
+- one scale for every TV (1rem is 1.25 % of the screen width), a sidebar instead of the navbar, a safe area against overscan, no blur; the admin area is not part of it
+- the arrow keys move the focus to the nearest element (rows keep left/right, columns such as the sidebar and the search results keep up/down, rows and groups remember their last focus, open dialogs keep the focus, every page brings back its focus with „Zurück“); OK activates; the menu key opens the actions of a card (Meine Liste, gesehen); Back closes a dialog, steps back in the settings, closes the sidebar or the player and asks before leaving the app from the home page
+- the settings as a full screen with the areas that make sense on a TV (playback, appearance, account)
 - an on-screen keyboard (next to the results in the search, over the page for any other field)
 - in the player: OK pauses, holding left/right spools faster with the target time shown, up/down bring the controls; media keys work
 - sign in with a phone: the TV shows a code and a QR code; a signed-in phone confirms it under `#/connect` (also Einstellungen → Geräte → „Fernseher verbinden“). This approves a Jellyfin Quick Connect request, so the TV gets a session and token of its own — Quick Connect must be enabled in Jellyfin (Dashboard → Allgemein). Codes last five minutes, work once and are throttled like passwords.
-- Tizen and webOS browsers get a device profile that plays HEVC, AC3/E-AC3 and MKV directly; anything they cannot play falls back to HLS.
+- Tizen and webOS browsers get a device profile that plays HEVC, AC3/E-AC3 and MKV directly (every other client keeps HLS); a file that does not start within 20 seconds falls back to HLS.
 
 ## Watch Party Sync
 
