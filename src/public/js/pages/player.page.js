@@ -5,7 +5,7 @@ import { router } from '../router.js';
 import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { preferencesStore } from '../store/preferences.store.js';
-import { createPlayerCarry } from '../utils/playerCarry.js';
+import { createPlayerCarry, sleepForNextEpisode } from '../utils/playerCarry.js';
 
 // `#/item/<id>` (also with a query) names the detail page playback started from.
 const originItemId = (hash) => /^#\/item\/([^/?]+)/.exec(hash || '')?.[1] || null;
@@ -73,8 +73,8 @@ export default function PlayerPage({ id }, pageScope) {
   // Replaces the current history entry instead of pushing a new one, so switching
   // episodes in-player doesn't leave a trail of stale player entries that "Zurück"
   // would have to click through before reaching the series page.
-  const navigateToEpisode = episodeId => {
-    playerCarry.give({ idleMs, sleep: sleepState, originId, originInHistory });
+  const navigateToEpisode = (episodeId, { manual = false } = {}) => {
+    playerCarry.give({ idleMs, sleep: sleepForNextEpisode(sleepState, { manual }), originId, originInHistory });
     window.history.replaceState(
       window.history.state,
       '',
@@ -155,6 +155,7 @@ export default function PlayerPage({ id }, pageScope) {
         resumePosition,
         onBack: goBack,
         userPreferences: preferencesStore.getState(),
+        tvMode: document.documentElement.classList.contains('tv-mode'),
         onUserPreferenceChange: patch => { preferencesStore.update(patch).catch(() => {}); },
         stillWatching: {
           afterMs: preferencesStore.get('stillWatchingHours') * 60 * 60 * 1000,
@@ -177,7 +178,7 @@ export default function PlayerPage({ id }, pageScope) {
           readonly: false,
           onSelectEpisode: async episode => {
             await cleanup();
-            navigateToEpisode(episode.Id);
+            navigateToEpisode(episode.Id, { manual: true });
           },
           onNextEpisode: async ({ episode }) => {
             await cleanup();

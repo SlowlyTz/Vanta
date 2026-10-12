@@ -165,3 +165,31 @@
   padding: 0 12px;
   background: rgb(255 255 255 / 0.08);
 }
+
+/* TV: where holding left/right will jump to. */
+.vanta-tv-seek-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 40;
+  padding: 0.6em 1.2em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font: 700 clamp(1.4rem, 2.5vw, 2.4rem) Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.vanta-tv-seek-preview[hidden] {
+  display: none;
+}
+
+/* TV: the focused control is unmistakable from the sofa. */
+.vanta-player-root.is-tv button:focus-visible,
+.vanta-player-root.is-tv media-mute-button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+  border-radius: 999px;
+}

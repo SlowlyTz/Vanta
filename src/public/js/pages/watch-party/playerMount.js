@@ -104,6 +104,7 @@ export function bindPlayerMount(ctx) {
         };
 
         ctx.controller = await playerModule.mountVantaPlayer({
+          tvMode: document.documentElement.classList.contains('tv-mode'),
           root: ctx.playerMount,
           ...playerMediaOptions(item, itemId, { leave: ctx.goHome }),
           resumePosition: (positionMs || 0) / 1000,

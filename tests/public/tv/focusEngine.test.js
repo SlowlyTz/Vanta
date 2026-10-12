@@ -107,6 +107,42 @@ describe('focus engine', () => {
     expect(document.activeElement.id).toBe('y');
   });
 
+  it('brings the focus back only to a page returned to, not to one opened anew', () => {
+    const page = () => {
+      document.body.innerHTML = `<div id="main-content">${btn('x', '0,0,100,100', 'data-item-id="m1"')}${btn('y', '0,400,100,100', 'data-item-id="m2"')}</div>`;
+      place();
+    };
+    window.history.replaceState(null, '', '#/home');
+    page();
+    expect(engine.enterPage()).toBe(false);
+    const homeVisit = window.history.state;
+    engine.focus(document.getElementById('y'));
+
+    window.history.pushState(null, '', '#/series');
+    expect(engine.enterPage()).toBe(false);
+
+    // "Zurück": the entry of the first visit, with its mark.
+    window.history.pushState(homeVisit, '', '#/home');
+    page();
+    expect(engine.enterPage()).toBe(true);
+    engine.restore('#/home');
+    expect(document.activeElement.id).toBe('y');
+
+    // The same page from the menu: a new visit, at its top.
+    window.history.pushState(null, '', '#/home');
+    page();
+    expect(engine.enterPage()).toBe(false);
+    engine.restore('#/home', { fresh: true });
+    expect(document.activeElement.id).toBe('x');
+  });
+
+  it('starts at the top of the first page after the app starts, whatever its entry knew', () => {
+    window.history.replaceState({ vantaTvVisit: 'old' }, '', '#/home');
+    sessionStorage.setItem('vanta.tv.focus', JSON.stringify({ old: 'm2' }));
+    expect(engine.enterPage()).toBe(false);
+    expect(window.history.state.vantaTvVisit).not.toBe('old');
+  });
+
   it('starts on [data-tv-autofocus] and skips hidden and disabled elements', () => {
     document.body.innerHTML = `<div id="main-content">${btn('hidden', '0,0,100,100', 'hidden')}${btn('off', '0,0,100,100', 'disabled')}${btn('go', '0,200,100,100', 'data-tv-autofocus')}</div>`;
     place();

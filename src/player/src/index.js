@@ -23,6 +23,7 @@ import { bindTimelineWatchdog } from './player/timelineWatchdog.js';
 import { bindTransportControls } from './player/transportControls.js';
 import { bindTouchTaps } from './player/touchTaps.js';
 import { bindShortcuts } from './player/shortcuts.js';
+import { bindTvControls } from './player/tvControls.js';
 import { createMediaSession } from './mediaSession.js';
 import { bindPreferences } from './preferences.js';
 import { createHelpOverlay } from './help.js';
@@ -43,6 +44,7 @@ export async function mountVantaPlayer(options) {
   bindPlayerEvents(context);
   bindTransportControls(context);
   bindTouchTaps(context);
+  bindTvControls(context);
   bindShortcuts(context);
   context.mediaSession = createMediaSession(context);
   context.help = createHelpOverlay(context);

@@ -3,6 +3,7 @@ import { createPlayerUi } from '../ui/playerUi.js';
 import { applyWatchPartyPermissions } from '../watchParty.js';
 import { createEchoTokens } from '../syncEcho.js';
 import { createPlayerMarkup } from './markup.js';
+import { normalizeLanguageCode } from '../preferences.js';
 
 export function isStreamLimitError(error) {
   return error?.code === 'STREAM_LIMIT_REACHED' || error?.status === 429;
@@ -34,7 +35,9 @@ export async function createPlayerContext(options) {
     // { defaultQuality, audioLanguage, subtitleLanguage, autoplayNextEpisode,
     // autoSkipIntro } and where a changed language goes back to.
     userPreferences = null,
-    onUserPreferenceChange = null
+    onUserPreferenceChange = null,
+    // TV mode of the app: remote control (player/tvControls.js).
+    tvMode = false
   } = options;
 
   await customElements.whenDefined('media-player');
@@ -76,6 +79,7 @@ export async function createPlayerContext(options) {
     onSleep,
     userPreferences,
     onUserPreferenceChange,
+    tvMode,
     iosLike,
     dom,
     player,
@@ -104,9 +108,15 @@ export async function createPlayerContext(options) {
       selection.audioStreamIndex = audioIndex;
       if (current.mediaSourceId) selection.mediaSourceId = current.mediaSourceId;
     }
-    else if (context.preferences?.get().audioLanguage) selection.audioLanguage = context.preferences.get().audioLanguage;
-    // Until the viewer picks one, the stream starts in their default quality.
-    const quality = context.qualityMenu?.getCurrentId?.() || userPreferences?.defaultQuality;
+    else {
+      const language = normalizeLanguageCode(context.preferences?.get().audioLanguage);
+      if (language) selection.audioLanguage = language;
+    }
+    // Until the viewer picks one, the stream starts in their default quality
+    // (the menu itself only ever reports what the server last resolved).
+    const quality = context.qualityMenu?.hasUserChoice?.()
+      ? context.qualityMenu.getCurrentId()
+      : userPreferences?.defaultQuality || context.qualityMenu?.getCurrentId?.();
     if (quality && quality !== 'auto') selection.qualityProfile = quality;
     return selection;
   };
