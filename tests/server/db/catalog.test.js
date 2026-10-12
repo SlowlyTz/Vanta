@@ -23,7 +23,7 @@ describe('createCatalogDb', () => {
     const db = createCatalogDb({ SQL });
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map(r => r.name);
 
-    expect(tables).toEqual(['catalog_item_genres', 'catalog_item_studios', 'catalog_items', 'catalog_libraries', 'catalog_meta']);
+    expect(tables).toEqual(['catalog_item_genres', 'catalog_item_people', 'catalog_item_studios', 'catalog_items', 'catalog_libraries', 'catalog_meta']);
   });
 
   it('does not write to disk on a plain run', () => {

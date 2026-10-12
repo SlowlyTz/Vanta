@@ -13,6 +13,9 @@ const PAGE_SIZE = 500;
 const CATALOG_FIELDS = [
   COMMON_ITEM_FIELDS,
   'DateCreated',
+  // Moves when a series gets a new episode, so the series counts as changed
+  // and the new-episode notification looks at it.
+  'DateLastMediaAdded',
   'PremiereDate',
   'RemoteTrailers',
   'ExternalUrls',
@@ -21,7 +24,8 @@ const CATALOG_FIELDS = [
   'CriticRating',
   'SortName',
   'OriginalTitle',
-  'Studios'
+  'Studios',
+  'People'
 ].join(',');
 
 const DROP_KEYS = new Set(['ImageBlurHashes', 'ServerId', 'ChannelId', 'LocationType', 'MediaType']);

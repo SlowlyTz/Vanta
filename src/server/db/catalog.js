@@ -62,6 +62,17 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_catalog_studios ON catalog_item_studios(studio_normalized);
 
+  -- Cast and crew per title (first entries only), for the search by person.
+  -- The primary key already serves lookups by item.
+  CREATE TABLE IF NOT EXISTS catalog_item_people (
+    item_id TEXT NOT NULL,
+    person_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    image_tag TEXT,
+    PRIMARY KEY (item_id, person_id)
+  );
+  DROP INDEX IF EXISTS idx_catalog_people_item;
+
   CREATE TABLE IF NOT EXISTS catalog_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL

@@ -136,6 +136,25 @@ export class LibraryService {
     return data.Items || [];
   }
 
+  // The search page: ranked titles (typo-tolerant, filtered) and matching
+  // people. Without the catalogue Jellyfin answers the titles alone.
+  static async searchFull(userId, token, query, filters = {}) {
+    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) => ({
+      items: reader.search({ query, libraryIds, filters, limit: 60 }),
+      people: filters.peopleToo === false ? [] : reader.searchPeople({ query, libraryIds })
+    }));
+    if (mirrored) return mirrored;
+
+    if (!query) return { items: [], people: [] };
+    const data = await getItems(userId, token, {
+      SearchTerm: query,
+      IncludeItemTypes: filters.types?.length ? filters.types.join(',') : 'Movie,Series',
+      Recursive: 'true',
+      Limit: 60
+    });
+    return { items: data.Items || [], people: [] };
+  }
+
   static async getGenres(userId, token, type) {
     const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
       reader.genres({ type, libraryIds }));

@@ -14,6 +14,18 @@ export const MediaApi = {
     return request(`/api/media/search?q=${encodeURIComponent(query)}`, { signal });
   },
 
+  // The search page: { items, people }, typo-tolerant, with filters
+  // ({ type, genre: [], decade, fsk, unwatched }).
+  searchFull(query, filters = {}, { signal } = {}) {
+    const params = new URLSearchParams({ q: query });
+    if (filters.type) params.set('type', filters.type);
+    if (filters.genre?.length) params.set('genre', filters.genre.join(','));
+    if (filters.decade) params.set('decade', String(filters.decade));
+    if (filters.fsk !== null && filters.fsk !== undefined && filters.fsk !== '') params.set('fsk', String(filters.fsk));
+    if (filters.unwatched) params.set('unwatched', '1');
+    return request(`/api/media/search/full?${params}`, { signal });
+  },
+
   getItem(id, { signal } = {}) {
     return request(`/api/media/item/${id}`, { signal });
   },

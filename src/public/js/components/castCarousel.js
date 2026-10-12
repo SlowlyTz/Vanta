@@ -2,7 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../utils/image.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';
 
-export function CastCarousel({ actors = [], onActorClick }) {
+export function CastCarousel({ actors = [], onActorClick, title = 'Besetzung' }) {
   if (!actors || actors.length === 0) return null;
 
   const actorCards = actors.map(actor => {
@@ -33,7 +33,7 @@ export function CastCarousel({ actors = [], onActorClick }) {
   });
 
   return HorizontalCarousel({
-    title: 'Besetzung',
+    title,
     items: actorCards,
     trackClass: 'cast-list',
     containerClass: 'detail-cast-section'

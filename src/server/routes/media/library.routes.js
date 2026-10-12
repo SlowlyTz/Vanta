@@ -5,6 +5,7 @@ import { PlaybackApiService } from '../../services/jellyfin/playback-api.service
 import { HomeSectionsService } from '../../services/home-sections.service.js';
 import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
+import { UserDataService } from '../../services/user-data.service.js';
 
 // A list restored after a detail visit asks for everything it showed at once:
 // up to 20 batches of 36 cards.
@@ -49,6 +50,38 @@ router.get('/search', requireAuth, jellyfinRoute('Media Search Error', 'Failed t
 
   const results = await LibraryService.search(userId, accessToken, q);
   return res.json(results);
+}));
+
+// Filters of the search page, from the query string; anything unknown is
+// left out. `decade` is the first year of a decade (1960 = 1960s and older).
+export function parseSearchFilters(query = {}) {
+  const list = (value) => String(value || '').split(',').map(part => part.trim()).filter(Boolean);
+  const types = list(query.type).filter(type => type === 'Movie' || type === 'Series');
+  const genres = list(query.genre).slice(0, 10);
+  const decade = Number(query.decade);
+  const fsk = Number(query.fsk);
+  return {
+    types,
+    genres,
+    decade: Number.isInteger(decade) && decade >= 1900 && decade <= 2100 && decade % 10 === 0 ? decade : null,
+    maxAge: [0, 6, 12, 16, 18].includes(fsk) && query.fsk !== '' && query.fsk !== undefined ? fsk : null,
+    unwatched: query.unwatched === '1'
+  };
+}
+
+router.get('/search/full', requireAuth, jellyfinRoute('Media Search Error', 'Failed to search media items', async (req, res) => {
+  const { userId, accessToken } = req.session;
+  const query = String(req.query.q || '').slice(0, 100);
+  const filters = parseSearchFilters(req.query);
+  const hasFilter = filters.types.length || filters.genres.length || filters.decade !== null || filters.maxAge !== null || filters.unwatched;
+  if (!query.trim() && !hasFilter) return res.json({ items: [], people: [] });
+
+  const result = await LibraryService.searchFull(userId, accessToken, query, { ...filters, peopleToo: Boolean(query.trim()) });
+  if (filters.unwatched && result.items.length) {
+    const state = await UserDataService.forItems(userId, accessToken, result.items.map(item => item.Id));
+    result.items = result.items.filter(item => state[item.Id]?.played !== true);
+  }
+  return res.json(result);
 }));
 
 router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Failed to fetch item details', async (req, res) => {

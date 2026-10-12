@@ -339,3 +339,47 @@ describe('CatalogSync', () => {
     });
   });
 });
+
+describe('cast and crew', () => {
+  const people = [
+    { Id: 'p1', Name: 'Al Pacino', Role: 'Vincent Hanna', Type: 'Actor', PrimaryImageTag: 'tag1' },
+    { Id: 'p2', Name: 'Michael Mann', Type: 'Director' },
+    { Id: 'p3', Name: 'Someone', Type: 'Producer' }
+  ];
+
+  it('keeps people in their own table and the stored item without them', async () => {
+    const { db, sync } = setup([movie('m1', { People: people })]);
+    await sync.runFull();
+
+    expect(rows(db, 'SELECT person_id, name, role, kind FROM catalog_item_people ORDER BY person_id')).toEqual([
+      { person_id: 'p1', name: 'Al Pacino', role: 'Vincent Hanna', kind: 'Actor' },
+      { person_id: 'p2', name: 'Michael Mann', role: null, kind: 'Director' }
+    ]);
+    expect(JSON.parse(rows(db, 'SELECT data FROM catalog_items')[0].data).People).toBeUndefined();
+  });
+
+  it('stores a person listed twice once, and sees no change in it on the next run', async () => {
+    const twice = [...people, { Id: 'p1', Name: 'Al Pacino', Type: 'Writer' }];
+    const { db, sync } = setup([movie('m1', { People: twice })]);
+    await sync.runFull();
+    expect(rows(db, 'SELECT COUNT(*) AS n FROM catalog_item_people')[0].n).toBe(2);
+    expect((await sync.runUpdate()).updated).toBe(0);
+  });
+
+  it('notices a change of the cast, and nothing when it stayed the same', async () => {
+    const { sync, snapshot } = setup([movie('m1', { People: people })]);
+    await sync.runFull();
+    expect((await sync.runUpdate()).updated).toBe(0);
+
+    snapshot.items = [movie('m1', { People: people.slice(1) })];
+    expect((await sync.runUpdate()).updated).toBe(1);
+  });
+
+  it('drops the people of a removed title', async () => {
+    const { db, sync, snapshot } = setup([movie('m1', { People: people }), movie('m2')]);
+    await sync.runFull();
+    snapshot.items = [movie('m2')];
+    await sync.runFull();
+    expect(rows(db, 'SELECT COUNT(*) AS n FROM catalog_item_people')[0].n).toBe(0);
+  });
+});

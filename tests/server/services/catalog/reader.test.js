@@ -94,10 +94,14 @@ describe('CatalogReader', () => {
       expect(ids(reader.search({ query: 'der  pass' }))).toEqual(['s2']);
     });
 
-    it('matches LIKE wildcards literally instead of interpreting them', () => {
+    it('treats wildcards as punctuation, never as patterns', () => {
       expect(reader.search({ query: '%' })).toEqual([]);
       expect(reader.search({ query: '_' })).toEqual([]);
-      expect(reader.search({ query: 'd_ne' })).toEqual([]);
+      expect(reader.search({ query: 'd%e' })).toEqual([]);
+    });
+
+    it('forgives a typo and finds titles through their cast', () => {
+      expect(ids(reader.search({ query: 'Dnue' }))).toEqual(['m1']);
     });
 
     it('respects the visible libraries', () => {
