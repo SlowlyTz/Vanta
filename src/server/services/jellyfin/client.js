@@ -25,6 +25,11 @@ export function deviceIdForToken(token) {
   return (token && deviceIdsByToken.get(token)) || SHARED_DEVICE_ID;
 }
 
+// Jellyfin 12 only accepts this as the standard `Authorization` header (the
+// legacy `X-Emby-Authorization` header and `?api_key=` need its
+// EnableLegacyAuthorization switch); 10.x understands it as well.
+export const AUTH_HEADER_NAME = 'Authorization';
+
 export function getAuthHeader(token = null, deviceId = deviceIdForToken(token)) {
   let header = `MediaBrowser Client="VANTA", Device="Web Browser", DeviceId="${deviceId}", Version="1.0.0"`;
   if (token) {
@@ -74,7 +79,7 @@ export async function jellyfinRawFetch(path, {
   const fetchOptions = {
     method,
     headers: {
-      'X-Emby-Authorization': getAuthHeader(token, deviceId || deviceIdForToken(token)),
+      [AUTH_HEADER_NAME]: getAuthHeader(token, deviceId || deviceIdForToken(token)),
       ...headers
     }
   };

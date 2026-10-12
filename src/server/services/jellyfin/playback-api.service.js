@@ -1,4 +1,4 @@
-import { JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
+import { AUTH_HEADER_NAME, JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 
 export const PLAYBACK_HEADER_TIMEOUT_MS = 45 * 1000;
@@ -51,10 +51,10 @@ export class PlaybackApiService {
   // take a while to be encoded, but once the stream flows a film runs for
   // hours and must never be cut off by a timer.
   static async fetchPlaybackResource(pathOrUrl, token, rangeHeader, { signal, headerTimeoutMs = PLAYBACK_HEADER_TIMEOUT_MS } = {}) {
+    // The token goes in the header only; `api_key` in the URL is a legacy
+    // form Jellyfin 12 refuses (and the proxy strips it from client paths).
     const url = new URL(pathOrUrl, JELLYFIN_BASE_URL);
-    url.searchParams.set('api_key', token);
-
-    const headers = { 'X-Emby-Authorization': getAuthHeader(token) };
+    const headers = { [AUTH_HEADER_NAME]: getAuthHeader(token) };
     if (rangeHeader) headers.Range = rangeHeader;
 
     const controller = new AbortController();
