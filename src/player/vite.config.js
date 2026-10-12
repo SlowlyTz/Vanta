@@ -27,6 +27,9 @@ export default defineConfig({
   publicDir: false,
   plugins: [hlsWorker()],
   build: {
+    // TV browsers: webOS 5 and Tizen 5.5 run Chromium 68 (no optional
+    // chaining, nullish coalescing, numeric separators or class fields).
+    target: 'chrome68',
     outDir: path.resolve(playerRoot, '../public/vendor/player'),
     emptyOutDir: true,
     cssCodeSplit: false,

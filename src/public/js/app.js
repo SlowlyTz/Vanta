@@ -1,3 +1,5 @@
+// First: fills in what older TV browsers lack before any other module runs.
+import './polyfills.js';
 import { router } from './router.js';
 import { initAppRealtime } from './realtime/app-realtime.js';
 import { mountWatchPartyInvitationOverlay } from './components/watch-party/WatchPartyInvitationOverlay.js';
@@ -65,13 +67,20 @@ async function suggestTvMode() {
 }
 
 // Initialise client router on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   applyTvUrlOverride();
   const tv = isTvMode();
   if (tv) {
-    import('./tv/index.js').then(module => module.startTvMode({
-      sidebar: { isOpen: () => router.tvSidebar?.isOpen() === true, close: () => router.tvSidebar?.close() }
-    }));
+    // The focus engine and the TV stylesheet are there before the first page,
+    // so it gets its focus and never shows unstyled.
+    try {
+      const module = await import('./tv/index.js');
+      await module.startTvMode({
+        sidebar: { isOpen: () => router.tvSidebar?.isOpen() === true, close: () => router.tvSidebar?.close() }
+      });
+    } catch (error) {
+      console.error('[TV mode]', error);
+    }
   }
   bindSkipLink();
   mountWatchPartyInvitationOverlay();

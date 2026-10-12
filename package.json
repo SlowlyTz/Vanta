@@ -15,7 +15,9 @@
     "countdown:build": "npm run scenes:build",
     "build": "npm run player:build && npm run scenes:build && vite build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:legacy": "node scripts/check-legacy-syntax.mjs",
+    "test:e2e": "node tests/e2e/run.mjs"
   },
   "dependencies": {
     "compression": "^1.8.2",
@@ -35,6 +37,8 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "acorn": "^8.19.0",
+    "acorn-walk": "^8.3.5",
     "jsdom": "^29.1.1",
     "supertest": "^7.2.2",
     "vite": "^8.0.16",

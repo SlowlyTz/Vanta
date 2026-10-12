@@ -22,7 +22,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(appRoot, '../../dist'),
     emptyOutDir: true,
-    target: 'es2022',
+    // TV browsers from about 2020 (webOS 5, Tizen 5.5) run Chromium 68; the
+    // syntax is lowered to it and js/polyfills.js fills in missing APIs.
+    target: 'chrome68',
     sourcemap: false,
     // The minifier rewrites hsl() colours as hex, which shifts gradients by a
     // few 8-bit steps; the bundled CSS stays verbatim so rendering is identical.
