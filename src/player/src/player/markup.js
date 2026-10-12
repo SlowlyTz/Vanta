@@ -138,6 +138,9 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
                 <button class="vanta-player-settings-button" type="button" aria-label="Einstellungen" aria-haspopup="dialog" aria-expanded="false" hidden>
                   ${svgIcon('settings')}
                 </button>
+                <button class="vanta-player-airplay-button" type="button" aria-label="AirPlay" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 22h12l-6-6-6 6zM21 3H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4v-2H3V5h18v12h-4v2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg>
+                </button>
                 <media-pip-button class="vanta-player-pip-button" aria-label="Bild-in-Bild">
                   ${svgIcon('pipEnter', 'enter')}
                   ${svgIcon('pipExit', 'exit')}
@@ -201,6 +204,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
       forward: root.querySelector('.vanta-player-seek-bubble.is-forward')
     },
     settingsButton: root.querySelector('.vanta-player-settings-button'),
+    airplayButton: root.querySelector('.vanta-player-airplay-button'),
     volumeBubble: root.querySelector('.vanta-player-volume-bubble'),
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),

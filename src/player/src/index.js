@@ -30,6 +30,7 @@ import { createHelpOverlay } from './help.js';
 import { bindSegments } from './segments.js';
 import { bindStillWatching } from './stillWatching.js';
 import { bindSleepTimer } from './sleepTimer.js';
+import { bindAirPlay } from './airplay.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -52,6 +53,7 @@ export async function mountVantaPlayer(options) {
   bindSyncControls(context);
   bindTimelineWatchdog(context);
   bindStillWatching(context);
+  bindAirPlay(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);
 }

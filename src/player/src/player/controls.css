@@ -367,8 +367,9 @@
   }
 }
 
-/* Settings, PiP, fullscreen */
+/* Settings, AirPlay, PiP, fullscreen */
 .vanta-player-settings-button,
+.vanta-player-airplay-button,
 .vanta-player-fullscreen-button {
   width: 44px;
   height: 44px;
@@ -376,6 +377,7 @@
 }
 
 .vanta-player-settings-button svg,
+.vanta-player-airplay-button svg,
 .vanta-player-fullscreen-button svg {
   width: 23px;
   height: 23px;
@@ -395,6 +397,15 @@
   transform: rotate(60deg);
 }
 
+.vanta-player-airplay-button:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+
+.vanta-player-airplay-button svg {
+  fill: currentColor;
+}
+
+.vanta-player-airplay-button[hidden],
 .vanta-player-settings-button[hidden] {
   display: none;
 }
