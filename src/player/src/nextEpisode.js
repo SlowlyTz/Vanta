@@ -1,38 +1,48 @@
-// Progress at which the "next episode" overlay appears.
+// Progress at which the "next episode" overlay appears (without an outro).
 export const NEXT_EPISODE_PROMPT_THRESHOLD = 0.97;
-// Progress at which playback auto-advances to the next episode.
-export const NEXT_EPISODE_SKIP_THRESHOLD = 0.985;
-// The overlay is always visible for at least this long before the auto-advance.
-// On short episodes the gap between the two thresholds is smaller than this, so
-// the overlay is pulled forward rather than the skip being pushed back.
-export const NEXT_EPISODE_MIN_PROMPT_SECONDS = 25;
+// The next episode starts this long after the overlay appeared, however long
+// the credits still run. The button fills up over these seconds.
+export const NEXT_EPISODE_COUNTDOWN_SECONDS = 10;
+// The switch happens at least this long before the end of the file.
+const END_MARGIN_SECONDS = 0.5;
 
 // With an outro segment the prompt appears when the credits begin and the
-// next episode starts when they end, at least this long after the prompt.
-export const OUTRO_MIN_PROMPT_SECONDS = 10;
-
+// next episode starts ten seconds later. Without one nobody knows where the
+// credits are: the prompt appears at 97 % (pulled forward on short files, so
+// at least the full countdown fits) and counts down to the end of the file,
+// so the end of an episode is never cut off.
 export function computeNextEpisodeTimings({
   duration,
   outro = null,
   promptThreshold = NEXT_EPISODE_PROMPT_THRESHOLD,
-  skipThreshold = NEXT_EPISODE_SKIP_THRESHOLD,
-  minPromptSeconds = NEXT_EPISODE_MIN_PROMPT_SECONDS
+  countdownSeconds = NEXT_EPISODE_COUNTDOWN_SECONDS
 } = {}) {
   if (!Number.isFinite(duration) || duration <= 0) return null;
+  const lastSkip = Math.max(0, duration - END_MARGIN_SECONDS);
+  const skipAfter = promptAt => ({ promptAt, skipAt: Math.max(promptAt, Math.min(lastSkip, promptAt + countdownSeconds)) });
 
   // Only an outro in the second half is trusted as the credits.
   const outroStart = Number(outro?.startMs) / 1000;
   const outroEnd = Number(outro?.endMs) / 1000;
   if (Number.isFinite(outroStart) && Number.isFinite(outroEnd) && outroStart >= duration * 0.5 && outroStart < duration) {
-    const promptAt = outroStart;
-    const skipAt = Math.min(duration - 0.5, Math.max(outroEnd, promptAt + OUTRO_MIN_PROMPT_SECONDS));
-    return { promptAt, skipAt: Math.max(promptAt, skipAt), source: 'outro' };
+    return { ...skipAfter(outroStart), source: 'outro' };
   }
 
-  const skipAt = duration * skipThreshold;
-  const promptAt = Math.max(0, Math.min(duration * promptThreshold, skipAt - minPromptSeconds));
+  const promptAt = Math.max(0, Math.min(duration * promptThreshold, lastSkip - countdownSeconds));
+  return { promptAt, skipAt: lastSkip, source: 'runtime' };
+}
 
-  return { promptAt, skipAt, source: 'runtime' };
+// When the prompt shows clearly later than planned (the viewer jumped into
+// the credits), the countdown still runs its full length from now. A prompt
+// on time keeps the planned point, so every watch-party member counts to the
+// same second.
+const LATE_PROMPT_SECONDS = 1;
+
+export function nextEpisodeSkipAt(timings, currentTime, duration, countdownSeconds = NEXT_EPISODE_COUNTDOWN_SECONDS) {
+  if (!timings) return null;
+  if (!Number.isFinite(currentTime) || currentTime <= timings.promptAt + LATE_PROMPT_SECONDS) return timings.skipAt;
+  const lastSkip = Math.max(0, duration - END_MARGIN_SECONDS);
+  return Math.min(lastSkip, Math.max(timings.skipAt, currentTime + countdownSeconds));
 }
 
 export function shouldShowNextEpisodePrompt({ currentTime, duration, ...thresholds }) {
@@ -58,6 +68,11 @@ export function createNextEpisodeGate() {
     },
     markShown(episodeId) {
       shownFor = episodeId;
+    },
+    // The prompt went away without a choice (the viewer seeked back before
+    // it): it may show again when playback gets there once more.
+    markHidden(episodeId) {
+      if (shownFor === episodeId) shownFor = null;
     },
     markDismissed(episodeId) {
       if (episodeId) dismissed.add(episodeId);

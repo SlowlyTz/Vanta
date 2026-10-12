@@ -2,6 +2,7 @@ import {
   findNextEpisode,
   shouldShowNextEpisodePrompt,
   computeNextEpisodeTimings,
+  nextEpisodeSkipAt,
   canStartNextEpisode,
   createNextEpisodeGate
 } from '../nextEpisode.js';
@@ -56,7 +57,7 @@ export function bindNextEpisode(context) {
     context.nextEpisodePrompt.show(next, {
       controls,
       message: controls ? null : NEXT_EPISODE_VIEWER_MESSAGE,
-      skipAt: computeNextEpisodeTimings({ duration, outro })?.skipAt,
+      skipAt: nextEpisodeSkipAt(computeNextEpisodeTimings({ duration, outro }), player.currentTime, duration),
       getCurrentTime: () => player.currentTime
     });
   };

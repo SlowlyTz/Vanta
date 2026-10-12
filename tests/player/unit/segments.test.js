@@ -18,13 +18,13 @@ describe('activeSkipSegment', () => {
 });
 
 describe('computeNextEpisodeTimings mit Abspann', () => {
-  it('zeigt den Hinweis bei Abspann-Beginn und wechselt bei dessen Ende', () => {
-    expect(computeNextEpisodeTimings({ duration: 2600, outro })).toEqual({ promptAt: 2400, skipAt: 2520, source: 'outro' });
+  it('zeigt den Hinweis bei Abspann-Beginn und wechselt 10 s später, auch wenn der Abspann länger läuft', () => {
+    expect(computeNextEpisodeTimings({ duration: 2600, outro })).toEqual({ promptAt: 2400, skipAt: 2410, source: 'outro' });
     expect(shouldShowNextEpisodePrompt({ currentTime: 2399, duration: 2600, outro })).toBe(false);
     expect(shouldShowNextEpisodePrompt({ currentTime: 2400, duration: 2600, outro })).toBe(true);
   });
 
-  it('lässt mindestens 10 s Vorlauf und bleibt vor dem Dateiende', () => {
+  it('bleibt mit dem Wechsel vor dem Dateiende', () => {
     expect(computeNextEpisodeTimings({ duration: 2600, outro: { startMs: 2_590_000, endMs: 2_592_000 } }))
       .toEqual({ promptAt: 2590, skipAt: 2599.5, source: 'outro' });
   });
