@@ -1,6 +1,7 @@
 import { createInlineLoadingWatch } from './inlineLoading.js';
 import { createJellyfinReporter } from '../jellyfinReporter.js';
 import { isSmartphone } from '../orientation.js';
+import { createLoadingCover } from './loadingCover.js';
 
 export function bindReporterAndOrientation(context) {
   const { player, reportPlayback, itemId, dom } = context;
@@ -13,15 +14,10 @@ export function bindReporterAndOrientation(context) {
 
   context.isPhone = isSmartphone();
 
-  context.setLoading = (visible, status) => {
-    if (status) dom.loadingStatus.textContent = status;
-    dom.loading.classList.toggle('is-hidden', !visible);
-    context.loadIndicator?.setCoverVisible(visible);
-  };
-
-  context.setLoadingStatus = status => {
-    if (status) dom.loadingStatus.textContent = status;
-  };
+  const loadingCover = createLoadingCover({ dom, getLoadIndicator: () => context.loadIndicator });
+  context.disposers.push(loadingCover.dispose);
+  context.setLoading = loadingCover.setVisible;
+  context.setLoadingStatus = loadingCover.setStatus;
 
   context.setInlineLoading = visible => {
     if (visible && !dom.loading.classList.contains('is-hidden')) return;
