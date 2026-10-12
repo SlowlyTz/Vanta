@@ -92,14 +92,17 @@ describe('DetailPage favorite button', () => {
     expect(MediaApi.markPlayed).toHaveBeenCalledWith('item-1');
   });
 
-  it('does not render the played toggle for a Series', async () => {
-    MediaApi.getItem.mockResolvedValue(createBaseItem({ Type: 'Series' }));
+  it('offers a watched series to be marked unwatched again', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Type: 'Series', UserData: { Played: true } }));
     MediaApi.getSeasons.mockResolvedValue([]);
 
     const container = DetailPage({ id: 'item-1' });
     await flush();
 
-    expect(container.querySelector('.detail-actions .played-toggle')).toBeNull();
+    const toggle = container.querySelector('.detail-actions .played-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle.getAttribute('aria-label')).toBe('Als ungesehen markieren');
+    expect(toggle.textContent).toBe('Gesehen');
   });
 
   it('does not render the favorite control for unsupported item types', async () => {
@@ -303,5 +306,33 @@ describe('DetailPage load errors', () => {
 
     expect(container.querySelector('[role="alert"] h3').textContent).toBe('Fehler beim Laden');
     expect(container.textContent).toContain('Failed to fetch item details');
+  });
+});
+
+describe('DetailPage continue or start over', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetDetailPrefetch();
+    MediaApi.getSimilar.mockResolvedValue([]);
+    MediaApi.getSeasons.mockResolvedValue([]);
+  });
+
+  it('continues a started film and offers to start it over', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ UserData: { PlaybackPositionTicks: 600_000_000 } }));
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+    const labels = [...container.querySelectorAll('.detail-actions button')].map(button => button.textContent);
+    expect(labels).toContain('Fortsetzen');
+    [...container.querySelectorAll('.detail-actions button')].find(button => button.textContent === 'Von vorn').click();
+    expect(window.location.hash).toBe('#/player/item-1?from=start');
+  });
+
+  it('just plays a title that was not started', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem());
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+    const labels = [...container.querySelectorAll('.detail-actions button')].map(button => button.textContent);
+    expect(labels).toContain('Abspielen');
+    expect(labels).not.toContain('Von vorn');
   });
 });

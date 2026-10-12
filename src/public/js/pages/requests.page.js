@@ -103,7 +103,7 @@ export default function RequestsPage(params = {}, pageScope) {
       createElement('h1', { className: 'ui-title' }, 'Anfragen'),
       createElement('p', { className: 'ui-subtitle' }, 'Fehlt ein Film, eine Serie oder eine Staffel? Frag sie an — und verfolge hier, was aus deinen Anfragen wird.')
     ),
-    createElement('div', { className: 'ui-segmented requests-tabs', role: 'tablist', 'aria-label': 'Anfragen' },
+    createElement('div', { className: 'ui-segmented requests-tabs', role: 'tablist', 'aria-label': 'Anfragen', 'data-tv-row': '' },
       tab('new', 'Neu anfragen', '#/requests/new'),
       tab('list', 'Meine Anfragen', '#/requests/mine', mineDot)
     )
@@ -214,7 +214,7 @@ function renderMine(page, { signal }) {
       render();
     }
   }, entry.label));
-  const filters = createElement('div', { className: 'ui-segmented request-filters', role: 'group', 'aria-label': 'Status' }, ...filterButtons);
+  const filters = createElement('div', { className: 'ui-segmented request-filters', role: 'group', 'aria-label': 'Status', 'data-tv-row': '' }, ...filterButtons);
   const list = createElement('div', { className: 'request-mine-list' }, createSectionLoader({ label: 'Anfragen werden geladen', compact: true }));
   page.append(filters, list);
 

@@ -35,7 +35,7 @@ export default function LibraryPage(params, pageScope) {
   let loading = false;
   let observer = null;
 
-  const container = createElement('div', { className: 'page-container content-section library-page' });
+  const container = createElement('div', { className: 'page-container content-section library-page', 'data-tv-backdrop': '' });
   if (pendingRestore) {
     container.dataset.restoreScroll = 'true';
   }

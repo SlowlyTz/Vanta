@@ -84,7 +84,8 @@ export function bindSearch(ctx) {
     ctx.seasonTabs.innerHTML = '';
     ctx.searchInput.value = '';
     ctx.loadSuggestions();
-    window.requestAnimationFrame(() => ctx.searchInput.focus());
+    // Not on a TV: a focused field there opens the system keyboard.
+    if (!document.documentElement.classList.contains('tv-mode')) window.requestAnimationFrame(() => ctx.searchInput.focus());
   };
 
   return ctx;

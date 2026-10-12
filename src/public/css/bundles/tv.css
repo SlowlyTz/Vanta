@@ -190,3 +190,66 @@ html.tv-mode .tv-sidebar-icon svg {
   width: 100%;
   height: 100%;
 }
+
+/* The backdrop of the focused card behind the page (tv/focusBackdrop.js). */
+html.tv-mode .tv-focus-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+html.tv-mode .tv-focus-backdrop-image {
+  position: absolute;
+  inset: 0;
+  background: center / cover no-repeat;
+  opacity: 0;
+  transition: opacity 500ms ease !important;
+}
+
+html.tv-mode .tv-focus-backdrop-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 5, 7, 0.92) 25%, rgba(5, 5, 7, 0.55) 70%, rgba(5, 5, 7, 0.75)),
+    linear-gradient(0deg, rgba(5, 5, 7, 0.95), transparent 60%);
+}
+
+html.tv-mode .tv-focus-backdrop-image.is-visible {
+  opacity: 1;
+}
+
+html.tv-mode body,
+html.tv-mode .app-shell,
+html.tv-mode .app-main {
+  background: transparent;
+}
+
+html.tv-mode {
+  background: #050507;
+}
+
+/* Lists: six columns at full HD. */
+html.tv-mode .library-grid,
+html.tv-mode .grid-container {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 2rem 1.5rem !important;
+}
+
+/* Detail: larger buttons, all reachable in one row. */
+html.tv-mode .detail-actions {
+  gap: 1rem;
+}
+
+html.tv-mode .detail-actions > button,
+html.tv-mode .detail-actions .watchlist-button {
+  min-height: 3.2rem;
+  font-size: 1.05rem;
+}
+
+html.tv-mode .heart-container .checkbox:focus-visible + .svg-container,
+html.tv-mode .heart-container:focus-within {
+  border-radius: 999px;
+  box-shadow: var(--tv-focus-ring);
+}

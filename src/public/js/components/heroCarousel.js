@@ -44,7 +44,8 @@ export function HeroCarousel({ items = [], pageScope = null }) {
   let autoTimer = null;
   let hovered = false;
   let focusedInside = false;
-  let pausedByUser = prefersReducedMotion();
+  // On a TV a changing hero distracts while moving with the remote.
+  let pausedByUser = prefersReducedMotion() || document.documentElement.classList.contains('tv-mode');
   let destroyed = false;
 
   const backdropsContainer = createElement('div', { className: 'hero-carousel-backdrops', 'aria-hidden': 'true' });
@@ -243,6 +244,25 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     destroyed = true;
     stopAutoTimer();
     document.removeEventListener('visibilitychange', onVisibilityChange);
+  }
+
+  // TV: the hero stands still, the remote turns it. Right on its last
+  // button shows the next title, left on its first the previous one (from
+  // the first title left still leads to the sidebar).
+  if (document.documentElement.classList.contains('tv-mode') && slidesData.length > 1) {
+    container.addEventListener('keydown', (event) => {
+      const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+      if (!step || event.defaultPrevented) return;
+      const controls = [...slidesData[currentIndex].content.querySelectorAll('a[href], button')];
+      const position = controls.indexOf(document.activeElement);
+      if (position === -1) return;
+      if (step > 0 && position < controls.length - 1) return;
+      if (step < 0 && (position > 0 || currentIndex === 0)) return;
+      event.preventDefault();
+      goToSlide((currentIndex + step + slidesData.length) % slidesData.length);
+      const next = [...slidesData[currentIndex].content.querySelectorAll('a[href], button')];
+      (step > 0 ? next[0] : next[next.length - 1])?.focus({ preventScroll: true });
+    });
   }
 
   loadBackdrop(0);

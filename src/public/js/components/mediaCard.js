@@ -116,17 +116,21 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
     }
   };
   const inWatchlist = listable && watchlistStore.has(item.Id);
+  // For the TV backdrop that follows the focus.
+  const backdropId = item.BackdropImageTags?.length ? item.Id : item.ParentBackdropItemId;
+  const backdropTag = item.BackdropImageTags?.[0] || item.ParentBackdropImageTags?.[0];
+  const backdrop = backdropId && backdropTag ? { backdropId, backdropTag } : {};
   const className = `media-card ${landscape ? 'landscape' : ''}${isPlayed ? ' is-played' : ''}${inWatchlist ? ' in-watchlist' : ''}`;
 
   if (!playedToggle) {
-    const link = createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id, itemType: item.Type } }, content);
-    observeCardUserData(link);
+    const link = createElement('a', { ...linkAttributes, className, dataset: { itemId: item.Id, itemType: item.Type, ...backdrop } }, content);
+    observeCardUserData(link, item);
     return link;
   }
 
   // A button cannot sit inside a link: with the played toggle the card is a
   // box holding the link and, over its image, the toggle.
-  const card = createElement('div', { className: `${className} has-played-toggle`, dataset: { itemId: item.Id, itemType: item.Type } },
+  const card = createElement('div', { className: `${className} has-played-toggle`, dataset: { itemId: item.Id, itemType: item.Type, ...backdrop } },
     createElement('a', { ...linkAttributes, className: 'media-card-link' }, content),
     createPlayedToggle(item, {
       compact: true,

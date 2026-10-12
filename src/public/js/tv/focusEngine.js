@@ -163,6 +163,14 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
 // Wires the engine to the keyboard and the router.
 export function bindFocusEngine(engine, { win = window } = {}) {
   const onKey = event => {
+    if ((event.key === 'Enter' || event.keyCode === 13) && !event.defaultPrevented) {
+      const target = event.target;
+      if (target?.matches?.('input[type="checkbox"], input[type="radio"], [data-tv-focusable]')) {
+        event.preventDefault();
+        target.click();
+        return;
+      }
+    }
     const direction = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[event.key]
       || { 37: 'left', 38: 'up', 39: 'right', 40: 'down' }[event.keyCode];
     if (!direction || event.defaultPrevented) return;

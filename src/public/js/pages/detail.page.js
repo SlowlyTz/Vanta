@@ -55,8 +55,10 @@ function createFavoriteButton(item) {
 
   const checkboxId = `detail-favorite-checkbox-${++detailFavoriteCheckboxCounter}`;
 
-  const container = createElement('div', { title: 'Like', className: 'heart-container' });
-  const checkbox = createElement('input', { id: checkboxId, className: 'checkbox', type: 'checkbox' });
+  // The heart is Jellyfin's favourite (it also shows in other Jellyfin apps),
+  // not "Meine Liste" next to it: its name says so.
+  const container = createElement('div', { title: 'Favorit (auch in Jellyfin)', className: 'heart-container' });
+  const checkbox = createElement('input', { id: checkboxId, className: 'checkbox', type: 'checkbox', 'aria-label': 'Favorit (auch in Jellyfin)' });
   container.appendChild(checkbox);
   container.insertAdjacentHTML('beforeend', HEART_CONTAINER_MARKUP);
 
@@ -119,13 +121,20 @@ export default function DetailPage({ id }, pageScope) {
         ? MediaCarousel({ title: 'Ähnliche Titel', items: similar, landscape: false })
         : null;
 
+      // A started film or episode continues; "Von vorn" starts it over.
+      const started = item.Type !== 'Series' && Number(item.UserData?.PlaybackPositionTicks) > 0 && item.UserData?.Played !== true;
       const actions = [
         {
-          label: 'Abspielen',
+          label: started ? 'Fortsetzen' : 'Abspielen',
           className: 'btn-primary',
           icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg>',
           onClick: () => { window.location.hash = `#/player/${item.Id}`; }
         },
+        started ? {
+          label: 'Von vorn',
+          className: 'btn-secondary',
+          onClick: () => { window.location.hash = `#/player/${item.Id}?from=start`; }
+        } : null,
         youtubeTrailerId ? {
           label: 'Trailer',
           className: 'btn-secondary',
@@ -135,8 +144,9 @@ export default function DetailPage({ id }, pageScope) {
 
       const favoriteButton = createFavoriteButton(item);
       const watchlistButton = createWatchlistButton(item, { scope });
-      // Series are marked per episode in the seasons section, like Jellyfin.
-      const playedButton = item.Type === 'Movie' ? createPlayedToggle(item) : null;
+      // A film or a whole series; its episodes follow (seasons section), and
+      // single episodes are marked on their cards.
+      const playedButton = item.Type === 'Movie' || item.Type === 'Series' ? createPlayedToggle(item, { withLabel: true }) : null;
 
       const detailView = DetailView({
         item: normalized,

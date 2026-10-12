@@ -138,7 +138,9 @@ export default function PlayerPage({ id }, pageScope) {
       ]);
       if (cleaningUp) return;
 
-      const resumePosition = Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
+      // "Von vorn" (#/player/<id>?from=start) ignores the saved position.
+      const fromStart = new URLSearchParams(window.location.hash.split('?')[1] || '').get('from') === 'start';
+      const resumePosition = fromStart ? 0 : Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
       const episodeContext = await loadEpisodeContext(item).catch(() => null);
       if (cleaningUp) return;
 
