@@ -47,6 +47,12 @@ function resolveImageSource(item, type) {
   }
 
   if (type === 'Backdrop') {
+    // A wide episode card shows that episode's own still (its Primary is 16:9),
+    // not the series backdrop every episode shares. Poster cards above keep the
+    // series poster, which fits their shape.
+    if (item.Type === 'Episode' && item.ImageTags?.Primary) {
+      return source(item.Id, 'Primary', true, getTag(item, 'Primary'));
+    }
     if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
       return source(item.Id, 'Backdrop', true, getTag(item, 'Backdrop'));
     }

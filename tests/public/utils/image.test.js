@@ -10,6 +10,12 @@ describe('getItemImageUrl', () => {
     expect(getItemImageUrl(movie, 'Logo')).toBe('/api/media/image/m1?type=Logo&maxWidth=400&tag=l1');
   });
 
+  it('shows an episode\'s own still on wide cards and the series poster on posters', () => {
+    const episode = { Id: 'e2', Type: 'Episode', SeriesId: 's1', SeriesPrimaryImageTag: 'sp', ImageTags: { Primary: 'ep2' }, ParentBackdropItemId: 's1', ParentBackdropImageTags: ['sb'] };
+    expect(getItemImageUrl(episode, 'Backdrop')).toBe('/api/media/image/e2?type=Primary&maxWidth=1280&tag=ep2');
+    expect(getItemImageUrl(episode, 'Primary')).toBe('/api/media/image/s1?type=Primary&maxWidth=400&tag=sp');
+  });
+
   it('falls back through series, parent and primary images like before', () => {
     const episode = { Id: 'e1', Name: 'Pilot', Type: 'Episode', SeriesId: 's1', SeriesPrimaryImageTag: 'sp' };
     expect(getItemImageUrl(episode, 'Primary')).toBe('/api/media/image/s1?type=Primary&maxWidth=400&tag=sp');
