@@ -197,6 +197,16 @@ db.exec(`
   );
 `);
 
+// Per-user settings that follow the user to every device (see
+// src/public/js/shared/preferences.js for the keys), as one JSON object.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`);
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,

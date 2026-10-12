@@ -43,3 +43,18 @@ describe('subtitles', () => {
     ]);
   });
 });
+
+describe('pickSubtitleForLanguage mit Regionen', () => {
+  it('nimmt den exakten Code zuerst, sonst dieselbe Sprache in einer anderen Region', async () => {
+    const { pickSubtitleForLanguage } = await import('../../../src/player/src/subtitles.js');
+    const tracks = [
+      { index: 1, language: 'pt-PT' },
+      { index: 2, language: 'pt-BR' },
+      { index: 3, language: 'en' }
+    ];
+    expect(pickSubtitleForLanguage(tracks, 'pt-BR').index).toBe(2);
+    expect(pickSubtitleForLanguage(tracks, 'pt').index).toBe(1);
+    expect(pickSubtitleForLanguage(tracks, 'en-US').index).toBe(3);
+    expect(pickSubtitleForLanguage(tracks, 'de')).toBeNull();
+  });
+});

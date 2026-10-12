@@ -3,6 +3,7 @@ import { createAppSocket } from './app.socket.js';
 import { watchPartyInvitationStore } from '../store/watch-party-invitations.store.js';
 import { reportServerBuild } from '../utils/appVersion.js';
 import { notificationsStore } from '../store/notifications.store.js';
+import { preferencesStore } from '../store/preferences.store.js';
 import { endClientSession } from '../utils/sessionNotice.js';
 
 let socket = null;
@@ -35,6 +36,7 @@ export function initAppRealtime() {
       });
       watchPartyInvitationStore.loadPending();
       notificationsStore.start();
+      preferencesStore.load();
       return;
     }
 
@@ -43,6 +45,7 @@ export function initAppRealtime() {
       socket = null;
       watchPartyInvitationStore.clear();
       notificationsStore.stop();
+      preferencesStore.clear();
     }
   });
 }
