@@ -10,6 +10,7 @@ export const NOTIFICATION_KINDS = Object.freeze([
   { kind: 'new_content', label: 'Neu in der Bibliothek', description: 'Neue Filme und Serien, gebündelt.', on: false },
   { kind: 'watch_party_invite', label: 'Watch-Party-Einladungen', description: 'Jemand lädt dich zu einer Watch Party ein.', on: true },
   { kind: 'app_update', label: 'Neue VANTA-Version', description: 'Eine neue Version ist da.', on: false },
+  { kind: 'announcement', label: 'Mitteilungen', description: 'Nachrichten der Admins an alle.', on: true },
   { kind: 'admin_new_request', label: 'Neue Anfragen und Meldungen', description: 'Für Admins: etwas wartet auf eine Entscheidung.', on: true, adminOnly: true }
 ]);
 

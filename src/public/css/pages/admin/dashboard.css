@@ -1,0 +1,226 @@
+/* The admin dashboard (#/admin, adminDashboard.js). */
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Never wider than the screen; engines without min() keep the line above. */
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+}
+
+.admin-dash-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 12px;
+}
+
+.admin-dash-heading {
+  margin-top: 12px;
+  color: var(--admin-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-dash-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--admin-hairline);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+}
+
+button.admin-dash-card {
+  cursor: pointer;
+}
+
+button.admin-dash-card:hover,
+button.admin-dash-card:focus-visible {
+  background: var(--admin-surface-hover);
+  outline: none;
+}
+
+.admin-dash-card.has-work {
+  border-color: rgba(var(--abyss-accent), 0.45);
+}
+
+.admin-dash-card-title {
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.admin-dash-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.admin-dash-stat {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-dash-stat strong {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dash-stat span,
+.admin-dash-muted {
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+}
+
+.admin-dash-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+
+.admin-dash-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.admin-dash-dot.is-ok {
+  background: var(--admin-success);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+}
+
+.admin-dash-dot.is-bad {
+  background: var(--admin-danger);
+}
+
+.admin-dash-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.admin-dash-meter.is-thin {
+  height: 3px;
+}
+
+.admin-dash-meter span {
+  display: block;
+  height: 100%;
+  background: rgb(var(--abyss-accent));
+}
+
+.admin-dash-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.admin-dash-list li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-dash-list li > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dash-streams {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+}
+
+.admin-dash-streams li {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-dash-stream-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-dash-badge {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--admin-success);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.admin-dash-badge.is-transcode {
+  background: rgba(245, 192, 107, 0.15);
+  color: #f5c06b;
+}
+
+.admin-dash-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-dash-inline-button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-dash-inline-button[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.admin-dash-announce {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-dash-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-dash-input:focus {
+  outline: none;
+  border-color: rgba(var(--abyss-accent), 0.5);
+}
+
+.admin-dash-send {
+  justify-self: start;
+}

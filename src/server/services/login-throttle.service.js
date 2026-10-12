@@ -21,6 +21,8 @@ export const LOGIN_THROTTLE_DEFAULTS = {
 export function createLoginThrottle({ now = () => Date.now(), ...options } = {}) {
   const config = { ...LOGIN_THROTTLE_DEFAULTS, ...options };
   const entries = new Map(); // key -> { failures, locks, lockedUntil, lastFailureAt }
+  // For the admin dashboard: counts since the server started, no names.
+  const counts = { successes: 0, failures: 0, locks: 0 };
 
   const userKey = (ip, username) => `u:${ip}:${String(username || '').trim().toLowerCase()}`;
   const ipKey = (ip) => `ip:${ip}`;
@@ -82,12 +84,21 @@ export function createLoginThrottle({ now = () => Date.now(), ...options } = {})
     recordFailure(ip, username) {
       const userLock = fail(userKey(ip, username), config.attemptsPerLock);
       const ipLock = fail(ipKey(ip), config.ipAttemptsPerLock);
+      counts.failures += 1;
+      if (userLock || ipLock) counts.locks += 1;
       return Math.max(userLock, ipLock);
     },
 
     // Right credentials clear this username's history from this address.
     recordSuccess(ip, username) {
       entries.delete(userKey(ip, username));
+      counts.successes += 1;
+    },
+
+    stats() {
+      const time = now();
+      const activeLocks = [...entries.values()].filter(entry => entry.lockedUntil > time).length;
+      return { ...counts, activeLocks };
     },
 
     size: () => entries.size,

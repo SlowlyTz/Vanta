@@ -6,7 +6,7 @@ import { authStore } from '../store/auth.store.js';
 import { createSectionLoader } from '../components/loader.js';
 import { listAdminTools, createAdminTool } from '../components/admin-tools/AdminToolRegistry.js';
 import { closeAllAdminModals } from '../components/admin-tools/adminModal.js';
-import { createAdminMenu } from './admin/adminMenu.js';
+import { createAdminDashboard } from './admin/adminDashboard.js';
 import { createAdminHeader } from './admin/adminHeader.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { openAdminLayer } from './admin/adminLayer.js';
@@ -41,6 +41,8 @@ export default function AdminPage({ section = null } = {}, pageScope) {
   const container = createElement('div', { className: 'admin-page page-container content-section' });
 
   let open = null;
+  // The dashboard under the layers; it stops polling while one is open.
+  let dashboard = null;
   const unsubscribers = [];
   let rendered = false;
   let torndown = false;
@@ -51,6 +53,7 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     open = null;
     tool.destroy?.();
     layer.close({ immediate });
+    if (!torndown) dashboard?.resume();
   };
 
   // Alles, was diese Seite außerhalb ihres Containers hinterlässt — die Ebene
@@ -66,7 +69,8 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     closeAllAdminModals();
   }
 
-  resolvePageScope(pageScope).onLeave(teardown);
+  const scope = resolvePageScope(pageScope);
+  scope.onLeave(teardown);
 
   const denyAccess = () => {
     if (torndown) return;
@@ -106,6 +110,7 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     });
 
     open = { id, tool, layer };
+    dashboard?.pause();
     tool.load?.();
     return true;
   }
@@ -133,10 +138,13 @@ export default function AdminPage({ section = null } = {}, pageScope) {
   };
 
   function buildMenuView(tools) {
-    const menu = createAdminMenu({
+    // The dashboard: status, the tools (the former menu) and activity.
+    const menu = createAdminDashboard({
       tools,
+      scope,
       onSelect: (id) => { window.location.hash = `#/admin/${id}`; }
     });
+    dashboard = menu;
 
     // Offene Anfragen und Meldungen zusammen; die Zahl kommt aus dem
     // Benachrichtigungs-Store und bleibt live, das Menü steht sofort.
@@ -147,7 +155,7 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     return createElement('div', { className: 'admin-page-layout' },
       createAdminHeading({
         title: 'Admin',
-        subtitle: 'Anfragen prüfen, Nutzer verwalten und VANTA einrichten.'
+        subtitle: 'Wie es VANTA geht, was wartet und was zuletzt passiert ist.'
       }),
       menu.element
     );

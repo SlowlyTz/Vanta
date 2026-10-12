@@ -96,3 +96,16 @@ describe('formatLockDuration', () => {
     expect(formatLockDuration(DAY)).toBe('24 Stunden');
   });
 });
+
+describe('loginThrottle stats', () => {
+  it('counts logins, failures and locks since the start', () => {
+    let time = 0;
+    const throttle = createLoginThrottle({ now: () => time, attemptsPerLock: 2, ipAttemptsPerLock: 100 });
+    throttle.recordSuccess('1.1.1.1', 'a');
+    throttle.recordFailure('1.1.1.1', 'b');
+    throttle.recordFailure('1.1.1.1', 'b');
+    expect(throttle.stats()).toEqual({ successes: 1, failures: 2, locks: 1, activeLocks: 1 });
+    time += 24 * 60 * 60 * 1000;
+    expect(throttle.stats().activeLocks).toBe(0);
+  });
+});
