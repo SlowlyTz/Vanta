@@ -21,6 +21,10 @@ const stack = [];
 
 export const isModalOpen = () => stack.length > 0;
 
+// The topmost open modal ({ dialog, overlay, close }), or null; the TV focus
+// engine keeps the focus inside it.
+export const getTopModal = () => stack[stack.length - 1] || null;
+
 export function focusableIn(root) {
   return [...root.querySelectorAll(FOCUSABLE)].filter(element =>
     !element.closest('[hidden], [inert], .hidden, .invisible'));
@@ -69,6 +73,8 @@ function onKeydown(event) {
   if (event.key === 'Escape' && top.closeOnEscape) {
     event.preventDefault();
     event.stopPropagation();
+    // A dialog with steps (an open area of the settings) goes one back first.
+    if (top.back?.()) return;
     top.close();
     return;
   }
@@ -113,6 +119,8 @@ function onFocusIn(event) {
  * @param {boolean} [options.lockScroll=true]
  * @param {string}  [options.label]       aria-label when the dialog has no labelled heading
  * @param {object}  [options.pageScope]   closes with this page; defaults to the current one
+ * @param {Function} [options.onBack]     Escape or a remote's Back: return true when it
+ *                                        went a step back inside the dialog instead of closing
  */
 export function openModal({
   overlay,
@@ -124,7 +132,8 @@ export function openModal({
   closeOnEscape = true,
   lockScroll: shouldLockScroll = true,
   label = null,
-  pageScope = null
+  pageScope = null,
+  onBack = null
 }) {
   const previouslyFocused = document.activeElement;
   let closed = false;
@@ -151,6 +160,7 @@ export function openModal({
     overlay,
     dialog,
     closeOnEscape,
+    back: onBack,
     element: overlay,
     get isOpen() { return !closed; },
     close() {
@@ -177,11 +187,20 @@ export function openModal({
 
   // A dialog that fades in can still be invisible (and so unfocusable) in the
   // first frame; focus is tried again for a moment until it lands inside.
-  const focusTarget = typeof initialFocus === 'string' ? dialog.querySelector(initialFocus) : initialFocus;
+  let focusTarget = typeof initialFocus === 'string' ? dialog.querySelector(initialFocus) : initialFocus;
+  // On a TV a focused text field opens the system keyboard: start on the
+  // first control that is not one (OK on the field opens VANTA's own).
+  const tv = document.documentElement.classList.contains('tv-mode');
+  const isTextField = element => element?.matches?.('input:not([type="checkbox"]):not([type="radio"]), textarea');
+  if (tv && isTextField(focusTarget)) focusTarget = null;
+  const firstFocusable = () => {
+    const items = focusableIn(dialog);
+    return tv ? items.find(element => !isTextField(element)) : items[0];
+  };
   let focusTries = 0;
   const focusFirst = () => {
     if (closed || overlay.contains(document.activeElement)) return;
-    (focusTarget || focusableIn(dialog)[0] || dialog).focus?.({ preventScroll: true });
+    (focusTarget || firstFocusable() || dialog).focus?.({ preventScroll: true });
     if (!overlay.contains(document.activeElement) && ++focusTries < 10) setTimeout(focusFirst, 40);
   };
   if (window.requestAnimationFrame) window.requestAnimationFrame(focusFirst);

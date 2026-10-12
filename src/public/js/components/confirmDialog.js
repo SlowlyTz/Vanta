@@ -3,8 +3,9 @@ import { openModal } from '../utils/modal.js';
 
 // Small yes/no question in the app's dialog style. Resolves true for the
 // confirm button, false for "Nein", Escape, a click on the backdrop or when
-// the page is left.
-export function confirmDialog({ title, message, confirmLabel = 'Ja', cancelLabel = 'Nein' }) {
+// the page is left. `focusCancel` starts on "Nein" (for a step that cannot
+// be undone, where OK pressed twice must not decide it).
+export function confirmDialog({ title, message, confirmLabel = 'Ja', cancelLabel = 'Nein', focusCancel = false }) {
   return new Promise((resolve) => {
     let result = false;
 
@@ -39,7 +40,7 @@ export function confirmDialog({ title, message, confirmLabel = 'Ja', cancelLabel
     const modal = openModal({
       overlay,
       dialog: card,
-      initialFocus: confirmButton,
+      initialFocus: focusCancel ? cancelButton : confirmButton,
       onClose: () => resolve(result)
     });
   });
