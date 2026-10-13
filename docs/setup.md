@@ -33,16 +33,22 @@ Behind HTTPS set `COOKIE_SECURE=true`. A reverse proxy on the same host or a pri
 
 ## Deploying an update
 
-The live instance runs under pm2 from a git checkout. One update:
+In production every start updates itself first (`scripts/update.js`), whether it runs under pm2 or with `npm start`:
+
+1. Skips unless the checkout is on `main` with no changes to tracked files and no local commits missing on `origin/main`.
+2. Fetches `origin/main`; nothing to do when it is the current commit.
+3. Copies `db/` to `backups/db-<time>-<old commit>` (the newest five stay; `UPDATE_BACKUP_DIR` to move them).
+4. Fast-forwards, runs `npm ci` when `package.json` or the lock file changed, then `npm run build`.
+5. Checks that `.env` has every required value, that `dist/index.html` exists and that the build parses on Chromium 68.
+6. On success the new code starts: under pm2 the process exits and pm2 starts it again; with `npm start` it starts itself again. On failure it resets to the old commit, builds that, and starts it.
+
+So deploying is pushing to `main` and restarting:
 
 ```bash
-cp -a db /root/vanta-backups/db-$(date +%F)-before-<version>   # back up runtime data
-git pull --ff-only origin main
-npm ci                       # only needed when package-lock.json changed
-npm run build
-pm2 restart server
-curl -s localhost:3000/api/health
+pm2 restart server        # or stop and npm start
 ```
+
+`npm run update` does steps 1–5 by hand without starting the server; a running server picks the update up on its next restart. `AUTO_UPDATE=false` turns the update on start off (it never runs in development).
 
 Open tabs notice the new build on their next API call or socket reconnect and show the „Neue Version verfügbar“ overlay. A restart without client changes keeps the build id and bothers no one.
 
