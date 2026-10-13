@@ -8,7 +8,8 @@ import { settingsCard, settingsNote, switchRow } from '../controls.js';
 const SUPPORT_TEXT = {
   denied: 'Der Browser blockiert Benachrichtigungen für VANTA. Erlaube sie in den Website-Einstellungen des Browsers und versuche es dann erneut.',
   unsupported: 'Dieser Browser kann keine Push-Benachrichtigungen empfangen. Die Liste unter der Glocke funktioniert trotzdem.',
-  'ios-install': 'Auf iPhone und iPad gibt es Push nur für die installierte App: Teilen → „Zum Home-Bildschirm“, dann VANTA von dort öffnen (ab iOS 16.4).'
+  'ios-install': 'Auf iPhone und iPad gibt es Push nur für die installierte App: Teilen → „Zum Home-Bildschirm“, dann VANTA von dort öffnen (ab iOS 16.4).',
+  'no-service': 'Dieser Browser hat keinen Push-Dienst (etwa Helium, ungoogled Chromium oder Brave ohne „Google-Dienste für Push-Nachrichten“). Push klappt in Chrome, Edge, Firefox und Safari; die Liste unter der Glocke funktioniert überall.'
 };
 
 // "Benachrichtigungen": push on this device, and per kind push and the list
@@ -17,6 +18,8 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
   const element = createElement('div', { className: 'settings-view' });
   let prefs = null;
   let deviceOn = false;
+  // Set once subscribing found no push service in this browser.
+  let noService = false;
 
   const save = async (patch) => {
     try {
@@ -40,6 +43,7 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
           if (checked) {
             const result = await enablePush();
             deviceOn = result === 'on';
+            noService = result === 'no-service';
             if (!deviceOn) appStore.showToast(SUPPORT_TEXT[result] || 'Push konnte nicht eingeschaltet werden', 'error');
           } else {
             await disablePush();
@@ -92,6 +96,7 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
       settingsCard('Dieses Gerät',
         deviceSwitch.element,
         SUPPORT_TEXT[support] && !deviceOn ? settingsNote(SUPPORT_TEXT[support], { tone: support === 'denied' ? 'warning' : 'info' }) : null,
+        noService && !deviceOn && support === 'ready' ? settingsNote(SUPPORT_TEXT['no-service'], { tone: 'info' }) : null,
         createElement('div', { className: 'settings-card-actions' }, testButton)
       ),
       prefs

@@ -5,7 +5,7 @@ vi.mock('../../../src/public/js/api/notifications.api.js', () => ({
 }));
 
 import { NotificationsApi } from '../../../src/public/js/api/notifications.api.js';
-import { syncPushSubscription, unsubscribeBrowserPush } from '../../../src/public/js/utils/pushSubscription.js';
+import { enablePush, syncPushSubscription, unsubscribeBrowserPush } from '../../../src/public/js/utils/pushSubscription.js';
 
 let subscription;
 const originals = {};
@@ -50,5 +50,18 @@ describe('push subscription', () => {
     await expect(unsubscribeBrowserPush()).resolves.toBe(true);
     expect(subscription.unsubscribe).toHaveBeenCalled();
     expect(NotificationsApi.unsubscribe).not.toHaveBeenCalled();
+  });
+
+  it('says so when the browser has no push service instead of failing', async () => {
+    const failure = Object.assign(new Error('Registration failed - push service error'), { name: 'AbortError' });
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { ready: Promise.resolve({ pushManager: { getSubscription: async () => null, subscribe: vi.fn(async () => { throw failure; }) } }) }
+    });
+    globalThis.Notification = { permission: 'default', requestPermission: async () => 'granted' };
+    NotificationsApi.getPushKey.mockResolvedValue({ publicKey: 'BAAA' });
+
+    await expect(enablePush()).resolves.toBe('no-service');
+    expect(NotificationsApi.subscribe).not.toHaveBeenCalled();
   });
 });

@@ -34,8 +34,14 @@ export async function currentSubscription() {
   }
 }
 
+// Chromium builds without Google's push service (Helium, ungoogled
+// Chromium, Brave with Google push off) have the Push API, but subscribing
+// fails with an AbortError "Registration failed - push service error".
+export const isMissingPushService = error => error?.name === 'AbortError' || /push service/i.test(error?.message || '');
+
 // Asks for permission, subscribes and tells the server. Resolves with
-// 'on' or the reason it did not work ('denied', 'unsupported', 'ios-install').
+// 'on' or the reason it did not work ('denied', 'unsupported', 'ios-install',
+// 'no-service').
 export async function enablePush() {
   const support = pushSupport();
   if (support !== 'ready') return support;
@@ -45,7 +51,12 @@ export async function enablePush() {
   const pushManager = (await registration()).pushManager;
   let subscription = await pushManager.getSubscription();
   if (!subscription) {
-    subscription = await pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+    try {
+      subscription = await pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+    } catch (error) {
+      if (isMissingPushService(error)) return 'no-service';
+      throw error;
+    }
   }
   await NotificationsApi.subscribe(subscription.toJSON());
   return 'on';
