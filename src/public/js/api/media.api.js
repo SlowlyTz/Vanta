@@ -166,6 +166,11 @@ export const MediaApi = {
     return request(`/api/media/profile/favorites?page=${page}&limit=${limit}`, { signal });
   },
 
+  // What one has watched: counts, time, favourite genres, the last title.
+  getProfileStats({ signal } = {}) {
+    return request('/api/media/profile/stats', { signal });
+  },
+
   favoriteItem(id) {
     return request(`/api/media/item/${encodeURIComponent(id)}/favorite`, {
       method: 'POST'

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ProfileService } from '../../../../src/server/services/jellyfin/profile.service.js';
+import { ProfileService, resetProfileStatsCache } from '../../../../src/server/services/jellyfin/profile.service.js';
 
 vi.mock('../../../../src/server/services/jellyfin/client.js', () => ({
   jellyfinJson: vi.fn()
@@ -259,6 +259,80 @@ describe('ProfileService', () => {
       const rawCalls = jellyfinJson.mock.calls.filter(([, options]) => !(options.query && options.query.Ids));
       expect(rawCalls).toHaveLength(2);
       expect(rawCalls[1][1].query).toEqual(expect.objectContaining({ StartIndex: 200, Limit: 200 }));
+    });
+  });
+
+  describe('getStats', () => {
+    const TICKS = 600000000; // one minute
+    function mockStats({ movies = [], episodes = [], series = {}, last = null, lastSeries = null }) {
+      jellyfinJson.mockImplementation((path, { query }) => {
+        if (query.Ids) {
+          // The last title's series comes with all fields, the genre lookup with Genres only.
+          const items = query.Ids.split(',').map(id => (query.IncludeItemTypes === 'Series' && lastSeries?.Id === id ? lastSeries : series[id])).filter(Boolean);
+          return Promise.resolve({ Items: items, TotalRecordCount: items.length });
+        }
+        if (query.SortBy === 'DatePlayed') {
+          const items = query.Filters === 'IsPlayed' && last ? [last] : [];
+          return Promise.resolve({ Items: items, TotalRecordCount: items.length });
+        }
+        const items = query.IncludeItemTypes === 'Movie' ? movies : episodes;
+        return Promise.resolve({ Items: items.slice(query.StartIndex, query.StartIndex + query.Limit), TotalRecordCount: items.length });
+      });
+    }
+
+    beforeEach(() => resetProfileStatsCache());
+
+    it('counts watched films, episodes, series and time, and ranks the genres by time', async () => {
+      mockStats({
+        movies: [
+          { Id: 'm1', Type: 'Movie', RunTimeTicks: 120 * TICKS, Genres: ['Action'] },
+          { Id: 'm2', Type: 'Movie', RunTimeTicks: 90 * TICKS, Genres: ['Drama', 'Action'] }
+        ],
+        episodes: [
+          { Id: 'e1', Type: 'Episode', SeriesId: 's1', RunTimeTicks: 50 * TICKS },
+          { Id: 'e2', Type: 'Episode', SeriesId: 's1', RunTimeTicks: 50 * TICKS },
+          { Id: 'e3', Type: 'Episode', SeriesId: 's2', RunTimeTicks: 20 * TICKS }
+        ],
+        series: { s1: { Id: 's1', Genres: ['Krimi'] }, s2: { Id: 's2', Genres: ['Comedy'] } },
+        last: { Id: 'e3', Type: 'Episode', SeriesId: 's2', SeriesName: 'Show' },
+        lastSeries: { Id: 's2', Type: 'Series', Name: 'Show' }
+      });
+
+      const stats = await ProfileService.getStats('user', 'token');
+
+      expect(stats).toEqual({
+        movies: 2,
+        episodes: 3,
+        series: 2,
+        minutes: 330,
+        topGenres: ['Action', 'Krimi', 'Drama'],
+        lastWatched: { Id: 's2', Type: 'Series', Name: 'Show' }
+      });
+      const movieCall = jellyfinJson.mock.calls.find(([, { query }]) => query.IncludeItemTypes === 'Movie' && query.Filters === 'IsPlayed' && !query.SortBy);
+      expect(movieCall[1].query).toEqual(expect.objectContaining({ Recursive: 'true', Fields: 'Genres', StartIndex: 0, Limit: 1000 }));
+    });
+
+    it('pages through long histories and keeps the answer a few minutes per account', async () => {
+      const episodes = Array.from({ length: 1500 }, (_, i) => ({ Id: `e${i}`, Type: 'Episode', SeriesId: 's1', RunTimeTicks: TICKS }));
+      mockStats({ episodes, series: { s1: { Id: 's1', Genres: [] } } });
+
+      const stats = await ProfileService.getStats('user', 'token', { now: 1000 });
+      expect(stats.episodes).toBe(1500);
+      expect(stats.minutes).toBe(1500);
+      expect(stats.lastWatched).toBeNull();
+
+      const calls = jellyfinJson.mock.calls.length;
+      await ProfileService.getStats('user', 'token', { now: 1000 + 60 * 1000 });
+      expect(jellyfinJson.mock.calls.length).toBe(calls);
+      await ProfileService.getStats('user', 'token', { now: 1000 + 6 * 60 * 1000 });
+      expect(jellyfinJson.mock.calls.length).toBeGreaterThan(calls);
+    });
+
+    it('does not keep a failed count', async () => {
+      jellyfinJson.mockRejectedValueOnce(new Error('down'));
+      await expect(ProfileService.getStats('user', 'token')).rejects.toThrow('down');
+      mockStats({});
+      await expect(ProfileService.getStats('user', 'token')).resolves.toEqual(expect.objectContaining({ movies: 0, episodes: 0 }));
     });
   });
 });

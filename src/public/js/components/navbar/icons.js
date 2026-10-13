@@ -135,35 +135,6 @@ export function createUserIcon() {
   `);
 }
 
-export function createMovieIcon() {
-  return createIcon('settings-row-icon settings-accent-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 6h16v14H4z"></path>
-      <path d="M8 6 6 2"></path>
-      <path d="M12 6 10 2"></path>
-      <path d="M16 6 14 2"></path>
-    </svg>
-  `);
-}
-
-export function createScreenIcon() {
-  return createIcon('settings-row-icon settings-accent-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="4" width="18" height="12" rx="2"></rect>
-      <path d="M8 20h8"></path>
-      <path d="M12 16v4"></path>
-    </svg>
-  `);
-}
-
-export function createPlayOutlineIcon() {
-  return createIcon('settings-row-icon settings-accent-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 4.5v15l13-7.5z"></path>
-    </svg>
-  `);
-}
-
 export function createProfileIcon() {
   return createIcon('settings-row-icon', `
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">

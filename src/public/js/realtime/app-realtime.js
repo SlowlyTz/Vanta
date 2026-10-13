@@ -8,7 +8,6 @@ import { watchlistStore } from '../store/watchlist.store.js';
 import { endClientSession } from '../utils/sessionNotice.js';
 import { resetScreensaverCache } from '../components/screensaver.js';
 import { recentSearches } from '../utils/recentSearches.js';
-import { resetSettingsStatsCache } from '../components/settings/settingsStats.js';
 
 let socket = null;
 
@@ -55,7 +54,6 @@ export function initAppRealtime() {
       // What the next person on this device must not see.
       resetScreensaverCache();
       recentSearches.clear();
-      resetSettingsStatsCache();
     }
   });
 }

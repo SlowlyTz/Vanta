@@ -551,17 +551,86 @@ html.tv-mode .tv-shell .content-section {
   overflow: visible;
 }
 
-/* Profile tabs: room above and below for the ring around the whole word
-   (the row scrolls sideways on phones, which would cut it). */
-html.tv-mode .profile-tabs {
-  overflow: visible;
-  padding: 0.5rem 0.4rem;
-  margin: -0.5rem -0.4rem 0;
+/* ---- Profile --------------------------------------------------------------
+   The head runs under the sidebar to the screen edges, like the home hero. */
+html.tv-mode .profile-overview .profile-hero {
+  min-height: 62vh;
+  margin-left: calc(-1 * var(--tv-content-left));
+  margin-right: calc(-1 * var(--tv-safe-x));
+  padding-top: var(--tv-safe-y);
 }
 
+html.tv-mode .profile-hero-inner {
+  padding: 0 var(--tv-safe-x) 1.5rem var(--tv-content-left);
+  grid-gap: 1.1rem;
+}
+
+html.tv-mode .profile-avatar {
+  width: 5.5rem;
+  height: 5.5rem;
+  margin-right: 1.4rem;
+  font-size: 2.5rem;
+}
+
+html.tv-mode .profile-name {
+  font-size: 3rem;
+}
+
+html.tv-mode .profile-stats {
+  max-width: 40rem;
+  grid-gap: 0.7rem;
+}
+
+html.tv-mode .profile-stat {
+  padding: 0.8rem 1rem;
+  border-radius: 0.8rem;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.tv-mode .profile-stat-value {
+  font-size: 1.6rem;
+}
+
+html.tv-mode .profile-stat-label {
+  font-size: 0.75rem;
+}
+
+html.tv-mode .profile-tab-content,
+html.tv-mode .profile-rows {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html.tv-mode .tv-shell .profile-list {
+  padding: 0;
+}
+
+/* Pills: room around them for the ring (the line scrolls sideways on
+   phones, which would cut it). */
+html.tv-mode .profile-tabs,
+html.tv-mode .profile-shortcuts {
+  overflow: visible;
+  flex-wrap: nowrap;
+  padding: 0.5rem 0.4rem;
+  margin: -0.5rem -0.4rem 1rem;
+}
+
+html.tv-mode .profile-shortcut,
+html.tv-mode .profile-tab-button {
+  margin-right: 0.7rem;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.85rem;
+}
+
+html.tv-mode .profile-shortcut.tv-focus,
 html.tv-mode .profile-tab-button.tv-focus {
-  border-radius: 0.6rem;
   box-shadow: var(--tv-ring);
+}
+
+html.tv-mode .profile-shortcut.tv-focus {
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }
 
 html.tv-mode .heart-container:focus-within {
