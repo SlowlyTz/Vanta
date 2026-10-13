@@ -1,8 +1,12 @@
-# VANTA
+<p align="center">
+  <img src="src/public/assets/logo2.png" alt="VANTA" width="460">
+</p>
+
+<p align="center"><b>A web client for Jellyfin with its own player, watch parties and a TV interface.</b></p>
 
 > **Update 1.1 released.** See the [changelog](docs/changelogs/changelog.md) for everything new since 1.0.
 
-A web client for Jellyfin: its own streaming interface and player, watch parties, a trailer scroller, media requests, notifications, a TV interface and admin tools. A Node/Express server sits between browser and Jellyfin; the frontend is a framework-free SPA.
+VANTA brings its own streaming interface and player, watch parties, a trailer scroller, media requests, notifications, a TV interface and admin tools to Jellyfin. A Node/Express server sits between browser and Jellyfin; the frontend is a framework-free SPA.
 
 ## Quick start
 
