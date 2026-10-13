@@ -1,5 +1,7 @@
 # VANTA
 
+> **Update 1.1 released.** See the [changelog](docs/changelogs/changelog.md) for everything new since 1.0.
+
 VANTA is a modern web client for Jellyfin with a custom streaming interface, trailer scroller, media requests, and admin tools. The project combines a vanilla JavaScript SPA with a Node/Express backend that keeps authentication, Jellyfin API access, and playback proxying on the server side.
 
 > Work in progress: This project is under active development. APIs, UI behavior, and data formats may still change.
