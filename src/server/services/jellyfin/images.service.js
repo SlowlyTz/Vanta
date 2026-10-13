@@ -13,6 +13,7 @@ export class ImagesService {
     const queryString = urlParams.toString();
     const path = `/Items/${itemId}/Images/${type}${queryString ? '?' + queryString : ''}`;
 
-    return jellyfinRawFetch(path, { token });
+    // Originals can be large; the body is read within this time as well.
+    return jellyfinRawFetch(path, { token, timeoutMs: 30 * 1000 });
   }
 }

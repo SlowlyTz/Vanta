@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { confirmDialog } from './confirmDialog.js';
+import { getCurrentPageScope } from '../utils/pageScope.js';
 
 export const PLAYED_CHANGED_EVENT = 'vanta:item-played-changed';
 
@@ -27,15 +28,18 @@ const questionFor = (item, next) => {
 };
 
 // The same check Jellyfin offers: marks an item played or unplayed after a
-// yes/no question. Optimistic like the favourite heart, reverted when the
-// request fails. `compact` is the smaller variant that sits on episode cards.
-export function createPlayedToggle(item, { compact = false, onChange = null, confirm = confirmDialog } = {}) {
+// yes/no question, and back again: a watched item offers "Als ungesehen
+// markieren". Optimistic like the favourite heart, reverted when the request
+// fails. `compact` is the smaller variant that sits on episode cards. A change
+// made elsewhere (the series above an episode, the context menu) reaches it
+// through PLAYED_CHANGED_EVENT.
+export function createPlayedToggle(item, { compact = false, withLabel = false, onChange = null, confirm = confirmDialog } = {}) {
   let played = item?.UserData?.Played === true;
   let pending = false;
 
   const button = createElement('button', {
     type: 'button',
-    className: `played-toggle${compact ? ' compact' : ''}`,
+    className: `played-toggle${compact ? ' compact' : ''}${withLabel ? ' has-label' : ''}`,
     onClick: async (event) => {
       event.stopPropagation();
       if (pending) return;
@@ -78,10 +82,23 @@ export function createPlayedToggle(item, { compact = false, onChange = null, con
     button.setAttribute('aria-pressed', String(value));
     button.setAttribute('aria-label', text);
     button.title = text;
+    if (label) label.textContent = value ? 'Gesehen' : 'Als gesehen markieren';
   };
 
+  // The detail page names the state next to the check; the title says
+  // what a click does.
+  const label = withLabel ? createElement('span', { className: 'played-toggle-label' }) : null;
   button.innerHTML = CHECK_ICON;
+  if (label) button.appendChild(label);
   apply(played);
+
+  const onChangedElsewhere = (event) => {
+    const detail = event.detail || {};
+    if (detail.id !== item?.Id || pending || detail.played === played) return;
+    apply(detail.played === true);
+  };
+  window.addEventListener(PLAYED_CHANGED_EVENT, onChangedElsewhere);
+  getCurrentPageScope()?.onLeave(() => window.removeEventListener(PLAYED_CHANGED_EVENT, onChangedElsewhere));
 
   return button;
 }

@@ -47,6 +47,12 @@ function resolveImageSource(item, type) {
   }
 
   if (type === 'Backdrop') {
+    // A wide episode card shows that episode's own still (its Primary is 16:9),
+    // not the series backdrop every episode shares. Poster cards above keep the
+    // series poster, which fits their shape.
+    if (item.Type === 'Episode' && item.ImageTags?.Primary) {
+      return source(item.Id, 'Primary', true, getTag(item, 'Primary'));
+    }
     if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
       return source(item.Id, 'Backdrop', true, getTag(item, 'Backdrop'));
     }
@@ -100,6 +106,16 @@ export function getItemImageUrl(item, type = 'Primary') {
   }
 
   return imageUrl(source.id, source.imageType, source.wide ? BACKDROP_WIDTH : POSTER_WIDTH, source.tag);
+}
+
+// The backdrop rendition that fills `cssWidth` CSS pixels on this screen
+// (for CSS backgrounds, which have no srcset).
+export function getBackdropUrlFor(item, cssWidth = window.innerWidth) {
+  const source = item ? resolveImageSource(item, 'Backdrop') : null;
+  if (!source) return getItemImageUrl(item, 'Backdrop');
+  const needed = cssWidth * (window.devicePixelRatio || 1);
+  const width = BACKDROP_WIDTHS.find(step => step >= needed) || BACKDROP_WIDTHS[BACKDROP_WIDTHS.length - 1];
+  return imageUrl(source.id, source.imageType, width, source.tag);
 }
 
 // `src` is exactly what getItemImageUrl returns; `srcset`/`sizes` let the

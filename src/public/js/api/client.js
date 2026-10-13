@@ -1,6 +1,12 @@
 import { BUILD_HEADER, reportServerBuild } from '../utils/appVersion.js';
+import { endClientSession } from '../utils/sessionNotice.js';
+import { PAGE_LEFT } from '../utils/pageScope.js';
 
-const AUTH_UNAUTHORIZED_EVENT = 'vanta:auth-unauthorized';
+// A request of a page that was left never settles: nothing is left to show
+// its result, and an error would only pop up a toast for a page that is gone.
+const leftBehind = (signal) => signal?.aborted && signal.reason === PAGE_LEFT;
+const never = () => new Promise(() => {});
+
 const NETWORK_ERROR_EVENT = 'vanta:network-error';
 
 const createApiError = (message, response, options = {}) => {
@@ -12,10 +18,14 @@ const createApiError = (message, response, options = {}) => {
   if (options.reason !== undefined) error.reason = options.reason;
   if (options.limit !== undefined) error.limit = options.limit;
   if (options.activeStreams !== undefined) error.activeStreams = options.activeStreams;
+  if (options.retryAfterMs !== undefined) error.retryAfterMs = options.retryAfterMs;
   return error;
 };
 
+// `options.signal` (usually a page scope's) aborts the request; see above.
 export async function request(url, options = {}) {
+  if (leftBehind(options.signal)) return never();
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
@@ -42,17 +52,18 @@ export async function request(url, options = {}) {
       throw networkError;
     }
 
-    reportServerBuild(response.headers?.get?.(BUILD_HEADER));
+    // An answer the browser may keep (max-age) can come from its cache and
+    // name the build of a deploy ago; only fresh answers tell the build.
+    if (!/max-age=[1-9]/.test(response.headers?.get?.('cache-control') || '')) {
+      reportServerBuild(response.headers?.get?.(BUILD_HEADER));
+    }
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));
-      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true });
+      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true, code: errJson.code, reason: errJson.reason });
 
-      window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
-
-      if (window.location.hash !== '#/login') {
-        window.location.hash = '#/login';
-      }
+      // A ban ends the session on the server; the login page explains why.
+      endClientSession(errJson.code === 'BANNED' ? { message: errJson.error, reason: errJson.reason } : null);
 
       throw error;
     }
@@ -63,7 +74,8 @@ export async function request(url, options = {}) {
         code: errJson.code,
         reason: errJson.reason,
         limit: errJson.limit,
-        activeStreams: errJson.activeStreams
+        activeStreams: errJson.activeStreams,
+        retryAfterMs: errJson.retryAfterMs
       });
     }
 
@@ -74,6 +86,7 @@ export async function request(url, options = {}) {
 
     return await response.text();
   } catch (error) {
+    if (leftBehind(options.signal)) return never();
     if (!error.silent) {
       console.error(`[API Request Error] ${url}:`, error.message);
     }

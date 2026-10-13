@@ -7,10 +7,9 @@ import { SqliteSessionStore } from '../db/session-store.js';
 // window fresh while the user is active.
 export const sessionStore = new SqliteSessionStore();
 
-const flushSessions = () => sessionStore.close();
-process.once('SIGINT', flushSessions);
-process.once('SIGTERM', flushSessions);
-process.once('beforeExit', flushSessions);
+// SIGINT/SIGTERM are handled in server.js (src/server/shutdown.js), which
+// writes the sessions before exiting; this covers a process that just ends.
+process.once('beforeExit', () => sessionStore.close());
 
 export const sessionMiddleware = session({
   store: sessionStore,

@@ -90,6 +90,41 @@ describe('createImageCache', () => {
     return { cache, fetchOriginal };
   };
 
+  it('deletes the least recently used renditions once the cache is over its limit', async () => {
+    // Every rendition here comes from the same source, so all have one size.
+    const probeDir = await fsp.mkdtemp(join(os.tmpdir(), 'vanta-image-probe-'));
+    const probe = createImageCache({ dir: probeDir, log, fetchOriginal: vi.fn(async () => okResponse(await png(1000, 1500))) });
+    const { size } = await probe.getImage({ itemId: 'p', type: 'Primary', tag: 't', width: 200, token: 'tok' });
+    await fsp.rm(probeDir, { recursive: true, force: true });
+
+    let time = 1_000_000;
+    const limit = size * 3 + 10;
+    const limited = createImageCache({ dir, log, now: () => time, maxBytes: limit,
+      fetchOriginal: vi.fn(async () => okResponse(await png(1000, 1500))) });
+    await limited.ready;
+    const get = (itemId) => { time += 1000; return limited.getImage({ itemId, type: 'Primary', tag: 't', width: 200, token: 'tok' }); };
+    const files = (itemId) => (fs.existsSync(join(dir, itemId)) ? fs.readdirSync(join(dir, itemId)) : []);
+
+    await get('a');
+    await get('b');
+    await get('c');
+    await get('a'); // a is used again, b is now the oldest
+    await get('d');
+    await vi.waitFor(() => expect(limited.stats().bytes).toBeLessThanOrEqual(limit * 0.9));
+
+    expect(files('b')).toEqual([]);
+    expect(files('a')).toHaveLength(1);
+    expect(files('d')).toHaveLength(1);
+  });
+
+  it('refuses originals beyond the size limit', async () => {
+    const big = okResponse(await png(10, 10));
+    big.headers = new Headers({ 'content-length': String(50 * 1024 * 1024) });
+    const { cache } = setup({ fetchOriginal: vi.fn(async () => big) });
+    await expect(cache.getImage({ itemId: 'x', type: 'Primary', tag: 't', width: 200, token: 'tok' }))
+      .rejects.toMatchObject({ status: 413 });
+  });
+
   it('renders a WebP at the step width on a miss and serves the file on the next request', async () => {
     const { cache, fetchOriginal } = setup();
 

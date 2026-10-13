@@ -101,6 +101,41 @@
   color: var(--accent-color);
 }
 
+.update-versions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-versions[hidden] {
+  display: none;
+}
+
+.update-version {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.update-version--current {
+  color: var(--text-muted);
+}
+
+.update-version--next {
+  color: var(--accent-color);
+  background: rgba(var(--abyss-accent), 0.14);
+  border-color: rgba(var(--abyss-accent), 0.3);
+}
+
+.update-version-arrow {
+  color: var(--text-muted);
+}
+
 @keyframes offline-card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.98); }
   to { opacity: 1; transform: none; }

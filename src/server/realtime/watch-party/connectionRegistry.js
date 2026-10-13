@@ -33,6 +33,15 @@ export const connectionRegistryMethods = {
     for (const ws of [...sockets]) ws.close();
   },
 
+  // Every watch-party connection of one user, in any party (a ban).
+  closeAllUserConnections(userId, code = 4001, reason = 'Session ended') {
+    for (const byUser of this.connectionsByParty.values()) {
+      const sockets = byUser.get(userId);
+      if (!sockets) continue;
+      for (const ws of [...sockets]) ws.close(code, reason);
+    }
+  },
+
   broadcastParty(partyId, payload, { skipUserId } = {}) {
     const byUser = this.connectionsByParty.get(partyId);
     if (!byUser) return;

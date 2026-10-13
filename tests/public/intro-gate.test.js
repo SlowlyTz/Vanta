@@ -5,17 +5,18 @@ import path from 'node:path';
 const source = fs.readFileSync(path.join(process.cwd(), 'src/public/js/intro-gate.js'), 'utf8');
 const TEN_MINUTES = 10 * 60 * 1000;
 
-function loadGate({ hash = '#/home', lastPlayedAt = null, now = 1_000_000_000, load } = {}) {
+function loadGate({ hash = '#/home', lastPlayedAt = null, now = 1_000_000_000, load, preferences = null } = {}) {
   document.documentElement.className = '';
   document.body.innerHTML = '<div id="intro"><canvas></canvas></div><div id="app"></div>';
   localStorage.clear();
+  if (preferences) localStorage.setItem('vanta.preferences', JSON.stringify(preferences));
   if (lastPlayedAt !== null) localStorage.setItem('vanta.intro.lastPlayedAt', String(lastPlayedAt));
   window.location.hash = hash;
   vi.spyOn(Date, 'now').mockReturnValue(now);
   // The script kicks off the real import() when it decides to play; keep
   // that from reaching the network by pre-stubbing what it reads.
   window.__introLoad = load || (() => new Promise(() => {}));
-  new Function('window', source.replace("import('/vendor/intro/vanta-intro.js')", 'window.__introLoad()'))(window);
+  new Function('window', source.replace("import('/vendor/scenes/vanta-intro.js')", 'window.__introLoad()'))(window);
   return window.VantaIntroGate;
 }
 
@@ -44,6 +45,29 @@ describe('intro-gate', () => {
     expect(localStorage.getItem('vanta.intro.lastPlayedAt')).toBe('1000000000');
   });
 
+  it('honours the settings: no intro, and less motion before the first paint', () => {
+    loadGate({ preferences: { introAnimation: 'off' } });
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    expect(document.documentElement.classList.contains('reduce-motion')).toBe(false);
+
+    loadGate({ preferences: { reducedMotion: true } });
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    expect(document.documentElement.classList.contains('reduce-motion')).toBe(true);
+  });
+
+  it('marks TV mode before the first paint and skips the scene there', () => {
+    window.history.replaceState(null, '', '/?tv=1#/home');
+    loadGate();
+    expect(document.documentElement.classList.contains('tv-mode')).toBe(true);
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    expect(localStorage.getItem('vanta.tvMode')).toBe('on');
+
+    window.history.replaceState(null, '', '/?tv=0#/home');
+    loadGate();
+    expect(document.documentElement.classList.contains('tv-mode')).toBe(false);
+    window.history.replaceState(null, '', '/#/home');
+  });
+
   it('treats a corrupt timestamp as never played', () => {
     loadGate({ lastPlayedAt: 'abc' });
     expect(document.documentElement.classList.contains('intro-off')).toBe(false);
@@ -66,6 +90,34 @@ describe('intro-gate', () => {
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '#/player/1' })).toBe(false);
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', online: false })).toBe(false);
     expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', online: true })).toBe(true);
+    expect(gate.shouldPlay({ now: 100, lastPlayedAt: null, hash: '', reducedMotion: true })).toBe(false);
+  });
+
+  it('never plays when the system asks for reduced motion', () => {
+    const load = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal('matchMedia', query => ({ matches: query.includes('reduce') }));
+    loadGate({ load });
+    expect(load).not.toHaveBeenCalled();
+    expect(document.documentElement.classList.contains('intro-off')).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('lets a click or any key skip the scene at once', async () => {
+    for (const skip of [overlay => overlay.dispatchEvent(new Event('pointerdown')), () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))]) {
+      const gate = loadGate();
+      const overlay = document.getElementById('intro');
+      let signal;
+      const playIntro = vi.fn((el, options) => { signal = options.signal; return new Promise(resolve => signal.addEventListener('abort', resolve)); });
+
+      const done = gate.start(Promise.resolve({ playIntro }));
+      await Promise.resolve();
+      await Promise.resolve();
+      skip(overlay);
+
+      expect(document.getElementById('intro')).toBeNull();
+      expect(signal.aborted).toBe(true);
+      await done;
+    }
   });
 
   it('starts fetching the scene at decision time, but only when it plays', () => {
@@ -84,7 +136,7 @@ describe('intro-gate', () => {
 
     await gate.start(Promise.resolve({ playIntro }));
 
-    expect(playIntro).toHaveBeenCalledWith(overlay);
+    expect(playIntro).toHaveBeenCalledWith(overlay, { signal: expect.any(AbortSignal) });
     expect(document.getElementById('intro')).toBeNull();
   });
 

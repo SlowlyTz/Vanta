@@ -45,6 +45,16 @@
   white-space: nowrap;
 }
 
+.settings-version {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.72rem;
+  font-weight: 520;
+  letter-spacing: 0.04em;
+  text-align: center;
+  user-select: text;
+}
+
 .settings-status {
   min-height: 18px;
   color: var(--text-muted);

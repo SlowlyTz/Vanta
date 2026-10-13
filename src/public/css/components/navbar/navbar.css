@@ -23,6 +23,26 @@
   box-shadow: none;
 }
 
+/* Scrolled down, a soft shade behind the bar keeps its icons readable over
+   posters; at the top the hero shows through untouched. */
+.navbar.navbar-spotlight::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * max(14px, env(safe-area-inset-top)));
+  left: 0;
+  right: 0;
+  height: calc(100% + max(14px, env(safe-area-inset-top)) + 26px);
+  background: linear-gradient(180deg, rgba(5, 5, 7, 0.88), rgba(5, 5, 7, 0.55) 60%, rgba(5, 5, 7, 0));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.navbar.navbar-spotlight.scrolled::before {
+  opacity: 1;
+}
+
 /* While the drawer is open the navbar slides aside with the page and sits
    under the dimmed backdrop like everything else; the drawer's own close
    button and the backdrop take over closing. */
@@ -191,6 +211,11 @@
 }
 
 @media (max-width: 520px) {
+  /* Phones keep the bar short; the screensaver still comes on idle. */
+  .navbar-action-screensaver {
+    display: none;
+  }
+
   :root {
     --spotlight-navbar-clearance: calc(max(10px, env(safe-area-inset-top)) + 40px + 20px);
   }

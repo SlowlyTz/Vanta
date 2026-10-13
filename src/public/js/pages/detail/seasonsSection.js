@@ -1,11 +1,28 @@
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { MediaCard } from '../../components/mediaCard.js';
+import { EmptyState, ErrorState } from '../../components/emptyState.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
+import { PLAYED_CHANGED_EVENT } from '../../components/playedToggle.js';
+import { getCurrentPageScope } from '../../utils/pageScope.js';
 
 export function buildSeasonsSection(item, seasons) {
   const episodeGrid = createElement('div', { className: 'episodes-grid' });
   const tabs = [];
+
+  // The whole series marked (un)watched: every shown episode follows, its
+  // check, badge and progress (each card listens for its own id).
+  const onSeriesPlayed = (event) => {
+    const detail = event.detail || {};
+    if (detail.id !== item.Id || detail.cascade) return;
+    for (const card of episodeGrid.querySelectorAll('[data-item-id]')) {
+      window.dispatchEvent(new CustomEvent(PLAYED_CHANGED_EVENT, {
+        detail: { id: card.dataset.itemId, played: detail.played === true, cascade: true }
+      }));
+    }
+  };
+  window.addEventListener(PLAYED_CHANGED_EVENT, onSeriesPlayed);
+  getCurrentPageScope()?.onLeave(() => window.removeEventListener(PLAYED_CHANGED_EVENT, onSeriesPlayed));
 
   const loadSeasonEpisodes = async (seasonId, tabButton) => {
     const activeTab = seasonsTabsContainer.querySelector('.season-tab.active');
@@ -22,9 +39,7 @@ export function buildSeasonsSection(item, seasons) {
 
       if (episodes.length === 0) {
         episodeGrid.appendChild(
-          createElement('div', { className: 'search-empty-state', style: { gridColumn: '1/-1' } },
-            createElement('p', {}, 'Keine Episoden in dieser Staffel gefunden.')
-          )
+          EmptyState({ message: 'Keine Episoden in dieser Staffel gefunden.', style: { gridColumn: '1/-1' } })
         );
       } else {
         episodes.forEach(episode => {
@@ -36,9 +51,7 @@ export function buildSeasonsSection(item, seasons) {
       console.error(err);
       episodeGrid.innerHTML = '';
       episodeGrid.appendChild(
-        createElement('div', { className: 'search-empty-state', style: { gridColumn: '1/-1' } },
-          createElement('p', {}, 'Fehler beim Laden der Episoden.')
-        )
+        ErrorState({ title: null, message: 'Fehler beim Laden der Episoden.', style: { gridColumn: '1/-1' } })
       );
     } finally {
       setSectionBusy(episodeGrid, false);

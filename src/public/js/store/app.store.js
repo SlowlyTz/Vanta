@@ -1,7 +1,8 @@
 class AppStore {
-  async showToast(message, type = 'info') {
+  // `options.action` ({ label, onClick }) adds a button, e.g. "Rückgängig".
+  async showToast(message, type = 'info', options = {}) {
     const { Toast } = await import('../components/toast.js');
-    Toast.show(message, type);
+    return Toast.show(message, type, undefined, options);
   }
 }
 

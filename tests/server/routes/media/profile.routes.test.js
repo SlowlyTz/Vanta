@@ -7,7 +7,8 @@ vi.mock('../../../../src/server/services/jellyfin/profile.service.js', () => ({
   ProfileService: {
     getContinueWatching: vi.fn(),
     getHistory: vi.fn(),
-    getFavorites: vi.fn()
+    getFavorites: vi.fn(),
+    getStats: vi.fn()
   }
 }));
 
@@ -115,6 +116,24 @@ describe('Profile Routes', () => {
       const res = await request(createApp()).get('/continue-watching');
 
       expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /stats', () => {
+    it('returns what the account has watched', async () => {
+      ProfileService.getStats.mockResolvedValue({ movies: 1, episodes: 2, series: 1, minutes: 90, topGenres: ['Drama'], lastWatched: null });
+
+      const res = await request(createApp()).get('/stats');
+
+      expect(res.status).toBe(200);
+      expect(res.body.minutes).toBe(90);
+      expect(ProfileService.getStats).toHaveBeenCalledWith('test-user', 'test-token');
+    });
+
+    it('answers 500 when Jellyfin fails', async () => {
+      ProfileService.getStats.mockRejectedValue(new Error('down'));
+      const res = await request(createApp()).get('/stats');
+      expect(res.status).toBe(500);
     });
   });
 });

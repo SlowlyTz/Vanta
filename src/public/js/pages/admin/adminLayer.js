@@ -1,7 +1,8 @@
 import { createElement } from '../../utils/dom.js';
 import { createBackIcon } from '../../components/navbar/icons.js';
+import { SLIDE_MS as LAYER_SLIDE_MS } from '../../utils/motion.js';
 
-export const LAYER_SLIDE_MS = 420;
+export { LAYER_SLIDE_MS };
 
 // Open layers, bottom to top: Escape and the scroll lock follow the stack, so
 // a settings page pushed over the settings area closes on its own.

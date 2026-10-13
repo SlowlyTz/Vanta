@@ -2,18 +2,20 @@ import { createElement } from '../utils/dom.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../utils/image.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';
 
-export function CastCarousel({ actors = [], onActorClick }) {
+export function CastCarousel({ actors = [], onActorClick, title = 'Besetzung' }) {
   if (!actors || actors.length === 0) return null;
 
   const actorCards = actors.map(actor => {
-    
-    return createElement('div', {
-      className: 'cast-card',
-      style: { cursor: 'pointer' },
-      onClick: () => {
-        if (onActorClick) onActorClick(actor);
-      }
-    },
+    // The list item holds a real button, so the actor opens by keyboard too.
+    return createElement('div', { className: 'cast-card', role: 'listitem' },
+      createElement('button', {
+        type: 'button',
+        className: 'cast-card-button',
+        'aria-label': actor.Role ? `${actor.Name} als ${actor.Role}` : actor.Name,
+        onClick: () => {
+          if (onActorClick) onActorClick(actor);
+        }
+      },
       createElement('img', {
         src: actor.profileUrl || getPersonImageUrl(actor, 120),
         alt: actor.Name,
@@ -26,11 +28,12 @@ export function CastCarousel({ actors = [], onActorClick }) {
       }),
       createElement('div', { className: 'cast-name' }, actor.Name),
       actor.Role ? createElement('div', { className: 'cast-role' }, actor.Role) : null
+      )
     );
   });
 
   return HorizontalCarousel({
-    title: 'Besetzung',
+    title,
     items: actorCards,
     trackClass: 'cast-list',
     containerClass: 'detail-cast-section'

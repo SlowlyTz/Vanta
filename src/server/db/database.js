@@ -1,8 +1,9 @@
 import initSqlJs from 'sql.js';
-import { migrateRequestsTable } from './migrations.js';
+import { migratePushSubscriptionsTable, migrateRequestsTable } from './migrations.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
@@ -17,8 +18,37 @@ const sqlite = fs.existsSync(DB_FILE)
   ? new SQL.Database(fs.readFileSync(DB_FILE))
   : new SQL.Database();
 
+// sql.js keeps the database in memory; every write serialises all of it to
+// disk. Writes are collected for a moment so a burst (a TMDB cache fill, a
+// request with its media row) costs one export, and flush() writes at once
+// for shutdown.
+const PERSIST_DELAY_MS = 250;
+let persistTimer = null;
+let dirty = false;
+
+const flush = () => {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  if (!dirty) return;
+  dirty = false;
+  writeFileAtomicSync(DB_FILE, Buffer.from(sqlite.export()));
+};
+
 const persist = () => {
-  fs.writeFileSync(DB_FILE, Buffer.from(sqlite.export()));
+  dirty = true;
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    try {
+      flush();
+    } catch (error) {
+      dirty = true;
+      console.error('[Database] could not write requests.db:', error.message);
+    }
+  }, PERSIST_DELAY_MS);
+  persistTimer.unref?.();
 };
 
 const normalizeParams = (params) => {
@@ -77,8 +107,10 @@ const db = {
     return createStatement(sql);
   },
 
+  flush,
+
   close() {
-    persist();
+    flush();
     sqlite.close();
   }
 };
@@ -165,6 +197,85 @@ db.exec(`
   );
 `);
 
+// Per-user settings that follow the user to every device (see
+// src/public/js/shared/preferences.js for the keys), as one JSON object.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`);
+
+// "Meine Liste": movies and series a user wants to watch later, kept apart
+// from the Jellyfin favourites.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS watchlist (
+    user_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    item_type TEXT NOT NULL CHECK(item_type IN ('Movie', 'Series')),
+    added_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, item_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlist(user_id, added_at);
+`);
+
+// Series a user took out of "Weiter schauen". Jellyfin has no switch for
+// that; the series comes back once an episode is played after hidden_at.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS resume_hidden (
+    user_id TEXT NOT NULL,
+    series_id TEXT NOT NULL,
+    hidden_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, series_id)
+  );
+`);
+
+// Notifications: the in-app list, what each user wants per kind (push and
+// in-app; kind '*' is the push main switch) and the push subscriptions of
+// their devices (Web Push, see push.service.js).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at INTEGER NOT NULL,
+    last_success_at INTEGER,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    session_id TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
+
+  CREATE TABLE IF NOT EXISTS notification_preferences (
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    push INTEGER NOT NULL DEFAULT 1,
+    in_app INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (user_id, kind)
+  );
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    url TEXT,
+    image_item_id TEXT,
+    created_at INTEGER NOT NULL,
+    read_at INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at);
+`);
+
+// A push_subscriptions table from before subscriptions were bound to sessions.
+if (migratePushSubscriptionsTable(sqlite).length > 0) {
+  persist();
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
@@ -172,5 +283,9 @@ db.exec(`
     updated_at TEXT NOT NULL
   );
 `);
+
+flush();
+
+export const flushDatabase = flush;
 
 export default db;

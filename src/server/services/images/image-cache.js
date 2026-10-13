@@ -20,6 +20,12 @@ const BACKDROP_QUALITY = 80;
 const WEBP_EFFORT = 4;
 const MAX_JOBS = 4;
 const NEGATIVE_TTL_MS = 60 * 1000;
+// Jellyfin originals are a few MB at most; anything far beyond is not a poster.
+const MAX_ORIGINAL_BYTES = 40 * 1024 * 1024;
+export const DEFAULT_MAX_CACHE_BYTES = 2 * 1024 * 1024 * 1024;
+// A hit refreshes the file's mtime at most this often, so the order of use
+// survives a restart without writing on every request.
+const TOUCH_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 const SAFE_SEGMENT = /^[A-Za-z0-9_-]+$/;
 
@@ -78,11 +84,58 @@ export function createImageCache({
   log = console,
   now = Date.now,
   maxJobs = MAX_JOBS,
-  negativeTtlMs = NEGATIVE_TTL_MS
+  negativeTtlMs = NEGATIVE_TTL_MS,
+  maxBytes = env.IMAGE_CACHE_MAX_BYTES || DEFAULT_MAX_CACHE_BYTES,
+  maxOriginalBytes = MAX_ORIGINAL_BYTES
 } = {}) {
   let sharp = null;
   const inflight = new Map();
   const negative = new Map();
+
+  // Size and last use of every rendition on disk, in order of use (a Map keeps
+  // insertion order, and a use moves the key to the end). Over `maxBytes` the
+  // least recently used files go until the cache is at 90 %.
+  const index = new Map(); // key -> { size, usedAt, touchedAt }
+  let totalBytes = 0;
+
+  const track = (key, size, usedAt, touchedAt = usedAt) => {
+    const previous = index.get(key);
+    if (previous) {
+      totalBytes -= previous.size;
+      index.delete(key);
+    }
+    index.set(key, { size, usedAt, touchedAt });
+    totalBytes += size;
+  };
+
+  const evict = async () => {
+    if (totalBytes <= maxBytes) return;
+    const target = maxBytes * 0.9;
+    for (const [key, entry] of index) {
+      if (totalBytes <= target) break;
+      if (inflight.has(key)) continue;
+      index.delete(key);
+      totalBytes -= entry.size;
+      await fsp.unlink(join(dir, key)).catch(() => {});
+    }
+  };
+
+  const scan = async () => {
+    const found = [];
+    const items = await fsp.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const item of items) {
+      if (!item.isDirectory()) continue;
+      const files = await fsp.readdir(join(dir, item.name)).catch(() => []);
+      for (const file of files) {
+        if (!file.endsWith('.webp')) continue;
+        const stat = await fsp.stat(join(dir, item.name, file)).catch(() => null);
+        if (stat) found.push({ key: `${item.name}/${file}`, size: stat.size, usedAt: stat.mtimeMs });
+      }
+    }
+    found.sort((a, b) => a.usedAt - b.usedAt);
+    for (const entry of found) track(entry.key, entry.size, entry.usedAt);
+    await evict();
+  };
 
   const ready = (async () => {
     try {
@@ -90,8 +143,22 @@ export function createImageCache({
     } catch (error) {
       sharp = null;
       log.warn?.(`[Bilder] sharp konnte nicht geladen werden, Bilder werden ohne Cache durchgereicht: ${error.message}`);
+      return;
     }
+    await scan().catch(error => log.warn?.(`[Bilder] Cache konnte nicht gelesen werden: ${error.message}`));
   })();
+
+  const markUsed = (key, filePath, size) => {
+    const time = now();
+    const entry = index.get(key);
+    const touchedAt = entry?.touchedAt ?? 0;
+    track(key, size, time, touchedAt);
+    if (time - touchedAt >= TOUCH_INTERVAL_MS) {
+      index.get(key).touchedAt = time;
+      const seconds = time / 1000;
+      fsp.utimes(filePath, seconds, seconds).catch(() => {});
+    }
+  };
 
   // Small semaphore so a page full of posters cannot start 40 resizes at once.
   let active = 0;
@@ -126,7 +193,19 @@ export function createImageCache({
       throw error;
     }
 
+    const declared = Number(response.headers?.get?.('content-length'));
+    if (Number.isFinite(declared) && declared > maxOriginalBytes) {
+      response.body?.cancel?.().catch?.(() => {});
+      const error = new Error(`Original zu groß (${declared} Bytes)`);
+      error.status = 413;
+      throw error;
+    }
     const original = Buffer.from(await response.arrayBuffer());
+    if (original.length > maxOriginalBytes) {
+      const error = new Error(`Original zu groß (${original.length} Bytes)`);
+      error.status = 413;
+      throw error;
+    }
     const tmpPath = `${filePath}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
 
     await acquire();
@@ -167,11 +246,17 @@ export function createImageCache({
       if (!sharp) throw new Error('sharp ist nicht verfügbar');
 
       const existing = await fsp.stat(filePath).catch(() => null);
-      if (existing) return { ...result, size: existing.size, fromCache: true };
+      if (existing) {
+        markUsed(key, filePath, existing.size);
+        return { ...result, size: existing.size, fromCache: true };
+      }
 
       checkNegative(negativeKey(itemId, type, tag));
       await render({ itemId, type, tag, width: stepWidth, token, filePath });
-      return { ...result, size: (await fsp.stat(filePath)).size, fromCache: false };
+      const size = (await fsp.stat(filePath)).size;
+      track(key, size, now());
+      evict().catch(() => {});
+      return { ...result, size, fromCache: false };
     })().finally(() => inflight.delete(key));
 
     inflight.set(key, job);
@@ -230,7 +315,8 @@ export function createImageCache({
     buildKey,
     getImage,
     warm,
-    createReadStream
+    createReadStream,
+    stats: () => ({ files: index.size, bytes: totalBytes, maxBytes })
   };
 }
 

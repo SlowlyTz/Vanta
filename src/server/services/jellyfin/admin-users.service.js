@@ -11,6 +11,15 @@ export class JellyfinAdminUsersService {
     return Array.isArray(libraries) ? libraries : [];
   }
 
+  // Titles of a library that is not in the catalogue (collections, music).
+  static async countLibraryItems(libraryId, adminToken) {
+    const data = await jellyfinJson('/Items', {
+      token: adminToken,
+      query: { ParentId: libraryId, Recursive: 'true', Limit: 0, ExcludeItemTypes: 'Folder,CollectionFolder' }
+    });
+    return Number.isFinite(data?.TotalRecordCount) ? data.TotalRecordCount : null;
+  }
+
   static async getUser(userId, adminToken) {
     return jellyfinJson(`/Users/${userId}`, { token: adminToken });
   }

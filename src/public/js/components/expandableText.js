@@ -1,4 +1,5 @@
 import { createElement } from '../utils/dom.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 
 const MORE_LABEL = 'mehr lesen';
 const LESS_LABEL = 'weniger anzeigen';
@@ -108,13 +109,15 @@ export function createExpandableText({ text, lines = 2, className = '' }) {
   // (rotation, resize, the drawer pushing the page).
   if (typeof ResizeObserver === 'function') {
     let lastWidth = 0;
-    new ResizeObserver(entries => {
+    const observer = new ResizeObserver(entries => {
       const width = entries[0]?.contentRect?.width || 0;
       if (width && width !== lastWidth) {
         lastWidth = width;
         layout();
       }
-    }).observe(container);
+    });
+    observer.observe(container);
+    resolvePageScope().onLeave(() => observer.disconnect());
   }
   renderFull(false);
 

@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ReportsService } from '../services/reports.service.js';
 import { sendReportCreated } from '../services/discord-webhook.service.js';
 import { notifyNotificationsChanged } from '../realtime/app.socket.js';
+import { NotificationTriggers } from '../services/notification-triggers.js';
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     res.status(201).json(report);
     notifyNotificationsChanged();
     sendReportCreated(report).catch(error => console.error('[Discord Webhook] Trigger fehlgeschlagen:', error.message));
+    NotificationTriggers.adminWork({ kind: 'report', username, title: report.title, url: '/#/admin/requests' });
   } catch (error) {
     if (error.status) return res.status(error.status).json({ error: error.message });
     throw error;
@@ -40,9 +42,12 @@ router.get('/admin/all', requireAuth, requireFreshAdmin, asyncHandler(async (req
 
 const setStatus = status => asyncHandler(async (req, res) => {
   try {
-    const report = ReportsService.setStatus(Number(req.params.id), status, req.session.username);
+    const { report, changed } = ReportsService.decide(Number(req.params.id), status, req.session.username);
     res.json(report);
+    // Only a real change tells the reporter.
+    if (!changed) return undefined;
     notifyNotificationsChanged();
+    NotificationTriggers.reportHandled(report);
   } catch (error) {
     if (error.status) return res.status(error.status).json({ error: error.message });
     throw error;

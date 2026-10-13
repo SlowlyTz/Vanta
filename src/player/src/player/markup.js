@@ -138,6 +138,9 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
                 <button class="vanta-player-settings-button" type="button" aria-label="Einstellungen" aria-haspopup="dialog" aria-expanded="false" hidden>
                   ${svgIcon('settings')}
                 </button>
+                <button class="vanta-player-airplay-button" type="button" aria-label="AirPlay" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 22h12l-6-6-6 6zM21 3H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4v-2H3V5h18v12h-4v2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/></svg>
+                </button>
                 <media-pip-button class="vanta-player-pip-button" aria-label="Bild-in-Bild">
                   ${svgIcon('pipEnter', 'enter')}
                   ${svgIcon('pipExit', 'exit')}
@@ -164,6 +167,13 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
             <span aria-hidden="true">›</span>
             <span class="vanta-player-loading-status">Wiedergabequelle wird angefragt …</span>
           </span>
+          <div class="vanta-player-loading-problem" hidden>
+            <p class="vanta-player-loading-problem-text"></p>
+            <div class="vanta-player-loading-problem-actions">
+              <button type="button" class="vanta-player-loading-retry">Erneut versuchen</button>
+              <button type="button" class="vanta-player-loading-leave">Zurück</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -201,10 +211,16 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
       forward: root.querySelector('.vanta-player-seek-bubble.is-forward')
     },
     settingsButton: root.querySelector('.vanta-player-settings-button'),
+    airplayButton: root.querySelector('.vanta-player-airplay-button'),
     volumeBubble: root.querySelector('.vanta-player-volume-bubble'),
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),
     loadingStatus: root.querySelector('.vanta-player-loading-status'),
+    loadingLabel: root.querySelector('.vanta-player-loading-label'),
+    loadingProblem: root.querySelector('.vanta-player-loading-problem'),
+    loadingProblemText: root.querySelector('.vanta-player-loading-problem-text'),
+    loadingRetry: root.querySelector('.vanta-player-loading-retry'),
+    loadingLeave: root.querySelector('.vanta-player-loading-leave'),
     inlineLoading: root.querySelector('.vanta-player-inline-loading'),
     inlineLabel: root.querySelector('.vanta-player-inline-label'),
     loadingProgress: root.querySelector('.vanta-player-loading-progress'),

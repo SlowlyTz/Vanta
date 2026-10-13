@@ -34,6 +34,11 @@ export function createNavIcon(key) {
         <path d="M12 17v4"></path>
       </svg>
     `,
+    watchlist: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"></path>
+      </svg>
+    `,
     scroller: `
       <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="9"></circle>
@@ -108,6 +113,13 @@ export function createTopbarIcon(key) {
         <path d="M20 21a8 8 0 0 0-16 0"></path>
         <circle cx="12" cy="7" r="4"></circle>
       </svg>
+    `,
+    screensaver: `
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.5" y="4" width="19" height="13" rx="2"></rect>
+        <path d="M8 21h8"></path>
+        <path d="M14.5 8.2a3.3 3.3 0 1 0 1.8 4.6 2.6 2.6 0 0 1-1.8-4.6z"></path>
+      </svg>
     `
   };
 
@@ -119,35 +131,6 @@ export function createUserIcon() {
     <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
       <path d="M20 21a8 8 0 0 0-16 0"></path>
       <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-  `);
-}
-
-export function createMovieIcon() {
-  return createIcon('settings-row-icon settings-accent-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 6h16v14H4z"></path>
-      <path d="M8 6 6 2"></path>
-      <path d="M12 6 10 2"></path>
-      <path d="M16 6 14 2"></path>
-    </svg>
-  `);
-}
-
-export function createScreenIcon() {
-  return createIcon('settings-row-icon settings-accent-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="4" width="18" height="12" rx="2"></rect>
-      <path d="M8 20h8"></path>
-      <path d="M12 16v4"></path>
-    </svg>
-  `);
-}
-
-export function createPlayOutlineIcon() {
-  return createIcon('settings-row-icon settings-accent-icon', `
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 4.5v15l13-7.5z"></path>
     </svg>
   `);
 }
@@ -240,3 +223,13 @@ export function createSettingsGearIcon() {
     </svg>
   `);
 }
+
+const rowIcon = paths => createIcon('settings-row-icon', `
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>
+`);
+
+export const createBellIcon = () => rowIcon('<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>');
+export const createPlaybackIcon = () => rowIcon('<circle cx="12" cy="12" r="9"></circle><path d="m10 8.5 6 3.5-6 3.5z"></path>');
+export const createAppearanceIcon = () => rowIcon('<circle cx="12" cy="12" r="9"></circle><path d="M12 3v18"></path><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor"></path>');
+export const createDevicesIcon = () => rowIcon('<rect x="2" y="4" width="14" height="10" rx="1.5"></rect><path d="M6 18h6"></path><rect x="17" y="8" width="5" height="12" rx="1"></rect>');
+export const createBookmarkIcon = () => rowIcon('<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"></path>');

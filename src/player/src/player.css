@@ -6,4 +6,5 @@
 @import "./player/help.css";
 @import "./player/next-episode.css";
 @import "./player/overlays.css";
+@import "./player/dialogs.css";
 @import "./player/responsive.css";

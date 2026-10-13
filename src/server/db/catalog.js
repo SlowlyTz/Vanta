@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
@@ -61,6 +62,17 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_catalog_studios ON catalog_item_studios(studio_normalized);
 
+  -- Cast and crew per title (first entries only), for the search by person.
+  -- The primary key already serves lookups by item.
+  CREATE TABLE IF NOT EXISTS catalog_item_people (
+    item_id TEXT NOT NULL,
+    person_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    image_tag TEXT,
+    PRIMARY KEY (item_id, person_id)
+  );
+  DROP INDEX IF EXISTS idx_catalog_people_item;
+
   CREATE TABLE IF NOT EXISTS catalog_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -105,8 +117,7 @@ export function createCatalogDb({ SQL, file = null, bytes = null }) {
 
   const persist = () => {
     if (!file) return;
-    fs.mkdirSync(dirname(file), { recursive: true });
-    fs.writeFileSync(file, Buffer.from(sqlite.export()));
+    writeFileAtomicSync(file, Buffer.from(sqlite.export()));
   };
 
   // Runs `fn` inside one SQLite transaction and persists only on success, so a

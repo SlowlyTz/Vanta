@@ -1,0 +1,1088 @@
+/* TV mode (html.tv-mode): the 10-foot interface, read from a sofa and
+   driven with the arrow keys of a remote. Loaded only in TV mode.
+
+   One scale for every TV: 1rem is 1.25 % of the screen width (24 px at
+   1080p, 16 px at 720p, 12 px for a browser reporting 960 px), and what is
+   seen is measured in rem, so a page looks the same on each. Written for
+   Chromium 68 (webOS 5, Tizen 5.5): no inset, clamp(), :has(), flex gap or
+   :focus-visible in a selector list here. */
+html.tv-mode {
+  font-size: 1.25vw;
+  /* Overscan: TVs may cut off the outer edge of the picture. */
+  --tv-safe-x: 3.5rem;
+  --tv-safe-y: 2.25rem;
+  --tv-sidebar-width: 5rem;
+  /* Where the content starts: after the sidebar. */
+  --tv-content-left: calc(var(--tv-sidebar-width) + var(--tv-safe-x) + 1.5rem);
+  --tv-ring: 0 0 0 0.16rem #fff, 0 0 0 0.34rem rgba(5, 5, 7, 0.85);
+  scroll-behavior: auto;
+  background: #050507;
+  scrollbar-width: none;
+}
+
+html.tv-mode ::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Blur and moving filters are expensive on TV chips. */
+html.tv-mode *,
+html.tv-mode *::before,
+html.tv-mode *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.tv-mode .route-view-enter,
+html.tv-mode .route-view-enter.route-view-enter-active,
+html.tv-mode .route-view-exit {
+  filter: none;
+}
+
+html.tv-mode .home-hero-logo {
+  filter: none;
+}
+
+/* Fewer and shorter transitions; nothing reacts to a (missing) mouse. */
+html.tv-mode * {
+  transition-duration: 120ms !important;
+}
+
+/* The cursor of a pointer remote shows while it moves (tv/index.js). */
+html.tv-mode body {
+  cursor: none;
+}
+
+html.tv-mode.tv-pointer body {
+  cursor: default;
+}
+
+/* ---- The focus -----------------------------------------------------------
+   The focus engine puts .tv-focus on whatever holds the focus. A ring that
+   follows the corners; nothing moves, so nothing absolutely positioned
+   jumps out of place. */
+html.tv-mode :focus {
+  outline: none;
+}
+
+html.tv-mode .tv-focus {
+  outline: none;
+  box-shadow: var(--tv-ring);
+}
+
+/* Cards: the ring and a slight growth on the picture, not the whole link. */
+html.tv-mode .media-card.tv-focus,
+html.tv-mode .media-card-link.tv-focus {
+  box-shadow: none;
+}
+
+html.tv-mode .media-card-link:focus .media-card-image-container,
+html.tv-mode a.media-card:focus .media-card-image-container {
+  outline: none;
+}
+
+html.tv-mode .media-card .media-card-image-container {
+  transform-origin: 50% 50%;
+}
+
+html.tv-mode .media-card.tv-focus .media-card-image-container,
+html.tv-mode .media-card-link.tv-focus .media-card-image-container {
+  box-shadow: var(--tv-ring);
+  transform: scale(1.05);
+}
+
+html.tv-mode .media-card.tv-focus .media-card-title,
+html.tv-mode .media-card-link.tv-focus .media-card-title {
+  color: #fff;
+}
+
+/* Text-like controls show a filled pill instead of a ring. */
+html.tv-mode .btn-primary.tv-focus,
+html.tv-mode .btn-secondary.tv-focus {
+  box-shadow: var(--tv-ring);
+}
+
+/* ---- The shell: sidebar left, content right, inside the safe area ------- */
+html.tv-mode .tv-shell {
+  min-height: 100vh;
+}
+
+html.tv-mode .tv-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  width: calc(var(--tv-sidebar-width) + var(--tv-safe-x));
+  padding: var(--tv-safe-y) 0.6rem var(--tv-safe-y) var(--tv-safe-x);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: linear-gradient(90deg, rgba(5, 5, 7, 0.96) 60%, rgba(5, 5, 7, 0));
+  overflow: hidden;
+  transition: width 160ms ease !important;
+}
+
+html.tv-mode .tv-sidebar:focus-within {
+  width: calc(15rem + var(--tv-safe-x));
+  background: linear-gradient(90deg, rgba(5, 5, 7, 0.98) 80%, rgba(5, 5, 7, 0.4));
+}
+
+html.tv-mode .tv-sidebar-brand {
+  margin-bottom: 1.6rem;
+}
+
+html.tv-mode .tv-sidebar-brand img {
+  display: block;
+  width: 2.6rem;
+  height: auto;
+  margin-left: 0.55rem;
+}
+
+html.tv-mode .tv-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+html.tv-mode .tv-sidebar-item + .tv-sidebar-item {
+  margin-top: 0.3rem;
+}
+
+html.tv-mode .tv-sidebar-item[hidden] {
+  display: none;
+}
+
+html.tv-mode .tv-sidebar-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.68);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+html.tv-mode .tv-sidebar-link.active {
+  color: #fff;
+}
+
+html.tv-mode .tv-sidebar-link.active .tv-sidebar-icon::after {
+  content: '';
+  position: absolute;
+  left: -0.55rem;
+  top: 50%;
+  width: 0.18rem;
+  height: 1.2rem;
+  margin-top: -0.6rem;
+  border-radius: 0.1rem;
+  background: #fff;
+}
+
+html.tv-mode .tv-sidebar-link.tv-focus {
+  background: #fff;
+  color: #0b0b0d;
+  box-shadow: none;
+}
+
+/* Every icon the same size, whichever icon set it comes from. */
+html.tv-mode .tv-sidebar-icon {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 1.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-right: 1rem;
+}
+
+html.tv-mode .tv-sidebar-icon > * {
+  display: inline-flex;
+  flex: 0 0 1.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+html.tv-mode .tv-sidebar-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+html.tv-mode .tv-sidebar-label {
+  opacity: 0;
+  transition: opacity 120ms ease !important;
+}
+
+html.tv-mode .tv-sidebar:focus-within .tv-sidebar-label {
+  opacity: 1;
+}
+
+html.tv-mode .tv-shell .app-main {
+  padding-top: var(--tv-safe-y);
+  padding-left: var(--tv-content-left);
+  padding-right: var(--tv-safe-x);
+  padding-bottom: var(--tv-safe-y);
+}
+
+html.tv-mode .tv-shell .app-main.app-main--edge-top {
+  padding-top: 0;
+}
+
+html.tv-mode .tv-shell .page-container {
+  max-width: none;
+}
+
+/* The page containers clip sideways for phones; on a TV that would cut the
+   focus ring at the content edge and the full-width hero. The page itself
+   still never scrolls sideways. */
+html.tv-mode body {
+  overflow-x: hidden;
+}
+
+html.tv-mode .tv-shell,
+html.tv-mode .tv-shell .app-main,
+html.tv-mode .tv-shell .page-container {
+  overflow-x: visible;
+}
+
+/* The sidebar and the shell's own padding are the margins; sections add none. */
+html.tv-mode .tv-shell .content-section {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html.tv-mode .skip-link {
+  display: none;
+}
+
+/* ---- The backdrop of the focused card behind the page (tv/focusBackdrop.js) */
+html.tv-mode .tv-focus-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+html.tv-mode .tv-focus-backdrop-image {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: center / cover no-repeat;
+  opacity: 0;
+  transition: opacity 500ms ease !important;
+}
+
+html.tv-mode .tv-focus-backdrop-image::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 5, 7, 0.94) 25%, rgba(5, 5, 7, 0.6) 70%, rgba(5, 5, 7, 0.8)),
+    linear-gradient(0deg, rgba(5, 5, 7, 0.95), transparent 60%);
+}
+
+html.tv-mode .tv-focus-backdrop-image.is-visible {
+  opacity: 1;
+}
+
+html.tv-mode body,
+html.tv-mode .app-shell,
+html.tv-mode .app-main {
+  background: transparent;
+}
+
+/* ---- Rows of cards -------------------------------------------------------
+   Room around the track so a focused card's ring and growth are never cut;
+   the focus engine scrolls the card to the track's left padding. */
+html.tv-mode .media-carousel-container,
+html.tv-mode .horizontal-carousel-container,
+html.tv-mode .featured-carousel-container {
+  overflow: visible;
+  margin-bottom: 1.6rem;
+}
+
+html.tv-mode .media-carousel,
+html.tv-mode .featured-carousel {
+  gap: 0;
+  padding: 1rem 1.2rem 1.2rem;
+  margin: -1rem -1.2rem -0.6rem;
+  scroll-padding-inline: 1.2rem;
+}
+
+html.tv-mode .media-carousel > * + *,
+html.tv-mode .featured-carousel > * + * {
+  margin-left: 1.2rem;
+}
+
+html.tv-mode .media-carousel-item {
+  flex: 0 0 9.5rem;
+}
+
+html.tv-mode .media-carousel.landscape-carousel .media-carousel-item {
+  flex: 0 0 17rem;
+}
+
+html.tv-mode .carousel-header {
+  margin-bottom: 0.4rem;
+}
+
+html.tv-mode .carousel-title-text {
+  font-size: 1.25rem;
+}
+
+html.tv-mode .carousel-header-action,
+html.tv-mode .carousel-arrow {
+  display: none !important;
+}
+
+html.tv-mode .media-card-details {
+  margin-top: 0.75rem;
+}
+
+html.tv-mode .media-card-title {
+  font-size: 0.8rem;
+}
+
+html.tv-mode .media-card-subtitle,
+html.tv-mode .media-card-meta {
+  font-size: 0.68rem;
+}
+
+html.tv-mode .media-card-badge,
+html.tv-mode .media-type-badge {
+  font-size: 0.6rem;
+}
+
+/* ---- Home ---------------------------------------------------------------
+   The hero runs under the sidebar to the screen edges and ends before the
+   first row; it changes with left/right on its buttons. */
+html.tv-mode {
+  --hero-overlap: 0px;
+}
+
+html.tv-mode .home-page .home-hero {
+  /* Nearly the whole screen; the first row peeks in below it. */
+  height: 80vh;
+  min-height: 0;
+  margin-left: calc(-1 * var(--tv-content-left));
+  margin-right: calc(-1 * var(--tv-safe-x));
+  width: auto;
+  margin-bottom: 1.5rem;
+}
+
+html.tv-mode .tv-shell .app-main--edge-top .home-page {
+  padding-top: 0;
+}
+
+html.tv-mode .home-hero-content {
+  left: var(--tv-content-left);
+  bottom: 4rem;
+  width: 30rem;
+  max-width: none;
+}
+
+html.tv-mode .home-hero-content > * + * {
+  margin-top: 0.7rem;
+}
+
+html.tv-mode .home-hero-content {
+  gap: 0;
+}
+
+html.tv-mode .home-hero-logo {
+  width: 20rem;
+  max-height: 6.5rem;
+}
+
+html.tv-mode .home-hero-title {
+  font-size: 2.4rem;
+}
+
+html.tv-mode .home-hero-metadata .meta-pill {
+  padding: 0.15rem 0.6rem;
+  font-size: 0.68rem;
+}
+
+html.tv-mode .home-hero-desc {
+  max-width: 30rem;
+  font-size: 0.85rem;
+}
+
+html.tv-mode .home-hero-actions .btn-primary {
+  min-height: 2.4rem;
+  padding: 0 1.3rem;
+  font-size: 0.9rem;
+}
+
+html.tv-mode .home-hero-actions > * + * {
+  margin-left: 0.7rem;
+}
+
+html.tv-mode .btn-hero-info {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+html.tv-mode .hero-carousel-pause {
+  display: none;
+}
+
+html.tv-mode .home-hero + .content-section {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* ---- Lists: six columns ------------------------------------------------- */
+html.tv-mode .library-grid,
+html.tv-mode .grid-container {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  grid-gap: 1.6rem 1.2rem !important;
+  gap: 1.6rem 1.2rem !important;
+}
+
+html.tv-mode .page-heading,
+html.tv-mode .page-title {
+  font-size: 2rem;
+}
+
+/* ---- Detail -------------------------------------------------------------
+   Always the wide layout (poster left, text right), in rem: a TV reporting
+   960 px must not get the tablet layout. */
+html.tv-mode .detail-page {
+  --detail-hero-height: 32rem;
+  --detail-backdrop-height: 32rem;
+}
+
+html.tv-mode .detail-hero-backdrop {
+  background-position: center 24%;
+}
+
+html.tv-mode .detail-content {
+  width: 100%;
+  padding: 2.5rem 0 1.2rem;
+}
+
+html.tv-mode .detail-content > * + * {
+  margin-top: 1.4rem;
+}
+
+html.tv-mode .detail-hero-main {
+  grid-template-columns: 12rem minmax(0, 1fr);
+  grid-template-areas:
+    'poster head'
+    'poster info';
+  column-gap: 2.6rem;
+  row-gap: 0.7rem;
+}
+
+html.tv-mode .detail-poster {
+  width: 12rem;
+  max-width: none;
+  margin: 0;
+  justify-self: start;
+}
+
+html.tv-mode .detail-info-head,
+html.tv-mode .detail-info {
+  align-items: flex-start;
+  max-width: none;
+  margin: 0;
+}
+
+html.tv-mode .detail-title {
+  font-size: 2.5rem;
+  text-align: left;
+}
+
+html.tv-mode .detail-original-title,
+html.tv-mode .detail-episode-title {
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+html.tv-mode .detail-metadata,
+html.tv-mode .detail-genres,
+html.tv-mode .detail-actions {
+  justify-content: flex-start;
+}
+
+html.tv-mode .detail-overview {
+  max-width: 40rem;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+html.tv-mode .detail-actions > * + * {
+  margin-left: 0.8rem;
+}
+
+html.tv-mode .detail-actions {
+  gap: 0;
+}
+
+html.tv-mode .detail-actions > button,
+html.tv-mode .detail-actions .watchlist-button {
+  min-height: 2.6rem;
+  font-size: 0.9rem;
+}
+
+/* Sections that clip for phones would cut the ring of a focused card. */
+html.tv-mode .seasons-section,
+html.tv-mode .detail-cast-section,
+html.tv-mode .detail-page,
+html.tv-mode .tv-shell .content-section {
+  overflow: visible;
+}
+
+/* ---- Profile --------------------------------------------------------------
+   The head runs under the sidebar to the screen edges, like the home hero. */
+html.tv-mode .profile-overview .profile-hero {
+  min-height: 62vh;
+  margin-left: calc(-1 * var(--tv-content-left));
+  margin-right: calc(-1 * var(--tv-safe-x));
+  padding-top: var(--tv-safe-y);
+}
+
+html.tv-mode .profile-hero-inner {
+  padding: 0 var(--tv-safe-x) 1.5rem var(--tv-content-left);
+  grid-gap: 1.1rem;
+}
+
+html.tv-mode .profile-avatar {
+  width: 5.5rem;
+  height: 5.5rem;
+  margin-right: 1.4rem;
+  font-size: 2.5rem;
+}
+
+html.tv-mode .profile-name {
+  font-size: 3rem;
+}
+
+html.tv-mode .profile-stats {
+  max-width: 40rem;
+  grid-gap: 0.7rem;
+}
+
+html.tv-mode .profile-stat {
+  padding: 0.8rem 1rem;
+  border-radius: 0.8rem;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.tv-mode .profile-stat-value {
+  font-size: 1.6rem;
+}
+
+html.tv-mode .profile-stat-label {
+  font-size: 0.75rem;
+}
+
+html.tv-mode .profile-tab-content,
+html.tv-mode .profile-rows {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html.tv-mode .tv-shell .profile-list {
+  padding: 0;
+}
+
+/* Pills: room around them for the ring (the line scrolls sideways on
+   phones, which would cut it). */
+html.tv-mode .profile-tabs,
+html.tv-mode .profile-shortcuts {
+  overflow: visible;
+  flex-wrap: nowrap;
+  padding: 0.5rem 0.4rem;
+  margin: -0.5rem -0.4rem 1rem;
+}
+
+html.tv-mode .profile-shortcut,
+html.tv-mode .profile-tab-button {
+  margin-right: 0.7rem;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.85rem;
+}
+
+html.tv-mode .profile-shortcut.tv-focus,
+html.tv-mode .profile-tab-button.tv-focus {
+  box-shadow: var(--tv-ring);
+}
+
+html.tv-mode .profile-shortcut.tv-focus {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+html.tv-mode .heart-container:focus-within {
+  border-radius: 999px;
+  box-shadow: var(--tv-ring);
+}
+
+/* ---- The on-screen keyboard --------------------------------------------- */
+html.tv-mode .osk-rows {
+  display: grid;
+  grid-gap: 0.4rem;
+  gap: 0.4rem;
+}
+
+html.tv-mode .osk-row {
+  display: grid;
+  grid-template-columns: repeat(11, 2.4rem);
+  grid-auto-flow: column;
+  grid-gap: 0.4rem;
+  gap: 0.4rem;
+}
+
+html.tv-mode .osk-actions {
+  grid-template-columns: none;
+  grid-auto-columns: 1fr;
+}
+
+html.tv-mode .osk-key {
+  min-width: 0;
+  height: 2.4rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+html.tv-mode .osk-key.is-wide {
+  grid-column: span 3;
+}
+
+html.tv-mode .osk-key.tv-focus {
+  background: #fff;
+  color: #0b0b0d;
+}
+
+html.tv-mode .osk-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+html.tv-mode .osk-dialog {
+  display: grid;
+  grid-gap: 0.9rem;
+  gap: 0.9rem;
+  padding: 1.4rem;
+  border-radius: 1.2rem;
+  background: #151519;
+}
+
+html.tv-mode .osk-title {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+html.tv-mode .osk-preview {
+  min-height: 2.6rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 1.2rem;
+}
+
+/* ---- Search: keyboard and field left, results right --------------------- */
+html.tv-mode .search-page.is-tv-search {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-gap: 2.5rem;
+  gap: 2.5rem;
+  align-items: start;
+  padding-top: 0;
+}
+
+html.tv-mode .tv-search-keyboard {
+  position: -webkit-sticky;
+  position: sticky;
+  top: var(--tv-safe-y);
+  width: calc(11 * 2.4rem + 10 * 0.4rem);
+}
+
+html.tv-mode .tv-search-keyboard > * + * {
+  margin-top: 0.9rem;
+}
+
+html.tv-mode .is-tv-search .search-input-wrapper {
+  max-width: none;
+  margin: 0;
+}
+
+html.tv-mode .is-tv-search .search-input-field {
+  width: 100%;
+  height: 2.8rem;
+  padding: 0 1.1rem;
+  font-size: 1.1rem;
+  text-align: left;
+}
+
+html.tv-mode .is-tv-search .search-filter-bar {
+  justify-content: flex-start;
+  margin: 0.9rem 0 0;
+}
+
+html.tv-mode .is-tv-search .search-filters {
+  margin: 0.9rem 0 0;
+  padding: 1rem;
+  max-width: none;
+}
+
+html.tv-mode .is-tv-search .search-recent {
+  max-width: none;
+  margin: 0.9rem 0 0;
+}
+
+html.tv-mode .tv-search-results {
+  min-width: 0;
+}
+
+html.tv-mode .is-tv-search .grid-container {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  padding-top: 0;
+}
+
+/* ---- Dialogs ------------------------------------------------------------ */
+html.tv-mode .confirm-dialog {
+  width: 30rem;
+  max-width: 80vw;
+  padding: 1.6rem;
+  font-size: 1rem;
+}
+
+html.tv-mode .confirm-dialog-actions > * + * {
+  margin-left: 0.8rem;
+}
+
+/* The player has its own focus style; nothing in it gets the TV ring. */
+html.tv-mode .vanta-player-root .tv-focus,
+html.tv-mode media-player.tv-focus {
+  box-shadow: none;
+}
+
+/* ---- Settings: a full screen, the areas left, the open one right --------- */
+html.tv-mode .settings-modal-backdrop {
+  padding: 0;
+  background: rgba(5, 5, 7, 0.96);
+}
+
+html.tv-mode .settings-dialog.is-tv,
+html.tv-mode .settings-dialog.is-tv.is-split {
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  padding: var(--tv-safe-y) var(--tv-safe-x);
+  font-size: 1rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-dialog-header {
+  padding: 0 0 1.2rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-dialog-title {
+  font-size: 1.6rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-header-button {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-panel-root {
+  flex: 0 0 22rem;
+  padding: 0.5rem 1.6rem 1rem 0;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-panel-root > * + * {
+  margin-top: 1.2rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-panel-detail {
+  padding: 0.5rem 0 1rem 2rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-view > * + * {
+  margin-top: 1.2rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-section-title,
+html.tv-mode .settings-dialog.is-tv .settings-card-title {
+  font-size: 0.75rem;
+}
+
+/* Rows of the hub: big, the whole row is the stop. */
+html.tv-mode .settings-dialog.is-tv .settings-option {
+  min-height: 3.2rem;
+  padding: 0 1rem;
+  border-radius: 0.8rem;
+  font-size: 1rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option-status {
+  font-size: 0.75rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option.tv-focus,
+html.tv-mode .settings-dialog.is-tv .settings-logout-button.tv-focus {
+  background: #fff;
+  color: #0b0b0d;
+  box-shadow: none;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option.tv-focus .settings-option-status {
+  color: rgba(11, 11, 13, 0.6);
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-logout-button {
+  min-height: 3rem;
+  font-size: 1rem;
+}
+
+/* Controls of an area: switches as whole rows, choices as large pills. */
+html.tv-mode .settings-dialog.is-tv .settings-control-row,
+html.tv-mode .settings-dialog.is-tv .settings-control-block {
+  padding: 0.9rem 1rem;
+  border-radius: 0.8rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-control-label {
+  font-size: 1rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-control-description {
+  font-size: 0.75rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-control-row.tv-focus {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--tv-ring);
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-switch-input.tv-focus {
+  box-shadow: none;
+}
+
+/* Switch, icons and avatar in rem, so they keep their size to the text. */
+html.tv-mode .settings-dialog.is-tv .settings-switch {
+  width: 2.6rem;
+  height: 1.5rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-switch-track::after {
+  top: 0.18rem;
+  left: 0.18rem;
+  width: 1.14rem;
+  height: 1.14rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-switch-input:checked + .settings-switch-track::after {
+  transform: translateX(1.1rem);
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option .settings-row-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-right: 0.8rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option .settings-row-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option.tv-focus .settings-row-icon {
+  background: rgba(11, 11, 13, 0.08);
+  color: #0b0b0d;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-profile-avatar {
+  width: 2.8rem;
+  height: 2.8rem;
+  font-size: 1.2rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-profile-name {
+  font-size: 1.15rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-profile-role,
+html.tv-mode .settings-dialog.is-tv .settings-profile-link {
+  font-size: 0.75rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-segmented {
+  flex-wrap: wrap;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-segmented-option {
+  min-height: 2.4rem;
+  padding: 0 1.1rem;
+  margin: 0.3rem 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-segmented-option.tv-focus {
+  box-shadow: var(--tv-ring);
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-version {
+  font-size: 0.7rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-option.tv-focus .settings-chevron {
+  color: #0b0b0d;
+}
+
+/* ---- Trailer scroller: one trailer per screen, up/down change it -------- */
+html.tv-mode .tv-shell .trailer-scroller-page {
+  --scroller-navbar-gap: 0px;
+  --scroller-page-offset: calc(2 * var(--tv-safe-y));
+  height: calc(100vh - var(--scroller-page-offset));
+  margin-top: 0;
+  background: transparent;
+}
+
+html.tv-mode .trailer-scroller-page::before {
+  display: none;
+}
+
+html.tv-mode .trailer-scroller-header {
+  min-height: 0;
+  padding: 0 0 0.8rem;
+  border-bottom: 0;
+  background: transparent;
+}
+
+html.tv-mode .trailer-scroller-eyebrow {
+  font-size: 0.55rem;
+}
+
+html.tv-mode .trailer-scroller-title {
+  font-size: 1.2rem;
+}
+
+/* The remote's up/down replace the arrows and the hint. */
+html.tv-mode .trailer-scroller-hint,
+html.tv-mode .trailer-scroller-navigation {
+  display: none;
+}
+
+html.tv-mode .trailer-slide {
+  padding: 1rem 0 1.5rem;
+  border-radius: 1.2rem;
+}
+
+html.tv-mode .trailer-info {
+  padding: 0.5rem;
+  margin: -0.5rem;
+}
+
+html.tv-mode .trailer-card {
+  grid-template-columns: minmax(0, 1fr) 22rem;
+  grid-gap: 2.2rem;
+  gap: 2.2rem;
+  width: 100%;
+  padding: 0 1.5rem;
+}
+
+html.tv-mode .trailer-video-container {
+  width: min(100%, calc((100vh - var(--scroller-page-offset) - 6rem) * 16 / 9));
+  border-radius: 1rem;
+}
+
+html.tv-mode .trailer-info-title {
+  font-size: 2rem;
+}
+
+html.tv-mode .trailer-info-overview {
+  font-size: 0.85rem;
+}
+
+html.tv-mode .trailer-meta-chip {
+  min-height: 1.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.6rem;
+}
+
+html.tv-mode .trailer-overview-toggle {
+  display: none;
+}
+
+html.tv-mode .trailer-actions {
+  margin-top: 1.4rem;
+}
+
+html.tv-mode .trailer-action {
+  min-height: 2.4rem;
+  margin: 0 0.5rem 0.5rem 0;
+  padding: 0 0.9rem 0 0.7rem;
+}
+
+html.tv-mode .trailer-action-icon {
+  margin-right: 0.5rem;
+}
+
+html.tv-mode .trailer-action-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+html.tv-mode .trailer-action-label {
+  font-size: 0.8rem;
+}
+
+html.tv-mode .trailer-action.tv-focus {
+  color: #0b0b0d;
+  border-color: transparent;
+  background: #fff;
+  box-shadow: var(--tv-ring);
+}
+
+html.tv-mode .trailer-intro-content {
+  font-size: 1rem;
+}

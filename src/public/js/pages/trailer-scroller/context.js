@@ -52,6 +52,7 @@ export function createTrailerScrollerContext() {
   };
 
   ctx.cleanup = () => {
+    if (ctx.isDestroyed) return;
     ctx.isDestroyed = true;
     ctx.playerManager.destroyAll();
     ctx.closeShareModal();

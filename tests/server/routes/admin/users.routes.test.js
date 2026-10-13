@@ -3,12 +3,17 @@ import express from 'express';
 import request from 'supertest';
 import usersRoutes from '../../../../src/server/routes/admin/users.routes.js';
 
+vi.mock('../../../../src/server/services/catalog/reader.js', () => ({
+  getActiveCatalogReader: () => ({ libraryStats: () => ({ 'lib-1': { count: 393, previews: [{ id: 'm1', tag: 't' }] } }) })
+}));
+
 vi.mock('../../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: { isUserAdmin: vi.fn() }
 }));
 
 vi.mock('../../../../src/server/services/jellyfin/admin-users.service.js', () => ({
   JellyfinAdminUsersService: {
+    countLibraryItems: vi.fn(async () => 12),
     listUsers: vi.fn(),
     listLibraries: vi.fn(),
     updateUserName: vi.fn(),
@@ -18,7 +23,12 @@ vi.mock('../../../../src/server/services/jellyfin/admin-users.service.js', () =>
   }
 }));
 
-vi.mock('../../../../src/server/services/user-ban.service.js', () => ({
+vi.mock('../../../../src/server/services/session-revocation.service.js', () => ({
+  revokeUserAccess: vi.fn(async () => ({ sessions: 1 }))
+}));
+
+vi.mock('../../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   UserBanService: {
     getBan: vi.fn(),
     ban: vi.fn(),
@@ -44,6 +54,8 @@ import { JellyfinAdminUsersService } from '../../../../src/server/services/jelly
 import { UserBanService } from '../../../../src/server/services/user-ban.service.js';
 import { UserSettingsService } from '../../../../src/server/services/user-settings.service.js';
 import { streamSessionService } from '../../../../src/server/services/stream-session.service.js';
+import { revokeUserAccess } from '../../../../src/server/services/session-revocation.service.js';
+import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
 
 function createApp({ authenticated = true, session = {} } = {}) {
   const app = express();
@@ -71,6 +83,7 @@ function createApp({ authenticated = true, session = {} } = {}) {
 describe('Admin Users Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
     UserBanService.getBan.mockReturnValue(null);
     UserSettingsService.getMaxConcurrentStreams.mockReturnValue(1);
@@ -95,7 +108,8 @@ describe('Admin Users Routes', () => {
       JellyfinAdminUsersService.listUsers.mockResolvedValue([
         { Id: 'u1', Name: 'alice', Policy: { IsAdministrator: false, EnableAllFolders: true, EnabledFolders: [] } }
       ]);
-      UserBanService.getBan.mockReturnValue({ reason: 'Account geteilt' });
+      // Only the listed user is banned, not the admin asking.
+      UserBanService.getBan.mockImplementation(id => (id === 'u1' ? { reason: 'Account geteilt' } : null));
       UserSettingsService.getMaxConcurrentStreams.mockReturnValue(2);
       streamSessionService.getActiveCount.mockReturnValue(1);
 
@@ -118,15 +132,19 @@ describe('Admin Users Routes', () => {
   });
 
   describe('GET /libraries', () => {
-    it('normalizes VirtualFolders into id/name/collectionType', async () => {
+    it('normalizes VirtualFolders and adds how many titles each holds', async () => {
       JellyfinAdminUsersService.listLibraries.mockResolvedValue([
-        { ItemId: 'lib-1', Name: 'Movies', CollectionType: 'movies' }
+        { ItemId: 'lib-1', Name: 'Movies', CollectionType: 'movies' },
+        { ItemId: 'lib-2', Name: 'Sammlungen', CollectionType: 'boxsets' }
       ]);
 
       const res = await request(createApp()).get('/libraries');
 
       expect(res.status).toBe(200);
-      expect(res.body.libraries).toEqual([{ id: 'lib-1', name: 'Movies', collectionType: 'movies' }]);
+      expect(res.body.libraries).toEqual([
+        { id: 'lib-1', name: 'Movies', collectionType: 'movies', itemCount: 393, previews: [{ id: 'm1', tag: 't' }] },
+        { id: 'lib-2', name: 'Sammlungen', collectionType: 'boxsets', itemCount: 12, previews: [] }
+      ]);
     });
   });
 
@@ -218,6 +236,7 @@ describe('Admin Users Routes', () => {
         userId: 'admin-1',
         username: 'admin'
       });
+      expect(revokeUserAccess).toHaveBeenCalledWith('u1', { userId: 'u1', reason: 'Account geteilt' });
     });
   });
 

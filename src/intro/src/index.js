@@ -14,9 +14,11 @@ const loadImage = (src) => new Promise((resolve, reject) => {
 });
 
 // Plays the whole opening scene inside `overlay` and resolves once the cover
-// has faded out. The caller removes the overlay; on any error it rejects and
-// the caller falls through to the app.
-export async function playIntro(overlay, { logo = '/assets/logo2.png' } = {}) {
+// has faded out, or at once when `signal` aborts (the visitor skipped it).
+// The caller removes the overlay; on any error it rejects and the caller
+// falls through to the app.
+export async function playIntro(overlay, { logo = '/assets/logo2.png', signal = null } = {}) {
+  if (signal?.aborted) return;
   const canvas = overlay.querySelector('canvas') || overlay.appendChild(document.createElement('canvas'));
   const lowPower = isLowPower();
   const img = await loadImage(logo);
@@ -35,7 +37,9 @@ export async function playIntro(overlay, { logo = '/assets/logo2.png' } = {}) {
   try {
     await new Promise((resolve) => {
       let startedAt = 0;
+      signal?.addEventListener('abort', resolve, { once: true });
       const frame = (now) => {
+        if (signal?.aborted) return;
         if (!startedAt) startedAt = now;
         const t = (now - startedAt) / 1000;
         const at = view.render(Math.min(t, DURATION));

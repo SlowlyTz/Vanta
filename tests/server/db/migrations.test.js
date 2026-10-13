@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import initSqlJs from 'sql.js';
-import { migrateRequestsTable } from '../../../src/server/db/migrations.js';
+import { migrateRequestsTable, migratePushSubscriptionsTable } from '../../../src/server/db/migrations.js';
 
 // The 13-column table as it shipped before request scopes existed.
 const LEGACY_SCHEMA = `
@@ -99,5 +99,21 @@ describe('migrateRequestsTable', () => {
   it('does nothing when the table does not exist yet', () => {
     const empty = new SQL.Database();
     expect(migrateRequestsTable(empty)).toEqual([]);
+  });
+});
+
+describe('migratePushSubscriptionsTable', () => {
+  it('adds the session column to a table from before it, once', async () => {
+    const SQL = await initSqlJs();
+    const db = new SQL.Database();
+    db.run(`CREATE TABLE push_subscriptions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL, auth TEXT NOT NULL, user_agent TEXT, created_at INTEGER NOT NULL, last_success_at INTEGER,
+      failure_count INTEGER NOT NULL DEFAULT 0)`);
+    db.run("INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at) VALUES ('u1', 'https://x', 'p', 'a', 1)");
+
+    expect(migratePushSubscriptionsTable(db)).toEqual(['session_id']);
+    expect(migratePushSubscriptionsTable(db)).toEqual([]);
+    expect(db.exec('SELECT session_id FROM push_subscriptions')[0].values).toEqual([[null]]);
+    expect(migratePushSubscriptionsTable(new SQL.Database())).toEqual([]);
   });
 });

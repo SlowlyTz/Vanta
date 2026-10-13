@@ -21,6 +21,28 @@
   transition: all var(--transition-fast);
 }
 
+/* On the detail page with its state written next to the check. */
+.played-toggle.has-label {
+  width: auto;
+  padding: 0 16px 0 12px;
+}
+
+.played-toggle-label {
+  margin-left: 8px;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 560px) {
+  .played-toggle.has-label {
+    width: 44px;
+    padding: 0;
+  }
+
+  .played-toggle-label {
+    display: none;
+  }
+}
+
 .played-toggle:hover {
   background-color: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.2);

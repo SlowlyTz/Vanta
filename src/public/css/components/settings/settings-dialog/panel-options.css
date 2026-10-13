@@ -144,10 +144,6 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-.settings-row-icon.settings-accent-icon {
-  color: rgb(var(--abyss-accent));
-}
-
 /* Count on a row (Admin-Tools: open requests and reports) */
 .settings-option-badge {
   min-width: 22px;

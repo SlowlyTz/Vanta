@@ -95,6 +95,32 @@ describe('createSettingsFlyout', () => {
     expect(env.element.dataset.state).toBe('closed');
   });
 
+  it('lässt Backspace und Pfeile links/rechts in einem Zahlenfeld dem Feld', () => {
+    env = setup();
+    env.button.click();
+    env.element.querySelector('.vanta-settings-row').click();
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'vanta-settings-focusable';
+    env.element.querySelector('.test-option').after(input);
+    input.focus();
+    const documentKeys = vi.fn();
+    document.addEventListener('keydown', documentKeys);
+
+    for (const key of ['Backspace', 'ArrowLeft', 'ArrowRight']) {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(env.flyout.currentPage()).toBe('subtitles');
+    expect(documentKeys).not.toHaveBeenCalled();
+    document.removeEventListener('keydown', documentKeys);
+
+    env.element.querySelector('.test-option').focus();
+    press(document.activeElement, 'Backspace');
+    expect(env.flyout.currentPage()).toBe('root');
+  });
+
   it('schließt bei einem Klick außerhalb, aber nicht bei einem Klick hinein', () => {
     env = setup();
     env.button.click();

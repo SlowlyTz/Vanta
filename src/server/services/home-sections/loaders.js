@@ -4,6 +4,22 @@ import { getFeaturedPublishersFromStudios } from '../../../public/js/constants/f
 import { normalizeGenre, normalizeTitle, getItemYear, shuffleArray, sortByNewest, buildGenreHref } from './normalizers.js';
 
 const SECTION_LIMIT = 20;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// "Jetzt im Kino": TMDB's now-playing list also carries re-releases and
+// special screenings of old films under their original release date. Only
+// films first released in the last four months (room for a German start
+// after the US one) or about to start count, and only when the library
+// holds that very film (TMDB or IMDb id, never a title that merely sounds
+// the same, and not an entry years older than the release).
+export const NOW_PLAYING_MAX_AGE_DAYS = 120;
+export const NOW_PLAYING_MAX_AHEAD_DAYS = 60;
+
+export function isCurrentRelease(releaseDate, now = Date.now()) {
+  const released = Date.parse(String(releaseDate || ''));
+  if (!Number.isFinite(released)) return false;
+  return released >= now - NOW_PLAYING_MAX_AGE_DAYS * DAY_MS && released <= now + NOW_PLAYING_MAX_AHEAD_DAYS * DAY_MS;
+}
 
 const FEATURED_SECTIONS = [
   { type: 'featured', title: 'Top 5 Filme & Serien der letzten 20 Tage', source: 'trending', cardSize: 'large' },
@@ -126,30 +142,30 @@ export const loaderMethods = {
     }
   },
 
-  async _buildNowPlayingSection(items) {
+  // Without a current film in the library the section comes back empty and
+  // without a message, so the home page leaves it out.
+  async _buildNowPlayingSection(items, { now = Date.now() } = {}) {
     const indexes = this._buildItemIndexes(items);
+    const section = { type: 'standard', title: 'Jetzt im Kino', href: '#/movies', items: [] };
 
     try {
       const tmdbItems = await TmdbService.getNowPlaying(60, process.env.TMDB_REGION || 'DE');
-      const matchedItems = this._matchTmdbItems(tmdbItems, indexes, SECTION_LIMIT);
-
-      return {
-        type: 'standard',
-        title: 'Jetzt im Kino',
-        href: '#/movies',
-        items: matchedItems,
-        emptyMessage: 'Keine aktuellen Kinofilme in deiner Mediathek.'
-      };
+      const seen = new Set();
+      for (const tmdbItem of tmdbItems) {
+        if (section.items.length >= SECTION_LIMIT) break;
+        if (!isCurrentRelease(tmdbItem.releaseDate, now)) continue;
+        const item = this._findJellyfinMatch(tmdbItem, indexes, { byIdOnly: true });
+        if (!item || seen.has(item.Id)) continue;
+        const year = getItemYear(item);
+        if (year !== null && year < new Date(tmdbItem.releaseDate).getFullYear() - 1) continue;
+        seen.add(item.Id);
+        section.items.push(item);
+      }
     } catch (error) {
       console.error('[HomeSectionsService] Failed to build now playing section:', error.message);
-      return {
-        type: 'standard',
-        title: 'Jetzt im Kino',
-        href: '#/movies',
-        items: [],
-        emptyMessage: 'Aktuelle Kinofilme konnten gerade nicht geprüft werden.'
-      };
     }
+
+    return section;
   },
 
   async _buildFeaturedSections(items) {
@@ -200,7 +216,7 @@ export const loaderMethods = {
     return matched;
   },
 
-  _findJellyfinMatch(tmdbItem, indexes) {
+  _findJellyfinMatch(tmdbItem, indexes, { byIdOnly = false } = {}) {
     const { byTmdbId, byImdbId, byTitleYear } = indexes;
 
     if (tmdbItem.id) {
@@ -212,6 +228,8 @@ export const loaderMethods = {
       const imdbMatch = byImdbId.get(String(tmdbItem.imdbId).toLowerCase());
       if (imdbMatch) return imdbMatch;
     }
+
+    if (byIdOnly) return null;
 
     const normalizedTitle = normalizeTitle(tmdbItem.title || tmdbItem.originalTitle || '');
     if (!normalizedTitle) return null;

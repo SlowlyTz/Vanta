@@ -166,6 +166,62 @@ describe('LibraryService.getResumeItems', () => {
 
     expect(items.map(item => item.Id)).toEqual(['e2']);
   });
+
+  it('zeigt nie Staffeln oder Serien, nur Filme und Folgen', async () => {
+    mockUpstream({
+      resumable: [
+        { Id: 'season-1', Type: 'Season', Name: 'Staffel 1', UserData: {} },
+        { Id: 'series-1', Type: 'Series', Name: 'Dark', UserData: {} },
+        movie('m1', { PlayedPercentage: 40 }),
+        episode('e1', { userData: { PlayedPercentage: 30 } })
+      ]
+    });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items.map(item => item.Id)).toEqual(['m1', 'e1']);
+    const [, options] = jellyfinJson.mock.calls.find(([, call]) => call.query.Filters === 'IsResumable');
+    expect(options.query.IncludeItemTypes).toBe('Movie,Episode,Video');
+  });
+
+  it('holt mehr als eine Reihe und kürzt erst nach dem Auflösen', async () => {
+    // Twelve finished last episodes drop out; the row is still filled from what follows.
+    const finished = Array.from({ length: 12 }, (_, n) => episode(`done${n}`, { seriesId: `ser${n}`, userData: { PlayedPercentage: 99 } }));
+    const open = Array.from({ length: 14 }, (_, n) => movie(`m${n}`, { PlayedPercentage: 20 }));
+    mockUpstream({ resumable: [...finished, ...open] });
+
+    const items = await LibraryService.getResumeItems('u1', 't1');
+
+    expect(items.map(item => item.Id)).toEqual(open.slice(0, 12).map(item => item.Id));
+    const [, options] = jellyfinJson.mock.calls.find(([, call]) => call.query.Filters === 'IsResumable');
+    expect(options.query.Limit).toBeGreaterThan(12);
+  });
+});
+
+describe('LibraryService.searchFull without the catalogue', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('applies the filters to what Jellyfin found and trims the query', async () => {
+    jellyfinJson.mockResolvedValue({ Items: [
+      { Id: 'a', Type: 'Movie', ProductionYear: 1995, OfficialRating: 'FSK-16', Genres: ['Drama'] },
+      { Id: 'b', Type: 'Movie', ProductionYear: 1995, OfficialRating: 'FSK-12', Genres: ['Drama'] },
+      { Id: 'c', Type: 'Movie', ProductionYear: 2005, OfficialRating: 'FSK-12', Genres: ['Drama'] }
+    ] });
+
+    const result = await LibraryService.searchFull('u1', 't1', '  heat ', { types: ['Movie'], genres: ['drama'], decade: 1990, maxAge: 12, unwatched: true });
+
+    expect(result).toEqual({ items: [{ Id: 'b', Type: 'Movie', ProductionYear: 1995, OfficialRating: 'FSK-12', Genres: ['Drama'] }], people: [] });
+    const [, { query }] = jellyfinJson.mock.calls[0];
+    expect(query).toMatchObject({ SearchTerm: 'heat', IncludeItemTypes: 'Movie', Genres: 'drama', Filters: 'IsUnplayed' });
+  });
+
+  it('lists by filter alone, and nothing without query or filter', async () => {
+    jellyfinJson.mockResolvedValue({ Items: [{ Id: 'a', Type: 'Series', Genres: ['Krimi'] }] });
+    expect((await LibraryService.searchFull('u1', 't1', '', { genres: ['Krimi'] })).items.map(item => item.Id)).toEqual(['a']);
+    expect(jellyfinJson.mock.calls[0][1].query.SearchTerm).toBeUndefined();
+    expect(await LibraryService.searchFull('u1', 't1', '   ', {})).toEqual({ items: [], people: [] });
+    expect(jellyfinJson).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('LibraryService.getPublisherStudioNames', () => {

@@ -4,6 +4,12 @@
 // scene itself (with three.js) is only fetched when it actually plays.
 (function (window) {
   var STORAGE_KEY = 'vanta.intro.lastPlayedAt';
+  // The user's settings as the app last saw them (preferences.store.js).
+  var PREFERENCES_KEY = 'vanta.preferences';
+  // TV mode per device (utils/tvMode.js); the pattern is TV_PATTERN of
+  // shared/tvDetect.js, repeated here because this script cannot import.
+  var TV_KEY = 'vanta.tvMode';
+  var TV_PATTERN = /SMART-TV|SmartTV|HbbTV|Web0S|webOS.*TV|Tizen.*TV|\bAFT[A-Z]|CrKey|GoogleTV|BRAVIA|Android.*\bTV\b|AndroidTV/i;
   var MIN_INTERVAL_MS = 10 * 60 * 1000;
   var WATCHDOG_MS = 12000;
   var SKIPPED_ROUTES = ['#/player/', '#/watch-party/'];
@@ -11,6 +17,12 @@
   function shouldPlay(input) {
     // Offline there is nothing to load; the offline page should show at once.
     if (input.online === false) return false;
+    // A system that asks for reduced motion gets no particle flight, nor does
+    // a user who switched the animation off.
+    if (input.reducedMotion === true) return false;
+    if (input.introOff === true) return false;
+    // TV chips are slow; the 10-foot interface starts without the scene.
+    if (input.tv === true) return false;
     var hash = input.hash || '';
     for (var i = 0; i < SKIPPED_ROUTES.length; i++) {
       if (hash.indexOf(SKIPPED_ROUTES[i]) === 0) return false;
@@ -24,6 +36,29 @@
     try { return window.localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
   }
 
+  function prefersReducedMotion() {
+    try {
+      return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function tvMode() {
+    var choice = null;
+    try {
+      var param = new URLSearchParams(window.location.search).get('tv');
+      if (param === '1' || param === '0') window.localStorage.setItem(TV_KEY, param === '1' ? 'on' : 'off');
+      choice = window.localStorage.getItem(TV_KEY);
+    } catch (e) { /* private mode: detection only */ }
+    if (choice === 'on' || choice === 'off') return choice === 'on';
+    return TV_PATTERN.test(window.navigator ? window.navigator.userAgent : '');
+  }
+
+  function readPreferences() {
+    try { return JSON.parse(window.localStorage.getItem(PREFERENCES_KEY) || 'null') || {}; } catch (e) { return {}; }
+  }
+
   function markPlayed(now) {
     try { window.localStorage.setItem(STORAGE_KEY, String(now)); } catch (e) { /* private mode */ }
   }
@@ -32,19 +67,29 @@
     STORAGE_KEY: STORAGE_KEY,
     MIN_INTERVAL_MS: MIN_INTERVAL_MS,
     shouldPlay: shouldPlay,
-    load: function () { return import('/vendor/intro/vanta-intro.js'); },
+    load: function () { return import('/vendor/scenes/vanta-intro.js'); },
     start: function (loading) {
       var overlay = window.document.getElementById('intro');
       if (!overlay) return Promise.resolve();
       var finished = false;
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      // A click, a tap or any key skips the rest of the scene.
+      var skip = function () {
+        if (controller) controller.abort();
+        finish();
+      };
       var finish = function () {
         if (finished) return;
         finished = true;
+        overlay.removeEventListener('pointerdown', skip);
+        window.removeEventListener('keydown', skip, true);
         overlay.remove();
       };
+      overlay.addEventListener('pointerdown', skip);
+      window.addEventListener('keydown', skip, true);
       var watchdog = window.setTimeout(finish, WATCHDOG_MS);
       return (loading || gate.load())
-        .then(function (mod) { return mod.playIntro(overlay); })
+        .then(function (mod) { return finished ? undefined : mod.playIntro(overlay, { signal: controller && controller.signal }); })
         .catch(function (error) { if (window.console) console.warn('[Intro] skipped:', error && error.message); })
         .then(function () { window.clearTimeout(watchdog); finish(); });
     }
@@ -52,7 +97,12 @@
   window.VantaIntroGate = gate;
 
   var now = Date.now();
-  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true })) {
+  var preferences = readPreferences();
+  var tv = tvMode();
+  if (tv) window.document.documentElement.classList.add('tv-mode');
+  // "Weniger Bewegung" from the settings, before the first paint.
+  if (preferences.reducedMotion === true) window.document.documentElement.classList.add('reduce-motion');
+  if (!shouldPlay({ now: now, lastPlayedAt: readLastPlayed(), hash: window.location.hash, online: window.navigator ? window.navigator.onLine : true, reducedMotion: prefersReducedMotion() || preferences.reducedMotion === true, introOff: preferences.introAnimation === 'off', tv: tv })) {
     window.document.documentElement.classList.add('intro-off');
     return;
   }

@@ -4,11 +4,28 @@ import { applyPlaybackState, syncPlayingState } from './sourceSwitch/loadingStat
 import { waitForDurationOrSeekable, clearSeekTimer, startSeekTimer, performSeek } from './sourceSwitch/seekRestore.js';
 import { createSwitchTo } from './sourceSwitch/rollback.js';
 
-const playbackSource = playback => ({
+// vidstack's video provider only takes the types in its VIDEO_TYPES list
+// (mp4, webm, 3gp, ogg, avi, mpeg); a source of any other type finds no
+// provider and never loads. MKV and MOV therefore go out as MP4 and the
+// browser decides from the bytes whether it plays them (a TV plays MKV).
+// Only a file played as it is (DirectPlay) names its own container;
+// anything Jellyfin remuxes or transcodes over HTTP is MP4.
+const DIRECT_TYPES = { webm: 'video/webm' };
+export const HLS_TYPE = 'application/vnd.apple.mpegurl';
+
+// A direct source the browser or vidstack cannot open often never reports
+// an error; without `can-play` by then it falls back to HLS.
+export const DIRECT_CAN_PLAY_TIMEOUT_MS = 20_000;
+
+const directType = playback => {
+  if (playback.playMethod && playback.playMethod !== 'DirectPlay') return 'video/mp4';
+  const container = String(playback.container || '').split(',')[0].trim().toLowerCase();
+  return DIRECT_TYPES[container] || 'video/mp4';
+};
+
+export const playbackSource = playback => ({
   src: playback.url,
-  type: playback.delivery === 'hls'
-    ? 'application/vnd.apple.mpegurl'
-    : 'video/mp4'
+  type: playback.delivery === 'hls' ? HLS_TYPE : directType(playback)
 });
 
 export function createSourceSwitch(options) {
@@ -54,7 +71,7 @@ export function createSourceSwitch(options) {
     state.player.src = playbackSource(playback);
 
     try {
-      await once(state.player, 'can-play', undefined, ['error']);
+      await once(state.player, 'can-play', playback.delivery === 'hls' ? undefined : DIRECT_CAN_PLAY_TIMEOUT_MS, ['error']);
       if (!state.isCurrentLoad(version)) return;
       state.setLoadingStatus('Medienquelle ist bereit. Laufzeit wird geprüft …');
       state.restoreState(nextState);

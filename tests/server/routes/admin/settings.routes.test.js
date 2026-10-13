@@ -27,6 +27,7 @@ vi.mock('../../../../src/server/services/discord-webhook.service.js', async (imp
 import { AuthService } from '../../../../src/server/services/jellyfin/auth.service.js';
 import { AppSettingsService } from '../../../../src/server/services/app-settings.service.js';
 import { sendWebhookEmbed } from '../../../../src/server/services/discord-webhook.service.js';
+import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
 
 const VALID_URL = 'https://discord.com/api/webhooks/1234567890/abcdefghijklmnopqrstuvwxyzf9c2';
 
@@ -61,6 +62,7 @@ describe('Admin Settings Routes (Discord webhook)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
     store = backAppSettingsServiceWithStore();
   });

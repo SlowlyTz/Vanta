@@ -16,6 +16,26 @@
   max-width: 100%;
 }
 
+/* Cards far outside the viewport are not laid out or painted until they come
+   close; the estimate keeps the scrollbar honest, "auto" remembers the real
+   height once a card was rendered. */
+.library-grid > .media-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 410px;
+}
+
+@media (max-width: 1199px) {
+  .library-grid > .media-card {
+    contain-intrinsic-size: auto 335px;
+  }
+}
+
+@media (max-width: 600px) {
+  .library-grid > .media-card {
+    contain-intrinsic-size: auto 220px;
+  }
+}
+
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

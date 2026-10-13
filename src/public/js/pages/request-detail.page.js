@@ -6,6 +6,7 @@ import { openTrailerModal } from '../components/trailerModal.js';
 import { createBackIcon } from '../components/navbar/icons.js';
 import { mergeSeasons, buildRequestCoverage } from './requests/helpers.js';
 import { createSeriesPicker } from './requests/seriesPicker.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { getTmdbImageUrl, createPosterPlaceholder } from '../utils/poster.js';
 
 const chip = (text, tone) => createElement('span', { className: `ui-chip ${tone}` }, text);
@@ -122,7 +123,8 @@ function buildCast(cast) {
 // Request page of one TMDB title: the hero with its state, then either the
 // movie's action or the series picker (whole series, seasons, episodes —
 // also for a series that is partly in the library already).
-export default function RequestDetailPage({ type, id }) {
+export default function RequestDetailPage({ type, id }, pageScope) {
+  const { signal } = resolvePageScope(pageScope);
   const tmdbId = parseInt(id, 10);
   const container = createElement('div', { className: 'page-container content-section' });
   const page = createElement('div', { className: 'ui-page request-detail' });
@@ -134,8 +136,8 @@ export default function RequestDetailPage({ type, id }) {
 
     try {
       const [details, crossCheck] = await Promise.all([
-        RequestsApi.getDetails(tmdbId, type),
-        RequestsApi.crossCheck(tmdbId, type).catch(() => ({ exists: false, seasons: [], requestedScopes: [] }))
+        RequestsApi.getDetails(tmdbId, type, { signal }),
+        RequestsApi.crossCheck(tmdbId, type, { signal }).catch(() => ({ exists: false, seasons: [], requestedScopes: [] }))
       ]);
 
       // Open requests of every user for this title — the same set the server

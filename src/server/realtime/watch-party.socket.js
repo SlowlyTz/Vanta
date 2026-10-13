@@ -1,5 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
+import { UserBanService } from '../services/user-ban.service.js';
+import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat } from './hardening.js';
 import { registerTokenDevice } from '../services/jellyfin/client.js';
 import { startWatchPartyCleanup } from '../services/watch-party.service.js';
 import { connectionRegistryMethods } from './watch-party/connectionRegistry.js';
@@ -11,7 +13,7 @@ import { episodeSwitchMethods } from './watch-party/episodeSwitch.js';
 
 export class WatchPartySocketHub {
   constructor() {
-    this.wss = new WebSocketServer({ noServer: true });
+    this.wss = new WebSocketServer({ noServer: true, maxPayload: WS_MAX_PAYLOAD });
     this.connectionsByParty = new Map(); // partyId -> Map<userId, Set<ws>>
     this.ownerDisconnectTimers = new Map(); // partyId -> Timeout
     this.countdownTimers = new Map(); // partyId -> Timeout
@@ -24,11 +26,16 @@ export class WatchPartySocketHub {
     server.on('upgrade', (req, socket, head) => {
       const url = new URL(req.url, 'http://localhost');
       if (!url.pathname.startsWith('/ws/watch-party/')) return;
+      if (!isAllowedOrigin(req)) {
+        rejectUpgrade(socket, 403, 'Forbidden');
+        return;
+      }
 
       sessionMiddleware(req, {}, () => {
-        if (!req.session?.userId) {
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-          socket.destroy();
+        // A banned user's session normally ends with the ban; this covers a
+        // ban written by hand while the session was still around.
+        if (!req.session?.userId || UserBanService.isBanned(req.session.userId)) {
+          rejectUpgrade(socket, 401, 'Unauthorized');
           return;
         }
 
@@ -38,7 +45,10 @@ export class WatchPartySocketHub {
       });
     });
 
+    startHeartbeat(this.wss);
+
     this.wss.on('connection', (ws, req) => {
+      limitMessageRate(ws);
       const url = new URL(req.url, 'http://localhost');
       const partyId = url.pathname.split('/').pop();
       registerTokenDevice(req.session.accessToken, req.session.deviceId);

@@ -3,6 +3,7 @@ import { TmdbService } from './tmdb.service.js';
 import { JellyfinCrossCheck } from './jellyfin-crosscheck.service.js';
 import { normalizeScopeSelection, toScopeInteger } from './request-scope.js';
 import fs from 'fs';
+import { writeFileAtomicSync } from '../utils/atomicWrite.js';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -58,11 +59,7 @@ const readBannedList = () => {
 };
 
 const writeBannedList = (list) => {
-  if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
-  }
-
-  fs.writeFileSync(BANNED_FILE, `${JSON.stringify(list, null, 2)}\n`, 'utf8');
+  writeFileAtomicSync(BANNED_FILE, `${JSON.stringify(list, null, 2)}\n`, { encoding: 'utf8' });
   bannedListCache = null;
 };
 
@@ -219,6 +216,8 @@ class RequestsService {
     updateRequestStatus.run(status, Date.now(), id);
   }
 
+  // A decision that is already the request's status changes nothing: no
+  // new updated_at (which lights the requester's menu dot) and no write.
   static async approve(id) {
     const request = await this.getById(id);
     if (!request) {
@@ -226,6 +225,7 @@ class RequestsService {
       error.status = 404;
       throw error;
     }
+    if (request.status === 'approved') return request;
 
     await this.updateStatus(id, 'approved');
     return this.getById(id);
@@ -238,6 +238,7 @@ class RequestsService {
       error.status = 404;
       throw error;
     }
+    if (request.status === 'rejected') return request;
 
     await this.updateStatus(id, 'rejected');
 

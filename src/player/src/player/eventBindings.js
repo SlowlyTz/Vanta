@@ -1,8 +1,9 @@
-import Hls from 'hls.js';
 import { isHLSProvider } from 'vidstack';
 import { exitPictureInPicture } from '../platform.js';
 import { HLS_FRAGMENT_TIMEOUT_MS, HLS_WORKER_PATH } from './markup.js';
 import { bindOwnerControlEvents } from './ownerControlEvents.js';
+
+export const loadHls = () => import('hls.js');
 
 export function bindPlayerEvents(context) {
   const { player, dom, listen, onBack } = context;
@@ -52,7 +53,9 @@ export function bindPlayerEvents(context) {
     context.syncInlinePlayback();
     window.setTimeout(context.syncInlinePlayback, 0);
     if (isHLSProvider(event.detail)) {
-      event.detail.library = Hls;
+      // hls.js (and its 100 kB of transmuxing) is only fetched once a
+      // stream actually goes out as HLS; direct play never loads it.
+      event.detail.library = loadHls;
       event.detail.config = {
         enableWorker: true,
         workerPath: HLS_WORKER_PATH,

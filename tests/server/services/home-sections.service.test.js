@@ -24,6 +24,10 @@ vi.mock('../../../src/server/services/tmdb.service.js', () => ({
 import { LibraryService } from '../../../src/server/services/jellyfin/library.service.js';
 import { TmdbService } from '../../../src/server/services/tmdb.service.js';
 import { HomeSectionsService } from '../../../src/server/services/home-sections.service.js';
+import { isCurrentRelease } from '../../../src/server/services/home-sections/loaders.js';
+
+// A release date `days` from today (negative: in the past).
+const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 function item(id, name = `Item ${id}`) {
   return { Id: id, Name: name, SortName: name };
@@ -139,10 +143,10 @@ describe('HomeSectionsService._buildNowPlayingSection', () => {
     LibraryService.getStudios.mockResolvedValue([]);
   });
 
-  it('is always returned, even with zero matches', async () => {
+  it('is always returned, empty and without a message (hidden) with zero matches', async () => {
     LibraryService.getAllMoviesAndSeries.mockResolvedValue([]);
     TmdbService.getNowPlaying.mockResolvedValue([
-      { id: 999, title: 'Not In Library', mediaType: 'movie', releaseDate: '2026-01-01', popularity: 1 }
+      { id: 999, title: 'Not In Library', mediaType: 'movie', releaseDate: daysFromNow(-10), popularity: 1 }
     ]);
 
     const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-empty-user', 't1', 'now-playing');
@@ -150,15 +154,15 @@ describe('HomeSectionsService._buildNowPlayingSection', () => {
     expect(nowPlaying.title).toBe('Jetzt im Kino');
     expect(nowPlaying.href).toBe('#/movies');
     expect(nowPlaying.items).toEqual([]);
-    expect(nowPlaying.emptyMessage).toBeTruthy();
+    expect(nowPlaying.emptyMessage).toBeUndefined();
   });
 
   it('only includes items that actually exist in Jellyfin, not raw TMDB-only hits', async () => {
     const matched = { Id: 'j1', Name: 'In Cinemas', ProviderIds: { Tmdb: '701' } };
     LibraryService.getAllMoviesAndSeries.mockResolvedValue([matched]);
     TmdbService.getNowPlaying.mockResolvedValue([
-      { id: 701, title: 'In Cinemas', mediaType: 'movie', releaseDate: '2026-01-01', popularity: 5 },
-      { id: 702, title: 'Not In Library', mediaType: 'movie', releaseDate: '2026-01-02', popularity: 3 }
+      { id: 701, title: 'In Cinemas', mediaType: 'movie', releaseDate: daysFromNow(-20), popularity: 5 },
+      { id: 702, title: 'Not In Library', mediaType: 'movie', releaseDate: daysFromNow(-5), popularity: 3 }
     ]);
 
     const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-match-user', 't1', 'now-playing');
@@ -166,14 +170,41 @@ describe('HomeSectionsService._buildNowPlayingSection', () => {
     expect(nowPlaying.items).toEqual([matched]);
   });
 
+  it('leaves out re-releases of old films, title look-alikes and old library entries', async () => {
+    const cars = { Id: 'cars', Name: 'Cars', ProductionYear: 2006, ProviderIds: { Tmdb: '920' } };
+    const panem = { Id: 'panem', Name: 'Die Tribute von Panem', ProductionYear: 2012, ProviderIds: { Tmdb: '70160' } };
+    const wrongId = { Id: 'old', Name: 'Neuer Film', ProductionYear: 1999, ProviderIds: { Tmdb: '5000' } };
+    const fresh = { Id: 'fresh', Name: 'Frisch', ProductionYear: 2026, ProviderIds: { Tmdb: '6000' } };
+    LibraryService.getAllMoviesAndSeries.mockResolvedValue([cars, panem, wrongId, fresh]);
+    TmdbService.getNowPlaying.mockResolvedValue([
+      { id: 920, title: 'Cars', releaseDate: '2006-06-08' },
+      { id: 1111, title: 'Die Tribute von Panem', releaseDate: daysFromNow(-3) },
+      { id: 5000, title: 'Neuer Film', releaseDate: daysFromNow(-3) },
+      { id: 6000, title: 'Frisch', releaseDate: daysFromNow(-30) }
+    ]);
+
+    const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-filter-user', 't1', 'now-playing');
+
+    expect(nowPlaying.items.map(item => item.Id)).toEqual(['fresh']);
+  });
+
+  it('counts the last four months and films about to start as current', () => {
+    const now = Date.parse('2026-10-12T12:00:00Z');
+    expect(isCurrentRelease('2026-09-01', now)).toBe(true);
+    expect(isCurrentRelease('2026-11-01', now)).toBe(true);
+    expect(isCurrentRelease('2026-05-01', now)).toBe(false);
+    expect(isCurrentRelease('2027-06-01', now)).toBe(false);
+    expect(isCurrentRelease('', now)).toBe(false);
+  });
+
   it('keeps the home page stable when TMDB now-playing fails, returning an empty items array', async () => {
     LibraryService.getAllMoviesAndSeries.mockResolvedValue([]);
     TmdbService.getNowPlaying.mockRejectedValue(new Error('TMDB down'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const [nowPlaying] = await HomeSectionsService.getHomeSectionGroup('now-error-user', 't1', 'now-playing');
 
     expect(nowPlaying.title).toBe('Jetzt im Kino');
     expect(nowPlaying.items).toEqual([]);
-    expect(nowPlaying.emptyMessage).toBeTruthy();
   });
 });

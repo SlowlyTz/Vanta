@@ -3,6 +3,9 @@ import express from 'express';
 import request from 'supertest';
 import requestsRoutes from '../../../src/server/routes/requests.routes.js';
 
+vi.mock('../../../src/server/services/notification-triggers.js', () => ({
+  NotificationTriggers: { requestDecided: vi.fn(), adminWork: vi.fn(), reportHandled: vi.fn(), watchPartyInvite: vi.fn() }
+}));
 vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: { isUserAdmin: vi.fn() }
 }));
@@ -44,6 +47,8 @@ import { AuthService } from '../../../src/server/services/jellyfin/auth.service.
 import { RequestsService } from '../../../src/server/services/requests.service.js';
 import { TmdbService } from '../../../src/server/services/tmdb.service.js';
 import { sendRequestCreated } from '../../../src/server/services/discord-webhook.service.js';
+import { NotificationTriggers } from '../../../src/server/services/notification-triggers.js';
+import { clearAdminCheckCache } from '../../../src/server/middleware/auth.middleware.js';
 
 const TV_SEASONS = [
   { season_number: 0, name: 'Specials' },
@@ -79,6 +84,7 @@ function createApp({ authenticated = true } = {}) {
 describe('Requests Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
   });
 
@@ -353,12 +359,33 @@ describe('Requests Routes', () => {
       expect(res.status).toBe(400);
     });
 
-    // Deliberately public; this must not start requiring a session.
-    it('answers without a session', async () => {
+    // Every lookup spends the server's TMDB key, so it needs a session.
+    it('refuses a request without a session', async () => {
       const res = await request(createApp({ authenticated: false })).get('/details?tmdbId=70523&tmdbType=tv');
+
+      expect(res.status).toBe(401);
+      expect(TmdbService.getTvDetails).not.toHaveBeenCalled();
+    });
+
+    it('answers with the ban and request state', async () => {
+      const res = await request(createApp()).get('/details?tmdbId=70523&tmdbType=tv');
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ id: 70523, banned: false, bannedInfo: null, requested: false });
+    });
+
+    it.each([
+      ['abc', 'tv'],
+      ['-5', 'tv'],
+      ['0', 'movie'],
+      ['12abc', 'movie'],
+      ['42', 'person']
+    ])('rejects tmdbId=%s tmdbType=%s', async (tmdbId, tmdbType) => {
+      const res = await request(createApp()).get(`/details?tmdbId=${tmdbId}&tmdbType=${tmdbType}`);
+
+      expect(res.status).toBe(400);
+      expect(TmdbService.getTvDetails).not.toHaveBeenCalled();
+      expect(TmdbService.getMovieDetails).not.toHaveBeenCalled();
     });
 
     it('does not attach any Jellyfin or season data', async () => {
@@ -509,6 +536,23 @@ describe('Requests Routes', () => {
 
       expect(res.status).toBe(200);
       expect(sendRequestCreated).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('approve / reject tell the requester only about a real change', () => {
+    it('notifies on a new decision', async () => {
+      RequestsService.getById.mockResolvedValue({ id: 1, status: 'pending' });
+      RequestsService.approve.mockResolvedValue({ id: 1, status: 'approved' });
+      await request(createApp()).post('/1/approve');
+      expect(NotificationTriggers.requestDecided).toHaveBeenCalledWith({ id: 1, status: 'approved' });
+    });
+
+    it('stays quiet when the request already had that status', async () => {
+      RequestsService.getById.mockResolvedValue({ id: 1, status: 'rejected' });
+      RequestsService.reject.mockResolvedValue({ id: 1, status: 'rejected' });
+      const res = await request(createApp()).post('/1/reject');
+      expect(res.status).toBe(200);
+      expect(NotificationTriggers.requestDecided).not.toHaveBeenCalled();
     });
   });
 });

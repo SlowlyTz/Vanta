@@ -1,24 +1,22 @@
 .trailer-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 26px;
 }
 
 .trailer-action {
   display: inline-flex;
   min-width: 0;
-  min-height: 54px;
-  flex-direction: column;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 7px 5px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--abyss-radius);
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.035);
+  margin: 0 8px 8px 0;
+  padding: 0 16px 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(14, 14, 20, 0.55);
+  text-shadow: none;
   transition:
     color var(--transition-fast),
     border-color var(--transition-fast),
@@ -26,31 +24,50 @@
     transform var(--transition-fast);
 }
 
+.trailer-action-detail {
+  color: #0b0b0d;
+  border-color: transparent;
+  background: #fff;
+}
+
 .trailer-action:hover {
   color: var(--text-primary);
-  border-color: rgba(var(--abyss-accent), 0.33);
-  background: rgba(var(--abyss-accent), 0.1);
+  border-color: rgba(var(--abyss-accent), 0.4);
+  background: rgba(var(--abyss-accent), 0.18);
   transform: translateY(-1px);
 }
 
+.trailer-action-detail:hover {
+  color: #0b0b0d;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.trailer-action:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 3px;
+}
+
+.trailer-action-icon {
+  margin-right: 8px;
+}
+
 .trailer-action-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
 }
 
 .trailer-action-label {
   overflow: hidden;
-  font-size: 0.64rem;
-  font-weight: 600;
-  letter-spacing: 0.015em;
+  font-size: 0.82rem;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .trailer-action-like.is-favorite {
-  color: hsl(349, 90%, 68%);
-  border-color: rgba(255, 86, 121, 0.3);
-  background: rgba(255, 69, 108, 0.1);
+  color: hsl(349, 90%, 72%);
+  border-color: rgba(255, 86, 121, 0.4);
+  background: rgba(255, 69, 108, 0.16);
 }
 
 .trailer-action-like.is-favorite .trailer-action-icon svg {

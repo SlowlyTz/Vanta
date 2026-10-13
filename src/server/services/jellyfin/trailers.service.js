@@ -122,6 +122,34 @@ function shuffleArray(array) {
   return result;
 }
 
+// Whether YouTube still plays a video in an embed: its oEmbed answer is 200
+// for a public, embeddable video and 401/403/404/400 for a private, removed
+// or embed-blocked one. No key or account needed. Anything else (a timeout,
+// YouTube down) counts as playable, so an outage never empties the feed.
+const AVAILABLE_TTL_MS = 24 * 60 * 60 * 1000;
+const UNAVAILABLE_TTL_MS = 6 * 60 * 60 * 1000;
+const AVAILABILITY_TIMEOUT_MS = 3000;
+const availabilityCache = new Map(); // videoId -> { ok, until }
+
+export async function isYouTubeVideoPlayable(videoId, { fetchImpl = globalThis.fetch, now = Date.now } = {}) {
+  const cached = availabilityCache.get(videoId);
+  if (cached && cached.until > now()) return cached.ok;
+  let ok = true;
+  try {
+    const url = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`;
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(AVAILABILITY_TIMEOUT_MS) });
+    if ([400, 401, 403, 404].includes(response.status)) ok = false;
+  } catch {
+    return true;
+  }
+  availabilityCache.set(videoId, { ok, until: now() + (ok ? AVAILABLE_TTL_MS : UNAVAILABLE_TTL_MS) });
+  return ok;
+}
+
+export function clearYouTubeAvailabilityCache() {
+  availabilityCache.clear();
+}
+
 const SESSION_FEED_KEY = 'trailerFeed';
 const CATALOG_TTL_MS = 10 * 60 * 1000;
 
@@ -131,6 +159,9 @@ const CATALOG_TTL_MS = 10 * 60 * 1000;
 const catalogCache = new Map();
 
 export class TrailersService {
+  // Replaced in tests; asks YouTube whether a trailer still plays.
+  static isPlayable = videoId => isYouTubeVideoPlayable(videoId);
+
   static async loadAllTrailerItems(userId, token, limit = 10000) {
     const items = await LibraryService.getAllMoviesAndSeries(userId, token, limit);
     return items
@@ -202,14 +233,22 @@ export class TrailersService {
       startIndex = Math.max(0, parseInt(cursor, 10) || 0);
     }
 
-    // The catalog can change while a feed is alive, so ids may no longer resolve. Skipping past
-    // them here keeps the client from receiving an empty page and dead-ending its navigation.
+    // The catalog can change while a feed is alive, so ids may no longer resolve, and a trailer
+    // may have gone private on YouTube. Skipping past both here keeps the client from receiving
+    // an empty page, dead-ending its navigation or showing a player that can never start.
     const items = [];
     let scanIndex = startIndex;
     while (items.length < clampedLimit && scanIndex < order.length) {
-      const trailer = catalog.byId.get(order[scanIndex]);
-      if (trailer) items.push(trailer);
-      scanIndex += 1;
+      const batch = [];
+      while (batch.length < clampedLimit - items.length && scanIndex < order.length) {
+        const trailer = catalog.byId.get(order[scanIndex]);
+        if (trailer) batch.push(trailer);
+        scanIndex += 1;
+      }
+      const playable = await Promise.all(batch.map(trailer => this.isPlayable(trailer.youtubeVideoId).catch(() => true)));
+      batch.forEach((trailer, index) => {
+        if (playable[index]) items.push(trailer);
+      });
     }
 
     const hasMore = scanIndex < order.length;

@@ -1,26 +1,17 @@
+import { unsubscribeBrowserPush } from '../utils/pushSubscription.js';
 import { AuthApi } from '../api/auth.api.js';
+import { Store } from './store.js';
+import { clearUserCaches } from '../utils/service-worker.js';
 
-class AuthStore {
+class AuthStore extends Store {
   constructor() {
+    super({ emitOnSubscribe: false });
     this.user = null;
     this.loading = false;
-    this.listeners = new Set();
 
     window.addEventListener('vanta:auth-unauthorized', () => {
       this.clearSession();
     });
-  }
-
-  subscribe(listener) {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  notify() {
-    const state = this.getState();
-    for (const listener of this.listeners) {
-      listener(state);
-    }
   }
 
   getState() {
@@ -55,6 +46,9 @@ class AuthStore {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // The server forgets this device's push subscription; the browser must too.
+      unsubscribeBrowserPush().catch(() => {});
+      clearUserCaches();
       this.user = null;
       this.notify();
       window.location.hash = '#/login';
@@ -74,6 +68,12 @@ class AuthStore {
   async changePassword(currentPassword, newPassword) {
     await AuthApi.changePassword(currentPassword, newPassword);
     return true;
+  }
+
+  // A sign-in that happened elsewhere (the TV paired by phone).
+  setUser(user) {
+    this.user = user;
+    this.notify();
   }
 
   async checkAuth() {

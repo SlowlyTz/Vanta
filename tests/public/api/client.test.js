@@ -46,6 +46,52 @@ describe('request()', () => {
     expect(window.location.hash).toBe('#/login');
   });
 
+  it('leaves the ban reason for the login page when a 401 says BANNED', async () => {
+    sessionStorage.clear();
+    window.location.hash = '#/home';
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({
+      status: 401,
+      body: { error: 'Dein Konto wurde gesperrt.', code: 'BANNED', reason: 'Spam' }
+    }));
+
+    await expect(request('/api/media/library')).rejects.toMatchObject({ status: 401, code: 'BANNED' });
+
+    expect(window.location.hash).toBe('#/login');
+    expect(JSON.parse(sessionStorage.getItem('vanta.sessionNotice'))).toEqual({ message: 'Dein Konto wurde gesperrt.', reason: 'Spam' });
+    sessionStorage.clear();
+  });
+
+  it('leaves no notice for an ordinary expired session', async () => {
+    sessionStorage.clear();
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({ status: 401, body: { error: 'Unauthorized' } }));
+    await expect(request('/api/media/library')).rejects.toMatchObject({ status: 401 });
+    expect(sessionStorage.getItem('vanta.sessionNotice')).toBeNull();
+  });
+
+  it('never settles a request of a page that was left, and shows nothing for it', async () => {
+    const { createPageScope } = await import('../../../src/public/js/utils/pageScope.js');
+    const scope = createPageScope();
+    global.fetch = vi.fn((url, { signal }) => new Promise((resolve, reject) => {
+      signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+    }));
+    const networkError = vi.fn();
+    window.addEventListener('vanta:network-error', networkError);
+
+    let settled = false;
+    request('/api/media/home', { signal: scope.signal }).then(() => { settled = true; }, () => { settled = true; });
+    scope.leave();
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(settled).toBe(false);
+    expect(networkError).not.toHaveBeenCalled();
+
+    // Started after leaving: not even sent.
+    global.fetch.mockClear();
+    request('/api/media/home', { signal: scope.signal });
+    expect(global.fetch).not.toHaveBeenCalled();
+    window.removeEventListener('vanta:network-error', networkError);
+  });
+
   it('passes through code, limit and activeStreams for a 429 stream-limit error', async () => {
     global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({
       status: 429,
@@ -75,5 +121,17 @@ describe('request()', () => {
 
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener.mock.calls[0][0].detail).toEqual({ build: 'build-b' });
+  });
+
+  it('ignores the build of an answer the browser may have kept', async () => {
+    const listener = vi.fn();
+    window.addEventListener('vanta:server-build', listener);
+    const headers = { 'X-Vanta-Build': 'old-build', 'cache-control': 'private, max-age=300', 'content-type': 'application/json' };
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, headers: { get: name => headers[name] ?? null }, json: async () => ({}) });
+
+    await request('/api/media/segments/x');
+    window.removeEventListener('vanta:server-build', listener);
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

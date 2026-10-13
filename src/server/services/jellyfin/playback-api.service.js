@@ -1,5 +1,8 @@
-import { JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
+import { AUTH_HEADER_NAME, JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
+import { detectTv } from '../../../public/js/shared/tvDetect.js';
+
+export const PLAYBACK_HEADER_TIMEOUT_MS = 45 * 1000;
 
 export class PlaybackApiService {
   static async getPlaybackInfo(userId, token, itemId, {
@@ -10,12 +13,14 @@ export class PlaybackApiService {
     audioStreamIndex = null,
     mediaSourceId = null
   } = {}) {
-    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding, maxHeight });
+    const tv = detectTv(userAgent);
+    const deviceProfile = buildBrowserDeviceProfile({ forceHlsTranscoding, maxHeight, tvPlatform: tv.platform });
+    const tvDirect = deviceProfile.Name.startsWith('VANTA TV');
 
     const baseBody = {
       UserId: userId,
-      MaxStreamingBitrate: maxStreamingBitrate ?? 40_000_000,
-      MaxAudioChannels: 2,
+      MaxStreamingBitrate: maxStreamingBitrate ?? (tvDirect ? 80_000_000 : 40_000_000),
+      MaxAudioChannels: tvDirect ? 6 : 2,
       EnableDirectPlay: !forceHlsTranscoding,
       EnableDirectStream: !forceHlsTranscoding,
       EnableTranscoding: true,
@@ -35,22 +40,47 @@ export class PlaybackApiService {
       baseBody.MediaSourceId = mediaSourceId || itemId;
     }
 
+    // Opening a media source can probe the file first, which takes a while.
     return jellyfinJson(`/Items/${itemId}/PlaybackInfo`, {
       token,
+      timeoutMs: 30 * 1000,
       method: 'POST',
       query: { UserId: userId },
       body: baseBody
     });
   }
 
-  static async fetchPlaybackResource(pathOrUrl, token, rangeHeader, { signal } = {}) {
+  // Only the wait for Jellyfin's answer is limited: a transcoded segment can
+  // take a while to be encoded, but once the stream flows a film runs for
+  // hours and must never be cut off by a timer.
+  static async fetchPlaybackResource(pathOrUrl, token, rangeHeader, { signal, headerTimeoutMs = PLAYBACK_HEADER_TIMEOUT_MS } = {}) {
+    // The token goes in the header only; `api_key` in the URL is a legacy
+    // form Jellyfin 12 refuses (and the proxy strips it from client paths).
     const url = new URL(pathOrUrl, JELLYFIN_BASE_URL);
-    url.searchParams.set('api_key', token);
-
-    const headers = { 'X-Emby-Authorization': getAuthHeader(token) };
+    const headers = { [AUTH_HEADER_NAME]: getAuthHeader(token) };
     if (rangeHeader) headers.Range = rangeHeader;
 
-    return fetch(url, { method: 'GET', headers, signal });
+    const controller = new AbortController();
+    const abortFromCaller = () => controller.abort(signal.reason);
+    if (signal?.aborted) controller.abort(signal.reason);
+    else signal?.addEventListener('abort', abortFromCaller, { once: true });
+
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, headerTimeoutMs);
+
+    try {
+      return await fetch(url, { method: 'GET', headers, signal: controller.signal });
+    } catch (error) {
+      if (!timedOut) throw error;
+      const timeoutError = new Error(`Jellyfin did not answer ${url.pathname} within ${headerTimeoutMs} ms`);
+      timeoutError.status = 504;
+      throw timeoutError;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   // Ends the ffmpeg job behind a play session right away; without this a

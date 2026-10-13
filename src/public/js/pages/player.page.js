@@ -3,8 +3,15 @@ import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';
 import { router } from '../router.js';
 import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
+import { resolvePageScope } from '../utils/pageScope.js';
+import { preferencesStore } from '../store/preferences.store.js';
+import { createPlayerCarry, sleepForNextEpisode } from '../utils/playerCarry.js';
 
-export default function PlayerPage({ id }) {
+// `#/item/<id>` (also with a query) names the detail page playback started from.
+const originItemId = (hash) => /^#\/item\/([^/?]+)/.exec(hash || '')?.[1] || null;
+
+export default function PlayerPage({ id }, pageScope) {
+  const scope = resolvePageScope(pageScope);
   const container = createElement('div', {
     className: 'player-page vanta-player-root'
   });
@@ -13,6 +20,18 @@ export default function PlayerPage({ id }) {
   let playableId = id;
   let cleaningUp = false;
   let scrollLockY = 0;
+  // Carried over to the next episode: playback without input so far (so
+  // "Schaust du noch?" also comes during a long autoplay chain), the sleep
+  // timer, and the detail page playback was started from.
+  const playerCarry = createPlayerCarry();
+  const carried = playerCarry.take();
+  let idleMs = carried.idleMs || 0;
+  let sleepState = carried.sleep || null;
+  const previousItemId = originItemId(router.previousHash);
+  const originId = carried.originId || previousItemId || id;
+  // Came straight from that detail page: it is the history entry below this
+  // one (episode switches replace the entry), so going back lands there.
+  const originInHistory = carried.originId ? Boolean(carried.originInHistory) : Boolean(previousItemId);
 
   const handleTouchMove = event => {
     if (event.target.closest('media-player, button')) return;
@@ -54,7 +73,8 @@ export default function PlayerPage({ id }) {
   // Replaces the current history entry instead of pushing a new one, so switching
   // episodes in-player doesn't leave a trail of stale player entries that "Zurück"
   // would have to click through before reaching the series page.
-  const navigateToEpisode = episodeId => {
+  const navigateToEpisode = (episodeId, { manual = false } = {}) => {
+    playerCarry.give({ idleMs, sleep: sleepForNextEpisode(sleepState, { manual }), originId, originInHistory });
     window.history.replaceState(
       window.history.state,
       '',
@@ -118,7 +138,9 @@ export default function PlayerPage({ id }) {
       ]);
       if (cleaningUp) return;
 
-      const resumePosition = Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
+      // "Von vorn" (#/player/<id>?from=start) ignores the saved position.
+      const fromStart = new URLSearchParams(window.location.hash.split('?')[1] || '').get('from') === 'start';
+      const resumePosition = fromStart ? 0 : Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
       const episodeContext = await loadEpisodeContext(item).catch(() => null);
       if (cleaningUp) return;
 
@@ -132,13 +154,31 @@ export default function PlayerPage({ id }) {
         }),
         resumePosition,
         onBack: goBack,
+        userPreferences: preferencesStore.getState(),
+        tvMode: document.documentElement.classList.contains('tv-mode'),
+        onUserPreferenceChange: patch => { preferencesStore.update(patch).catch(() => {}); },
+        stillWatching: {
+          afterMs: preferencesStore.get('stillWatchingHours') * 60 * 60 * 1000,
+          initialIdleMs: idleMs,
+          onIdleChange: value => { idleMs = value; }
+        },
+        sleepTimer: {
+          initial: sleepState,
+          onChange: state => { sleepState = state.mode === 'off' ? null : state; }
+        },
+        // The sleep timer ran out: stop and show the title playback started from.
+        onSleep: async () => {
+          await cleanup();
+          if (originInHistory) window.history.back();
+          else window.location.replace(`#/item/${originId}`);
+        },
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,
           readonly: false,
           onSelectEpisode: async episode => {
             await cleanup();
-            navigateToEpisode(episode.Id);
+            navigateToEpisode(episode.Id, { manual: true });
           },
           onNextEpisode: async ({ episode }) => {
             await cleanup();
@@ -155,7 +195,10 @@ export default function PlayerPage({ id }) {
   };
 
   lockViewport();
+  // The hash change stops playback at once; leaving the page (also to
+  // another episode, which stays on #/player) is the guarantee.
   window.addEventListener('hashchange', handleHashChange);
+  scope.onLeave(cleanup);
   initialize();
 
   return container;

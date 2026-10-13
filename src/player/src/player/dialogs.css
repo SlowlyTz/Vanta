@@ -1,0 +1,195 @@
+/* "Schaust du noch?" and the sleep timer warning: small panels over the paused video. */
+.vanta-still-watching {
+  position: absolute;
+  inset: 0;
+  z-index: 62;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(6 6 8 / 0.62);
+  color: #fff;
+  font-family: Outfit, system-ui, sans-serif;
+}
+
+.vanta-still-watching[hidden] {
+  display: none;
+}
+
+.vanta-player-root.is-still-watching .vanta-player-controls-layer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vanta-still-watching-panel {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 18px;
+  background: rgb(18 18 22 / 0.92);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.55);
+  text-align: center;
+}
+
+.vanta-still-watching-panel h2 {
+  font: 750 1.5rem Outfit, system-ui, sans-serif;
+}
+
+.vanta-still-watching-panel p {
+  color: rgb(255 255 255 / 0.72);
+  font-size: 0.95rem;
+}
+
+.vanta-still-watching-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.vanta-still-watching-actions button {
+  flex: 1 1 0;
+  min-height: 48px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  font: 650 1rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.vanta-still-watching-actions .vanta-still-watching-yes {
+  border-color: transparent;
+  background: #fff;
+  color: #0b0b0d;
+}
+
+.vanta-still-watching-actions button:hover {
+  filter: brightness(1.1);
+}
+
+.vanta-still-watching-actions button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Sleep timer: the last minute counts down in a card at the top right. */
+.vanta-sleep-notice {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 58;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 10px 10px 10px 14px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 14px;
+  background: rgb(18 18 22 / 0.88);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+  color: #fff;
+  font: 500 0.92rem Outfit, system-ui, sans-serif;
+  animation: vanta-sleep-in 220ms ease;
+}
+
+.vanta-sleep-notice[hidden] {
+  display: none;
+}
+
+.vanta-sleep-notice-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+.vanta-sleep-notice strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.vanta-sleep-notice-cancel {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0b0b0d;
+  font: 650 0.85rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.vanta-sleep-notice-cancel:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+@keyframes vanta-sleep-in {
+  from { opacity: 0; transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vanta-sleep-notice { animation: none; }
+}
+
+.vanta-sleep-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vanta-sleep-custom-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vanta-sleep-custom-field input {
+  width: 64px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+  font: 600 0.95rem Outfit, system-ui, sans-serif;
+  text-align: center;
+}
+
+.vanta-sleep-custom-start {
+  margin-left: auto;
+}
+
+.vanta-sleep-custom-row .vanta-settings-segment {
+  min-width: 36px;
+  padding: 0 12px;
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* TV: where holding left/right will jump to. */
+.vanta-tv-seek-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 40;
+  padding: 0.6em 1.2em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font: 700 clamp(1.4rem, 2.5vw, 2.4rem) Outfit, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.vanta-tv-seek-preview[hidden] {
+  display: none;
+}
+
+/* TV: the focused control is unmistakable from the sofa. */
+.vanta-player-root.is-tv button:focus-visible,
+.vanta-player-root.is-tv media-mute-button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+  border-radius: 999px;
+}

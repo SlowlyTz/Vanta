@@ -1,44 +1,57 @@
 import { request } from './client.js';
 
 export const MediaApi = {
-  getHome() {
-    return request('/api/media/home');
+  // Read calls take `{ signal }` (a page scope's) as their last argument.
+  getHome({ signal } = {}) {
+    return request('/api/media/home', { signal });
   },
 
-  getHomeSectionGroup(group) {
-    return request(`/api/media/home-sections/${encodeURIComponent(group)}`);
+  getHomeSectionGroup(group, { signal } = {}) {
+    return request(`/api/media/home-sections/${encodeURIComponent(group)}`, { signal });
   },
 
-  search(query) {
-    return request(`/api/media/search?q=${encodeURIComponent(query)}`);
+  search(query, { signal } = {}) {
+    return request(`/api/media/search?q=${encodeURIComponent(query)}`, { signal });
   },
 
-  getItem(id) {
-    return request(`/api/media/item/${id}`);
+  // The search page: { items, people }, typo-tolerant, with filters
+  // ({ type, genre: [], decade, fsk, unwatched }).
+  searchFull(query, filters = {}, { signal } = {}) {
+    const params = new URLSearchParams({ q: query });
+    if (filters.type) params.set('type', filters.type);
+    if (filters.genre?.length) params.set('genre', filters.genre.join(','));
+    if (filters.decade) params.set('decade', String(filters.decade));
+    if (filters.fsk !== null && filters.fsk !== undefined && filters.fsk !== '') params.set('fsk', String(filters.fsk));
+    if (filters.unwatched) params.set('unwatched', '1');
+    return request(`/api/media/search/full?${params}`, { signal });
   },
 
-  getSimilar(id) {
-    return request(`/api/media/item/${id}/similar`);
+  getItem(id, { signal } = {}) {
+    return request(`/api/media/item/${id}`, { signal });
   },
 
-  getSeasons(id) {
-    return request(`/api/media/item/${id}/seasons`);
+  getSimilar(id, { signal } = {}) {
+    return request(`/api/media/item/${id}/similar`, { signal });
   },
 
-  getEpisodes(id, seasonId) {
+  getSeasons(id, { signal } = {}) {
+    return request(`/api/media/item/${id}/seasons`, { signal });
+  },
+
+  getEpisodes(id, seasonId, { signal } = {}) {
     let url = `/api/media/item/${id}/episodes`;
     if (seasonId) {
       url += `?seasonId=${seasonId}`;
     }
-    return request(url);
+    return request(url, { signal });
   },
 
   getGenres(type) {
     return request(`/api/media/genres?type=${type}`);
   },
 
-  getStudios() {
-    return request('/api/media/studios');
+  getStudios({ signal } = {}) {
+    return request('/api/media/studios', { signal });
   },
 
   getLibrary(type, genre = null, studio = null, page = 1, limit = 50, options = {}) {
@@ -52,7 +65,7 @@ export const MediaApi = {
     if (options.publisherId) {
       url += `&publisher=${encodeURIComponent(options.publisherId)}`;
     }
-    return request(url);
+    return request(url, { signal: options.signal });
   },
 
   getPerson(id) {
@@ -141,16 +154,21 @@ export const MediaApi = {
     return request(`/api/media/trailers?${params.toString()}`);
   },
 
-  getProfileContinueWatching(page = 1, limit = 24) {
-    return request(`/api/media/profile/continue-watching?page=${page}&limit=${limit}`);
+  getProfileContinueWatching(page = 1, limit = 24, { signal } = {}) {
+    return request(`/api/media/profile/continue-watching?page=${page}&limit=${limit}`, { signal });
   },
 
-  getProfileHistory(page = 1, limit = 24) {
-    return request(`/api/media/profile/history?page=${page}&limit=${limit}`);
+  getProfileHistory(page = 1, limit = 24, { signal } = {}) {
+    return request(`/api/media/profile/history?page=${page}&limit=${limit}`, { signal });
   },
 
-  getProfileFavorites(page = 1, limit = 24) {
-    return request(`/api/media/profile/favorites?page=${page}&limit=${limit}`);
+  getProfileFavorites(page = 1, limit = 24, { signal } = {}) {
+    return request(`/api/media/profile/favorites?page=${page}&limit=${limit}`, { signal });
+  },
+
+  // What one has watched: counts, time, favourite genres, the last title.
+  getProfileStats({ signal } = {}) {
+    return request('/api/media/profile/stats', { signal });
   },
 
   favoriteItem(id) {
@@ -175,5 +193,36 @@ export const MediaApi = {
     return request(`/api/media/item/${encodeURIComponent(id)}/played`, {
       method: 'DELETE'
     });
+  },
+
+  // The started or next episode of a series: { episode } (null when none).
+  getNextUp(seriesId) {
+    return request(`/api/media/item/${encodeURIComponent(seriesId)}/next-up`);
+  },
+
+  // Takes a title out of "Weiter schauen"; answers { undo } for restoreResume.
+  removeFromResume(id) {
+    return request(`/api/media/resume/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
+  restoreResume(undo) {
+    return request('/api/media/resume/restore', { method: 'POST', body: { undo } });
+  },
+
+  // { id: { played, progress, next, seriesProgress } } for the cards on screen.
+  getUserData(ids) {
+    return request(`/api/media/userdata?ids=${ids.map(encodeURIComponent).join(',')}`);
+  },
+
+  getDecades() {
+    return request('/api/media/search/decades');
+  },
+
+  getScreensaverItems(limit = 30) {
+    return request(`/api/media/screensaver?limit=${limit}`);
+  },
+
+  refreshUserData() {
+    return request('/api/media/userdata/refresh', { method: 'POST' });
   }
 };

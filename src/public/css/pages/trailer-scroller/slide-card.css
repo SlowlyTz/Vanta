@@ -16,52 +16,101 @@
   display: none;
 }
 
+/* One trailer per screen: the title's backdrop fills it, darkened towards
+   the edges, and the trailer stands in front like on a big screen. */
 .trailer-slide {
+  position: relative;
   display: flex;
   width: 100%;
   height: 100%;
   min-height: 100%;
   align-items: center;
   justify-content: center;
-  padding: clamp(12px, 2vh, 22px) clamp(18px, 3vw, 44px);
+  padding: clamp(16px, 3vh, 36px) clamp(18px, 4vw, 64px);
   overflow: hidden;
+  isolation: isolate;
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 
+.trailer-slide-ambient {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.trailer-slide-ambient img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+  transform: scale(1.06);
+  transition: opacity 600ms ease, transform 1200ms var(--abyss-ease);
+}
+
+.trailer-slide.is-active .trailer-slide-ambient img {
+  opacity: 0.55;
+  transform: scale(1);
+}
+
+.trailer-slide-ambient::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  content: '';
+  background:
+    radial-gradient(120% 90% at 30% 45%, rgba(5, 5, 8, 0.35), rgba(5, 5, 8, 0.9) 70%),
+    linear-gradient(90deg, rgba(5, 5, 8, 0.2) 35%, rgba(5, 5, 8, 0.85) 100%),
+    linear-gradient(0deg, rgba(5, 5, 8, 0.85), transparent 45%);
+}
+
+/* Video and details side by side, without a frame of their own. */
 .trailer-card {
   display: grid;
-  width: min(1180px, 100%);
-  height: min(680px, calc(100% - 4px));
+  width: min(1480px, 100%);
+  max-height: 100%;
   min-height: 0;
-  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.75fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-gap: clamp(24px, 3vw, 48px);
+  gap: clamp(24px, 3vw, 48px);
   align-items: center;
-  overflow: hidden;
-  border: 1px solid var(--scroller-border);
-  border-radius: 26px;
-  background:
-    linear-gradient(140deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.012) 46%),
-    rgba(12, 12, 18, 0.94);
-  box-shadow:
-    0 36px 96px rgba(0, 0, 0, 0.52),
-    inset 0 1px 0 rgba(255, 255, 255, 0.055);
 }
 
 .trailer-video-container {
   position: relative;
-  width: 100%;
+  justify-self: center;
+  /* As wide as the column allows, but never taller than the slide. */
+  width: min(100%, calc((100vh - var(--scroller-page-offset) - 96px) * 16 / 9));
+  width: min(100%, calc((100dvh - var(--scroller-page-offset) - 96px) * 16 / 9));
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
   background: #000;
-  box-shadow: 18px 0 54px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 40px 110px rgba(0, 0, 0, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+@supports not (aspect-ratio: 1 / 1) {
+  .trailer-video-container {
+    height: 0;
+    padding-top: 56.25%;
+  }
 }
 
 .trailer-youtube-player,
 .trailer-youtube-player iframe,
 .trailer-video-container > iframe {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -71,7 +120,8 @@
 .trailer-video-thumb {
   position: absolute;
   z-index: 2;
-  inset: 0;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -84,7 +134,9 @@
 .trailer-video-container::after {
   position: absolute;
   z-index: 3;
-  inset: auto 0 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   height: 34%;
   content: '';
   opacity: 0.5;
@@ -101,4 +153,3 @@
 .trailer-slide.is-player-ready .trailer-video-container::after {
   opacity: 0;
 }
-

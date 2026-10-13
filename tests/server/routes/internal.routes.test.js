@@ -46,9 +46,18 @@ describe('Internal catalog refresh route', () => {
     expect(sync.runUpdate).not.toHaveBeenCalled();
   });
 
+  it('refuses a request a proxy on this machine forwarded', async () => {
+    const res = await request(createApp())
+      .post('/catalog/refresh').set('X-Vanta-Key', 'server-key').set('X-Forwarded-For', '203.0.113.9').send({});
+
+    expect(res.status).toBe(403);
+    expect(sync.runUpdate).not.toHaveBeenCalled();
+  });
+
   it('refuses a wrong or missing key', async () => {
     expect((await request(createApp()).post('/catalog/refresh').send({})).status).toBe(401);
     expect((await request(createApp()).post('/catalog/refresh').set('X-Vanta-Key', 'nope').send({})).status).toBe(401);
+    expect((await request(createApp()).post('/catalog/refresh').set('X-Vanta-Key', 'server-kez').send({})).status).toBe(401);
     expect(sync.runUpdate).not.toHaveBeenCalled();
   });
 

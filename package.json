@@ -1,7 +1,7 @@
 {
   "name": "jellyfin-client",
-  "version": "1.0.0",
-  "description": "Apple TV style Jellyfin Web Client",
+  "version": "1.1.0",
+  "description": "VANTA, a web client for Jellyfin",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -10,11 +10,14 @@
     "refresh": "node scripts/refresh-catalog.js",
     "player:build": "vite build --config src/player/vite.config.js",
     "player:watch": "vite build --watch --config src/player/vite.config.js",
-    "intro:build": "vite build --config src/intro/vite.config.js",
-    "countdown:build": "vite build --config src/countdown/vite.config.js",
-    "build": "npm run player:build && npm run intro:build && npm run countdown:build && vite build",
+    "scenes:build": "vite build --config src/scenes.vite.config.js",
+    "intro:build": "npm run scenes:build",
+    "countdown:build": "npm run scenes:build",
+    "build": "npm run player:build && npm run scenes:build && vite build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:legacy": "node scripts/check-legacy-syntax.mjs",
+    "test:e2e": "node tests/e2e/run.mjs"
   },
   "dependencies": {
     "compression": "^1.8.2",
@@ -25,13 +28,17 @@
     "helmet": "^7.1.0",
     "hls.js": "^1.6.16",
     "morgan": "^1.10.0",
-    "sharp": "^0.34.5",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
     "sql.js": "^1.14.1",
     "three": "^0.186.0",
     "vidstack": "^0.6.15",
+    "web-push": "^3.6.7",
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "acorn": "^8.19.0",
+    "acorn-walk": "^8.3.5",
     "jsdom": "^29.1.1",
     "supertest": "^7.2.2",
     "vite": "^8.0.16",

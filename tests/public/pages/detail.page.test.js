@@ -92,14 +92,17 @@ describe('DetailPage favorite button', () => {
     expect(MediaApi.markPlayed).toHaveBeenCalledWith('item-1');
   });
 
-  it('does not render the played toggle for a Series', async () => {
-    MediaApi.getItem.mockResolvedValue(createBaseItem({ Type: 'Series' }));
+  it('offers a watched series to be marked unwatched again', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ Type: 'Series', UserData: { Played: true } }));
     MediaApi.getSeasons.mockResolvedValue([]);
 
     const container = DetailPage({ id: 'item-1' });
     await flush();
 
-    expect(container.querySelector('.detail-actions .played-toggle')).toBeNull();
+    const toggle = container.querySelector('.detail-actions .played-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle.getAttribute('aria-label')).toBe('Als ungesehen markieren');
+    expect(toggle.textContent).toBe('Gesehen');
   });
 
   it('does not render the favorite control for unsupported item types', async () => {
@@ -226,7 +229,7 @@ describe('DetailPage prefetch cache', () => {
     DetailPage({ id: 'item-1' });
     await flush();
 
-    expect(MediaApi.getItem).toHaveBeenCalledWith('item-1');
+    expect(MediaApi.getItem).toHaveBeenCalledWith('item-1', { signal: expect.any(AbortSignal) });
   });
 });
 
@@ -272,5 +275,64 @@ describe('DetailPage help links', () => {
     await flush();
 
     expect(container.querySelector('.detail-help-links')).toBeNull();
+  });
+});
+
+describe('DetailPage load errors', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetDetailPrefetch();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it('says a title is not available when the server answers 404', async () => {
+    const error = Object.assign(new Error('Titel nicht gefunden'), { status: 404 });
+    MediaApi.getItem.mockRejectedValue(error);
+
+    const container = DetailPage({ id: 'gone' });
+    await flush();
+
+    expect(container.querySelector('[role="alert"] h3').textContent).toBe('Dieser Titel ist nicht verfügbar');
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('keeps the generic error for other failures', async () => {
+    MediaApi.getItem.mockRejectedValue(Object.assign(new Error('Failed to fetch item details'), { status: 500 }));
+
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+
+    expect(container.querySelector('[role="alert"] h3').textContent).toBe('Fehler beim Laden');
+    expect(container.textContent).toContain('Failed to fetch item details');
+  });
+});
+
+describe('DetailPage continue or start over', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetDetailPrefetch();
+    MediaApi.getSimilar.mockResolvedValue([]);
+    MediaApi.getSeasons.mockResolvedValue([]);
+  });
+
+  it('continues a started film and offers to start it over', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ UserData: { PlaybackPositionTicks: 600_000_000 } }));
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+    const labels = [...container.querySelectorAll('.detail-actions button')].map(button => button.textContent);
+    expect(labels).toContain('Fortsetzen');
+    [...container.querySelectorAll('.detail-actions button')].find(button => button.textContent === 'Von vorn').click();
+    expect(window.location.hash).toBe('#/player/item-1?from=start');
+  });
+
+  it('just plays a title that was not started', async () => {
+    MediaApi.getItem.mockResolvedValue(createBaseItem());
+    const container = DetailPage({ id: 'item-1' });
+    await flush();
+    const labels = [...container.querySelectorAll('.detail-actions button')].map(button => button.textContent);
+    expect(labels).toContain('Abspielen');
+    expect(labels).not.toContain('Von vorn');
   });
 });

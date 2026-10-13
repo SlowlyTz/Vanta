@@ -1,0 +1,106 @@
+/* Login page. */
+@import '../pages/login.css';
+
+/* "Fernseher verbinden" on the phone (connect.page.js). */
+.connect-page {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.connect-form {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.connect-code-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+
+.connect-result {
+  margin-top: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.connect-question {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.connect-device,
+.connect-done {
+  color: var(--text-secondary);
+}
+
+.connect-error {
+  color: var(--error-color);
+}
+
+.connect-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* TV: the phone code beside the picture (tvPairing.js). */
+html.tv-mode .is-tv-login .tv-pairing {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.tv-pairing-title {
+  font-size: 1.6rem;
+}
+
+.tv-pairing-hint,
+.tv-pairing-status {
+  color: var(--text-secondary);
+}
+
+.tv-pairing-body {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.tv-pairing-qr svg {
+  width: 11rem;
+  height: 11rem;
+  border-radius: 0.8rem;
+  background: #fff;
+}
+
+.tv-pairing-code {
+  font-size: 3.2rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-pairing-password {
+  justify-self: start;
+}
+
+.login-form.is-hidden-for-pairing {
+  display: none;
+}
+
+.tv-pairing-code {
+  white-space: nowrap;
+}
+
+html.tv-mode .login-page.is-tv-login {
+  grid-template-columns: minmax(40rem, 46%) 1fr;
+}
+
+html.tv-mode .is-tv-login .login-panel-inner {
+  max-width: 38rem;
+}

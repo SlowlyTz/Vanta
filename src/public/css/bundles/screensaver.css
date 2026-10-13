@@ -1,0 +1,182 @@
+/* The screensaver of the home page (components/screensaver.js). */
+.screensaver-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #000;
+  animation: screensaver-in 900ms ease;
+}
+
+.screensaver {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: #fff;
+  outline: none;
+}
+
+.screensaver-slides,
+.screensaver-slide,
+.screensaver-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.screensaver-slide {
+  background: #000 center / cover no-repeat;
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity 1.5s ease;
+}
+
+.screensaver-slide.is-visible {
+  opacity: 1;
+  animation: screensaver-ken-burns 14s ease-out forwards;
+}
+
+.screensaver.is-still .screensaver-slide.is-visible {
+  animation: none;
+}
+
+.screensaver-shade {
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.15) 55%, transparent 75%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, transparent 45%);
+}
+
+.screensaver-clock {
+  position: absolute;
+  top: max(5vh, env(safe-area-inset-top));
+  left: max(5vw, env(safe-area-inset-left));
+  display: grid;
+  gap: 4px;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+}
+
+.screensaver-time {
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.screensaver-date {
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.screensaver-info {
+  position: absolute;
+  left: max(5vw, env(safe-area-inset-left));
+  bottom: max(7vh, env(safe-area-inset-bottom));
+  max-width: min(640px, 80vw);
+  display: grid;
+  gap: 12px;
+}
+
+.screensaver-title h2 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.screensaver-logo {
+  max-width: min(420px, 70vw);
+  max-height: 140px;
+  object-fit: contain;
+  object-position: left bottom;
+}
+
+.screensaver-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.screensaver-overview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.screensaver-actions,
+.screensaver-close {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+/* Shown after input for a few seconds (screensaver.js), and while a button
+   itself holds the focus; the dialog holding it alone keeps them hidden. */
+.screensaver.show-controls .screensaver-actions,
+.screensaver.show-controls .screensaver-close,
+.screensaver-watch:focus-visible,
+.screensaver-close:focus-visible,
+.screensaver-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.screensaver-watch,
+.screensaver-close {
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.screensaver-watch {
+  border: 0;
+  background: #fff;
+  color: #0b0b0d;
+}
+
+.screensaver-close {
+  position: absolute;
+  top: max(5vh, env(safe-area-inset-top));
+  right: max(5vw, env(safe-area-inset-right));
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.screensaver-watch:focus-visible,
+.screensaver-close:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+@keyframes screensaver-ken-burns {
+  from { transform: scale(1.02) translate3d(0, 0, 0); }
+  to { transform: scale(1.12) translate3d(var(--pan-x, 0), -1%, 0); }
+}
+
+@keyframes screensaver-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screensaver-slide.is-visible { animation: none; }
+}
+
+@media (max-width: 600px) {
+  .screensaver-close {
+    left: 16px;
+    right: 16px;
+    top: auto;
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .screensaver-info {
+    bottom: 96px;
+  }
+}

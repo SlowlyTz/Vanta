@@ -198,4 +198,51 @@ describe('LoginPage', () => {
     expect(container.querySelector('.form-input-toggle').getAttribute('aria-pressed')).toBe('false');
     await flush();
   });
+
+  it('counts down a login lock and allows the next try once it ran out', async () => {
+    vi.useFakeTimers();
+    try {
+      authStore.login.mockRejectedValue(Object.assign(new Error('Zu viele Fehlversuche. Bitte warte 1 Minute.'), {
+        status: 429,
+        retryAfterMs: 60000
+      }));
+
+      const container = LoginPage();
+      document.body.appendChild(container);
+      container.querySelector('#login-username').value = 'alice';
+      container.querySelector('.login-form').dispatchEvent(new Event('submit', { cancelable: true }));
+      await vi.advanceTimersByTimeAsync(0);
+
+      const button = container.querySelector('.btn-login');
+      const banner = container.querySelector('.login-error');
+      expect(button.disabled).toBe(true);
+      expect(button.textContent).toBe('Gesperrt · 1:00');
+      expect(banner.textContent).toContain('Zu viele Fehlversuche');
+      expect(banner.textContent).toContain('Nächster Versuch in 1:00');
+
+      await vi.advanceTimersByTimeAsync(30000);
+      expect(button.textContent).toBe('Gesperrt · 0:30');
+
+      await vi.advanceTimersByTimeAsync(30000);
+      expect(button.disabled).toBe(false);
+      expect(button.textContent).toBe('Anmelden');
+      expect(banner.classList.contains('hidden')).toBe(true);
+      container.remove();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows why the server ended the last session', () => {
+    sessionStorage.setItem('vanta.sessionNotice', JSON.stringify({ message: 'Dein Konto wurde gesperrt.', reason: 'Account geteilt' }));
+
+    const container = LoginPage();
+    const banner = container.querySelector('.login-error');
+
+    expect(banner.classList.contains('hidden')).toBe(false);
+    expect(banner.querySelector('.login-error-message').textContent).toBe('Dein Konto wurde gesperrt.');
+    expect(banner.querySelector('.login-error-reason').textContent).toBe('Account geteilt');
+    expect(sessionStorage.getItem('vanta.sessionNotice')).toBeNull();
+    expect(LoginPage().querySelector('.login-error').classList.contains('hidden')).toBe(true);
+  });
 });

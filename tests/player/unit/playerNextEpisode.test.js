@@ -4,31 +4,38 @@ import {
   computeNextEpisodeTimings,
   canStartNextEpisode,
   createNextEpisodeGate,
-  NEXT_EPISODE_MIN_PROMPT_SECONDS
+  nextEpisodeSkipAt,
+  NEXT_EPISODE_COUNTDOWN_SECONDS
 } from '../../../src/player/src/nextEpisode.js';
 
 describe('computeNextEpisodeTimings', () => {
-  it('setzt bei langen Folgen das Overlay auf 97% und den Skip auf 98,5%', () => {
-    // 45 Minuten: der Abstand zwischen beiden Schwellen ist mit 40,5s ohnehin > 25s.
+  it('zeigt das Overlay ohne Abspann bei 97 % und zählt bis kurz vor das Dateiende', () => {
     const timings = computeNextEpisodeTimings({ duration: 2700 });
     expect(timings.promptAt).toBeCloseTo(2619, 5);
-    expect(timings.skipAt).toBeCloseTo(2659.5, 5);
+    expect(timings.skipAt).toBeCloseTo(2699.5, 5);
+    expect(timings.source).toBe('runtime');
   });
 
-  it('zieht das Overlay bei kurzen Folgen vor, statt den Skip nach hinten zu schieben', () => {
-    // 22 Minuten: 1,5% sind nur ~19,8s, also greift die 25-Sekunden-Garantie.
-    const timings = computeNextEpisodeTimings({ duration: 1320 });
-    expect(timings.skipAt).toBeCloseTo(1300.2, 5);
-    expect(timings.promptAt).toBeCloseTo(1275.2, 5);
-    expect(timings.skipAt - timings.promptAt).toBeCloseTo(NEXT_EPISODE_MIN_PROMPT_SECONDS, 5);
+  it('zieht das Overlay bei kurzen Clips vor, damit die 10 s vor dem Dateiende passen', () => {
+    // 5 Minuten: 3 % sind nur 9 s.
+    const timings = computeNextEpisodeTimings({ duration: 300 });
+    expect(timings.promptAt).toBeCloseTo(289.5, 5);
+    expect(timings.skipAt).toBeCloseTo(299.5, 5);
   });
 
-  it('hält die 25-Sekunden-Garantie über alle üblichen Laufzeiten ein', () => {
+  it('lässt ohne Abspann mindestens 10 s zwischen Overlay und Wechsel, der erst am Dateiende kommt', () => {
     for (const minutes of [8, 10, 15, 22, 28, 45, 60, 90]) {
       const timings = computeNextEpisodeTimings({ duration: minutes * 60 });
-      expect(timings.skipAt - timings.promptAt).toBeGreaterThanOrEqual(NEXT_EPISODE_MIN_PROMPT_SECONDS - 1e-9);
-      expect(timings.skipAt).toBeLessThan(minutes * 60);
+      expect(timings.skipAt - timings.promptAt).toBeGreaterThanOrEqual(NEXT_EPISODE_COUNTDOWN_SECONDS - 1e-9);
+      expect(timings.skipAt).toBeCloseTo(minutes * 60 - 0.5, 5);
     }
+  });
+
+  it('startet mit Abspann-Segment 10 s nach dessen Beginn', () => {
+    const timings = computeNextEpisodeTimings({ duration: 2700, outro: { startMs: 2550_000, endMs: 2690_000 } });
+    expect(timings.promptAt).toBe(2550);
+    expect(timings.skipAt).toBe(2560);
+    expect(timings.source).toBe('outro');
   });
 
   it('gibt null ohne gültige Dauer zurück', () => {
@@ -41,20 +48,40 @@ describe('computeNextEpisodeTimings', () => {
   it('klemmt promptAt nicht unter null, auch bei sehr kurzen Clips', () => {
     const timings = computeNextEpisodeTimings({ duration: 10 });
     expect(timings.promptAt).toBe(0);
+    expect(timings.skipAt).toBe(9.5);
+  });
+});
+
+describe('nextEpisodeSkipAt', () => {
+  const timings = { promptAt: 2400, skipAt: 2410 };
+
+  it('übernimmt den geplanten Wechsel, wenn das Overlay pünktlich erscheint', () => {
+    expect(nextEpisodeSkipAt(timings, 2400.2, 2600)).toBe(2410);
+  });
+
+  it('gibt nach einem Sprung in den Abspann wieder volle 10 s', () => {
+    expect(nextEpisodeSkipAt(timings, 2500, 2600)).toBe(2510);
+  });
+
+  it('bleibt vor dem Dateiende', () => {
+    expect(nextEpisodeSkipAt(timings, 2595, 2600)).toBe(2599.5);
+  });
+
+  it('gibt null ohne Timings zurück', () => {
+    expect(nextEpisodeSkipAt(null, 10, 100)).toBeNull();
   });
 });
 
 describe('shouldShowNextEpisodePrompt', () => {
-  it('triggert ab 97% Fortschritt, solange die 25s-Garantie nicht greift', () => {
+  it('triggert ab 97% Fortschritt', () => {
     expect(shouldShowNextEpisodePrompt({ currentTime: 3492, duration: 3600 })).toBe(true);
     expect(shouldShowNextEpisodePrompt({ currentTime: 3491.9, duration: 3600 })).toBe(false);
   });
 
-  it('triggert bei kurzen Folgen früher als 97%, damit 25s Vorlauf bleiben', () => {
-    // 20 Minuten: promptAt liegt bei 1157s = 96,4%, nicht bei 97%.
-    expect(shouldShowNextEpisodePrompt({ currentTime: 1157, duration: 1200 })).toBe(true);
-    expect(shouldShowNextEpisodePrompt({ currentTime: 1156.9, duration: 1200 })).toBe(false);
-    expect(1157 / 1200).toBeLessThan(0.97);
+  it('triggert bei sehr kurzen Clips früher als 97%, damit 10 s Vorlauf bleiben', () => {
+    // 5 Minuten: promptAt liegt bei 289,5 s = 96,5 %.
+    expect(shouldShowNextEpisodePrompt({ currentTime: 289.5, duration: 300 })).toBe(true);
+    expect(shouldShowNextEpisodePrompt({ currentTime: 289.4, duration: 300 })).toBe(false);
   });
 
   it('triggert nicht ohne gültige Dauer (z.B. Filme ohne Episode-Kontext werden separat gefiltert)', () => {
@@ -71,14 +98,12 @@ describe('shouldShowNextEpisodePrompt', () => {
     expect(shouldShowNextEpisodePrompt({
       currentTime: 50,
       duration: 100,
-      promptThreshold: 0.5,
-      minPromptSeconds: 0
+      promptThreshold: 0.5
     })).toBe(true);
     expect(shouldShowNextEpisodePrompt({
       currentTime: 49.9,
       duration: 100,
-      promptThreshold: 0.5,
-      minPromptSeconds: 0
+      promptThreshold: 0.5
     })).toBe(false);
   });
 });

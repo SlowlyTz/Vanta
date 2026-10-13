@@ -2,8 +2,12 @@ import { authStore } from './store/auth.store.js';
 import { createElement } from './utils/dom.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';
 import { checkServerBuild } from './utils/appVersion.js';
-import { Navbar } from './components/navbar/Navbar.js';
+import { Navbar, startScreensaverNow } from './components/navbar/Navbar.js';
 import { Footer } from './components/footer.js';
+import { TvSidebar } from './components/tv/TvSidebar.js';
+import { createPageScope, runInPageScope, setActivePageScope } from './utils/pageScope.js';
+import { ensurePageStyles } from './utils/pageStyles.js';
+import { prefersReducedMotion } from './utils/motion.js';
 
 // Focuses the page's [data-autofocus] element once it is attached to the document.
 // Pages cannot do this themselves: their factory runs while the element is still
@@ -11,8 +15,12 @@ import { Footer } from './components/footer.js';
 export function focusAutofocusTarget(pageElement) {
   if (!pageElement) return null;
 
+  // On a TV a focused text field opens the system keyboard; the focus engine
+  // starts there instead.
+  const tv = document.documentElement.classList.contains('tv-mode');
   for (const target of pageElement.querySelectorAll('[data-autofocus]')) {
     if (target.hidden || target.closest('[hidden], .hidden')) continue;
+    if (tv && target.matches('input, textarea')) return null;
     try {
       target.focus({ preventScroll: true });
     } catch {
@@ -24,6 +32,9 @@ export function focusAutofocusTarget(pageElement) {
   return null;
 }
 
+// From this far down the navbar takes its scrolled look.
+const SCROLLED_OFFSET = 16;
+
 export class Router {
   constructor() {
     this.routes = [];
@@ -32,6 +43,17 @@ export class Router {
     this.navbar = null;
     this.main = null;
     this.unsubscribeAuth = null;
+    this.currentScope = null;
+    this.currentHash = null;
+    this.previousHash = null;
+  }
+
+  // Ends the shown page's scope: its listeners, timers, observers and
+  // requests stop before its DOM goes.
+  leaveCurrentPage() {
+    const scope = this.currentScope;
+    this.currentScope = null;
+    scope?.leave();
   }
 
   add(path, pageLoader, options = {}) {
@@ -50,7 +72,16 @@ export class Router {
       }
       this.handleRoute();
     });
-    window.addEventListener('scroll', () => this.updateShellState());
+    // Scrolling only moves the navbar between its two looks: one check per
+    // frame, and only a change touches the DOM.
+    let scrollFrame = null;
+    window.addEventListener('scroll', () => {
+      if (scrollFrame !== null) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = null;
+        this.navbar?.setScrolled(window.scrollY > SCROLLED_OFFSET);
+      });
+    }, { passive: true });
 
     this.unsubscribeAuth = authStore.subscribe(({ user }) => {
       this.updateShellState(window.location.hash || '#/home', user);
@@ -69,8 +100,22 @@ export class Router {
 
     this.main = createElement('main', {
       className: 'app-main',
-      id: 'main-content'
+      id: 'main-content',
+      tabindex: '-1'
     });
+
+    // TV mode: a sidebar instead of the navbar and footer. The navbar is
+    // still made, for the dialogs it owns (settings, watch party).
+    if (document.documentElement.classList.contains('tv-mode')) {
+      this.tvSidebar = TvSidebar({
+        onOpenSettings: () => this.navbar.openSettings(),
+        onOpenWatchParty: () => this.navbar.openWatchParty(),
+        onOpenScreensaver: () => startScreensaverNow()
+      });
+      this.main.dataset.tvGroup = 'content';
+      this.shell = createElement('div', { className: 'app-shell tv-shell' }, this.tvSidebar.element, this.main);
+      return;
+    }
 
     this.shell = createElement('div', { className: 'app-shell' },
       this.navbar.element,
@@ -99,11 +144,12 @@ export class Router {
 
   updateShellState(hash = window.location.hash || '#/home', user = authStore.getState().user) {
     if (!this.navbar) return;
+    this.tvSidebar?.update({ currentHash: hash, user });
 
     this.navbar.update({
       currentHash: hash,
       user,
-      scrolled: window.scrollY > 16
+      scrolled: window.scrollY > SCROLLED_OFFSET
     });
   }
 
@@ -166,16 +212,33 @@ export class Router {
   }
 
   async handleRoute() {
+    // A newer navigation that finishes its awaits first wins; an older one
+    // that resumes afterwards must not put its page over it.
+    const navigation = (this.navigationId = (this.navigationId || 0) + 1);
+    const superseded = () => navigation !== this.navigationId;
+
     let hash = window.location.hash || '#/home';
 
     if (!hash.startsWith('#/')) {
       hash = '#/home';
     }
 
+    // The admin area is not part of the TV interface.
+    if (hash.startsWith('#/admin') && document.documentElement.classList.contains('tv-mode')) {
+      window.location.hash = '#/home';
+      return;
+    }
+
     const match = this.findRoute(hash);
     if (!match) {
       window.location.hash = '#/home';
       return;
+    }
+
+    // Where the user came from (the player returns there after its sleep timer).
+    if (hash !== this.currentHash) {
+      this.previousHash = this.currentHash || null;
+      this.currentHash = hash;
     }
 
     const { route, params } = match;
@@ -188,6 +251,7 @@ export class Router {
       const check = await authStore.checkAuth();
       isAuthenticated = check;
       user = authStore.getState().user;
+      if (superseded()) return;
     }
 
     if (route.requiresAuth && !isAuthenticated) {
@@ -212,9 +276,22 @@ export class Router {
 
     try {
       const pageParams = { ...route.defaultParams, ...params };
-      const pageComponentModule = await route.pageLoader();
-      const pageElement = pageComponentModule.default(pageParams);
+      // The page's own stylesheets load alongside its code, so it never shows
+      // unstyled.
+      const [pageComponentModule] = await Promise.all([route.pageLoader(), ensurePageStyles(route.styles)]);
+      if (superseded()) return;
+      const scope = createPageScope();
+      let pageElement;
+      try {
+        pageElement = runInPageScope(scope, () => pageComponentModule.default(pageParams, scope));
+      } catch (error) {
+        scope.leave();
+        throw error;
+      }
 
+      this.leaveCurrentPage();
+      this.currentScope = scope;
+      setActivePageScope(scope);
       this.updateShellState(hash, user);
       this.currentPage = pageElement;
       await this.renderPage(pageElement, pageUsesShell);
@@ -222,6 +299,8 @@ export class Router {
         window.scrollTo(0, 0);
       }
       this.updateShellState(hash, user);
+      // The TV focus engine puts the focus on the new page.
+      window.dispatchEvent(new CustomEvent('vanta:page-shown', { detail: { hash, page: pageElement, scope } }));
     } catch (error) {
       console.error('[Router Navigation Error]', error);
       // A page chunk a newer deploy has replaced fails to load; if that is
@@ -232,7 +311,7 @@ export class Router {
 }
 
 function waitForRouteExit() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (prefersReducedMotion()) {
     return Promise.resolve();
   }
 

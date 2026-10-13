@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MediaApi } from '../../../src/public/js/api/media.api.js';
 import { saveRouteState, markReturnFromDetail } from '../../../src/public/js/utils/routeState.js';
+import { WatchlistApi } from '../../../src/public/js/api/watchlist.api.js';
 import HomePage from '../../../src/public/js/pages/home.page.js';
+
+vi.mock('../../../src/public/js/api/watchlist.api.js', () => ({
+  WatchlistApi: { list: vi.fn(async () => ({ items: [] })), ids: vi.fn(async () => ({ ids: [] })) }
+}));
 
 vi.mock('../../../src/public/js/api/media.api.js', () => ({
   MediaApi: {
@@ -95,7 +100,7 @@ describe('HomePage restore', () => {
     expect(container.querySelector('.home-hero-skeleton')).toBeNull();
   });
 
-  it('renders an empty-state block for a section with no items but an emptyMessage', async () => {
+  it('leaves out a section with no items, even with an emptyMessage', async () => {
     MediaApi.getHome.mockResolvedValue({ movies: [], series: [], resume: [] });
     MediaApi.getHomeSectionGroup.mockImplementation(group => {
       if (group !== 'now-playing') return Promise.resolve({ sections: [] });
@@ -113,10 +118,8 @@ describe('HomePage restore', () => {
     const container = HomePage();
     await flushPromises();
 
-    const emptySection = container.querySelector('.media-section-empty');
-    expect(emptySection).toBeTruthy();
-    expect(emptySection.querySelector('.carousel-title-text').textContent).toBe('Jetzt im Kino');
-    expect(emptySection.querySelector('.section-empty-message').textContent).toBe('Keine aktuellen Kinofilme in deiner Mediathek.');
+    expect(container.textContent).not.toContain('Jetzt im Kino');
+    expect(container.textContent).not.toContain('Keine aktuellen Kinofilme');
   });
 
   it('still skips a section with no items and no emptyMessage', async () => {
@@ -145,5 +148,35 @@ describe('HomePage restore', () => {
     expect(container.querySelectorAll('.media-section-loading')).toHaveLength(4);
     expect(container.textContent).toContain('Aktuelle Kinofilme werden geladen');
     expect(container.textContent).toContain('Kategorien werden geladen');
+  });
+});
+
+describe('HomePage "Meine Liste"', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.clearAllMocks();
+    window.location.hash = '#/home';
+    MediaApi.getHomeSectionGroup.mockResolvedValue({ sections: [] });
+    MediaApi.getHome.mockResolvedValue({ movies: [makeItem('h1')], series: [], resume: [makeItem('r1')] });
+  });
+
+  it('shows the row after "Weiter schauen" when the list has entries', async () => {
+    WatchlistApi.list.mockResolvedValue({ items: [makeItem('w1')] });
+
+    const container = HomePage();
+    await flushPromises(10);
+
+    const titles = [...container.querySelectorAll('.carousel-title-text')].map(el => el.textContent);
+    expect(titles.slice(0, 2)).toEqual(['Weiter schauen', 'Meine Liste']);
+  });
+
+  it('leaves the row out when the list is empty or cannot be loaded', async () => {
+    WatchlistApi.list.mockRejectedValue(new Error('offline'));
+
+    const container = HomePage();
+    await flushPromises(10);
+
+    expect(container.textContent).not.toContain('Meine Liste');
+    expect(container.textContent).toContain('Weiter schauen');
   });
 });

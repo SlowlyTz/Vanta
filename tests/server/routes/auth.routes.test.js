@@ -7,12 +7,14 @@ vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: {
     login: vi.fn(),
     getCurrentUser: vi.fn(),
+    logout: vi.fn(() => Promise.resolve()),
     isAdministrator: vi.fn((user) => Boolean(user?.Policy?.IsAdministrator)),
     changePassword: vi.fn()
   }
 }));
 
-vi.mock('../../../src/server/services/user-ban.service.js', () => ({
+vi.mock('../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   UserBanService: {
     getBan: vi.fn()
   }
@@ -27,6 +29,9 @@ vi.mock('../../../src/server/services/known-users.service.js', () => ({
 import { AuthService } from '../../../src/server/services/jellyfin/auth.service.js';
 import { UserBanService } from '../../../src/server/services/user-ban.service.js';
 import { KnownUsersService } from '../../../src/server/services/known-users.service.js';
+import { loginThrottle } from '../../../src/server/services/login-throttle.service.js';
+
+const credentialError = (status = 401) => Object.assign(new Error('Unauthorized'), { status });
 
 function createApp({ onSession = null } = {}) {
   const app = express();
@@ -47,6 +52,7 @@ function createApp({ onSession = null } = {}) {
 describe('Auth Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    loginThrottle.clear();
     UserBanService.getBan.mockReturnValue(null);
   });
 
@@ -95,12 +101,70 @@ describe('Auth Routes', () => {
     });
 
     it('returns a generic 401 for wrong credentials', async () => {
-      AuthService.login.mockRejectedValue(new Error('Invalid'));
+      AuthService.login.mockRejectedValue(credentialError());
 
       const res = await request(createApp()).post('/login').send({ username: 'alice', password: 'wrong' });
 
       expect(res.status).toBe(401);
-      expect(res.body.error).toBe('Invalid username or password');
+      expect(res.body.error).toBe('Benutzername oder Passwort ist falsch.');
+    });
+
+    it('answers 503 and counts nothing when Jellyfin cannot be reached', async () => {
+      AuthService.login.mockRejectedValue(new Error('fetch failed'));
+      const app = createApp();
+
+      for (let i = 0; i < 4; i++) {
+        const res = await request(app).post('/login').send({ username: 'alice', password: 'pw' });
+        expect(res.status).toBe(503);
+      }
+      expect(AuthService.login).toHaveBeenCalledTimes(4);
+    });
+
+    it('locks a username after three wrong passwords without asking Jellyfin again', async () => {
+      AuthService.login.mockRejectedValue(credentialError());
+      const app = createApp();
+
+      expect((await request(app).post('/login').send({ username: 'alice', password: '1' })).status).toBe(401);
+      expect((await request(app).post('/login').send({ username: 'alice', password: '2' })).status).toBe(401);
+      const third = await request(app).post('/login').send({ username: 'alice', password: '3' });
+      expect(third.status).toBe(429);
+      expect(third.body).toMatchObject({ code: 'LOGIN_LOCKED', retryAfterMs: 60000 });
+      expect(third.body.error).toBe('Zu viele Fehlversuche. Bitte warte 1 Minute.');
+      expect(third.headers['retry-after']).toBe('60');
+
+      const locked = await request(app).post('/login').send({ username: 'Alice ', password: 'right' });
+      expect(locked.status).toBe(429);
+      expect(AuthService.login).toHaveBeenCalledTimes(3);
+
+      // Another user from the same address is not affected.
+      AuthService.login.mockResolvedValue({
+        AccessToken: 'token-2',
+        User: { Id: 'user-2', Name: 'bob', Policy: { IsAdministrator: false } }
+      });
+      expect((await request(app).post('/login').send({ username: 'bob', password: 'pw' })).status).toBe(200);
+    });
+
+    it('gives a banned user a fresh session never and revokes the new token', async () => {
+      AuthService.login.mockResolvedValue({
+        AccessToken: 'token-9',
+        User: { Id: 'user-1', Name: 'alice', Policy: { IsAdministrator: false } }
+      });
+      UserBanService.getBan.mockReturnValue({ reason: 'x' });
+
+      const res = await request(createApp()).post('/login').send({ username: 'alice', password: 'pw' });
+      expect(res.body.code).toBe('BANNED');
+      expect(AuthService.logout).toHaveBeenCalledWith('token-9');
+    });
+
+    it('starts a new session id on login', async () => {
+      AuthService.login.mockResolvedValue({
+        AccessToken: 'token-1',
+        User: { Id: 'user-1', Name: 'alice', Policy: { IsAdministrator: false } }
+      });
+      const regenerate = vi.fn(cb => cb(null));
+      await request(createApp({ onSession: s => { s.regenerate = regenerate; } }))
+        .post('/login').send({ username: 'alice', password: 'pw' });
+      expect(regenerate).toHaveBeenCalledTimes(1);
     });
 
     it('returns 403 with the ban reason for a banned user and does not set a session', async () => {
@@ -115,7 +179,8 @@ describe('Auth Routes', () => {
       expect(res.status).toBe(403);
       expect(res.body).toEqual({
         error: 'Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.',
-        reason: 'Account geteilt'
+        reason: 'Account geteilt',
+        code: 'BANNED'
       });
       expect(KnownUsersService.remember).not.toHaveBeenCalled();
     });
@@ -155,6 +220,7 @@ describe('Auth Routes', () => {
       const res = await request(appWithSession({ accessToken: 'token-1', userId: 'user-1', username: 'alice' })).get('/me');
 
       expect(res.status).toBe(401);
+      expect(res.body).toEqual({ error: 'Dein Konto wurde gesperrt.', code: 'BANNED', reason: 'Account geteilt' });
       expect(AuthService.getCurrentUser).not.toHaveBeenCalled();
       expect(KnownUsersService.remember).not.toHaveBeenCalled();
     });

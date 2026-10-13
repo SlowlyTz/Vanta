@@ -6,11 +6,15 @@ import playbackRoutes from './playback.routes.js';
 import peopleRoutes from './people.routes.js';
 import profileRoutes from './profile.routes.js';
 import segmentsRoutes from './segments.routes.js';
+import resumeRoutes from './resume.routes.js';
+import userDataRoutes from './user-data.routes.js';
 
 const router = express.Router();
 
 router.use('/', trailerRoutes);
 router.use('/', libraryRoutes);
+router.use('/', resumeRoutes);
+router.use('/', userDataRoutes);
 router.use('/image', imageRoutes);
 router.use('/playback', playbackRoutes);
 router.use('/person', peopleRoutes);

@@ -6,6 +6,10 @@ import { isNavLinkActive } from './activeNav.js';
 import { createWatchPartyDialog } from '../watch-party/createWatchPartyDialog.js';
 import { createSettingsDialog } from './settingsDialog.js';
 import { notificationsStore } from '../../store/notifications.store.js';
+import { OPEN_WATCH_PARTY_EVENT } from '../mediaActions.js';
+import { createNotificationBell } from '../notificationBell.js';
+import { startScreensaver } from '../screensaver.js';
+import { getCurrentPageScope } from '../../utils/pageScope.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -38,6 +42,13 @@ function createTopTabs({ onNavigate }) {
   return { element, updateActive };
 }
 
+// Opens the screensaver at once, on any page; leaving the page ends it.
+export const startScreensaverNow = () => startScreensaver({ pageScope: getCurrentPageScope() });
+
+const ACTION_HANDLERS = {
+  screensaver: () => startScreensaverNow()
+};
+
 function createTopActions({ onOpenWatchParty }) {
   const buttons = TOP_ACTIONS.map(action => {
     const attrs = {
@@ -52,10 +63,13 @@ function createTopActions({ onOpenWatchParty }) {
     return createElement('button', {
       ...attrs,
       type: 'button',
-      onClick: action.key === 'group' ? () => onOpenWatchParty?.() : undefined
+      title: action.key === 'screensaver' ? action.label : undefined,
+      onClick: action.key === 'group' ? () => onOpenWatchParty?.() : ACTION_HANDLERS[action.key]
     }, createTopbarIcon(action.key));
   });
 
+  // The bell sits before the profile.
+  buttons.splice(buttons.length - 1, 0, createNotificationBell().element);
   const element = createElement('div', { className: 'navbar-top-actions' }, buttons);
   return { element };
 }
@@ -71,6 +85,8 @@ export function Navbar({ onLogout, onChangePassword }) {
   });
 
   const watchPartyDialog = createWatchPartyDialog();
+  // "Watch Party starten" from a media context menu, with that title.
+  window.addEventListener(OPEN_WATCH_PARTY_EVENT, event => watchPartyDialog.openWith(event.detail?.item));
 
   const topTabs = createTopTabs({ onNavigate: () => setMobileNavOpen(false) });
   const topActions = createTopActions({ onOpenWatchParty: () => watchPartyDialog.open() });
@@ -102,8 +118,15 @@ export function Navbar({ onLogout, onChangePassword }) {
   document.body.appendChild(settingsDialog.element);
   document.body.appendChild(watchPartyDialog.element);
 
+  let isScrolled = null;
+  const setScrolled = (scrolled) => {
+    if (isScrolled === !!scrolled) return;
+    isScrolled = !!scrolled;
+    element.classList.toggle('scrolled', isScrolled);
+  };
+
   const update = ({ currentHash, user, scrolled }) => {
-    element.classList.toggle('scrolled', !!scrolled);
+    setScrolled(scrolled);
 
     const displayName = user?.name || user?.Name || user?.username || user?.Username || 'Username';
     settingsDialog.setUsername(displayName);
@@ -151,5 +174,11 @@ export function Navbar({ onLogout, onChangePassword }) {
     settingsDialog.setAdminBadge(adminTotal);
   });
 
-  return { element, update };
+  return {
+    element,
+    update,
+    setScrolled,
+    openSettings: () => settingsDialog.setSettingsOpen(true),
+    openWatchParty: () => watchPartyDialog.open()
+  };
 }

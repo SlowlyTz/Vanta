@@ -1,7 +1,7 @@
 import express from 'express';
 import fs from 'fs/promises';
 import { INDEX_FILE } from '../config/static.js';
-import { BUILD_ID, injectBuildMeta } from '../config/build.js';
+import { BUILD_ID, PAGE_STYLES, injectBuildMeta, injectPageStyles } from '../config/build.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.get('*', async (req, res, next) => {
   try {
     const html = await fs.readFile(INDEX_FILE, 'utf8');
     res.setHeader('Cache-Control', 'no-cache');
-    return res.type('html').send(injectBuildMeta(html, BUILD_ID));
+    return res.type('html').send(injectPageStyles(injectBuildMeta(html, BUILD_ID), PAGE_STYLES));
   } catch (error) {
     return next(error);
   }

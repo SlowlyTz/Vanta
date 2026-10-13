@@ -2,6 +2,7 @@ import {
   findNextEpisode,
   shouldShowNextEpisodePrompt,
   computeNextEpisodeTimings,
+  nextEpisodeSkipAt,
   canStartNextEpisode,
   createNextEpisodeGate
 } from '../nextEpisode.js';
@@ -20,6 +21,8 @@ export function bindNextEpisode(context) {
   context.nextEpisodePrompt = episodeBrowser?.enabled
     ? createNextEpisodePrompt({
         root: root.querySelector('.vanta-player-shell'),
+        // On a TV the remote reaches the prompt with up/down (tvControls.js).
+        mayTakeFocus: () => !context.tvMode && !context.settingsOpen && !context.helpOpen && !context.stillWatchingOpen,
         onConfirm: (next, { auto = false } = {}) => {
           episodeBrowser.onNextEpisode?.(next, { auto });
         },
@@ -41,22 +44,36 @@ export function bindNextEpisode(context) {
     if (!context.nextEpisodePrompt || !episodeBrowser?.context) return;
 
     const currentEpisodeId = episodeBrowser.context.currentEpisodeId;
-    if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
-    if (watchParty?.enabled && watchParty.isNextEpisodeCancelled?.()) return;
-
     const duration = context.knownDuration || player.duration;
     const outro = findOutro(context.segments);
-    if (!shouldShowNextEpisodePrompt({ currentTime: player.currentTime, duration, outro })) return;
+    const due = shouldShowNextEpisodePrompt({ currentTime: player.currentTime, duration, outro });
+
+    // Seeked back before the prompt's point: it goes away and comes back
+    // when playback gets there again.
+    if (!due && Number.isFinite(player.currentTime) && context.nextEpisodePrompt.isVisible()) {
+      context.nextEpisodePrompt.hide();
+      nextEpisodeGate.markHidden(currentEpisodeId);
+      return;
+    }
+
+    if (!nextEpisodeGate.shouldTrigger(currentEpisodeId)) return;
+    if (watchParty?.enabled && watchParty.isNextEpisodeCancelled?.()) return;
+    // A sleep timer "bis zum Ende" closes the player instead.
+    if (context.sleepTimer?.blocksNextEpisode()) return;
+    if (!due) return;
 
     const next = findNextEpisode(episodeBrowser.context, currentEpisodeId);
     if (!next) return;
 
     nextEpisodeGate.markShown(currentEpisodeId);
     const controls = canStartNextEpisode(watchParty);
+    // Switched off by the user (alone only; a party follows its admins).
+    const autoAdvance = watchParty?.enabled || context.userPreferences?.autoplayNextEpisode !== false;
     context.nextEpisodePrompt.show(next, {
       controls,
+      autoAdvance,
       message: controls ? null : NEXT_EPISODE_VIEWER_MESSAGE,
-      skipAt: computeNextEpisodeTimings({ duration, outro })?.skipAt,
+      skipAt: nextEpisodeSkipAt(computeNextEpisodeTimings({ duration, outro }), player.currentTime, duration),
       getCurrentTime: () => player.currentTime
     });
   };

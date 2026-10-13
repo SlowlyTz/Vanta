@@ -59,6 +59,7 @@ function createLibrary(count) {
 
 describe('Trailer Routes', () => {
   beforeEach(() => {
+    TrailersService.isPlayable = async () => true;
     vi.clearAllMocks();
     TrailersService.clearCatalogCache();
   });

@@ -23,10 +23,14 @@ import { bindTimelineWatchdog } from './player/timelineWatchdog.js';
 import { bindTransportControls } from './player/transportControls.js';
 import { bindTouchTaps } from './player/touchTaps.js';
 import { bindShortcuts } from './player/shortcuts.js';
+import { bindTvControls } from './player/tvControls.js';
 import { createMediaSession } from './mediaSession.js';
 import { bindPreferences } from './preferences.js';
 import { createHelpOverlay } from './help.js';
 import { bindSegments } from './segments.js';
+import { bindStillWatching } from './stillWatching.js';
+import { bindSleepTimer } from './sleepTimer.js';
+import { bindAirPlay } from './airplay.js';
 import { preparePlayerInitialPlayback, createPlayerController } from './player/lifecycle.js';
 
 export async function mountVantaPlayer(options) {
@@ -36,16 +40,20 @@ export async function mountVantaPlayer(options) {
   bindLoadIndicator(context);
   bindReporterAndOrientation(context);
   bindSourceSwitchIntegration(context);
+  bindSleepTimer(context);
   bindMenus(context);
   bindPlayerEvents(context);
   bindTransportControls(context);
   bindTouchTaps(context);
+  bindTvControls(context);
   bindShortcuts(context);
   context.mediaSession = createMediaSession(context);
   context.help = createHelpOverlay(context);
   bindSegments(context, { loadSegments: context.loadSegments });
   bindSyncControls(context);
   bindTimelineWatchdog(context);
+  bindStillWatching(context);
+  bindAirPlay(context);
   await preparePlayerInitialPlayback(context);
   return createPlayerController(context);
 }

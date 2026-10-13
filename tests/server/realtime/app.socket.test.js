@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventEmitter } from 'events';
+import { APP_VERSION } from '../../../src/public/js/shared/version.js';
 
 let sessionOverride = null;
 
@@ -90,7 +91,7 @@ describe('AppSocketHub', () => {
     hub.wss.emit('connection', ws, req);
 
     expect(ws.sent).toEqual([
-      expect.objectContaining({ type: 'APP_SOCKET_READY' })
+      expect.objectContaining({ type: 'APP_SOCKET_READY', version: APP_VERSION })
     ]);
     expect(hub.connectionsByUser.get('user-1').has(ws)).toBe(true);
   });
@@ -144,5 +145,41 @@ describe('AppSocketHub', () => {
     hub.sendToUser('user-2', { type: 'TEST' });
 
     expect(ws.sent).toEqual([]);
+  });
+
+  it('tells every app of a user that the session ended and hangs up', () => {
+    const hub = new AppSocketHub();
+    const make = () => ({ readyState: 1, OPEN: 1, send: vi.fn(), close: vi.fn() });
+    const a = make();
+    const b = make();
+    const other = make();
+    hub.register('u1', a);
+    hub.register('u1', b);
+    hub.register('u2', other);
+
+    hub.endUserSessions('u1', { code: 'BANNED', reason: 'x' });
+
+    for (const ws of [a, b]) {
+      expect(JSON.parse(ws.send.mock.calls[0][0])).toEqual({ type: 'SESSION_ENDED', code: 'BANNED', reason: 'x' });
+      expect(ws.close).toHaveBeenCalledWith(4001, 'Session ended');
+    }
+    expect(other.send).not.toHaveBeenCalled();
+  });
+
+  it('ends only the apps of one signed-out session', () => {
+    const hub = new AppSocketHub();
+    const make = (sessionId) => ({ readyState: 1, OPEN: 1, send: vi.fn(), close: vi.fn(), sessionId });
+    const phone = make('s-phone');
+    const tv = make('s-tv');
+    hub.register('u1', phone);
+    hub.register('u1', tv);
+
+    hub.endSession('u1', 's-tv', { error: 'Abgemeldet' });
+    hub.endSession('u2', 's-phone', { error: 'Abgemeldet' });
+
+    expect(JSON.parse(tv.send.mock.calls[0][0])).toEqual({ type: 'SESSION_ENDED', error: 'Abgemeldet' });
+    expect(tv.close).toHaveBeenCalledWith(4001, 'Session ended');
+    expect(phone.send).not.toHaveBeenCalled();
+    expect(phone.close).not.toHaveBeenCalled();
   });
 });

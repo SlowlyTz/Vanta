@@ -20,6 +20,25 @@ export const AuthApi = {
     });
   },
 
+  // TV: a code to sign in with a phone ({ code, expiresAt, url, qrSvg }),
+  // then asked for until the phone confirmed ({ state, user }).
+  startPairing() {
+    return request('/api/auth/pairing', { method: 'POST' });
+  },
+
+  pairingStatus() {
+    return request('/api/auth/pairing/status');
+  },
+
+  // Phone: which device waits behind a code, and confirming it.
+  pairingInfo(code) {
+    return request(`/api/auth/pairing/info?code=${encodeURIComponent(code)}`);
+  },
+
+  confirmPairing(code) {
+    return request('/api/auth/pairing/confirm', { method: 'POST', body: { code } });
+  },
+
   changePassword(currentPassword, newPassword) {
     return request('/api/auth/password', {
       method: 'POST',

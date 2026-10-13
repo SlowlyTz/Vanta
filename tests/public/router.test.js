@@ -9,7 +9,7 @@ vi.mock('../../src/public/js/store/auth.store.js', () => ({
 }));
 
 vi.mock('../../src/public/js/components/navbar/Navbar.js', () => ({
-  Navbar: () => ({ element: document.createElement('nav'), update: () => {} })
+  Navbar: () => ({ element: document.createElement('nav'), update: vi.fn(), setScrolled: vi.fn() })
 }));
 
 vi.mock('../../src/public/js/components/footer.js', () => ({
@@ -151,5 +151,87 @@ describe('Router · hash changes a page handles itself', () => {
     window.history.replaceState(null, '', '#/home');
     window.dispatchEvent(new Event('hashchange'));
     expect(router.handleRoute).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Router · page scopes', () => {
+  let router;
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="app"></div>';
+    router = new Router();
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    window.history.replaceState(null, '', '#/home');
+    vi.restoreAllMocks();
+  });
+
+  it('hands each page a scope and ends it when the next page replaces it', async () => {
+    const scopes = [];
+    const factory = (params, scope) => { scopes.push(scope); return page(''); };
+    router.add('#/home', async () => ({ default: factory }));
+    router.add('#/search', async () => ({ default: factory }));
+
+    window.history.replaceState(null, '', '#/home');
+    await router.handleRoute();
+    expect(scopes).toHaveLength(1);
+    const left = vi.fn();
+    scopes[0].onLeave(left);
+
+    window.history.replaceState(null, '', '#/search');
+    await router.handleRoute();
+    expect(left).toHaveBeenCalledTimes(1);
+    expect(scopes[0].signal.aborted).toBe(true);
+    expect(scopes[1].isLeft).toBe(false);
+  });
+
+  it('lets a newer navigation win over an older one that resumes later', async () => {
+    let releaseSlow;
+    const slowLoaded = new Promise(resolve => { releaseSlow = resolve; });
+    const built = [];
+    router.add('#/slow', () => slowLoaded.then(() => ({ default: () => { built.push('slow'); return page('slow'); } })));
+    router.add('#/fast', async () => ({ default: () => { built.push('fast'); return page('fast'); } }));
+
+    window.history.replaceState(null, '', '#/slow');
+    const slow = router.handleRoute();
+    window.history.replaceState(null, '', '#/fast');
+    await router.handleRoute();
+    releaseSlow();
+    await slow;
+
+    expect(built).toEqual(['fast']);
+  });
+});
+
+describe('Router · scrolling', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.body.innerHTML = '';
+  });
+
+  it('only flips the navbar look, once per frame, instead of rebuilding it', () => {
+    document.body.innerHTML = '<div id="app"></div>';
+    const frames = [];
+    vi.stubGlobal('requestAnimationFrame', (fn) => { frames.push(fn); return frames.length; });
+    const router = new Router();
+    router.handleRoute = vi.fn();
+    router.init();
+    router.ensureShell();
+    router.navbar.update.mockClear();
+
+    Object.defineProperty(window, 'scrollY', { value: 200, configurable: true });
+    // Other routers from earlier tests listen too; each asks for one frame.
+    window.dispatchEvent(new Event('scroll'));
+    const perEvent = frames.length;
+    for (let i = 0; i < 4; i++) window.dispatchEvent(new Event('scroll'));
+    expect(frames).toHaveLength(perEvent);
+    frames.forEach(frame => frame());
+
+    expect(router.navbar.setScrolled).toHaveBeenCalledWith(true);
+    expect(router.navbar.update).not.toHaveBeenCalled();
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
   });
 });

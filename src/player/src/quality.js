@@ -34,6 +34,9 @@ export function sortQualityProfiles(profiles) {
 export function createQualityController({ onSelect }) {
   let currentId = 'auto';
   let profiles = [];
+  // Whether the viewer picked a quality in this player; until then the
+  // stream starts in their default quality from the settings.
+  let chosen = false;
 
   return {
     update(nextProfiles, nextCurrentId) {
@@ -42,6 +45,7 @@ export function createQualityController({ onSelect }) {
     },
     select(profileId) {
       if (!profileId || profileId === currentId) return;
+      chosen = true;
       onSelect(profileId);
     },
     getOptions: () => profiles.map(profile => ({
@@ -50,6 +54,7 @@ export function createQualityController({ onSelect }) {
       selected: profile.id === currentId
     })),
     getCurrentId: () => currentId,
+    hasUserChoice: () => chosen,
     getCurrentLabel: () => {
       const current = profiles.find(profile => profile.id === currentId);
       return current ? formatProfileLabel(current) : 'Auto';

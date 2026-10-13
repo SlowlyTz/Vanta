@@ -183,6 +183,20 @@ describe('bindMenus', () => {
       expect(prompt.isVisible()).toBe(false);
     });
 
+    it('verschwindet nach Zurückspulen vor den Startpunkt und kommt danach wieder', () => {
+      const prompt = partySetup({ canControl: true });
+      env.context.maybeShowNextEpisodePrompt();
+      expect(prompt.isVisible()).toBe(true);
+
+      Object.defineProperty(env.dom.player, 'currentTime', { value: 500, configurable: true });
+      env.context.maybeShowNextEpisodePrompt();
+      expect(prompt.isVisible()).toBe(false);
+
+      Object.defineProperty(env.dom.player, 'currentTime', { value: 990, configurable: true });
+      env.context.maybeShowNextEpisodePrompt();
+      expect(prompt.isVisible()).toBe(true);
+    });
+
     it('zeigt nichts, wenn die Party die nächste Folge schon abgebrochen hat', () => {
       const prompt = partySetup({ canControl: true, isNextEpisodeCancelled: () => true });
       env.context.maybeShowNextEpisodePrompt();

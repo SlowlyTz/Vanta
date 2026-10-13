@@ -1,10 +1,6 @@
 /* ---------------------------------
-   HOME SECTION EMPTY STATE
+   HOME SECTION LOADING STATE
    --------------------------------- */
-.media-section-empty {
-  overflow: visible;
-}
-
 .media-section-loading {
   overflow: visible;
 }
@@ -13,11 +9,4 @@
   justify-content: flex-start;
   min-height: 54px;
   padding: 8px 0;
-}
-
-.section-empty-message {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.5;
 }

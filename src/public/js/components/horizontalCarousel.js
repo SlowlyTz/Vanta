@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 
-export function HorizontalCarousel({ title, items = [], trackClass = '', containerClass = '', href = null, actionLabel = 'Alle anzeigen' }) {
+export function HorizontalCarousel({ title, items = [], trackClass = '', containerClass = '', href = null, actionLabel = 'Alle anzeigen', pageScope = null }) {
   if (!items || items.length === 0) return null;
 
   const prevBtn = createElement('button', {
@@ -22,14 +23,21 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
 
   const listContainer = createElement('div', {
     className: `carousel-track ${trackClass}`,
+    // A row for the TV focus engine: left/right stay in it.
+    'data-tv-row': '',
     tabindex: '0',
-    role: 'list'
+    role: 'list',
+    'aria-label': title || undefined
   });
 
   items.forEach(item => {
-    if (item) {
-      listContainer.appendChild(item);
-    }
+    if (!item) return;
+    // A link or button keeps its own role; it gets a list item around it.
+    const listItem = item.matches('a[href], button')
+      ? createElement('div', { className: 'carousel-list-item' }, item)
+      : item;
+    if (!listItem.hasAttribute('role')) listItem.setAttribute('role', 'listitem');
+    listContainer.appendChild(listItem);
   });
 
   const getMaxScroll = () => Math.max(0, listContainer.scrollWidth - listContainer.clientWidth);
@@ -120,16 +128,19 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
 
   listContainer.addEventListener('scroll', requestArrowUpdate, { passive: true });
 
+  const scope = resolvePageScope(pageScope);
   if (typeof ResizeObserver !== 'undefined') {
     const resizeObserver = new ResizeObserver(requestArrowUpdate);
     resizeObserver.observe(listContainer);
     listContainer._carouselResizeObserver = resizeObserver;
+    scope.onLeave(() => resizeObserver.disconnect());
   } else {
-    window.addEventListener('resize', requestArrowUpdate);
+    scope.listen(window, 'resize', requestArrowUpdate);
   }
 
   requestArrowUpdate();
-  setTimeout(requestArrowUpdate, 100);
+  const settleTimer = setTimeout(requestArrowUpdate, 100);
+  scope.onLeave(() => clearTimeout(settleTimer));
 
   return container;
 }

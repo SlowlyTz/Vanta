@@ -44,7 +44,7 @@ describe('Static asset delivery', () => {
       expect(cacheControlFor('js/app.js')).toBe('no-cache');
       expect(cacheControlFor('css/components/settings/settings-overview.css')).toBe('no-cache');
       expect(cacheControlFor('vendor/player/vanta-player.js')).toBe('no-cache');
-      expect(cacheControlFor('vendor/intro/vanta-intro.js')).toBe('no-cache');
+      expect(cacheControlFor('vendor/scenes/vanta-intro.js')).toBe('no-cache');
       expect(cacheControlFor('vendor/player/provider-B5sjnEci.js')).toBe('public, max-age=31536000, immutable');
       expect(cacheControlFor('assets/logo-vanta.png')).toBe('public, max-age=86400');
       expect(cacheControlFor('assets/fonts/outfit-latin.woff2')).toBe('public, max-age=86400');
@@ -84,7 +84,7 @@ describe('Static asset delivery', () => {
     it('sets the cache headers per file class', async () => {
       const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
-      expect((await request(app).get('/vendor/intro/vanta-intro.js')).headers['cache-control']).toBe('no-cache');
+      expect((await request(app).get('/vendor/scenes/vanta-intro.js')).headers['cache-control']).toBe('no-cache');
       expect((await request(app).get(`/vendor/player/${HASHED_CHUNK}`)).headers['cache-control']).toBe('public, max-age=31536000, immutable');
       expect((await request(app).get('/assets/logo-vanta.png')).headers['cache-control']).toBe('public, max-age=86400');
       expect((await request(app).get('/css/base.css')).headers['cache-control']).toBe('no-cache');

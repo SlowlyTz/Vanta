@@ -19,13 +19,19 @@ export function sortSubtitleTracks(tracks) {
   });
 }
 
+const primaryLanguage = language => normalizeLanguage(language).toLowerCase().split(/[-_]/)[0];
+
 // The track for a remembered language: a regular one first, forced subtitles
-// only when that language has nothing else.
+// only when that language has nothing else. The exact code first ("pt-BR"),
+// else the same language in any region (the server keeps only "pt").
 export function pickSubtitleForLanguage(tracks, language) {
   const wanted = normalizeLanguage(language).toLowerCase();
   if (!wanted) return null;
-  const matching = (tracks || []).filter(track => normalizeLanguage(track.language).toLowerCase() === wanted);
-  return matching.find(track => !track.isForced) || matching[0] || null;
+  const pick = matching => matching.find(track => !track.isForced) || matching[0] || null;
+  const exact = (tracks || []).filter(track => normalizeLanguage(track.language).toLowerCase() === wanted);
+  if (exact.length) return pick(exact);
+  const primary = primaryLanguage(wanted);
+  return pick((tracks || []).filter(track => primaryLanguage(track.language) === primary));
 }
 
 export function getSubtitleTrackId(track) {

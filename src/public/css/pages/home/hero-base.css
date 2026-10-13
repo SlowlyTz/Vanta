@@ -182,3 +182,36 @@
 .hero-slide-content {
   transition: opacity 0.8s ease-in-out;
 }
+
+/* Stops and restarts the automatic slide change (WCAG 2.2.2). */
+.hero-carousel-pause {
+  position: absolute;
+  right: max(var(--spacing-lg), env(safe-area-inset-right));
+  bottom: var(--spacing-lg);
+  z-index: 4;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.hero-carousel-pause:hover,
+.hero-carousel-pause:focus-visible {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.hero-carousel-pause:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}

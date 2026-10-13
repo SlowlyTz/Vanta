@@ -6,8 +6,9 @@ import { authStore } from '../store/auth.store.js';
 import { createSectionLoader } from '../components/loader.js';
 import { listAdminTools, createAdminTool } from '../components/admin-tools/AdminToolRegistry.js';
 import { closeAllAdminModals } from '../components/admin-tools/adminModal.js';
-import { createAdminMenu } from './admin/adminMenu.js';
+import { createAdminDashboard } from './admin/adminDashboard.js';
 import { createAdminHeader } from './admin/adminHeader.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 import { openAdminLayer } from './admin/adminLayer.js';
 
 // Beschriftung der Suchleiste je Bereich. Bereiche ohne setFilter (Anfragen,
@@ -36,10 +37,12 @@ const isAdminHash = hash => hash === '#/admin' || SECTION_HASH.test(hash);
 // (nur requiresAuth), also prüft die Seite selbst, ob der Nutzer Admin ist.
 // Der eigentliche Schutz sitzt serverseitig in requireFreshAdmin — dieser
 // Check ist reine UX.
-export default function AdminPage({ section = null } = {}) {
+export default function AdminPage({ section = null } = {}, pageScope) {
   const container = createElement('div', { className: 'admin-page page-container content-section' });
 
   let open = null;
+  // The dashboard under the layers; it stops polling while one is open.
+  let dashboard = null;
   const unsubscribers = [];
   let rendered = false;
   let torndown = false;
@@ -50,16 +53,15 @@ export default function AdminPage({ section = null } = {}) {
     open = null;
     tool.destroy?.();
     layer.close({ immediate });
+    if (!torndown) dashboard?.resume();
   };
 
-  // Der Router verwirft Seiten ohne Unmount-Hook (main.innerHTML = ''). Alles,
-  // was diese Seite außerhalb ihres Containers hinterlässt — die Ebene eines
-  // Bereichs, das Nutzer-Detailmodal samt Escape-Handler — muss deshalb weg,
-  // sobald die Route die Admin-Verwaltung verlässt.
+  // Alles, was diese Seite außerhalb ihres Containers hinterlässt — die Ebene
+  // eines Bereichs, das Nutzer-Detailmodal samt Escape-Handler — muss weg,
+  // sobald der Router die Admin-Verwaltung verlässt.
   function teardown() {
     if (torndown) return;
     torndown = true;
-    window.removeEventListener('hashchange', handleForeignHash);
     closeSection({ immediate: true });
     unsubscribers.splice(0).forEach(unsubscribe => unsubscribe());
     // Modals live on document.body, which the router never clears — the user
@@ -67,11 +69,8 @@ export default function AdminPage({ section = null } = {}) {
     closeAllAdminModals();
   }
 
-  function handleForeignHash() {
-    if (!isAdminHash(window.location.hash)) teardown();
-  }
-
-  window.addEventListener('hashchange', handleForeignHash);
+  const scope = resolvePageScope(pageScope);
+  scope.onLeave(teardown);
 
   const denyAccess = () => {
     if (torndown) return;
@@ -111,6 +110,7 @@ export default function AdminPage({ section = null } = {}) {
     });
 
     open = { id, tool, layer };
+    dashboard?.pause();
     tool.load?.();
     return true;
   }
@@ -138,10 +138,13 @@ export default function AdminPage({ section = null } = {}) {
   };
 
   function buildMenuView(tools) {
-    const menu = createAdminMenu({
+    // The dashboard: status, the tools (the former menu) and activity.
+    const menu = createAdminDashboard({
       tools,
+      scope,
       onSelect: (id) => { window.location.hash = `#/admin/${id}`; }
     });
+    dashboard = menu;
 
     // Offene Anfragen und Meldungen zusammen; die Zahl kommt aus dem
     // Benachrichtigungs-Store und bleibt live, das Menü steht sofort.
@@ -152,7 +155,7 @@ export default function AdminPage({ section = null } = {}) {
     return createElement('div', { className: 'admin-page-layout' },
       createAdminHeading({
         title: 'Admin',
-        subtitle: 'Anfragen prüfen, Nutzer verwalten und VANTA einrichten.'
+        subtitle: 'Wie es VANTA geht, was wartet und was zuletzt passiert ist.'
       }),
       menu.element
     );

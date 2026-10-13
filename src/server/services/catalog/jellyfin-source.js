@@ -5,6 +5,7 @@ import { COMMON_ITEM_FIELDS } from '../jellyfin/fields.js';
 // Only these library kinds hold movies and series; box sets and the rest are skipped.
 const COLLECTION_TYPES = new Set(['movies', 'tvshows']);
 const ITEM_TYPES = 'Movie,Series';
+const MIRRORED_TYPES = new Set(ITEM_TYPES.split(','));
 const PAGE_SIZE = 500;
 
 // Everything the cards, carousels and the trailer scroller read, plus what the
@@ -12,6 +13,9 @@ const PAGE_SIZE = 500;
 const CATALOG_FIELDS = [
   COMMON_ITEM_FIELDS,
   'DateCreated',
+  // Moves when a series gets a new episode, so the series counts as changed
+  // and the new-episode notification looks at it.
+  'DateLastMediaAdded',
   'PremiereDate',
   'RemoteTrailers',
   'ExternalUrls',
@@ -20,7 +24,8 @@ const CATALOG_FIELDS = [
   'CriticRating',
   'SortName',
   'OriginalTitle',
-  'Studios'
+  'Studios',
+  'People'
 ].join(',');
 
 const DROP_KEYS = new Set(['ImageBlurHashes', 'ServerId', 'ChannelId', 'LocationType', 'MediaType']);
@@ -36,8 +41,9 @@ const trimItem = (item) => {
 // Reads the whole catalogue with the server API key, library by library, so
 // every item knows which library it belongs to. That is what per-user library
 // access is later filtered on.
-export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fetchJson = jellyfinJson, pageSize = PAGE_SIZE } = {}) {
-  const request = (path, query = {}) => fetchJson(path, { token: apiKey, query });
+export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fetchJson = jellyfinJson, pageSize = PAGE_SIZE, log = console } = {}) {
+  // Pages of the whole library are big; a sync may wait longer than a page view.
+  const request = (path, query = {}) => fetchJson(path, { token: apiKey, query, timeoutMs: 60 * 1000 });
 
   const listLibraries = async () => {
     const folders = await request('/Library/VirtualFolders');
@@ -54,6 +60,9 @@ export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fet
       const page = await request('/Items', {
         ParentId: libraryId,
         IncludeItemTypes: ITEM_TYPES,
+        // Jellyfin 12 folds movies of a collection into one BoxSet item when
+        // the query has no user; the mirror needs every movie on its own.
+        CollapseBoxSetItems: 'false',
         Recursive: 'true',
         Fields: CATALOG_FIELDS,
         SortBy: 'SortName',
@@ -63,7 +72,13 @@ export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fet
       });
 
       const batch = page.Items || [];
-      items.push(...batch.map(item => ({ ...trimItem(item), LibraryId: libraryId })));
+      // Anything else Jellyfin hands back (a BoxSet, a folder) has no place in
+      // the mirror and must not fail the whole sync.
+      const kept = batch.filter(item => MIRRORED_TYPES.has(item.Type));
+      if (kept.length < batch.length) {
+        log.warn?.(`[CatalogSync] ${batch.length - kept.length} Einträge anderen Typs in Bibliothek ${libraryId} übersprungen`);
+      }
+      items.push(...kept.map(item => ({ ...trimItem(item), LibraryId: libraryId })));
 
       startIndex += batch.length;
       if (batch.length < pageSize || startIndex >= (page.TotalRecordCount || 0)) break;

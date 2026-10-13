@@ -240,3 +240,76 @@
   min-height: 48px;
   border-radius: 14px;
 }
+
+/* Erscheint nur bei ungespeicherten Änderungen und bleibt unten sichtbar. */
+.admin-user-save-bar {
+  position: sticky;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(24, 24, 29, 0.96);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  animation: admin-save-bar-in 200ms ease;
+}
+
+.admin-user-save-bar[hidden] {
+  display: none;
+}
+
+.admin-user-save-bar-text {
+  flex: 1 1 auto;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+}
+
+.admin-user-discard {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-user-discard:hover,
+.admin-user-discard:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+@keyframes admin-save-bar-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+.admin-user-save-bar .admin-user-save-all {
+  width: auto;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+}
+
+/* Narrow phones: the text on its own line, both buttons side by side below. */
+@media (max-width: 480px) {
+  .admin-user-save-bar {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+
+  .admin-user-save-bar-text {
+    flex-basis: 100%;
+  }
+
+  .admin-user-save-bar .admin-user-discard,
+  .admin-user-save-bar .admin-user-save-all {
+    flex: 1 1 0;
+  }
+}

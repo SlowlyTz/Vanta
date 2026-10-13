@@ -33,10 +33,12 @@ export function createMediaSession(context, { session = globalThis.navigator?.me
 
   const refresh = () => {
     const allowed = !context.watchParty?.enabled || context.canControlWatchParty();
-    setHandler('play', allowed ? () => player.play().catch(() => {}) : null);
-    setHandler('pause', allowed ? () => player.pause() : null);
-    setHandler('seekbackward', allowed ? () => context.seekStep(-10) : null);
-    setHandler('seekforward', allowed ? () => context.seekStep(10) : null);
+    // A media key or the lock screen is input too ("Schaust du noch?").
+    const act = fn => () => { context.noteActivity?.(); fn(); };
+    setHandler('play', allowed ? act(() => player.play().catch(() => {})) : null);
+    setHandler('pause', allowed ? act(() => player.pause()) : null);
+    setHandler('seekbackward', allowed ? act(() => context.seekStep(-10)) : null);
+    setHandler('seekforward', allowed ? act(() => context.seekStep(10)) : null);
   };
 
   const syncState = () => {

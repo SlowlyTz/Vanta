@@ -1,11 +1,6 @@
 /* ---------------------------------
    ACTOR DETAILS MODAL
 --------------------------------- */
-body.actor-modal-open {
-  overflow: hidden;
-  touch-action: none;
-}
-
 .actor-modal-overlay {
   position: fixed;
   inset: 0;

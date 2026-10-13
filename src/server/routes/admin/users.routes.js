@@ -3,8 +3,10 @@ import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { JellyfinAdminUsersService } from '../../services/jellyfin/admin-users.service.js';
 import { UserBanService } from '../../services/user-ban.service.js';
+import { revokeUserAccess } from '../../services/session-revocation.service.js';
 import { UserSettingsService } from '../../services/user-settings.service.js';
 import { streamSessionService } from '../../services/stream-session.service.js';
+import { getActiveCatalogReader } from '../../services/catalog/reader.js';
 
 const router = express.Router();
 
@@ -43,13 +45,23 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ users: users.map(normalizeUser) });
 }));
 
+// Every library with its kind, how many titles it holds and a few posters:
+// movies and series from the catalogue, anything else counted by Jellyfin.
 router.get('/libraries', asyncHandler(async (req, res) => {
   const libraries = await JellyfinAdminUsersService.listLibraries(req.session.accessToken);
+  const stats = getActiveCatalogReader()?.libraryStats() || {};
+  const counted = await Promise.all(libraries.map(async lib => {
+    if (stats[lib.ItemId]) return stats[lib.ItemId];
+    const count = await JellyfinAdminUsersService.countLibraryItems(lib.ItemId, req.session.accessToken).catch(() => null);
+    return { count, previews: [] };
+  }));
   res.json({
-    libraries: libraries.map(lib => ({
+    libraries: libraries.map((lib, index) => ({
       id: lib.ItemId,
       name: lib.Name,
-      collectionType: lib.CollectionType || null
+      collectionType: lib.CollectionType || null,
+      itemCount: counted[index].count,
+      previews: counted[index].previews
     }))
   });
 }));
@@ -118,6 +130,9 @@ router.post('/:userId/ban', asyncHandler(async (req, res) => {
     userId: req.session.userId,
     username: req.session.username
   });
+
+  // Out at once, not only at the next login: sessions, tokens and sockets.
+  await revokeUserAccess(userId, entry);
 
   return res.json({ ban: entry });
 }));

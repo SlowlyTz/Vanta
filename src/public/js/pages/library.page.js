@@ -6,6 +6,8 @@ import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 import { whenConnected } from '../utils/whenConnected.js';
 import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
+import { resolvePageScope } from '../utils/pageScope.js';
+import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 // Batch size per request; a multiple of every grid column count so each
@@ -13,7 +15,8 @@ import { PageHeading } from '../components/pageHeading.js';
 const BATCH_SIZE = 36;
 const LOAD_AHEAD_MARGIN = '900px';
 
-export default function LibraryPage(params) {
+export default function LibraryPage(params, pageScope) {
+  const scope = resolvePageScope(pageScope);
   const type = params.type || 'Movie';
   const genre = params.genreName || params.genre || null;
   const publisherId = params.publisherId || null;
@@ -32,7 +35,7 @@ export default function LibraryPage(params) {
   let loading = false;
   let observer = null;
 
-  const container = createElement('div', { className: 'page-container content-section library-page' });
+  const container = createElement('div', { className: 'page-container content-section library-page', 'data-tv-backdrop': '' });
   if (pendingRestore) {
     container.dataset.restoreScroll = 'true';
   }
@@ -55,17 +58,18 @@ export default function LibraryPage(params) {
     createElement('div', { className: 'library-content' }, PageHeading({ title: pageTitle }), bodySlot)
   );
 
-  const fetchPage = (page) => {
-    const args = [type, genre, studio, page, BATCH_SIZE];
-    if (publisherId) args.push({ publisherId });
-    return MediaApi.getLibrary(...args);
+  const fetchPage = (page, limit = BATCH_SIZE) => {
+    return MediaApi.getLibrary(type, genre, studio, page, limit, { publisherId, signal: scope.signal });
   };
 
+  // One insertion per batch, however many cards it brings.
   const appendItems = (items) => {
+    const fragment = document.createDocumentFragment();
     items.forEach(item => {
       const cardEl = MediaCard({ item, landscape: false, sourceType: 'library' });
-      if (cardEl) grid.appendChild(cardEl);
+      if (cardEl) fragment.appendChild(cardEl);
     });
+    grid.appendChild(fragment);
   };
 
   const hasMore = () => loadedPages < totalPages;
@@ -107,21 +111,14 @@ export default function LibraryPage(params) {
   const renderEmpty = () => {
     bodySlot.innerHTML = '';
     bodySlot.appendChild(
-      createElement('div', { className: 'search-empty-state' },
-        createElement('h3', {}, 'Keine Inhalte gefunden'),
-        createElement('p', {}, 'In dieser Kategorie sind aktuell keine Einträge vorhanden.')
-      )
+      EmptyState({ title: 'Keine Inhalte gefunden', message: 'In dieser Kategorie sind aktuell keine Einträge vorhanden.' })
     );
   };
 
   const renderError = (msg, retry) => {
     status.innerHTML = '';
     status.appendChild(
-      createElement('div', { className: 'search-empty-state library-error' },
-        createElement('h3', {}, 'Fehler beim Laden'),
-        createElement('p', {}, msg || 'Die Inhalte konnten nicht geladen werden.'),
-        createElement('button', { className: 'btn-primary', onClick: retry }, 'Erneut versuchen')
-      )
+      ErrorState({ message: msg || 'Die Inhalte konnten nicht geladen werden.', retry, className: 'library-error' })
     );
   };
 
@@ -131,6 +128,7 @@ export default function LibraryPage(params) {
       if (entries.some(entry => entry.isIntersecting)) loadMore();
     }, { rootMargin: `0px 0px ${LOAD_AHEAD_MARGIN} 0px` });
     observer.observe(sentinel);
+    scope.onLeave(() => observer?.disconnect());
   };
 
   const loadMore = async () => {
@@ -159,7 +157,8 @@ export default function LibraryPage(params) {
   };
 
   // First load: everything that was on screen before a detail visit comes
-  // back in one go, otherwise just the first batch.
+  // back in one request (the catalogue is local, so one big page is cheap),
+  // otherwise just the first batch.
   const loadInitial = async () => {
     const restoreTarget = pendingRestore;
     pendingRestore = null;
@@ -171,16 +170,13 @@ export default function LibraryPage(params) {
     loading = true;
 
     try {
-      const results = await Promise.all(
-        Array.from({ length: pagesWanted }, (_, index) => fetchPage(index + 1))
-      );
-      const last = results[results.length - 1];
-      totalItems = last.totalItems;
-      totalPages = last.totalPages;
+      const result = await fetchPage(1, pagesWanted * BATCH_SIZE);
+      totalItems = result.totalItems;
+      totalPages = Math.ceil(totalItems / BATCH_SIZE);
       loadedPages = Math.min(pagesWanted, totalPages);
 
       bodySlot.innerHTML = '';
-      const items = results.flatMap(result => result.items);
+      const items = result.items || [];
       if (items.length === 0) {
         renderEmpty();
         return;

@@ -26,8 +26,19 @@ export function bindSegments(context, { loadSegments }) {
 
   const mayControl = () => !context.watchParty?.enabled || context.canControlWatchParty();
 
+  // Skipped once per segment, so seeking back into it plays it.
+  const autoSkipped = new Set();
+  const autoSkip = () => Boolean(context.userPreferences?.autoSkipIntro) && !context.watchParty?.enabled;
+
   const update = () => {
     const segment = mayControl() ? activeSkipSegment(context.segments, Number(player.currentTime)) : null;
+    // "Intro automatisch überspringen" skips intros only; a recap keeps its
+    // button, since it is often worth watching.
+    if (segment?.type === 'intro' && autoSkip() && !autoSkipped.has(segment)) {
+      autoSkipped.add(segment);
+      seekTo(player, segment.endMs / 1000, { endEpsilon: 0.25 });
+      return;
+    }
     if (segment === shown) return;
     shown = segment;
     if (!button) return;

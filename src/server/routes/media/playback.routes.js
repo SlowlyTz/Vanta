@@ -8,11 +8,17 @@ import { forwardHeaders, pipeReadable, isAbortError, upstreamAbortSignal, FORWAR
 import { isValidQualityProfile, getQualityConstraints } from './playback.validation.js';
 import { pickAudioStreamIndex } from '../../services/playback/audioTracks.js';
 import { getTranscodeProgress } from '../../services/playback/transcodeProgress.js';
+import { isTvDirectPlatform } from '../../services/jellyfin/fields.js';
+import { detectTv } from '../../../public/js/shared/tvDetect.js';
 
 const router = express.Router();
 const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended']);
 const PLAY_METHODS = new Set(['DirectPlay', 'DirectStream', 'Transcode']);
+// Every stream goes out as HLS, except to a Samsung or LG TV recognised
+// for sure: those play HEVC, AC3 and MKV themselves (see fields.js) and fall
+// back to HLS in the player when a file does not start.
 const FORCE_HLS_TRANSCODING = true;
+const forcesHls = userAgent => FORCE_HLS_TRANSCODING && !isTvDirectPlatform(detectTv(userAgent).platform);
 
 const nullableInteger = value => Number.isInteger(value) ? value : null;
 
@@ -160,14 +166,14 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   }
 
   try {
-    const shouldForceHls = requestedMode === 'hls' || FORCE_HLS_TRANSCODING;
+    const userAgent = req.headers['user-agent'] || '';
+    const shouldForceHls = requestedMode === 'hls' || forcesHls(userAgent);
 
     if (requestedQualityProfile === 'direct' && shouldForceHls) {
       return res.status(400).json({ error: 'Direct Play is disabled by server configuration' });
     }
 
     const qualityConstraints = getQualityConstraints(requestedQualityProfile);
-    const userAgent = req.headers['user-agent'] || '';
     const infoOptions = {
       userAgent,
       forceHlsTranscoding: shouldForceHls,

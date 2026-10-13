@@ -60,3 +60,6 @@ audit-report.md
 
 # Local agent tooling
 .claude/
+
+# End-to-end screenshots
+tests/e2e/output/

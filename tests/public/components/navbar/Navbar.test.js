@@ -66,7 +66,7 @@ describe('Navbar', () => {
 
     expect(sections).toEqual([
       { label: 'Entdecken', entries: ['Home', 'Filme', 'Serien', 'Publisher', 'Scroller'] },
-      { label: 'Mehr', entries: ['Anfragen', 'Meldung'] }
+      { label: 'Mehr', entries: ['Meine Liste', 'Anfragen', 'Meldung'] }
     ]);
   });
 
@@ -83,11 +83,12 @@ describe('Navbar', () => {
       .toEqual(blocks.map((_, index) => String(index)));
   });
 
-  it('renders group, search and profile actions on the right', () => {
+  it('renders screensaver, group, search and profile actions on the right', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     expect(navbar.element.querySelector('.navbar-action-group')).toBeTruthy();
     expect(navbar.element.querySelector('.navbar-action-cast')).toBeNull();
+    expect(navbar.element.querySelector('button.navbar-action-screensaver').getAttribute('aria-label')).toBe('Bildschirmschoner starten');
 
     const searchAction = navbar.element.querySelector('.navbar-action-search');
     expect(searchAction.getAttribute('href')).toBe('#/search');

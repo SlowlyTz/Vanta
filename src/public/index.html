@@ -46,47 +46,37 @@
   <link rel="stylesheet" href="/css/components/toast.css">
   <link rel="stylesheet" href="/css/components/buttons.css">
   <link rel="stylesheet" href="/css/components/played-toggle.css">
+  <link rel="stylesheet" href="/css/components/watchlist.css">
+  <link rel="stylesheet" href="/css/components/media-actions.css">
+  <link rel="stylesheet" href="/css/components/notification-bell.css">
   <link rel="stylesheet" href="/css/components/confirm-dialog.css">
   <link rel="stylesheet" href="/css/components/page-heading.css">
   <link rel="stylesheet" href="/css/components/admin-tools/admin-tools.css">
-  <link rel="stylesheet" href="/css/components/admin-tools/requests-tool.css">
-  <link rel="stylesheet" href="/css/components/admin-tools/users-tool.css">
   <link rel="stylesheet" href="/css/components/watch-party/watch-party-dialog.css">
   <link rel="stylesheet" href="/css/components/watch-party/watch-party-invitation-overlay.css">
   <link rel="stylesheet" href="/css/components/offline-overlay.css">
   <link rel="stylesheet" href="/css/components/ui-kit.css">
-  <link rel="stylesheet" href="/css/pages/report.css">
-  <link rel="stylesheet" href="/css/pages/login.css">
   <link rel="stylesheet" href="/css/pages/home.css">
-  <link rel="stylesheet" href="/css/pages/publishers.css">
   <link rel="stylesheet" href="/css/pages/library.css">
-  <link rel="stylesheet" href="/css/pages/profile.css">
   <link rel="stylesheet" href="/css/pages/search.css">
   <link rel="stylesheet" href="/css/pages/detail.css">
   <link rel="stylesheet" href="/css/pages/actor-modal.css">
-  <link rel="stylesheet" href="/css/pages/requests.css">
-  <link rel="stylesheet" href="/css/pages/admin/layout.css">
-  <link rel="stylesheet" href="/css/pages/admin/header.css">
-  <link rel="stylesheet" href="/css/pages/admin/sections.css">
-  <link rel="stylesheet" href="/css/pages/admin/settings-panel.css">
-  <link rel="stylesheet" href="/css/pages/admin/responsive.css">
-  <link rel="stylesheet" href="/css/pages/trailer-scroller.css">
-  <link rel="stylesheet" href="/css/pages/watch-party.css">
-  <link rel="stylesheet" href="/css/player.css">
-  <!-- The player's stylesheet comes from its own build, like its JS, which
-       the app imports at runtime; bundling it here would freeze it at the
-       last app build while the player JS moves on (vite-ignore). -->
-  <link rel="stylesheet" href="/vendor/player/vanta-player.css" vite-ignore>
+  <!-- Styles of single areas (admin, requests, player, watch party …) are
+       not linked here: the router loads them with the page (css/bundles/,
+       js/utils/pageStyles.js). -->
 </head>
 <body>
   <!-- Opening scene cover, see intro-gate.js -->
   <div id="intro" aria-hidden="true"><canvas></canvas></div>
 
+  <!-- Keyboard users can jump past the navigation (visible on focus only). -->
+  <a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+
   <!-- Root Container for dynamic page loading -->
   <div id="app"></div>
 
   <!-- Shared Notification System -->
-  <div id="toast-container"></div>
+  <div id="toast-container" role="status" aria-live="polite"></div>
 
   <!-- Application Entry -->
   <script type="module" src="/js/app.js"></script>

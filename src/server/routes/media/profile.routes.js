@@ -35,6 +35,20 @@ function buildProfileHandler(loadPage, errorLabel) {
   });
 }
 
+// What one has watched: counts, time and favourite genres for the profile.
+router.get('/stats', requireAuth, asyncHandler(async (req, res) => {
+  const { userId, accessToken } = req.session;
+  try {
+    return res.json(await ProfileService.getStats(userId, accessToken));
+  } catch (error) {
+    console.error('[Profile Stats Error]', error.message);
+    if (isUpstreamUnauthorized(error)) {
+      return destroyInvalidSession(req, res);
+    }
+    return res.status(500).json({ error: 'Failed to fetch profile stats' });
+  }
+}));
+
 router.get('/continue-watching', requireAuth, buildProfileHandler(
   (userId, accessToken, options) => ProfileService.getContinueWatching(userId, accessToken, options),
   'Profile Continue Watching Error'

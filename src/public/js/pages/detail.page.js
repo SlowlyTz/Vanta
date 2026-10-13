@@ -10,6 +10,9 @@ import { createActorModal } from './detail/actorModal.js';
 import { buildSeasonsSection } from './detail/seasonsSection.js';
 import { loadDetailData } from './detail/detailData.js';
 import { buildHelpLinks } from './detail/helpLinks.js';
+import { resolvePageScope } from '../utils/pageScope.js';
+import { ErrorState } from '../components/emptyState.js';
+import { createWatchlistButton } from '../components/watchlistButton.js';
 import { extractYouTubeVideoId, openTrailerModal } from '../components/trailerModal.js';
 
 function getYouTubeTrailerId(item) {
@@ -52,8 +55,10 @@ function createFavoriteButton(item) {
 
   const checkboxId = `detail-favorite-checkbox-${++detailFavoriteCheckboxCounter}`;
 
-  const container = createElement('div', { title: 'Like', className: 'heart-container' });
-  const checkbox = createElement('input', { id: checkboxId, className: 'checkbox', type: 'checkbox' });
+  // The heart is Jellyfin's favourite (it also shows in other Jellyfin apps),
+  // not "Meine Liste" next to it: its name says so.
+  const container = createElement('div', { title: 'Favorit (auch in Jellyfin)', className: 'heart-container' });
+  const checkbox = createElement('input', { id: checkboxId, className: 'checkbox', type: 'checkbox', 'aria-label': 'Favorit (auch in Jellyfin)' });
   container.appendChild(checkbox);
   container.insertAdjacentHTML('beforeend', HEART_CONTAINER_MARKUP);
 
@@ -87,7 +92,9 @@ function createFavoriteButton(item) {
   return container;
 }
 
-export default function DetailPage({ id }) {
+export default function DetailPage({ id }, pageScope) {
+  const scope = resolvePageScope(pageScope);
+  const { signal } = scope;
   const container = createElement('div', { className: 'page-container' });
   container.dataset.edgeTop = 'true';
   const actorModal = createActorModal({ currentItemId: id });
@@ -98,7 +105,7 @@ export default function DetailPage({ id }) {
     container.appendChild(createSectionLoader({ label: 'Details werden geladen' }));
 
     try {
-      const { item, similar, seasons, normalized } = await loadDetailData(id);
+      const { item, similar, seasons, normalized } = await loadDetailData(id, { signal });
       const youtubeTrailerId = getYouTubeTrailerId(item);
 
       const actors = normalized.actors || [];
@@ -114,13 +121,20 @@ export default function DetailPage({ id }) {
         ? MediaCarousel({ title: 'Ähnliche Titel', items: similar, landscape: false })
         : null;
 
+      // A started film or episode continues; "Von vorn" starts it over.
+      const started = item.Type !== 'Series' && Number(item.UserData?.PlaybackPositionTicks) > 0 && item.UserData?.Played !== true;
       const actions = [
         {
-          label: 'Abspielen',
+          label: started ? 'Fortsetzen' : 'Abspielen',
           className: 'btn-primary',
           icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg>',
           onClick: () => { window.location.hash = `#/player/${item.Id}`; }
         },
+        started ? {
+          label: 'Von vorn',
+          className: 'btn-secondary',
+          onClick: () => { window.location.hash = `#/player/${item.Id}?from=start`; }
+        } : null,
         youtubeTrailerId ? {
           label: 'Trailer',
           className: 'btn-secondary',
@@ -129,13 +143,16 @@ export default function DetailPage({ id }) {
       ].filter(Boolean);
 
       const favoriteButton = createFavoriteButton(item);
-      // Series are marked per episode in the seasons section, like Jellyfin.
-      const playedButton = item.Type === 'Movie' ? createPlayedToggle(item) : null;
+      const watchlistButton = createWatchlistButton(item, { scope });
+      // A film or a whole series; its episodes follow (seasons section), and
+      // single episodes are marked on their cards.
+      const playedButton = item.Type === 'Movie' || item.Type === 'Series' ? createPlayedToggle(item, { withLabel: true }) : null;
 
       const detailView = DetailView({
         item: normalized,
         actions,
         favoriteButton,
+        watchlistButton,
         playedButton,
         castSection,
         seasonsSection,
@@ -151,19 +168,22 @@ export default function DetailPage({ id }) {
     } catch (error) {
       if (error.isAuthError) return;
 
-      console.error('[Detail Page Load Error]', error);
-      appStore.showToast('Fehler beim Laden der Details', 'error');
+      // An unknown or not shared title is no failure worth a toast.
+      const notFound = error.status === 404;
+      if (!notFound) {
+        console.error('[Detail Page Load Error]', error);
+        appStore.showToast('Fehler beim Laden der Details', 'error');
+      }
       container.innerHTML = '';
       container.appendChild(
         createElement('div', { className: 'content-section' },
-          createElement('div', { className: 'search-empty-state' },
-            createElement('h3', {}, 'Fehler beim Laden'),
-            createElement('p', {}, error.message || 'Die Details konnten nicht abgerufen werden.'),
-            createElement('button', {
-              className: 'btn-primary',
-              onClick: () => { window.location.hash = '#/home'; }
-            }, 'Zurück zur Startseite')
-          )
+          ErrorState({
+            title: notFound ? 'Dieser Titel ist nicht verfügbar' : undefined,
+            message: notFound
+              ? 'Es gibt ihn nicht (mehr), oder er ist für dich nicht freigegeben.'
+              : error.message || 'Die Details konnten nicht abgerufen werden.',
+            action: { label: 'Zurück zur Startseite', onClick: () => { window.location.hash = '#/home'; } }
+          })
         )
       );
     } finally {

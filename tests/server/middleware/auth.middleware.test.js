@@ -1,0 +1,89 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import express from 'express';
+import request from 'supertest';
+
+vi.mock('../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  UserBanService: { getBan: vi.fn() }
+}));
+
+import { requireAuth, LAST_SEEN_STEP_MS } from '../../../src/server/middleware/auth.middleware.js';
+import { UserBanService } from '../../../src/server/services/user-ban.service.js';
+
+function createApp(session) {
+  const app = express();
+  let destroyed = false;
+  app.use((req, res, next) => {
+    req.session = { ...session, destroy: (cb) => { destroyed = true; cb(null); } };
+    next();
+  });
+  app.get('/private', requireAuth, (req, res) => res.json({ ok: true }));
+  return { app, wasDestroyed: () => destroyed };
+}
+
+describe('requireAuth', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    UserBanService.getBan.mockReturnValue(null);
+  });
+
+  it('lets a valid session through', async () => {
+    const { app } = createApp({ userId: 'u1', accessToken: 't' });
+    expect((await request(app).get('/private')).status).toBe(200);
+  });
+
+  it('notes when the session was last used, at most every few minutes', () => {
+    const session = { userId: 'u1', accessToken: 't' };
+    const next = vi.fn();
+    requireAuth({ session }, {}, next);
+    expect(session.lastSeenAt).toBeGreaterThan(0);
+    const first = session.lastSeenAt;
+    requireAuth({ session }, {}, next);
+    expect(session.lastSeenAt).toBe(first);
+    session.lastSeenAt = first - LAST_SEEN_STEP_MS;
+    requireAuth({ session }, {}, next);
+    expect(session.lastSeenAt).toBeGreaterThanOrEqual(first);
+    expect(next).toHaveBeenCalledTimes(3);
+  });
+
+  it('refuses a request without a session', async () => {
+    const { app } = createApp({});
+    expect((await request(app).get('/private')).status).toBe(401);
+  });
+
+  it('ends the session of a banned user on the spot and names the reason', async () => {
+    UserBanService.getBan.mockReturnValue({ reason: 'Account geteilt' });
+    const { app, wasDestroyed } = createApp({ userId: 'u1', accessToken: 't' });
+
+    const res = await request(app).get('/private');
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ error: 'Dein Konto wurde gesperrt.', code: 'BANNED', reason: 'Account geteilt' });
+    expect(wasDestroyed()).toBe(true);
+    expect(res.headers['set-cookie']?.[0]).toMatch(/^connect\.sid=;/);
+  });
+});
+
+describe('requireFreshAdmin', () => {
+  it('asks Jellyfin once per user for a short while and again with another token', async () => {
+    const { AuthService } = await import('../../../src/server/services/jellyfin/auth.service.js');
+    const { requireFreshAdmin, clearAdminCheckCache } = await import('../../../src/server/middleware/auth.middleware.js');
+    clearAdminCheckCache();
+    const spy = vi.spyOn(AuthService, 'isUserAdmin').mockResolvedValue(true);
+
+    const app = express();
+    let token = 't1';
+    app.use((req, res, next) => { req.session = { userId: 'admin', accessToken: token }; next(); });
+    app.get('/admin', requireFreshAdmin, (req, res) => res.json({ ok: true }));
+
+    expect((await request(app).get('/admin')).status).toBe(200);
+    expect((await request(app).get('/admin')).status).toBe(200);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    token = 't2';
+    spy.mockResolvedValue(false);
+    expect((await request(app).get('/admin')).status).toBe(403);
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+});
