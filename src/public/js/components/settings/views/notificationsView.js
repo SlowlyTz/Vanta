@@ -2,7 +2,7 @@ import { createElement } from '../../../utils/dom.js';
 import { NotificationsApi } from '../../../api/notifications.api.js';
 import { appStore } from '../../../store/app.store.js';
 import { NOTIFICATION_KINDS } from '../../../shared/notificationKinds.js';
-import { disablePush, enablePush, isLocalPush, pushSupport, showLocalNotification, syncPushSubscription } from '../../../utils/pushSubscription.js';
+import { disablePush, enablePush, isLocalPush, pushSupport, renewPush, showLocalNotification, syncPushSubscription } from '../../../utils/pushSubscription.js';
 import { settingsCard, settingsNote, switchRow } from '../controls.js';
 
 const SUPPORT_TEXT = {
@@ -70,7 +70,18 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
       onClick: async () => {
         try {
           if (local) await showLocalNotification({ title: 'VANTA', body: 'Benachrichtigungen funktionieren auf diesem Gerät.', tag: 'test' });
-          else await NotificationsApi.sendTest();
+          else {
+            try {
+              await NotificationsApi.sendTest();
+            } catch (error) {
+              if (error.status !== 409) throw error;
+              // The push service refused the subscription (expired, made
+              // with another key): once more with a fresh one.
+              const renewed = await renewPush();
+              if (renewed !== 'on') throw error;
+              await NotificationsApi.sendTest({ retry: true });
+            }
+          }
           appStore.showToast('Testbenachrichtigung gesendet', 'success');
         } catch (error) {
           appStore.showToast(error.message || 'Testbenachrichtigung fehlgeschlagen', 'error');

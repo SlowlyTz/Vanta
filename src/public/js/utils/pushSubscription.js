@@ -83,6 +83,12 @@ export async function enablePush() {
   const { publicKey } = await NotificationsApi.getPushKey();
   const pushManager = (await registration()).pushManager;
   let subscription = await pushManager.getSubscription();
+  // One made with another key (an older server key) is refused by the push
+  // service: a fresh one replaces it.
+  if (subscription && !sameKey(subscription, publicKey)) {
+    await subscription.unsubscribe().catch(() => {});
+    subscription = null;
+  }
   if (!subscription) {
     try {
       subscription = await pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
@@ -95,6 +101,26 @@ export async function enablePush() {
   await NotificationsApi.subscribe(subscription.toJSON());
   setLocal(false);
   return 'on';
+}
+
+function sameKey(subscription, publicKey) {
+  const own = subscription.options?.applicationServerKey;
+  // Browsers that do not say keep their subscription.
+  if (!own) return true;
+  const mine = new Uint8Array(own);
+  const wanted = urlBase64ToUint8Array(publicKey);
+  return mine.length === wanted.length && mine.every((byte, index) => byte === wanted[index]);
+}
+
+// The push service refused this device's subscription: drop it in the
+// browser and subscribe anew. Resolves like enablePush.
+export async function renewPush() {
+  const subscription = await currentSubscription();
+  if (subscription) {
+    await NotificationsApi.unsubscribe(subscription.endpoint).catch(() => {});
+    await subscription.unsubscribe().catch(() => {});
+  }
+  return enablePush();
 }
 
 export async function disablePush() {

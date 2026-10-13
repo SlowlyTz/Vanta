@@ -159,6 +159,8 @@ export function createPushService({ sender = webpush, now = () => Date.now(), lo
       const body = JSON.stringify(payload);
       let sent = 0;
       let failed = 0;
+      // Why each failed device failed: the push service's status and host.
+      const errors = [];
       await inBatches(subscriptions, PARALLEL, async (subscription) => {
         try {
           await sender.sendNotification(
@@ -170,7 +172,11 @@ export function createPushService({ sender = webpush, now = () => Date.now(), lo
           sent += 1;
         } catch (error) {
           failed += 1;
+          let host = '';
+          try { host = new URL(subscription.endpoint).hostname; } catch { /* stored ones are valid */ }
+          errors.push({ status: error.statusCode || null, host });
           if (isGone(error.statusCode)) {
+            log.warn?.(`[Push] Abo bei ${host} nicht mehr gültig (${error.statusCode}), entfernt`);
             statements.deleteById.run(subscription.id);
             return;
           }
@@ -178,10 +184,10 @@ export function createPushService({ sender = webpush, now = () => Date.now(), lo
             statements.failure.run(subscription.id);
             if ((statements.failures.get(subscription.id)?.failure_count || 0) >= MAX_FAILURES) statements.deleteById.run(subscription.id);
           }
-          log.warn?.(`[Push] Zustellung fehlgeschlagen (${error.statusCode || error.message})`);
+          log.warn?.(`[Push] Zustellung an ${host} fehlgeschlagen (${error.statusCode || error.message}${error.body ? `: ${String(error.body).slice(0, 200)}` : ''})`);
         }
       });
-      return { sent, failed };
+      return { sent, failed, errors };
     }
   };
 }

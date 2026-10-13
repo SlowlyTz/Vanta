@@ -13,5 +13,6 @@ export const NotificationsApi = {
   getPushKey: () => request('/api/notifications/push-key'),
   subscribe: subscription => request('/api/notifications/subscriptions', { method: 'POST', body: { subscription } }),
   unsubscribe: endpoint => request('/api/notifications/subscriptions', { method: 'DELETE', body: { endpoint } }),
-  sendTest: () => request('/api/notifications/test', { method: 'POST' })
+  // `retry`: the second try right after renewing the subscription.
+  sendTest: ({ retry = false } = {}) => request(`/api/notifications/test${retry ? '?retry=1' : ''}`, { method: 'POST' })
 };

@@ -13,6 +13,7 @@ export function createNotificationsRouter({ notify = NotifyService, push = PushS
   const router = express.Router();
   const isAdmin = (req) => req.session.isAdmin === true;
   const lastTestAt = new Map(); // userId -> time of the last test push
+  const failedTests = new Set(); // users whose last test no device took
 
   // Counts behind the dots in the menu. The admin part follows the role the
   // session learned at login; the lists themselves still check it fresh.
@@ -84,7 +85,11 @@ export function createNotificationsRouter({ notify = NotifyService, push = PushS
   router.post('/test', requireAuth, asyncHandler(async (req, res) => {
     const { userId } = req.session;
     const waitMs = (lastTestAt.get(userId) ?? -Infinity) + TEST_PUSH_INTERVAL_MS - now();
-    if (waitMs > 0) {
+    // One retry right after a refused test (the client renewed its
+    // subscription in between); never two in a row.
+    const retry = req.query.retry === '1' && failedTests.has(userId);
+    failedTests.delete(userId);
+    if (waitMs > 0 && !retry) {
       res.setHeader('Retry-After', String(Math.ceil(waitMs / 1000)));
       return res.status(429).json({ error: 'Bitte warte kurz vor der nächsten Testbenachrichtigung.' });
     }
@@ -96,7 +101,14 @@ export function createNotificationsRouter({ notify = NotifyService, push = PushS
       url: '/#/home',
       tag: 'test'
     });
-    if (result.sent === 0) return res.status(409).json({ error: 'Kein Gerät hat die Testbenachrichtigung angenommen.', ...result });
+    if (result.sent === 0) {
+      if (!retry) failedTests.add(userId);
+      const reasons = (result.errors || []).map(error => `${error.host || 'Push-Dienst'}: ${error.status || 'keine Antwort'}`);
+      const error = result.failed === 0
+        ? 'Für dieses Konto ist kein Gerät für Push angemeldet.'
+        : `Der Push-Dienst hat die Testbenachrichtigung abgelehnt (${reasons.join(', ')}).`;
+      return res.status(409).json({ error, ...result });
+    }
     return res.json(result);
   }));
 

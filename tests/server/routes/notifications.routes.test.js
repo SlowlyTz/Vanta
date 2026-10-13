@@ -72,6 +72,25 @@ describe('/api/notifications', () => {
     expect((await request(appWith({ notify, push })).post('/api/notifications/test')).status).toBe(409);
   });
 
+  it('names why the push service refused, and allows one retry right after', async () => {
+    let time = 1_000;
+    const app = appWith({ notify, push, now: () => time });
+    push.sendToUser.mockResolvedValue({ sent: 0, failed: 1, errors: [{ status: 403, host: 'fcm.googleapis.com' }] });
+    const refused = await request(app).post('/api/notifications/test');
+    expect(refused.status).toBe(409);
+    expect(refused.body.error).toContain('fcm.googleapis.com: 403');
+    push.sendToUser.mockResolvedValue({ sent: 1, failed: 0 });
+    expect((await request(app).post('/api/notifications/test?retry=1')).status).toBe(200);
+    // Not a way around the wait: a second retry waits again.
+    expect((await request(app).post('/api/notifications/test?retry=1')).status).toBe(429);
+  });
+
+  it('says when no device of the account is signed up for push', async () => {
+    push.sendToUser.mockResolvedValue({ sent: 0, failed: 0, errors: [] });
+    const res = await request(appWith({ notify, push })).post('/api/notifications/test');
+    expect(res.body.error).toBe('Für dieses Konto ist kein Gerät für Push angemeldet.');
+  });
+
   it('sends at most one test push per user in a while', async () => {
     let time = 1_000;
     const app = appWith({ notify, push, now: () => time });

@@ -44,7 +44,7 @@ describe('PushService', () => {
     service.subscribe('u1', subscription(2));
     service.subscribe('u2', subscription(3));
 
-    expect(await service.sendToUser('u1', { title: 'Hallo' })).toEqual({ sent: 2, failed: 0 });
+    expect(await service.sendToUser('u1', { title: 'Hallo' })).toEqual({ sent: 2, failed: 0, errors: [] });
     const [target, body, options] = sender.sendNotification.mock.calls[0];
     expect(target).toEqual({ endpoint: endpoint(1), keys: { p256dh: 'p1', auth: 'a1' } });
     expect(JSON.parse(body)).toEqual({ title: 'Hallo' });
@@ -57,7 +57,9 @@ describe('PushService', () => {
     sender.sendNotification.mockImplementation(async ({ endpoint }) => {
       throw Object.assign(new Error('x'), { statusCode: endpoint.endsWith('/1') ? 410 : 403 });
     });
-    await service.sendToUser('u1', {});
+    const result = await service.sendToUser('u1', {});
+    // Each failure says why, without the device's token.
+    expect(result.errors).toEqual(expect.arrayContaining([{ status: 410, host: 'fcm.googleapis.com' }, { status: 403, host: 'fcm.googleapis.com' }]));
     expect(service.deviceCount('u1')).toBe(1);
     for (let i = 0; i < 4; i++) await service.sendToUser('u1', {});
     expect(service.deviceCount('u1')).toBe(0);

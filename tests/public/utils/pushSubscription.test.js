@@ -5,7 +5,7 @@ vi.mock('../../../src/public/js/api/notifications.api.js', () => ({
 }));
 
 import { NotificationsApi } from '../../../src/public/js/api/notifications.api.js';
-import { disablePush, enablePush, isLocalPush, showLocalNotification, syncPushSubscription, unsubscribeBrowserPush } from '../../../src/public/js/utils/pushSubscription.js';
+import { disablePush, enablePush, isLocalPush, renewPush, showLocalNotification, syncPushSubscription, unsubscribeBrowserPush } from '../../../src/public/js/utils/pushSubscription.js';
 
 let subscription;
 const originals = {};
@@ -77,5 +77,32 @@ describe('push subscription', () => {
     localStorage.setItem('vanta.push.local', '1');
     await unsubscribeBrowserPush();
     expect(isLocalPush()).toBe(false);
+  });
+
+  it('replaces a subscription made with another server key, and renews a refused one', async () => {
+    const old = { endpoint: 'https://fcm.googleapis.com/fcm/send/old', options: { applicationServerKey: new Uint8Array([1, 2, 3]).buffer }, toJSON: () => ({ endpoint: 'old' }), unsubscribe: vi.fn(async () => true) };
+    const fresh = { endpoint: 'https://fcm.googleapis.com/fcm/send/new', options: { applicationServerKey: new Uint8Array([4, 5, 6]).buffer }, toJSON: () => ({ endpoint: 'new' }), unsubscribe: vi.fn(async () => true) };
+    let current = old;
+    const subscribe = vi.fn(async () => { current = fresh; return fresh; });
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { ready: Promise.resolve({ pushManager: { getSubscription: async () => current, subscribe } }) }
+    });
+    globalThis.Notification = { permission: 'granted', requestPermission: async () => 'granted' };
+    NotificationsApi.getPushKey.mockResolvedValue({ publicKey: 'BAUG' }); // bytes 4, 5, 6
+
+    await expect(enablePush()).resolves.toBe('on');
+    expect(old.unsubscribe).toHaveBeenCalled();
+    expect(NotificationsApi.subscribe).toHaveBeenLastCalledWith({ endpoint: 'new' });
+
+    // Same key: kept as it is.
+    subscribe.mockClear();
+    await enablePush();
+    expect(subscribe).not.toHaveBeenCalled();
+
+    // Refused by the push service: dropped on both sides and made anew.
+    await expect(renewPush()).resolves.toBe('on');
+    expect(NotificationsApi.unsubscribe).toHaveBeenCalledWith('https://fcm.googleapis.com/fcm/send/new');
+    expect(fresh.unsubscribe).toHaveBeenCalled();
   });
 });
