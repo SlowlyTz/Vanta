@@ -50,6 +50,8 @@ describe('NotifyService', () => {
     expect(result).toEqual({ userId: 'u1', inApp: true, pushed: 1 });
     expect(push.sendToUser).toHaveBeenCalledWith('u1', expect.objectContaining({ title: 'Anfrage angenommen', url: '/#/requests', tag: 'request_update' }));
     expect(sockets.sendToUser).toHaveBeenCalledWith('u1', { type: 'NOTIFICATIONS_CHANGED' });
+    // Open apps of a browser without a push service show it themselves.
+    expect(sockets.sendToUser).toHaveBeenCalledWith('u1', { type: 'NOTIFICATION_PUSH', notification: expect.objectContaining({ title: 'Anfrage angenommen', body: 'Dune', url: '/#/requests', tag: 'request_update' }) });
     expect(service.feed('u1')).toMatchObject({ unread: 1, items: [{ title: 'Anfrage angenommen', read: false, imageItemId: 'm1' }] });
   });
 

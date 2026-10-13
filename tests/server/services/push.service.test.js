@@ -73,6 +73,9 @@ describe('PushService', () => {
 
   it('accepts only the push services of the browsers', () => {
     expect(isKnownPushEndpoint('https://fcm.googleapis.com/fcm/send/x')).toBe(true);
+    // Chrome's current FCM endpoints.
+    expect(isKnownPushEndpoint('https://jmt17.google.com/fcm/send/x')).toBe(true);
+    expect(isKnownPushEndpoint('https://google.com.evil.test/x')).toBe(false);
     expect(isKnownPushEndpoint('https://updates.push.services.mozilla.com/wpush/v2/x')).toBe(true);
     expect(isKnownPushEndpoint('https://web.push.apple.com/x')).toBe(true);
     expect(isKnownPushEndpoint('https://wns2-par02p.notify.windows.com/w/?token=x')).toBe(true);

@@ -89,7 +89,11 @@ export function createNotifyService({ push = PushService, sockets = appSocketHub
           let pushed = 0;
           if (prefs.push && choice.push) {
             const image = imageItemId ? `/api/media/image/${encodeURIComponent(imageItemId)}?type=Primary&maxWidth=400` : null;
-            ({ sent: pushed } = await push.sendToUser(userId, { title, body, url: url || '/#/home', image, tag: kind }));
+            const notification = { title, body, url: url || '/#/home', image, tag: kind };
+            // Browsers without a push service (Helium, ungoogled Chromium)
+            // show it themselves while VANTA is open (pushSubscription.js).
+            sockets.sendToUser?.(userId, { type: 'NOTIFICATION_PUSH', notification });
+            ({ sent: pushed } = await push.sendToUser(userId, notification));
           }
           return { userId, inApp: choice.inApp, pushed };
         } catch (error) {

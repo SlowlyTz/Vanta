@@ -8,6 +8,7 @@ import { watchlistStore } from '../store/watchlist.store.js';
 import { endClientSession } from '../utils/sessionNotice.js';
 import { resetScreensaverCache } from '../components/screensaver.js';
 import { recentSearches } from '../utils/recentSearches.js';
+import { isLocalPush, showLocalNotification } from '../utils/pushSubscription.js';
 
 let socket = null;
 
@@ -32,6 +33,11 @@ export function initAppRealtime() {
           }
           if (message?.type === 'NOTIFICATIONS_CHANGED') {
             notificationsStore.refresh();
+            return;
+          }
+          // A push this browser cannot receive (no push service): shown here.
+          if (message?.type === 'NOTIFICATION_PUSH') {
+            if (isLocalPush() && message.notification) showLocalNotification(message.notification).catch(() => {});
             return;
           }
           watchPartyInvitationStore.handleRealtimeMessage(message);

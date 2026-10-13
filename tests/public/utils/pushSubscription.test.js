@@ -5,7 +5,7 @@ vi.mock('../../../src/public/js/api/notifications.api.js', () => ({
 }));
 
 import { NotificationsApi } from '../../../src/public/js/api/notifications.api.js';
-import { enablePush, syncPushSubscription, unsubscribeBrowserPush } from '../../../src/public/js/utils/pushSubscription.js';
+import { disablePush, enablePush, isLocalPush, showLocalNotification, syncPushSubscription, unsubscribeBrowserPush } from '../../../src/public/js/utils/pushSubscription.js';
 
 let subscription;
 const originals = {};
@@ -52,16 +52,30 @@ describe('push subscription', () => {
     expect(NotificationsApi.unsubscribe).not.toHaveBeenCalled();
   });
 
-  it('says so when the browser has no push service instead of failing', async () => {
+  it('falls back to notifications from the open app when the browser has no push service', async () => {
     const failure = Object.assign(new Error('Registration failed - push service error'), { name: 'AbortError' });
+    const showNotification = vi.fn(async () => {});
     Object.defineProperty(navigator, 'serviceWorker', {
       configurable: true,
-      value: { ready: Promise.resolve({ pushManager: { getSubscription: async () => null, subscribe: vi.fn(async () => { throw failure; }) } }) }
+      value: { ready: Promise.resolve({ showNotification, pushManager: { getSubscription: async () => null, subscribe: vi.fn(async () => { throw failure; }) } }) }
     });
-    globalThis.Notification = { permission: 'default', requestPermission: async () => 'granted' };
+    globalThis.Notification = { permission: 'default', requestPermission: async () => { globalThis.Notification.permission = 'granted'; return 'granted'; } };
     NotificationsApi.getPushKey.mockResolvedValue({ publicKey: 'BAAA' });
 
-    await expect(enablePush()).resolves.toBe('no-service');
+    await expect(enablePush()).resolves.toBe('local');
     expect(NotificationsApi.subscribe).not.toHaveBeenCalled();
+    expect(isLocalPush()).toBe(true);
+
+    await showLocalNotification({ title: 'Neue Folge', body: 'Dune', url: '/#/item/1', tag: 'new_episode' });
+    expect(showNotification).toHaveBeenCalledWith('Neue Folge', expect.objectContaining({ body: 'Dune', tag: 'new_episode', data: { url: '/#/item/1' } }));
+
+    await disablePush();
+    expect(isLocalPush()).toBe(false);
+  });
+
+  it('leaves the open-app mode on logout', async () => {
+    localStorage.setItem('vanta.push.local', '1');
+    await unsubscribeBrowserPush();
+    expect(isLocalPush()).toBe(false);
   });
 });

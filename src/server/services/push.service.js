@@ -54,9 +54,10 @@ export function loadVapidKeys({ settings = AppSettingsService, generate = () => 
 }
 
 // The push services of the browsers VANTA runs in: Chrome/Edge-Chromium
-// (FCM), Firefox (Mozilla autopush), Safari (Apple) and Edge/Windows (WNS).
+// (FCM, which now hands out endpoints such as jmt17.google.com/fcm/send/…),
+// Firefox (Mozilla autopush), Safari (Apple) and Edge/Windows (WNS).
 // Any other endpoint would make the server post to an address a client chose.
-const PUSH_HOSTS = ['fcm.googleapis.com', 'android.googleapis.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com'];
+const PUSH_HOSTS = ['fcm.googleapis.com', 'android.googleapis.com', 'google.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com'];
 
 export const isKnownPushEndpoint = (endpoint) => {
   let url;

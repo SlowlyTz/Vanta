@@ -39,9 +39,42 @@ export async function currentSubscription() {
 // fails with an AbortError "Registration failed - push service error".
 export const isMissingPushService = error => error?.name === 'AbortError' || /push service/i.test(error?.message || '');
 
+// Such a browser gets its notifications from the open app instead: the
+// server tells every open VANTA of a push (NOTIFICATION_PUSH on the app
+// socket), and a device in this mode shows it as a system notification. Kept
+// per device; it needs a VANTA tab open, nothing can wake a closed one.
+const LOCAL_KEY = 'vanta.push.local';
+const setLocal = on => {
+  try {
+    if (on) localStorage.setItem(LOCAL_KEY, '1');
+    else localStorage.removeItem(LOCAL_KEY);
+  } catch { /* not kept */ }
+};
+
+export function isLocalPush() {
+  try {
+    return localStorage.getItem(LOCAL_KEY) === '1' && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+// Shows one notification like a push would (the service worker opens its
+// page on a click).
+export async function showLocalNotification({ title = 'VANTA', body = '', url = '/#/home', tag, image } = {}) {
+  const options = { body, icon: '/assets/logo-vanta.png', badge: '/assets/logo-vanta.png', tag: tag || undefined, data: { url } };
+  if (image) options.image = image;
+  try {
+    const registration = await navigator.serviceWorker?.ready;
+    if (registration?.showNotification) return await registration.showNotification(title, options);
+  } catch { /* below */ }
+  // eslint-disable-next-line no-new
+  new Notification(title, options);
+}
+
 // Asks for permission, subscribes and tells the server. Resolves with
-// 'on' or the reason it did not work ('denied', 'unsupported', 'ios-install',
-// 'no-service').
+// 'on', 'local' (no push service: notifications while the app is open) or
+// the reason it did not work ('denied', 'unsupported', 'ios-install').
 export async function enablePush() {
   const support = pushSupport();
   if (support !== 'ready') return support;
@@ -54,15 +87,18 @@ export async function enablePush() {
     try {
       subscription = await pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
     } catch (error) {
-      if (isMissingPushService(error)) return 'no-service';
-      throw error;
+      if (!isMissingPushService(error)) throw error;
+      setLocal(true);
+      return 'local';
     }
   }
   await NotificationsApi.subscribe(subscription.toJSON());
+  setLocal(false);
   return 'on';
 }
 
 export async function disablePush() {
+  setLocal(false);
   const subscription = await currentSubscription();
   if (!subscription) return;
   await NotificationsApi.unsubscribe(subscription.endpoint).catch(() => {});
@@ -87,6 +123,7 @@ export async function syncPushSubscription() {
 // On logout: the next account on this device starts with push off. Only the
 // browser side; the server already forgets the subscription with the session.
 export async function unsubscribeBrowserPush() {
+  setLocal(false);
   const subscription = await currentSubscription();
   if (!subscription) return false;
   return subscription.unsubscribe().then(() => true, () => false);
