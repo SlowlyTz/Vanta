@@ -12,6 +12,7 @@
 | `npm run check:legacy` | After a build: every built script must parse in Chromium 68 |
 | `npm run test:e2e` | Headless Chromium against a running server (below) |
 | `npm run refresh [-- --full]` | Catalogue sync now |
+| `npm run update` | Pull, build and check `origin/main` without starting the server ([setup](setup.md#deploying-an-update)) |
 
 Player and scene outputs are committed; rebuild them when their sources change, or the app keeps running the old ones.
 

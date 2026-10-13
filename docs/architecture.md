@@ -9,7 +9,8 @@ src/
     js/shared/      DOM-free code used by app, player and server alike
   player/           player source → src/public/vendor/player/ (committed)
   intro/ countdown/ three.js scenes → src/public/vendor/scenes/ (committed)
-server.js           entry: HTTP server, sockets, schedulers, shutdown
+server.js           entry: update on start (scripts/update.js), then src/server/main.js
+  (main.js          HTTP server, sockets, schedulers, shutdown)
 ```
 
 ## Server

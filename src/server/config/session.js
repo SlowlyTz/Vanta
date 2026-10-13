@@ -7,7 +7,7 @@ import { SqliteSessionStore } from '../db/session-store.js';
 // window fresh while the user is active.
 export const sessionStore = new SqliteSessionStore();
 
-// SIGINT/SIGTERM are handled in server.js (src/server/shutdown.js), which
+// SIGINT/SIGTERM are handled in src/server/main.js (src/server/shutdown.js), which
 // writes the sessions before exiting; this covers a process that just ends.
 process.once('beforeExit', () => sessionStore.close());
 

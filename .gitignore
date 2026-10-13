@@ -27,6 +27,9 @@ db/*.db
 db/*.db-*
 db/*
 
+# Database backups made by npm run update / the start update
+backups/
+
 # Resized image renditions
 cache/
 

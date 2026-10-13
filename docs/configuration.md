@@ -18,6 +18,8 @@
 | `IMAGE_CACHE_MAX_MB` | `2048` | Least recently used renditions go beyond it (down to 90 %) |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | generated | Web Push keys. Without them a pair is made on first start and kept in `app_settings`. Changing them invalidates every push subscription |
 | `VAPID_SUBJECT` | `mailto:admin@usevanta.de` | Contact the push services see |
+| `AUTO_UPDATE` | `true` | In production each start pulls and builds a newer `origin/main` first ([setup](setup.md#deploying-an-update)); `false` turns it off |
+| `UPDATE_BACKUP_DIR` | `backups` | Where `db/` is copied before an update; the newest five stay |
 
 ## Settings in the app
 
@@ -45,6 +47,7 @@ Everything below is git-ignored. Back up `db/` before updates.
 | `db/user/banned.json` | Banned users (re-read within a second when edited) |
 | `db/user/settings.json` | Per-user stream limits |
 | `cache/images/` | WebP renditions; safe to delete |
+| `backups/` | `db/` copies made before each update |
 
 Jellyfin stays the source of truth for accounts, passwords, libraries, admin rights, watched state and favourites.
 
