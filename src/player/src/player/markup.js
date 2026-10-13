@@ -167,6 +167,13 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
             <span aria-hidden="true">›</span>
             <span class="vanta-player-loading-status">Wiedergabequelle wird angefragt …</span>
           </span>
+          <div class="vanta-player-loading-problem" hidden>
+            <p class="vanta-player-loading-problem-text"></p>
+            <div class="vanta-player-loading-problem-actions">
+              <button type="button" class="vanta-player-loading-retry">Erneut versuchen</button>
+              <button type="button" class="vanta-player-loading-leave">Zurück</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -209,6 +216,11 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
     backButton: root.querySelector('.vanta-player-back'),
     loading: root.querySelector('.vanta-player-loading'),
     loadingStatus: root.querySelector('.vanta-player-loading-status'),
+    loadingLabel: root.querySelector('.vanta-player-loading-label'),
+    loadingProblem: root.querySelector('.vanta-player-loading-problem'),
+    loadingProblemText: root.querySelector('.vanta-player-loading-problem-text'),
+    loadingRetry: root.querySelector('.vanta-player-loading-retry'),
+    loadingLeave: root.querySelector('.vanta-player-loading-leave'),
     inlineLoading: root.querySelector('.vanta-player-inline-loading'),
     inlineLabel: root.querySelector('.vanta-player-inline-label'),
     loadingProgress: root.querySelector('.vanta-player-loading-progress'),

@@ -186,3 +186,60 @@
 @keyframes vanta-player-spin {
   to { transform: rotate(360deg); }
 }
+
+/* A failed or far too slow start: the reason and two ways on. */
+.vanta-player-loading.has-problem {
+  pointer-events: auto;
+}
+
+.vanta-player-loading.is-failed .vanta-player-spinner,
+.vanta-player-loading.is-failed .vanta-player-loading-progress {
+  display: none;
+}
+
+.vanta-player-loading-problem {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  text-align: center;
+}
+
+.vanta-player-loading-problem[hidden] {
+  display: none;
+}
+
+.vanta-player-loading-problem-text {
+  margin: 0;
+  max-width: 46ch;
+  color: rgb(255 255 255 / 0.78);
+  font: 500 0.88rem/1.45 Outfit, system-ui, sans-serif;
+}
+
+.vanta-player-loading-problem-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.vanta-player-loading-problem-actions button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(255 255 255 / 0.1);
+  font: 650 0.9rem Outfit, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.vanta-player-loading-problem-actions .vanta-player-loading-retry {
+  color: #0b0b0d;
+  background: #fff;
+}
+
+.vanta-player-loading-problem-actions button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}

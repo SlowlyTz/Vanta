@@ -14,7 +14,11 @@ export function bindReporterAndOrientation(context) {
 
   context.isPhone = isSmartphone();
 
-  const loadingCover = createLoadingCover({ dom, getLoadIndicator: () => context.loadIndicator });
+  const loadingCover = createLoadingCover({
+    dom,
+    getLoadIndicator: () => context.loadIndicator,
+    onLeave: () => (context.onBack ? context.onBack() : window.history.back())
+  });
   context.disposers.push(loadingCover.dispose);
   context.setLoading = loadingCover.setVisible;
   context.setLoadingStatus = loadingCover.setStatus;
@@ -34,12 +38,15 @@ export function bindReporterAndOrientation(context) {
   });
   context.disposers.push(() => context.inlineLoading.end());
 
-  context.showError = () => {
+  // A failed start or stream: the cover comes back and says why (it used to
+  // show "Stream wird geladen …" for good, hiding the error).
+  context.showError = (message) => {
     context.sourceSwitch.clearSeekTimer();
     context.inlineLoading.end();
     context.setInlineLoading(false);
     context.ui.setState('buffering');
     context.setLoading(true, 'Stream wird geladen …');
+    loadingCover.showProblem(message || 'Der Stream konnte nicht geladen werden.', { fatal: true });
   };
 
   return context;
