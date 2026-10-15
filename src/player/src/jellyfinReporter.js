@@ -137,8 +137,19 @@ export function createJellyfinReporter({ player, itemId, report }) {
     activeSubtitleStreamIndex = normalizeSubtitleStreamIndex(streamIndex);
   };
 
+  // Left before playback started: the server still holds a slot for this
+  // session. 'cancel' frees it without telling Jellyfin about a stop.
+  const cancel = ({ keepalive = false } = {}) => {
+    if (!playback?.playSessionId || started || stopped) return Promise.resolve();
+    stopped = true;
+    stopTimer();
+    return Promise.resolve(report('cancel', buildPayload(getPosition()), { keepalive })).catch(() => {});
+  };
+
   const stop = async ({ ended = false, keepalive = false } = {}) => {
-    if (stopInProgress || !playback || !started || stopped || pageHideHandled) return;
+    if (stopInProgress || pageHideHandled) return;
+    if (!started) return cancel({ keepalive });
+    if (!playback || stopped) return;
     stopInProgress = true;
     stopTimer();
     await sendWithRetry(ended ? 'ended' : 'stopped', { keepalive });
@@ -158,10 +169,14 @@ export function createJellyfinReporter({ player, itemId, report }) {
   };
 
   const onPageHide = event => {
-    if (pageHideHandled || !started || stopped) return;
+    if (pageHideHandled || stopped) return;
+    const useKeepalive = event.persisted !== false;
+    if (!started) {
+      cancel({ keepalive: useKeepalive });
+      return;
+    }
     pageHideHandled = true;
     stopTimer();
-    const useKeepalive = event.persisted !== false;
     report('stopped', buildPayload(getPosition()), { keepalive: useKeepalive }).catch(() => {});
   };
 

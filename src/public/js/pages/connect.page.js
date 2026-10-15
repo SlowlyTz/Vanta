@@ -2,7 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { AuthApi } from '../api/auth.api.js';
 import { authStore } from '../store/auth.store.js';
 import { appStore } from '../store/app.store.js';
-import { deviceLabel } from '../utils/deviceLabel.js';
+import { deviceLabel } from '../shared/deviceLabel.js';
 import { PageHeading } from '../components/pageHeading.js';
 
 // "vor 2 Min." for a fresh code, otherwise the clock time.

@@ -40,8 +40,8 @@ describe('PlayerPage bootstrap errors', () => {
     document.body.classList.remove('player-active');
   });
 
-  it('shows a dedicated stream-limit message for a STREAM_LIMIT_REACHED failure', async () => {
-    const limitError = new Error('Stream-Limit erreicht. Maximal erlaubt: 1');
+  it('shows the server\'s stream-limit message, which names the device', async () => {
+    const limitError = new Error('Auf deinem Konto läuft schon ein Stream (Chrome auf iPad, seit 3 Min.).');
     limitError.status = 429;
     limitError.code = 'STREAM_LIMIT_REACHED';
     MediaApi.getItem.mockRejectedValue(limitError);
@@ -53,6 +53,19 @@ describe('PlayerPage bootstrap errors', () => {
     expect(overlay).toBeTruthy();
     expect(overlay.classList.contains('vanta-player-stream-limit-error')).toBe(true);
     expect(container.querySelector('.vanta-player-bootstrap-error-title').textContent).toBe('Stream-Limit erreicht');
+    expect(container.querySelector('.vanta-player-bootstrap-error-msg').textContent)
+      .toBe('Auf deinem Konto läuft schon ein Stream (Chrome auf iPad, seit 3 Min.).');
+  });
+
+  it('falls back to a generic stream-limit text without a server message', async () => {
+    const limitError = new Error('');
+    limitError.status = 429;
+    limitError.code = 'STREAM_LIMIT_REACHED';
+    MediaApi.getItem.mockRejectedValue(limitError);
+
+    const container = PlayerPage({ id: 'item-1' });
+    await flush();
+
     expect(container.querySelector('.vanta-player-bootstrap-error-msg').textContent)
       .toBe('Stream-Limit erreicht. Beende einen anderen Stream und versuche es erneut.');
   });
@@ -121,6 +134,38 @@ describe('PlayerPage episode navigation', () => {
 
     replaceStateSpy.mockRestore();
     pushStateSpy.mockRestore();
+  });
+});
+
+describe('PlayerPage leaving while the player loads', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MediaApi.getItem.mockResolvedValue({ Id: 'item-1', Type: 'Movie', Name: 'Test Movie', UserData: {} });
+  });
+
+  afterEach(() => {
+    document.documentElement.classList.remove('player-active');
+    document.body.classList.remove('player-active');
+    window.location.hash = '';
+  });
+
+  it('aborts the mount, so the player is torn down before its first source arrives', async () => {
+    const { mountVantaPlayer } = await import(PLAYER_MODULE_URL);
+    // The first source never arrives (a transcode that has not started).
+    mountVantaPlayer.mockImplementationOnce(() => new Promise(() => {}));
+    window.location.hash = '#/player/item-1';
+
+    PlayerPage({ id: 'item-1' });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await flush();
+
+    const { signal } = mountVantaPlayer.mock.calls.at(-1)[0];
+    expect(signal.aborted).toBe(false);
+
+    window.location.hash = '#/home';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+
+    expect(signal.aborted).toBe(true);
   });
 });
 

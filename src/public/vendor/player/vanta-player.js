@@ -941,29 +941,35 @@ function ht({ player: e, itemId: t, report: n }) {
 		r = e, p = mt(e == null ? void 0 : e.subtitleStreamIndex), a = !1, o = !1, i = !1;
 	}, D = (e) => {
 		p = mt(e);
-	}, O = async ({ ended: e = !1, keepalive: t = !1 } = {}) => {
-		d || !r || !i || a || f || (d = !0, b(), await y(e ? "ended" : "stopped", { keepalive: t }), a = !0, d = !1);
-	}, k = () => {
+	}, O = ({ keepalive: e = !1 } = {}) => !(r != null && r.playSessionId) || i || a ? Promise.resolve() : (a = !0, b(), Promise.resolve(n("cancel", _(g()), { keepalive: e })).catch(() => {})), k = async ({ ended: e = !1, keepalive: t = !1 } = {}) => {
+		if (!(d || f)) {
+			if (!i) return O({ keepalive: t });
+			!r || a || (d = !0, b(), await y(e ? "ended" : "stopped", { keepalive: t }), a = !0, d = !1);
+		}
+	}, A = () => {
 		let t = Number(e.currentTime);
 		Number.isFinite(t) && t >= 0 && (c = t);
-	}, A = () => {
+	}, j = () => {
 		document.hidden && i && !a && y("progress");
-	}, j = (e) => {
-		if (f || !i || a) return;
-		f = !0, b();
+	}, M = (e) => {
+		if (f || a) return;
 		let t = e.persisted !== !1;
-		n("stopped", _(g()), { keepalive: t }).catch(() => {});
-	}, M = () => O({ ended: !0 });
-	return e.addEventListener("time-update", k), e.addEventListener("playing", S), e.addEventListener("pause", C), e.addEventListener("seeked", C), e.addEventListener("ended", M), h(document, "visibilitychange", A), h(window, "pagehide", j, { capture: !0 }), {
+		if (!i) {
+			O({ keepalive: t });
+			return;
+		}
+		f = !0, b(), n("stopped", _(g()), { keepalive: t }).catch(() => {});
+	}, N = () => k({ ended: !0 });
+	return e.addEventListener("time-update", A), e.addEventListener("playing", S), e.addEventListener("pause", C), e.addEventListener("seeked", C), e.addEventListener("ended", N), h(document, "visibilitychange", j), h(window, "pagehide", M, { capture: !0 }), {
 		setPlayback: E,
 		setSubtitleStreamIndex: D,
 		beforeSourceSwitch: w,
 		afterSourceSwitch: T,
-		stop: O,
+		stop: k,
 		getPosition: g,
 		progress: C,
 		destroy: () => {
-			b(), f = !0, e.removeEventListener("time-update", k), e.removeEventListener("playing", S), e.removeEventListener("pause", C), e.removeEventListener("seeked", C), e.removeEventListener("ended", M), m.splice(0).forEach((e) => e());
+			b(), f = !0, e.removeEventListener("time-update", A), e.removeEventListener("playing", S), e.removeEventListener("pause", C), e.removeEventListener("seeked", C), e.removeEventListener("ended", N), m.splice(0).forEach((e) => e());
 		}
 	};
 }
@@ -3939,7 +3945,14 @@ function mi(e, { win: t = window } = {}) {
 }
 //#endregion
 //#region src/player/src/player/lifecycle.js
-async function hi(e) {
+function hi(e, t) {
+	!(t != null && t.playSessionId) || typeof e.reportPlayback != "function" || Promise.resolve(e.reportPlayback("cancel", {
+		itemId: e.itemId,
+		playSessionId: t.playSessionId,
+		positionTicks: 0
+	}, { keepalive: !0 })).catch(() => {});
+}
+async function gi(e) {
 	let { watchParty: t, resumePosition: n } = e, r = !1, i = null;
 	async function a({ position: a = n } = {}) {
 		if (r) return;
@@ -3949,7 +3962,7 @@ async function hi(e) {
 			let n = !(t != null && t.enabled);
 			e.setLoading(!0, "Wiedergabequelle wird beim Server angefragt …");
 			let i = await e.resolvePlayback("auto");
-			e.destroyed || (await e.sourceSwitch.loadPlayback(i, {
+			e.destroyed ? hi(e, i) : (await e.sourceSwitch.loadPlayback(i, {
 				position: a,
 				shouldPlay: n,
 				isBoot: !0
@@ -3977,7 +3990,7 @@ async function hi(e) {
 	} catch {}
 	return e;
 }
-function gi(e) {
+function _i(e) {
 	let { player: t, watchParty: n, isPhone: r, root: i } = e;
 	return {
 		player: t,
@@ -4014,9 +4027,21 @@ function gi(e) {
 }
 //#endregion
 //#region src/player/src/index.js
-async function _i(e) {
+async function vi(e) {
 	let t = await Je(e);
-	return Ke(t), et(t), Pt(t), vt(t), an(t), ar(t), wr(t), Dr(t), Ir(t), Yr(t), ri(t), Gr(t), t.mediaSession = oi(t), t.help = ui(t), $n(t, { loadSegments: t.loadSegments }), jr(t), Mr(t), pi(t), mi(t), await hi(t), gi(t);
+	Ke(t), et(t), Pt(t), vt(t), an(t), ar(t), wr(t), Dr(t), Ir(t), Yr(t), ri(t), Gr(t), t.mediaSession = oi(t), t.help = ui(t), $n(t, { loadSegments: t.loadSegments }), jr(t), Mr(t), pi(t), mi(t);
+	let n = gi(t), r = _i(t), { signal: i } = e, a = null, o = new Promise((e) => {
+		a = () => {
+			r.destroy(), e();
+		};
+	});
+	i != null && i.aborted ? a() : i == null || i.addEventListener("abort", a, { once: !0 });
+	try {
+		await Promise.race([n, o]);
+	} finally {
+		i == null || i.removeEventListener("abort", a);
+	}
+	return r;
 }
 //#endregion
-export { _i as mountVantaPlayer };
+export { vi as mountVantaPlayer };

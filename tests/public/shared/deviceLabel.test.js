@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deviceLabel } from '../../../src/public/js/utils/deviceLabel.js';
+import { deviceLabel } from '../../../src/public/js/shared/deviceLabel.js';
 
 describe('deviceLabel', () => {
   it('names browser and system', () => {

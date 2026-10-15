@@ -2,7 +2,7 @@ import { createElement } from '../../../utils/dom.js';
 import { SessionsApi } from '../../../api/sessions.api.js';
 import { appStore } from '../../../store/app.store.js';
 import { confirmDialog } from '../../confirmDialog.js';
-import { deviceLabel } from '../../../utils/deviceLabel.js';
+import { deviceLabel } from '../../../shared/deviceLabel.js';
 import { settingsCard, settingsNote } from '../controls.js';
 
 const formatDate = (timestamp) => (timestamp

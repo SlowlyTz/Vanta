@@ -2,6 +2,15 @@ import { exitPictureInPicture, exitInlineFullscreen } from '../platform.js';
 import { exitSmartphoneFullscreen } from '../orientation.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 
+function cancelUnusedPlayback(context, playback) {
+  if (!playback?.playSessionId || typeof context.reportPlayback !== 'function') return;
+  Promise.resolve(context.reportPlayback('cancel', {
+    itemId: context.itemId,
+    playSessionId: playback.playSessionId,
+    positionTicks: 0
+  }, { keepalive: true })).catch(() => {});
+}
+
 export async function preparePlayerInitialPlayback(context) {
   const { watchParty, resumePosition } = context;
 
@@ -24,7 +33,10 @@ export async function preparePlayerInitialPlayback(context) {
       const bootShouldPlay = !watchParty?.enabled;
       context.setLoading(true, 'Wiedergabequelle wird beim Server angefragt …');
       const initialPlayback = await context.resolvePlayback('auto');
-      if (!context.destroyed) {
+      if (context.destroyed) {
+        // Left while the server was asked: nobody else knows this session.
+        cancelUnusedPlayback(context, initialPlayback);
+      } else {
         await context.sourceSwitch.loadPlayback(initialPlayback, {
           position,
           shouldPlay: bootShouldPlay,

@@ -19,6 +19,7 @@ export default function PlayerPage({ id }, pageScope) {
   let controller = null;
   let playableId = id;
   let cleaningUp = false;
+  const mountAbort = new AbortController();
   let scrollLockY = 0;
   // Carried over to the next episode: playback without input so far (so
   // "Schaust du noch?" also comes during a long autoplay chain), the sleep
@@ -57,6 +58,8 @@ export default function PlayerPage({ id }, pageScope) {
     if (cleaningUp) return;
     cleaningUp = true;
     window.removeEventListener('hashchange', handleHashChange);
+    // A player still loading its first source has no controller yet.
+    mountAbort.abort();
     try {
       await controller?.destroy();
     } catch (error) {
@@ -114,9 +117,9 @@ export default function PlayerPage({ id }, pageScope) {
     container.innerHTML = '';
     const isStreamLimitError = error.code === 'STREAM_LIMIT_REACHED';
     const title = isStreamLimitError ? 'Stream-Limit erreicht' : 'Ladefehler';
-    const message = isStreamLimitError
-      ? 'Stream-Limit erreicht. Beende einen anderen Stream und versuche es erneut.'
-      : (error.message || 'Der Player konnte nicht geladen werden.');
+    // The server's limit message names the device holding the slot.
+    const message = error.message
+      || (isStreamLimitError ? 'Stream-Limit erreicht. Beende einen anderen Stream und versuche es erneut.' : 'Der Player konnte nicht geladen werden.');
 
     const overlay = createElement('div', {
       className: `vanta-player-bootstrap-error${isStreamLimitError ? ' vanta-player-stream-limit-error' : ''}`
@@ -153,6 +156,7 @@ export default function PlayerPage({ id }, pageScope) {
           }
         }),
         resumePosition,
+        signal: mountAbort.signal,
         onBack: goBack,
         userPreferences: preferencesStore.getState(),
         tvMode: document.documentElement.classList.contains('tv-mode'),

@@ -43,6 +43,7 @@ function createApp() {
       userId: 'user-1',
       accessToken: 'token',
       username: 'alice',
+      deviceId: 'device-1',
       destroy: vi.fn((cb) => cb(null))
     };
     next();
@@ -61,7 +62,7 @@ describe('Playback Routes stream-limit integration', () => {
 
   describe('GET /:id', () => {
     it('reserves a stream session using the resolved playSessionId before responding', async () => {
-      const res = await request(createApp()).get('/item-1');
+      const res = await request(createApp()).get('/item-1').set('User-Agent', 'Test-Agent');
 
       expect(res.status).toBe(200);
       expect(streamSessionService.reserve).toHaveBeenCalledWith({
@@ -69,8 +70,17 @@ describe('Playback Routes stream-limit integration', () => {
         username: 'alice',
         itemId: 'item-1',
         playSessionId: 'jf-session-1',
-        replacesPlaySessionId: null
+        replacesPlaySessionId: null,
+        deviceId: 'device-1',
+        userAgent: 'Test-Agent'
       });
+    });
+
+    it('stops the encodings of sessions the same device gave up', async () => {
+      streamSessionService.reserve.mockReturnValueOnce(['left-before-start']);
+      await request(createApp()).get('/item-1');
+      expect(PlaybackApiService.stopEncoding).toHaveBeenCalledWith('token', 'left-before-start');
+      expect(PlaybackApiService.stopEncoding).not.toHaveBeenCalledWith('token', 'jf-session-1');
     });
 
     it('reicht die Quelle zur gewählten Tonspur an Jellyfin weiter', async () => {
@@ -177,6 +187,7 @@ describe('Playback Routes stream-limit integration', () => {
       const res = await request(createApp()).get('/item-1');
 
       expect(res.status).toBe(429);
+      expect(PlaybackApiService.stopEncoding).not.toHaveBeenCalled();
       expect(res.body).toEqual({
         error: 'Stream-Limit erreicht. Maximal erlaubt: 1',
         code: 'STREAM_LIMIT_REACHED',
@@ -222,6 +233,21 @@ describe('Playback Routes stream-limit integration', () => {
     it('releases the session on a stopped report', async () => {
       await request(createApp()).post('/report/stopped').send(baseBody());
       expect(streamSessionService.release).toHaveBeenCalledWith('user-1', 'jf-session-1');
+    });
+
+    it('releases the slot even when Jellyfin does not take the stop', async () => {
+      PlaybackApiService.reportPlayback.mockRejectedValueOnce(new Error('jellyfin down'));
+      const res = await request(createApp()).post('/report/stopped').send(baseBody());
+      expect(res.status).toBe(502);
+      expect(streamSessionService.release).toHaveBeenCalledWith('user-1', 'jf-session-1');
+    });
+
+    it('cancel frees slot and encoding without reporting to Jellyfin', async () => {
+      const res = await request(createApp()).post('/report/cancel').send(baseBody({ positionTicks: 0 }));
+      expect(res.status).toBe(204);
+      expect(streamSessionService.release).toHaveBeenCalledWith('user-1', 'jf-session-1');
+      expect(PlaybackApiService.stopEncoding).toHaveBeenCalledWith('token', 'jf-session-1');
+      expect(PlaybackApiService.reportPlayback).not.toHaveBeenCalled();
     });
 
     it('releases the session on an ended report', async () => {

@@ -12,13 +12,25 @@ import { isTvDirectPlatform } from '../../services/jellyfin/fields.js';
 import { detectTv } from '../../../public/js/shared/tvDetect.js';
 
 const router = express.Router();
-const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended']);
+// 'cancel': the player was left before playback started. Jellyfin never
+// heard of the session, so it gets no report (a stop would overwrite the
+// resume position); only the slot and the encoding are freed.
+const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended', 'cancel']);
 const PLAY_METHODS = new Set(['DirectPlay', 'DirectStream', 'Transcode']);
 // Every stream goes out as HLS, except to a Samsung or LG TV recognised
 // for sure: those play HEVC, AC3 and MKV themselves (see fields.js) and fall
 // back to HLS in the player when a file does not start.
 const FORCE_HLS_TRANSCODING = true;
 const forcesHls = userAgent => FORCE_HLS_TRANSCODING && !isTvDirectPlatform(detectTv(userAgent).platform);
+
+// Fire and forget: Jellyfin's idle timer ends a job this misses.
+const stopEncodings = (token, playSessionIds = []) => {
+  new Set(playSessionIds.filter(Boolean)).forEach(playSessionId => {
+    PlaybackApiService.stopEncoding(token, playSessionId).catch(error => {
+      console.warn(`[Playback] could not stop the encoding ${playSessionId}:`, error.message);
+    });
+  });
+};
 
 const nullableInteger = value => Number.isInteger(value) ? value : null;
 
@@ -100,14 +112,19 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
 
   try {
     const report = buildPlaybackReport(req.body || {});
+    if (event === 'cancel') {
+      streamSessionService.release(userId, report.PlaySessionId);
+      stopEncodings(accessToken, [report.PlaySessionId]);
+      return res.status(204).end();
+    }
+    // The slot is free even when Jellyfin does not take the report.
+    if (event === 'stopped' || event === 'ended') streamSessionService.release(userId, report.PlaySessionId);
     await PlaybackApiService.reportPlayback(accessToken, event, report);
 
     if (event === 'start') {
       streamSessionService.markStarted(userId, report.PlaySessionId);
     } else if (event === 'progress') {
       streamSessionService.touch(userId, report.PlaySessionId);
-    } else if (event === 'stopped' || event === 'ended') {
-      streamSessionService.release(userId, report.PlaySessionId);
     }
 
     if (event === 'ended') {
@@ -207,10 +224,14 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       audioStreamIndex
     });
 
+    // One login is one device (see stream-session.service.js).
+    const deviceId = req.session.deviceId || req.sessionID || null;
+    let replaced;
     try {
-      streamSessionService.reserve({ userId, username, itemId: id, playSessionId: playback.playSessionId, replacesPlaySessionId });
+      replaced = streamSessionService.reserve({ userId, username, itemId: id, playSessionId: playback.playSessionId, replacesPlaySessionId, deviceId, userAgent });
     } catch (limitError) {
       if (limitError.code === 'STREAM_LIMIT_REACHED') {
+        stopEncodings(accessToken, limitError.replaced);
         return res.status(429).json({
           error: limitError.message,
           code: limitError.code,
@@ -221,13 +242,10 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       throw limitError;
     }
 
-    // Quality, audio track or HLS fallback: the stream being replaced is dead
-    // weight on the Jellyfin server from here on.
-    if (replacesPlaySessionId && replacesPlaySessionId !== playback.playSessionId) {
-      PlaybackApiService.stopEncoding(accessToken, replacesPlaySessionId).catch(error => {
-        console.warn(`[Playback] could not stop the replaced encoding ${replacesPlaySessionId}:`, error.message);
-      });
-    }
+    // Quality, audio track or HLS fallback, or a player this device left
+    // before it started: the streams being replaced are dead weight on the
+    // Jellyfin server from here on.
+    stopEncodings(accessToken, [replacesPlaySessionId, ...(replaced || [])].filter(sessionId => sessionId !== playback.playSessionId));
 
     res.setHeader('Cache-Control', 'no-store');
     return res.json(playback);

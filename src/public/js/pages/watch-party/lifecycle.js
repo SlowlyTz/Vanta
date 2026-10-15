@@ -18,6 +18,8 @@ export function bindLifecycle(ctx) {
     if (ctx.inviteResolveTimer) window.clearTimeout(ctx.inviteResolveTimer);
     ctx.clock.stop();
     ctx.socket?.close();
+    // A player still loading its first source has no controller yet.
+    ctx.mountAborts?.forEach(mountAbort => mountAbort.abort());
     try {
       ctx.controller?.destroy();
     } catch (error) {

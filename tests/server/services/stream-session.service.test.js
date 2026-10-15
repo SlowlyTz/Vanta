@@ -72,7 +72,8 @@ describe('StreamSessionService', () => {
     service.reserve({ userId: 'u1', itemId: 'item-a', playSessionId: 'p1' });
     const released = service.release('u1', 'p1');
 
-    expect(released).toBe(true);
+    expect(released).toMatchObject({ playSessionId: 'p1', state: 'reserved' });
+    expect(service.release('u1', 'p1')).toBeNull();
     expect(service.getActiveCount('u1')).toBe(0);
     expect(() => service.reserve({ userId: 'u1', itemId: 'item-b', playSessionId: 'p2' })).not.toThrow();
   });
@@ -170,5 +171,66 @@ describe('StreamSessionService', () => {
     const { service } = createService(1);
     expect(() => service.reserve({ userId: 'u1', itemId: 'item-a', playSessionId: null }))
       .toThrow(expect.objectContaining({ status: 500 }));
+  });
+
+  describe('one stream per device', () => {
+    const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/155.0 Mobile/15E148 Safari/604.1';
+    const IPAD = 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/155.0 Mobile/15E148 Safari/604.1';
+
+    it('a new title on the same device replaces a session left before it started', () => {
+      const { service, advance } = createService(1);
+      service.reserve({ userId: 'u1', itemId: 'episode-1', playSessionId: 'p1', deviceId: 'phone', userAgent: IPHONE });
+      advance(20_000);
+
+      const replaced = service.reserve({ userId: 'u1', itemId: 'episode-2', playSessionId: 'p2', deviceId: 'phone', userAgent: IPHONE });
+
+      expect(replaced).toEqual(['p1']);
+      expect(service.getActiveCount('u1')).toBe(1);
+      expect(service.sessionsByUser.get('u1').has('p2')).toBe(true);
+    });
+
+    it('also replaces a playing session of the same device', () => {
+      const { service } = createService(1);
+      service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'phone' });
+      service.markStarted('u1', 'p1');
+
+      expect(service.reserve({ userId: 'u1', itemId: 'b', playSessionId: 'p2', deviceId: 'phone' })).toEqual(['p1']);
+    });
+
+    it('keeps blocking another device and names the device holding the slot', () => {
+      const { service, advance } = createService(1);
+      service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'tablet', userAgent: IPAD });
+      service.markStarted('u1', 'p1');
+      for (let i = 0; i < 6; i += 1) {
+        advance(30_000);
+        service.touch('u1', 'p1');
+      }
+
+      let error;
+      try {
+        service.reserve({ userId: 'u1', itemId: 'b', playSessionId: 'p2', deviceId: 'phone', userAgent: IPHONE });
+      } catch (caught) {
+        error = caught;
+      }
+
+      expect(error).toMatchObject({ status: 429, code: 'STREAM_LIMIT_REACHED', limit: 1, activeStreams: 1 });
+      expect(error.message).toBe('Auf deinem Konto läuft schon ein Stream (Chrome auf iPad, seit 3 Min.). Beende ihn dort oder versuche es in einer Minute noch einmal.');
+      expect(service.sessionsByUser.get('u1').has('p1')).toBe(true);
+    });
+
+    it('hands back what the same device gave up even when another device blocks', () => {
+      const { service } = createService(1);
+      service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'tablet' });
+      service.sessionsByUser.get('u1').set('p0', { userId: 'u1', itemId: 'x', playSessionId: 'p0', deviceId: 'phone', state: 'reserved', createdAt: service.now(), updatedAt: service.now() });
+
+      expect(() => service.reserve({ userId: 'u1', itemId: 'b', playSessionId: 'p2', deviceId: 'phone' }))
+        .toThrow(expect.objectContaining({ code: 'STREAM_LIMIT_REACHED', replaced: ['p0'] }));
+    });
+
+    it('says the account may not play when the limit is 0', () => {
+      const { service } = createService(0);
+      expect(() => service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'phone' }))
+        .toThrow('Für dein Konto ist das Abspielen gerade gesperrt.');
+    });
   });
 });

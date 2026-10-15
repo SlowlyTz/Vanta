@@ -54,6 +54,23 @@ export async function mountVantaPlayer(options) {
   bindTimelineWatchdog(context);
   bindStillWatching(context);
   bindAirPlay(context);
-  await preparePlayerInitialPlayback(context);
-  return createPlayerController(context);
+  // `options.signal`: the page was left while the first source loads (that
+  // can take a transcode's start). The controller exists before that wait, so
+  // an abort tears the player down at once instead of after the load.
+  const ready = preparePlayerInitialPlayback(context);
+  const controller = createPlayerController(context);
+  const { signal } = options;
+  let abort = null;
+  // A torn-down source may never report it can play: do not wait for it.
+  const aborted = new Promise(resolve => {
+    abort = () => { controller.destroy(); resolve(); };
+  });
+  if (signal?.aborted) abort();
+  else signal?.addEventListener('abort', abort, { once: true });
+  try {
+    await Promise.race([ready, aborted]);
+  } finally {
+    signal?.removeEventListener('abort', abort);
+  }
+  return controller;
 }

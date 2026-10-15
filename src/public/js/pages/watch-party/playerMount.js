@@ -44,6 +44,8 @@ export function bindPlayerMount(ctx) {
     if (ctx.watchPartyConfig) ctx.watchPartyConfig.phase = phase;
   };
 
+  ctx.mountAborts = new Set();
+
   ctx.mountPlayer = async ({ itemId, positionMs, force = false, phase = 'playback', deferInitialLoad = false }) => {
     if (ctx.destroyed) return;
 
@@ -67,6 +69,8 @@ export function bindPlayerMount(ctx) {
     }
     ctx.setSyncStatus('preparing', 'Wird vorbereitet');
 
+    const mountAbort = new AbortController();
+    ctx.mountAborts.add(mountAbort);
     ctx.mountInFlight = (async () => {
       try {
         const [item, playerModule] = await Promise.all([
@@ -103,7 +107,7 @@ export function bindPlayerMount(ctx) {
           onBanMember: targetUserId => ctx.socket?.sendJson({ type: 'ADMIN_BAN_MEMBER', targetUserId })
         };
 
-        ctx.controller = await playerModule.mountVantaPlayer({
+        const controller = await playerModule.mountVantaPlayer({
           tvMode: document.documentElement.classList.contains('tv-mode'),
           root: ctx.playerMount,
           ...playerMediaOptions(item, itemId, { leave: ctx.goHome }),
@@ -111,6 +115,7 @@ export function bindPlayerMount(ctx) {
           onBack: ctx.goHome,
           watchParty: ctx.watchPartyConfig,
           deferInitialLoad,
+          signal: mountAbort.signal,
           // Fullscreen takes the whole party page along, so notifications,
           // the waiting pill and the other party overlays stay on screen.
           fullscreenTarget: () => ctx.container,
@@ -136,6 +141,9 @@ export function bindPlayerMount(ctx) {
             }
           } : null
         });
+        // Left while it loaded: the player is already torn down.
+        if (mountAbort.signal.aborted) return;
+        ctx.controller = controller;
 
         if (ctx.destroyed) {
           ctx.controller?.destroy();
@@ -155,6 +163,7 @@ export function bindPlayerMount(ctx) {
       await ctx.mountInFlight;
     } finally {
       ctx.mountInFlight = null;
+      ctx.mountAborts.delete(mountAbort);
     }
   };
 
