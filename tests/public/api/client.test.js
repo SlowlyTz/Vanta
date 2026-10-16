@@ -92,6 +92,27 @@ describe('request()', () => {
     window.removeEventListener('vanta:network-error', networkError);
   });
 
+  it('also on browsers without AbortSignal.reason (Chromium 68 on TVs)', async () => {
+    const { createPageScope } = await import('../../../src/public/js/utils/pageScope.js');
+    const reason = Object.getOwnPropertyDescriptor(AbortSignal.prototype, 'reason');
+    // As on Chromium < 98: abort(reason) keeps no reason.
+    Object.defineProperty(AbortSignal.prototype, 'reason', { configurable: true, get: () => undefined });
+    try {
+      const scope = createPageScope();
+      global.fetch = vi.fn((url, { signal }) => new Promise((resolve, reject) => {
+        signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+      }));
+      let settled = false;
+      request('/api/media/home', { signal: scope.signal }).then(() => { settled = true; }, () => { settled = true; });
+      scope.leave();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(scope.signal.reason).toBeUndefined();
+      expect(settled).toBe(false);
+    } finally {
+      Object.defineProperty(AbortSignal.prototype, 'reason', reason);
+    }
+  });
+
   it('passes through code, limit and activeStreams for a 429 stream-limit error', async () => {
     global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({
       status: 429,

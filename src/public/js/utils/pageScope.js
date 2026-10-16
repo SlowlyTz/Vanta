@@ -45,6 +45,9 @@ export function createPageScope() {
     leave() {
       if (left) return;
       left = true;
+      // Chromium before 98 (TVs) drops the abort reason: the signal carries
+      // its own mark, which api/client.js checks as well.
+      controller.signal.vantaPageLeft = true;
       controller.abort(PAGE_LEFT);
       for (const cleanup of cleanups.splice(0).reverse()) {
         try {
