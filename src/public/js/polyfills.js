@@ -17,6 +17,14 @@ const replaceChildren = function replaceChildren(...nodes) {
 };
 define(Element.prototype, 'replaceChildren', replaceChildren);
 define(DocumentFragment.prototype, 'replaceChildren', replaceChildren);
+
+// Chromium 69+.
+define(Element.prototype, 'toggleAttribute', function toggleAttribute(name, force) {
+  const on = force === undefined ? !this.hasAttribute(name) : Boolean(force);
+  if (on) this.setAttribute(name, '');
+  else this.removeAttribute(name);
+  return on;
+});
 define(Document.prototype, 'replaceChildren', replaceChildren);
 
 define(String.prototype, 'replaceAll', function replaceAll(search, replacement) {

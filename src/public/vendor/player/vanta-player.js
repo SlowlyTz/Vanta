@@ -3237,7 +3237,7 @@ function Ir(e) {
 		forward: null
 	}, c = () => {
 		let e = !!t.paused;
-		i.toggleAttribute("data-paused", e), n.playButtons.forEach((t) => {
+		e ? i.setAttribute("data-paused", "") : i.removeAttribute("data-paused"), n.playButtons.forEach((t) => {
 			t.dataset.state = e ? "paused" : "playing", t.setAttribute("aria-label", e ? "Wiedergabe" : "Pause"), t.title = e ? "Wiedergabe (K)" : "Pause (K)";
 		});
 	}, l = (e, t, r = null) => {

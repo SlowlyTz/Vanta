@@ -33,7 +33,9 @@ export function bindTransportControls(context) {
 
   const syncPlayState = () => {
     const paused = Boolean(player.paused);
-    root.toggleAttribute('data-paused', paused);
+    // No toggleAttribute: Chromium 68 (webOS 5) lacks it.
+    if (paused) root.setAttribute('data-paused', '');
+    else root.removeAttribute('data-paused');
     dom.playButtons.forEach(button => {
       button.dataset.state = paused ? 'paused' : 'playing';
       button.setAttribute('aria-label', paused ? 'Wiedergabe' : 'Pause');
