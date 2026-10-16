@@ -35,7 +35,7 @@ Jellyfin calls time out (15 s; PlaybackInfo and images 30 s; sync 60 s) and use 
 
 ### Catalogue mirror
 
-Browsing (home, library, genres, publishers, search, scroller) reads `db/catalog.db`, not Jellyfin. The sync (`services/catalog/`) authenticates with `JELLYFIN_API_KEY`: an update run every 10 min adds and changes titles, a daily full run also removes. Per-user library access is applied on every read. Item details, playback, resume state and favourites stay live. With an empty mirror the routes fall back to live queries. `npm run refresh [-- --full]` triggers a run on the running server or syncs alone.
+Browsing (home, library, genres, publishers, search, scroller) reads `db/catalog.db`, not Jellyfin. The sync (`services/catalog/`) authenticates with `JELLYFIN_API_KEY`: an update run every 10 min adds and changes titles, a daily full run also removes (while an update runs it is tried again every 10 min, up to 10 times, then the admins are notified). Per-user library access and Jellyfin's parental control (`MaxParentalRating`, `BlockUnratedItems`; `catalog/age-limit.js`) are applied on every read and to images. Item details, playback, resume state and favourites stay live. With an empty mirror the routes fall back to live queries. `npm run refresh [-- --full]` triggers a run on the running server or syncs alone.
 
 ### Images
 
@@ -43,7 +43,7 @@ Browsing (home, library, genres, publishers, search, scroller) reads `db/catalog
 
 ### Playback
 
-`/api/media/playback/:id` asks Jellyfin for PlaybackInfo with a device profile and returns either a direct file or an HLS playlist; both are proxied, so the token never reaches the browser. Tizen/webOS get a profile with HEVC, AC3/E-AC3 and MKV. Each start counts against the user's stream limit (`stream-session.service.js`); switching audio, quality or to HLS names the session it replaces. Progress is reported to Jellyfin.
+`/api/media/playback/:id` asks Jellyfin for PlaybackInfo with a device profile and returns either a direct file or an HLS playlist; both are proxied, so the token never reaches the browser. Tizen/webOS get a profile with HEVC, AC3/E-AC3 and MKV. Each open player counts against the user's stream limit (`stream-session.service.js`), paused too (it reports every 10 s); one device holds one stream, so a new start replaces that device's older sessions, and a player left before it started cancels its session. A stream without reports for 90 s is gone. Progress is reported to Jellyfin.
 
 ### Storage
 

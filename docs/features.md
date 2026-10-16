@@ -4,7 +4,7 @@
 
 Jellyfin checks the password; VANTA keeps the token in the session and gives each login its own device id, so Jellyfin keeps browsers apart. The session cookie lasts for the browser session unless „Angemeldet bleiben“ is ticked.
 
-Wrong passwords: three per username and address lock for a minute, each further three double it up to 24 h; 20 usernames from one address lock the address. A ban (Admin → Benutzer) ends all sessions, revokes the Jellyfin tokens and closes the user's sockets at once.
+Wrong passwords: three per username and address lock for a minute, each further three double it up to 24 h; 20 usernames from one address lock the address. A ban or a deletion (Admin → Benutzer) ends all sessions, revokes the Jellyfin tokens and closes the user's sockets at once; the login page says why. Accounts deleted in Jellyfin itself are signed out after the next catalogue run.
 
 ## Player
 
@@ -16,6 +16,8 @@ Wrong passwords: three per username and address lock for a minute, each further 
 ## Watch party
 
 Up to four people. The server holds one timeline: position, playing, the server time it was anchored at, and a sequence number.
+
+A party lives as long as anyone is connected, the owner or not; nobody connected for 5 min and it is over (the owner can also end it). The watch-party dialog offers „Weiterschauen“ for each live party the user was in, next to „Neue Watch Party starten“.
 
 - Clients measure their clock offset with `TIME_PING`/`TIME_PONG` (lowest round trip wins, every 30 s).
 - Admin play/pause/seek becomes a `TIMELINE` message; old sequence numbers are dropped.
@@ -66,7 +68,7 @@ Requests search TMDB for movies, series, seasons or single episodes; the cross-c
 
 ## Trailer scroller
 
-YouTube trailers from Jellyfin metadata. Only the slide in view has a player. Videos YouTube no longer plays are filtered by its oEmbed answer, cached for a day.
+YouTube trailers from Jellyfin metadata, with „Meine Liste“, details and share. Only the slide in view has a player. Videos YouTube no longer plays are filtered by its oEmbed answer, cached for a day.
 
 ## Smaller pieces
 
