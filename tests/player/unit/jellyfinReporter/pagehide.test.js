@@ -57,3 +57,34 @@ describe('createJellyfinReporter · closing and coming back', () => {
     reporter.destroy();
   });
 });
+
+describe('createJellyfinReporter · watching again after the end', () => {
+  beforeEach(() => setupGlobals());
+  afterEach(() => restoreGlobals());
+
+  it('a rewatch starts anew and its progress and stop are reported', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 100, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: event => { reports.push(event); return Promise.resolve(); }
+    });
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    player.dispatchEvent({ type: 'ended' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    player.currentTime = 5;
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    player.currentTime = 40;
+    player.dispatchEvent({ type: 'pause' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await reporter.stop();
+
+    expect(reports).toEqual(['start', 'ended', 'start', 'progress', 'stopped']);
+    reporter.destroy();
+  });
+});

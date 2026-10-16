@@ -889,12 +889,12 @@ function ut(e, t, n = 0) {
 //#region src/player/src/jellyfinReporter.js
 var dt = 1e4, ft = 3, pt = 50, mt = (e) => Number.isInteger(e) && e >= 0 ? e : null;
 function ht({ player: e, itemId: t, report: n }) {
-	let r = null, i = !1, a = !1, o = !1, s = null, c = 0, l = -1, u = 0, d = !1, f = !1, p = null, m = [], h = (e, t, n, r) => {
-		e.addEventListener(t, n, r), m.push(() => e.removeEventListener(t, n, r));
-	}, g = () => {
+	let r = null, i = !1, a = !1, o = !1, s = null, c = 0, l = -1, u = 0, d = !1, f = !1, p = null, m = null, h = [], g = (e, t, n, r) => {
+		e.addEventListener(t, n, r), h.push(() => e.removeEventListener(t, n, r));
+	}, _ = () => {
 		let t = Number(e.currentTime);
 		return Number.isFinite(t) && t >= 0 && (c = t), c;
-	}, _ = (n = g()) => {
+	}, v = (n = _()) => {
 		var i;
 		return {
 			itemId: t,
@@ -908,12 +908,12 @@ function ht({ player: e, itemId: t, report: n }) {
 			playMethod: (r == null ? void 0 : r.playMethod) || (r != null && r.isTranscoded ? "Transcode" : "DirectPlay"),
 			canSeek: !0,
 			audioStreamIndex: (i = r == null ? void 0 : r.audioStreamIndex) == null ? null : i,
-			subtitleStreamIndex: p
+			subtitleStreamIndex: m
 		};
-	}, v = (e) => e === l ? !1 : e < l ? e > 0 || l === 0 : !0, y = async (e, t = {}) => {
+	}, y = (e) => e === l ? !1 : e < l ? e > 0 || l === 0 : !0, b = async (e, t = {}) => {
 		if (!(r != null && r.playSessionId) || a && e !== "start" && e !== "ended") return;
-		let i = _(t.position);
-		if (e === "progress" && !v(i.positionTicks)) return;
+		let i = v(t.position);
+		if (e === "progress" && !y(i.positionTicks)) return;
 		let o = async () => {
 			try {
 				await n(e, i, t), l = i.positionTicks, u = 0;
@@ -923,55 +923,55 @@ function ht({ player: e, itemId: t, report: n }) {
 			}
 		};
 		return o();
-	}, b = () => {
-		s && (clearInterval(s), s = null);
 	}, x = () => {
-		b(), s = setInterval(() => {
-			!e.paused && !o && y("progress");
+		s && (clearInterval(s), s = null);
+	}, S = () => {
+		x(), s = setInterval(() => {
+			!e.paused && !o && b("progress");
 		}, dt);
-	}, S = async () => {
-		!r || o || (i ? await y("progress") : (a = !1, i = !0, await y("start")), x());
 	}, C = async () => {
-		!r || o || !i || await y("progress");
+		!r || o || f || (!i || a && p !== null ? (a = !1, i = !0, p = null, await b("start")) : await b("progress"), S());
 	}, w = async () => {
-		o = !0, b(), i && !a && await y("progress");
-	}, T = () => {
+		!r || o || !i || await b("progress");
+	}, T = async () => {
+		o = !0, x(), i && !a && await b("progress");
+	}, E = () => {
 		o = !1, a = !1;
-	}, E = (e) => {
-		r = e, p = mt(e == null ? void 0 : e.subtitleStreamIndex), a = !1, o = !1, i = !1;
 	}, D = (e) => {
-		p = mt(e);
-	}, O = ({ keepalive: e = !1 } = {}) => !(r != null && r.playSessionId) || i || a ? Promise.resolve() : (a = !0, b(), Promise.resolve(n("cancel", _(g()), { keepalive: e })).catch(() => {})), k = async ({ ended: e = !1, keepalive: t = !1 } = {}) => {
+		r = e, p = null, m = mt(e == null ? void 0 : e.subtitleStreamIndex), a = !1, o = !1, i = !1;
+	}, O = (e) => {
+		m = mt(e);
+	}, k = ({ keepalive: e = !1 } = {}) => !(r != null && r.playSessionId) || i || a ? Promise.resolve() : (a = !0, x(), Promise.resolve(n("cancel", v(_()), { keepalive: e })).catch(() => {})), A = async ({ ended: e = !1, keepalive: t = !1 } = {}) => {
 		if (!(d || f)) {
-			if (!i) return O({ keepalive: t });
-			!r || a || (d = !0, b(), await y(e ? "ended" : "stopped", { keepalive: t }), a = !0, d = !1);
+			if (!i) return k({ keepalive: t });
+			!r || a || (d = !0, x(), await b(e ? "ended" : "stopped", { keepalive: t }), a = !0, d = !1);
 		}
-	}, A = () => {
+	}, j = () => {
 		let t = Number(e.currentTime);
 		Number.isFinite(t) && t >= 0 && (c = t);
-	}, j = () => {
-		document.hidden && i && !a && y("progress");
 	}, M = () => {
+		document.hidden && i && !a && b("progress");
+	}, N = () => {
 		if (!(f || a)) {
 			if (!i) {
-				O({ keepalive: !0 });
+				k({ keepalive: !0 });
 				return;
 			}
-			f = !0, b(), n("stopped", _(g()), { keepalive: !0 }).catch(() => {});
+			f = !0, x(), n("stopped", v(_()), { keepalive: !0 }).catch(() => {});
 		}
-	}, N = (t) => {
-		!t.persisted || !f || (f = !1, i = !1, a = !1, e.paused || S());
-	}, P = () => k({ ended: !0 });
-	return e.addEventListener("time-update", A), e.addEventListener("playing", S), e.addEventListener("pause", C), e.addEventListener("seeked", C), e.addEventListener("ended", P), h(document, "visibilitychange", j), h(window, "pagehide", M, { capture: !0 }), h(window, "pageshow", N, { capture: !0 }), {
-		setPlayback: E,
-		setSubtitleStreamIndex: D,
-		beforeSourceSwitch: w,
-		afterSourceSwitch: T,
-		stop: k,
-		getPosition: g,
-		progress: C,
+	}, P = (t) => {
+		!t.persisted || !f || (f = !1, i = !1, a = !1, e.paused || C());
+	}, F = () => (p = Date.now(), A({ ended: !0 }));
+	return e.addEventListener("time-update", j), e.addEventListener("playing", C), e.addEventListener("pause", w), e.addEventListener("seeked", w), e.addEventListener("ended", F), g(document, "visibilitychange", M), g(window, "pagehide", N, { capture: !0 }), g(window, "pageshow", P, { capture: !0 }), {
+		setPlayback: D,
+		setSubtitleStreamIndex: O,
+		beforeSourceSwitch: T,
+		afterSourceSwitch: E,
+		stop: A,
+		getPosition: _,
+		progress: w,
 		destroy: () => {
-			b(), f = !0, e.removeEventListener("time-update", A), e.removeEventListener("playing", S), e.removeEventListener("pause", C), e.removeEventListener("seeked", C), e.removeEventListener("ended", P), m.splice(0).forEach((e) => e());
+			x(), f = !0, e.removeEventListener("time-update", j), e.removeEventListener("playing", C), e.removeEventListener("pause", w), e.removeEventListener("seeked", w), e.removeEventListener("ended", F), h.splice(0).forEach((e) => e());
 		}
 	};
 }

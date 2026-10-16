@@ -18,6 +18,8 @@ export function createJellyfinReporter({ player, itemId, report }) {
   let retryCount = 0;
   let stopInProgress = false;
   let pageHideHandled = false;
+  // Set when the video played to its end; a 'playing' after it starts anew.
+  let endedAt = null;
   let activeSubtitleStreamIndex = null;
 
   const globalListeners = [];
@@ -96,10 +98,13 @@ export function createJellyfinReporter({ player, itemId, report }) {
   };
 
   const start = async () => {
-    if (!playback || switching) return;
-    if (!started) {
+    if (!playback || switching || pageHideHandled) return;
+    // Not started yet, or played again after the end (which reported
+    // 'ended'): a fresh start, so the rewatch is saved like any playback.
+    if (!started || (stopped && endedAt !== null)) {
       stopped = false;
       started = true;
+      endedAt = null;
       await sendWithRetry('start');
     } else {
       await sendWithRetry('progress');
@@ -127,6 +132,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
 
   const setPlayback = nextPlayback => {
     playback = nextPlayback;
+    endedAt = null;
     activeSubtitleStreamIndex = normalizeSubtitleStreamIndex(nextPlayback?.subtitleStreamIndex);
     stopped = false;
     switching = false;
@@ -192,7 +198,10 @@ export function createJellyfinReporter({ player, itemId, report }) {
     if (!player.paused) start();
   };
 
-  const onEnded = () => stop({ ended: true });
+  const onEnded = () => {
+    endedAt = Date.now();
+    return stop({ ended: true });
+  };
 
   player.addEventListener('time-update', onTimeUpdate);
   player.addEventListener('playing', start);
