@@ -128,9 +128,9 @@ describe('normalizeTrailer', () => {
       rating: 8.5,
       criticRating: 91,
       youtubeVideoId: 'dQw4w9WgXcQ',
-      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      isFavorite: true
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
     });
+    expect(trailer).not.toHaveProperty('isFavorite');
     expect(trailer.primaryImageTag).toBe('primary-tag');
     expect(trailer.backdropImageTag).toBe('backdrop-tag');
     expect(trailer.backdropUrl).toBeNull();

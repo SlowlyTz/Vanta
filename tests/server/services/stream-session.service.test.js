@@ -103,12 +103,14 @@ describe('StreamSessionService', () => {
     expect(() => service.reserve({ userId: 'u1', itemId: 'item-b', playSessionId: 'p2' })).not.toThrow();
   });
 
-  it('TTL cleans up a hung playing session after the shorter active TTL', () => {
+  it('TTL cleans up a hung playing session after the active TTL', () => {
     const { service, advance } = createService(1);
 
     service.reserve({ userId: 'u1', itemId: 'item-a', playSessionId: 'p1' });
     service.markStarted('u1', 'p1');
-    advance(46_000);
+    advance(60_000);
+    expect(service.getActiveCount('u1')).toBe(1);
+    advance(31_000);
 
     expect(service.getActiveCount('u1')).toBe(0);
   });
@@ -231,6 +233,36 @@ describe('StreamSessionService', () => {
       const { service } = createService(0);
       expect(() => service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'phone' }))
         .toThrow('Für dein Konto ist das Abspielen gerade gesperrt.');
+    });
+  });
+
+  describe('an open player counts until it is closed', () => {
+    it('a paused player that keeps reporting holds its slot for good', () => {
+      const { service, advance } = createService(1);
+      service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'tv' });
+      service.markStarted('u1', 'p1');
+      for (let i = 0; i < 30; i += 1) {
+        advance(10_000);
+        service.touch('u1', 'p1');
+      }
+      expect(() => service.reserve({ userId: 'u1', itemId: 'b', playSessionId: 'p2', deviceId: 'phone' }))
+        .toThrow(expect.objectContaining({ code: 'STREAM_LIMIT_REACHED' }));
+      service.release('u1', 'p1');
+      expect(service.getActiveCount('u1')).toBe(0);
+    });
+
+    it('a stream the server lost track of is counted again, unless the limit is full', () => {
+      const { service, advance } = createService(1);
+      service.reserve({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'tv' });
+      advance(120_000);
+      expect(service.getActiveCount('u1')).toBe(0);
+      service.resume({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'tv' });
+      expect(service.sessionsByUser.get('u1').get('p1').state).toBe('playing');
+
+      service.release('u1', 'p1');
+      service.reserve({ userId: 'u1', itemId: 'b', playSessionId: 'p2', deviceId: 'phone' });
+      expect(() => service.resume({ userId: 'u1', itemId: 'a', playSessionId: 'p1', deviceId: 'tv' }))
+        .toThrow(expect.objectContaining({ code: 'STREAM_LIMIT_REACHED' }));
     });
   });
 });

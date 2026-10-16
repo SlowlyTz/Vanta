@@ -134,41 +134,8 @@ describe('Watch party routes', () => {
     });
   });
 
-  describe('GET /resumable', () => {
-    it('liefert die letzte beendete Party des Owners', async () => {
-      WatchPartyService.getResumableForOwner.mockReturnValue({ originalPartyId: 'party-1', finalPositionMs: 1000 });
-
-      const res = await request(createApp()).get('/resumable');
-
-      expect(res.status).toBe(200);
-      expect(res.body.party).toMatchObject({ originalPartyId: 'party-1' });
-    });
-
-    it('liefert null, wenn keine fortsetzbare Party existiert', async () => {
-      WatchPartyService.getResumableForOwner.mockReturnValue(null);
-
-      const res = await request(createApp()).get('/resumable');
-
-      expect(res.status).toBe(200);
-      expect(res.body.party).toBeNull();
-    });
-  });
-
-  describe('POST /resume', () => {
-    it('erzeugt eine neue Party aus dem Snapshot', async () => {
-      WatchPartyService.resumeEndedParty.mockReturnValue({ id: 'party-2', ownerUserId: 'user-1' });
-
-      const res = await request(createApp()).post('/resume').send({ originalPartyId: 'party-1' });
-
-      expect(res.status).toBe(201);
-      expect(res.body.party.id).toBe('party-2');
-      expect(res.body.inviteUrl).toBe('/#/watch-party/party-2');
-    });
-
-    it('returns 400 ohne originalPartyId', async () => {
-      const res = await request(createApp()).post('/resume').send({});
-      expect(res.status).toBe(400);
-    });
+  it('kennt kein Fortsetzen beendeter Partys mehr', async () => {
+    expect((await request(createApp()).get('/resumable')).status).toBe(404);
   });
 
   describe('POST /:partyId/join', () => {

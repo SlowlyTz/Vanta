@@ -72,6 +72,26 @@ describe('HomePage restore', () => {
     container.remove();
   });
 
+  it('returning after watching: the page comes back, "Weiter schauen" comes fresh', async () => {
+    saveRouteState('#/home', { data: { hero: [], resume: [makeItem('old')], sections: [] }, savedAt: Date.now() - 1000 });
+    markReturnFromDetail({ scrollY: 0, itemId: 'old' });
+    window.location.hash = '#/player/old';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    window.location.hash = '#/home';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    MediaApi.getHome.mockResolvedValue({ movies: [], series: [], resume: [makeItem('next')] });
+
+    const container = HomePage();
+    document.body.appendChild(container);
+    await flushPromises(10);
+
+    expect(MediaApi.getHome).toHaveBeenCalledTimes(1);
+    expect(MediaApi.getHomeSectionGroup).not.toHaveBeenCalled();
+    const ids = [...container.querySelectorAll('[data-resume-row] [data-item-id]')].map(card => card.dataset.itemId);
+    expect(ids).toEqual(['next']);
+    container.remove();
+  });
+
   it('falls back to a fresh fetch when a marker exists but no data is cached', async () => {
     markReturnFromDetail({ scrollY: 100, itemId: 'a' });
     MediaApi.getHome.mockResolvedValue({ movies: [makeItem('x')], series: [], resume: [] });

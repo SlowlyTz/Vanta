@@ -1,9 +1,12 @@
-/* Resume-vs-new choice */
+/* The dialog's first choice: Weiterschauen or a new party */
 
 .watch-party-choice-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .watch-party-choice-button {

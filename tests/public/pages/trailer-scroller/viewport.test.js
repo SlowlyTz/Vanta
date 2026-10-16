@@ -54,3 +54,32 @@ describe('createScrollerViewportLock', () => {
     expect(fakeWindow.scrollTo).toHaveBeenCalledWith(0, 400);
   });
 });
+
+describe('createScrollerViewportLock and #app', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+    document.documentElement.classList.remove('trailer-scroller-active');
+    document.body.classList.remove('trailer-scroller-active');
+  });
+
+  it('starts at the top, stays there while the focus moves, and keeps the footer out of reach', () => {
+    document.body.innerHTML = '<div id="app"><main></main><footer class="app-footer"><a href="#/home">VANTA</a></footer></div>';
+    const app = document.getElementById('app');
+    app.scrollTop = 134;
+    const lock = createScrollerViewportLock({ scrollY: 0, scrollTo: vi.fn() }, document);
+
+    lock.lock();
+    expect(app.scrollTop).toBe(0);
+    expect(document.querySelector('.app-footer').inert).toBe(true);
+
+    app.scrollTop = 80;
+    app.dispatchEvent(new Event('scroll'));
+    expect(app.scrollTop).toBe(0);
+
+    lock.unlock();
+    expect(document.querySelector('.app-footer').inert).toBe(false);
+    app.scrollTop = 50;
+    app.dispatchEvent(new Event('scroll'));
+    expect(app.scrollTop).toBe(50);
+  });
+});

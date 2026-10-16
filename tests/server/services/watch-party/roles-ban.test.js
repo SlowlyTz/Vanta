@@ -22,7 +22,6 @@ import { movieItem, createTestParty, joinAsViewer } from './helpers.js';
 describe('WatchPartyService · Rollen und Ban', () => {
   beforeEach(() => {
     WatchPartyService.parties.clear();
-    WatchPartyService.endedPartiesByOwner.clear();
     vi.clearAllMocks();
     ItemsService.getItemDetails.mockResolvedValue(movieItem());
   });

@@ -1,8 +1,10 @@
 import { jellyfinJson, deviceIdForToken, SHARED_DEVICE_ID } from '../jellyfin/client.js';
 import { ItemsService } from '../jellyfin/items.service.js';
+import { setBounded } from '../../utils/boundedMap.js';
 
 const ITEM_CACHE_TTL_MS = 10 * 60 * 1000;
 const TICKS_PER_MS = 10_000;
+const ITEM_CACHE_MAX = 500;
 const itemCache = new Map();
 
 function videoFrameRate(item) {
@@ -20,7 +22,7 @@ async function itemTiming(userId, token, itemId, now) {
     runtimeMs: Number(item?.RunTimeTicks) > 0 ? Math.round(Number(item.RunTimeTicks) / TICKS_PER_MS) : null,
     sourceFps: videoFrameRate(item)
   };
-  itemCache.set(itemId, { value, expiresAt: now + ITEM_CACHE_TTL_MS });
+  setBounded(itemCache, itemId, { value, expiresAt: now + ITEM_CACHE_TTL_MS }, { max: ITEM_CACHE_MAX, isExpired: entry => entry.expiresAt <= now });
   return value;
 }
 

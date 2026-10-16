@@ -148,7 +148,12 @@ export function createAdminCatalogPage() {
     try {
       const status = await run();
       applyStatus({ ...status, running: true });
-      setMessage(status.started ? `${label} gestartet.` : 'Es läuft bereits ein Abgleich.', 'success');
+      const text = status.started
+        ? `${label} gestartet.`
+        : status.queued
+          ? 'Gerade läuft eine Aktualisierung. Der vollständige Abgleich startet danach (spätestens in 10 Minuten).'
+          : 'Es läuft bereits ein Abgleich.';
+      setMessage(text, 'success');
     } catch (error) {
       setMessage(error.message || `${label} konnte nicht gestartet werden.`, 'error');
     } finally {

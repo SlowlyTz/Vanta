@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   createInitialState,
   mergeTrailerPage,
-  markTrailerFavorite,
   shouldLoadMore,
   clampIndex,
   setActiveIndex,
@@ -96,22 +95,6 @@ describe('mergeTrailerPage', () => {
 
     expect(state.trailers).toHaveLength(2);
     expect(state.hasMore).toBe(false);
-  });
-});
-
-describe('markTrailerFavorite', () => {
-  it('updates isFavorite for all trailers with matching itemId', () => {
-    let state = createInitialState();
-    state = mergeTrailerPage(state, {
-      items: [createTrailer('1', { itemId: 'abc' }), createTrailer('2', { itemId: 'def' })],
-      nextCursor: '2',
-      hasMore: false
-    });
-
-    state = markTrailerFavorite(state, 'abc', true);
-
-    expect(state.trailers[0].isFavorite).toBe(true);
-    expect(state.trailers[1].isFavorite).toBe(false);
   });
 });
 

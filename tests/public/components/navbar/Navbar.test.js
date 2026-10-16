@@ -337,4 +337,56 @@ describe('Navbar · notification dots', () => {
     expect(document.querySelector('.mobile-drawer-settings .mobile-drawer-dot').hidden).toBe(true);
     document.body.innerHTML = '';
   });
+
+  describe('drawer and history', () => {
+    const open = (navbar) => {
+      navbar.element.querySelector('.mobile-menu-button').click();
+      expect(document.body.classList.contains('mobile-nav-open')).toBe(true);
+    };
+
+    it('Back closes the open drawer instead of leaving the page', () => {
+      stubMatchMedia(false);
+      const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+      const push = vi.spyOn(window.history, 'pushState');
+      open(navbar);
+      expect(push).toHaveBeenCalledWith({ vantaMobileNav: true }, '');
+
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      expect(document.body.classList.contains('mobile-nav-open')).toBe(false);
+      push.mockRestore();
+    });
+
+    it('closing the drawer takes its history step back; a page change closes it too', () => {
+      stubMatchMedia(false);
+      const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+      const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+      open(navbar);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(back).toHaveBeenCalledTimes(1);
+
+      open(navbar);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+      expect(document.body.classList.contains('mobile-nav-open')).toBe(false);
+      back.mockRestore();
+    });
+
+    it('a link in the drawer goes to its page without bouncing back', async () => {
+      stubMatchMedia(false);
+      window.location.hash = '#/home';
+      const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+      const back = vi.spyOn(window.history, 'back').mockImplementation(() => {
+        window.setTimeout(() => window.dispatchEvent(new PopStateEvent('popstate')), 0);
+      });
+      open(navbar);
+      document.querySelector('#mobile-navigation a[href="#/profile"]').click();
+      expect(back).toHaveBeenCalledTimes(1);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(window.location.hash).toBe('#/profile');
+      expect(document.body.classList.contains('mobile-nav-open')).toBe(false);
+      await new Promise(resolve => setTimeout(resolve, 350));
+      expect(window.location.hash).toBe('#/profile');
+      back.mockRestore();
+      window.location.hash = '';
+    });
+  });
 });

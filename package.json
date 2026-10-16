@@ -1,6 +1,6 @@
 {
   "name": "jellyfin-client",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "VANTA, a web client for Jellyfin",
   "main": "server.js",
   "type": "module",

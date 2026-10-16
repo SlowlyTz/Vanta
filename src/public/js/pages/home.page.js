@@ -15,6 +15,7 @@ import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { whenConnected } from '../utils/whenConnected.js';
 import { preferencesStore } from '../store/preferences.store.js';
 import { createIdleWatch, startScreensaver } from '../components/screensaver.js';
+import { lastPlayerLeftAt } from '../utils/cardUserData.js';
 
 const HOME_ROUTE = '#/home';
 const HOME_SECTION_GROUPS = [
@@ -69,6 +70,35 @@ export default function HomePage(params, pageScope) {
     });
   };
 
+  // The resume row of a home page shown from its saved state, swapped for
+  // what the server says now; the focus stays on its title if it is still
+  // there.
+  const refreshResumeRow = async () => {
+    let raw;
+    try {
+      raw = await MediaApi.getHome({ signal });
+    } catch {
+      return;
+    }
+    if (!currentData || !sectionsContainer?.isConnected) return;
+    const resume = (raw.resume || []).filter(item => !hiddenResumeIds.has(item.Id));
+    currentData = { ...currentData, resume };
+    saveRouteState(HOME_ROUTE, { ...(getRouteState(HOME_ROUTE) || {}), data: currentData, savedAt: Date.now() });
+
+    const old = sectionsContainer.querySelector('[data-resume-row]');
+    const focusedId = old?.contains(document.activeElement) ? document.activeElement.closest('[data-item-id]')?.dataset.itemId : null;
+    const fresh = resume.length > 0
+      ? MediaCarousel({ title: 'Weiter schauen', items: resume, landscape: true, resumeRow: true })
+      : null;
+    if (old && fresh) old.replaceWith(fresh);
+    else if (old) old.remove();
+    else if (fresh) sectionsContainer.prepend(fresh);
+    if (focusedId) {
+      const target = fresh?.querySelector(`[data-item-id="${CSS.escape(focusedId)}"]`) || fresh?.querySelector('[data-item-id]');
+      target?.focus({ preventScroll: true });
+    }
+  };
+
   const loadData = async () => {
     const restoreTarget = pendingRestore;
     pendingRestore = null;
@@ -87,6 +117,8 @@ export default function HomePage(params, pageScope) {
         saveRouteState(HOME_ROUTE, { ...cached, data });
         renderHome(data);
         restoreScrollPosition(restoreTarget);
+        // Watched something since: "Weiter schauen" comes fresh.
+        if (lastPlayerLeftAt() > (cached.savedAt || 0)) refreshResumeRow();
         return;
       }
     }
@@ -116,7 +148,7 @@ export default function HomePage(params, pageScope) {
 
       currentData = data;
       renderHome(data, { showSectionLoaders: true });
-      saveRouteState(HOME_ROUTE, { data });
+      saveRouteState(HOME_ROUTE, { data, savedAt: Date.now() });
       loadSectionGroups();
     } catch (error) {
       if (error.isAuthError) return;
@@ -184,7 +216,7 @@ export default function HomePage(params, pageScope) {
     if (!currentData) return;
     const sections = HOME_SECTION_GROUPS.flatMap(group => sectionGroupResults.get(group.key) || []);
     currentData = { ...currentData, sections };
-    saveRouteState(HOME_ROUTE, { data: currentData });
+    saveRouteState(HOME_ROUTE, { data: currentData, savedAt: getRouteState(HOME_ROUTE)?.savedAt || Date.now() });
   };
 
   const replaceSectionGroup = (group, sections) => {

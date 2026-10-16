@@ -15,8 +15,10 @@ const maxAgeOf = (policy) => (Number.isFinite(policy?.MaxParentalRating) ? polic
 export function createUserDirectory({ fetchJson = jellyfinJson, apiKey = env.JELLYFIN_API_KEY, now = () => Date.now() } = {}) {
   let cached = null;
 
-  const load = async () => {
-    if (cached && now() - cached.at < TTL_MS) return cached.users;
+  // `fresh`: past the cache, for decisions that delete data (housekeeping);
+  // a user created within the last ten minutes is not yet in the cache.
+  const load = async ({ fresh = false } = {}) => {
+    if (!fresh && cached && now() - cached.at < TTL_MS) return cached.users;
     const users = (await fetchJson('/Users', { token: apiKey }) || []).map(user => ({
       id: user.Id,
       name: user.Name,
@@ -35,7 +37,9 @@ export function createUserDirectory({ fetchJson = jellyfinJson, apiKey = env.JEL
   return {
     all: enabled,
     admins: async () => (await enabled()).filter(user => user.isAdmin),
-    allIds: async () => new Set((await load()).map(user => user.id))
+    allIds: async ({ fresh = false } = {}) => new Set((await load({ fresh })).map(user => user.id)),
+    // After a change to an account (age limit), the next read asks Jellyfin.
+    invalidate: () => { cached = null; }
   };
 }
 

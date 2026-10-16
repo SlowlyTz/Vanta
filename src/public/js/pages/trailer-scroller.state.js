@@ -48,16 +48,6 @@ export function mergeTrailerPage(state, page) {
   };
 }
 
-export function markTrailerFavorite(state, itemId, isFavorite) {
-  const trailers = state.trailers.map((trailer) => {
-    if (trailer.itemId === itemId) {
-      return { ...trailer, isFavorite };
-    }
-    return trailer;
-  });
-  return { ...state, trailers };
-}
-
 export function shouldLoadMore(state) {
   if (state.loading || !state.hasMore) return false;
   return state.activeIndex >= state.trailers.length - LOAD_THRESHOLD;

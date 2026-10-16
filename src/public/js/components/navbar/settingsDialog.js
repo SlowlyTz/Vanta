@@ -14,6 +14,7 @@ import { createNotificationsView } from '../settings/views/notificationsView.js'
 import { createPlaybackView } from '../settings/views/playbackView.js';
 import { createAppearanceView } from '../settings/views/appearanceView.js';
 import { createDevicesView } from '../settings/views/devicesView.js';
+import { followAfterBack, inAppLinkOf } from '../../utils/historyEntry.js';
 
 // From this width the hub and the open area stand side by side.
 const SPLIT_QUERY = '(min-width: 900px)';
@@ -333,6 +334,21 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
     if (settingsOpen && settingsView !== 'root' && !isSplit()) setSettingsView('root', { focus: true });
   };
   window.addEventListener('popstate', onPopState);
+
+  // A link out of an area ("Code eingeben" → #/connect): the area's history
+  // entry goes first, then the page changes. Following the link at once and
+  // closing the dialog would go back from the new page again. Capture phase:
+  // before a link's own handler closes the dialog.
+  settingsDialog.addEventListener('click', event => {
+    const target = inAppLinkOf(event);
+    if (!target) return;
+    event.preventDefault();
+    const hadEntry = historyEntry;
+    historyEntry = false;
+    setSettingsOpen(false);
+    if (hadEntry) followAfterBack(target);
+    else window.location.hash = target;
+  }, true);
 
   // Turning a tablet: the layout follows while the dialog is open.
   splitQuery?.addEventListener?.('change', () => {

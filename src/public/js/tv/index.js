@@ -1,6 +1,6 @@
 import { ensurePageStyles } from '../utils/pageStyles.js';
-import { normalizeKey, registerTizenKeys } from './keys.js';
-import { createBackHandler } from './back.js';
+import { registerTizenKeys } from './keys.js';
+import { bindBackKey, createBackHandler } from './back.js';
 import { bindFocusEngine, createFocusEngine } from './focusEngine.js';
 import { bindFocusBackdrop } from './focusBackdrop.js';
 
@@ -11,13 +11,7 @@ export async function startTvMode({ sidebar = null } = {}) {
   registerTizenKeys();
   const back = createBackHandler({ sidebar });
 
-  // Back last: a dialog or the player's flyouts that handle Escape themselves
-  // stop it first. webOS would otherwise leave the app on its Back key.
-  window.addEventListener('keydown', event => {
-    if (event.defaultPrevented || normalizeKey(event) !== 'back') return;
-    event.preventDefault();
-    back();
-  });
+  bindBackKey(back);
 
   const focus = createFocusEngine();
   bindFocusEngine(focus, {

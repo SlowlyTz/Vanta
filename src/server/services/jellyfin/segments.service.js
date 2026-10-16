@@ -1,4 +1,5 @@
 import { jellyfinJson } from './client.js';
+import { setBounded } from '../../utils/boundedMap.js';
 
 const TICKS_PER_MS = 10_000;
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -85,6 +86,9 @@ export function segmentsFromChapters(chapters, runtimeTicks = null) {
   });
 }
 
+// One entry per user and title watched; a family server needs few.
+const SEGMENT_CACHE_MAX = 2000;
+
 export class SegmentsService {
   static cache = new Map();
 
@@ -117,7 +121,7 @@ export class SegmentsService {
       segments = mergeSegmentSources([segments, segmentsFromChapters(item?.Chapters, item?.RunTimeTicks)]);
     }
 
-    this.cache.set(key, { segments, expiresAt: now + CACHE_TTL_MS });
+    setBounded(this.cache, key, { segments, expiresAt: now + CACHE_TTL_MS }, { max: SEGMENT_CACHE_MAX, isExpired: entry => entry.expiresAt <= now });
     return segments;
   }
 }

@@ -1,30 +1,13 @@
-/* "Zuletzt dabei": running parties the user was in */
+/* "Weiterschauen": live parties the user was in, above "Neue Watch Party
+   starten" (see recentParties.js) */
 
-.watch-party-recent {
-  display: grid;
-  gap: 8px;
-}
-
-.watch-party-recent[hidden] {
-  display: none;
-}
-
-.watch-party-recent-title {
+.watch-party-choice-heading {
   margin: 0;
   color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.watch-party-recent-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 .watch-party-recent-item {

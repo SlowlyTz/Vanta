@@ -1,3 +1,5 @@
+import { getTopModal } from '../../utils/modal.js';
+
 // On a TV the remote's up/down always change the trailer (the focus sits on
 // the trailer's buttons, which would otherwise keep the keys), and the focus
 // follows onto the new trailer's "Details".
@@ -17,6 +19,8 @@ export function bindGestures(ctx) {
     }
 
     if (ctx.state.introOpen) return;
+    // An open dialog (settings, watch party, a card's actions) keeps its keys.
+    if (!ctx.shareModal && getTopModal()) return;
     if (isTv() && !ctx.shareModal && (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.keyCode === 40 || event.keyCode === 38)) {
       if (document.activeElement?.closest?.('.tv-sidebar')) return;
       event.preventDefault();
@@ -41,7 +45,7 @@ export function bindGestures(ctx) {
       case 'L':
         {
           const trailer = ctx.state.trailers[ctx.state.activeIndex];
-          if (trailer) ctx.toggleFavorite(trailer.itemId);
+          if (trailer) ctx.toggleWatchlist(trailer.itemId);
         }
         break;
       case 'Enter':

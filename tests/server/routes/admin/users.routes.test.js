@@ -19,12 +19,21 @@ vi.mock('../../../../src/server/services/jellyfin/admin-users.service.js', () =>
     updateUserName: vi.fn(),
     deleteUser: vi.fn(),
     setPassword: vi.fn(),
-    updatePolicy: vi.fn()
+    updatePolicy: vi.fn(),
+    getUser: vi.fn()
   }
 }));
 
+vi.mock('../../../../src/server/services/catalog/visibility.js', () => ({ clearVisibilityCache: vi.fn() }));
+vi.mock('../../../../src/server/services/user-directory.service.js', () => ({ UserDirectory: { invalidate: vi.fn() } }));
+vi.mock('../../../../src/server/services/images/image-access.js', () => {
+  const access = { clear: vi.fn() };
+  return { getImageAccess: () => access };
+});
+
 vi.mock('../../../../src/server/services/session-revocation.service.js', () => ({
-  revokeUserAccess: vi.fn(async () => ({ sessions: 1 }))
+  revokeUserAccess: vi.fn(async () => ({ sessions: 1 })),
+  accountDeletedPayload: () => ({ error: 'Dein Konto wurde gelöscht.', code: 'ACCOUNT_DELETED', reason: null })
 }));
 
 vi.mock('../../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
@@ -56,6 +65,8 @@ import { UserSettingsService } from '../../../../src/server/services/user-settin
 import { streamSessionService } from '../../../../src/server/services/stream-session.service.js';
 import { revokeUserAccess } from '../../../../src/server/services/session-revocation.service.js';
 import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
+import { clearVisibilityCache } from '../../../../src/server/services/catalog/visibility.js';
+import { UserDirectory } from '../../../../src/server/services/user-directory.service.js';
 
 function createApp({ authenticated = true, session = {} } = {}) {
   const app = express();
@@ -126,7 +137,9 @@ describe('Admin Users Routes', () => {
         maxConcurrentStreams: 2,
         activeStreams: 1,
         enableAllFolders: true,
-        enabledFolders: []
+        enabledFolders: [],
+        maxAge: null,
+        blockUnrated: false
       }]);
     });
   });
@@ -210,6 +223,16 @@ describe('Admin Users Routes', () => {
       expect(res.status).toBe(200);
       expect(JellyfinAdminUsersService.deleteUser).toHaveBeenCalledWith('u1', 'admin-token');
       expect(UserBanService.unban).toHaveBeenCalledWith('u1');
+      // Signed out everywhere at once, told why.
+      expect(revokeUserAccess).toHaveBeenCalledWith('u1', null, {
+        payload: { error: 'Dein Konto wurde gelöscht.', code: 'ACCOUNT_DELETED', reason: null }
+      });
+    });
+
+    it('signs nobody out when Jellyfin did not delete the user', async () => {
+      JellyfinAdminUsersService.deleteUser.mockRejectedValue(Object.assign(new Error('nope'), { status: 404 }));
+      await request(createApp()).delete('/u1');
+      expect(revokeUserAccess).not.toHaveBeenCalled();
     });
   });
 
@@ -314,5 +337,51 @@ describe('Admin Users Routes', () => {
 
       expect(res.status).toBe(400);
     });
+  });
+
+  describe('PATCH /:userId/age-limit', () => {
+    it('writes the FSK age and the unrated block to Jellyfin and drops the cached access', async () => {
+      JellyfinAdminUsersService.getUser.mockResolvedValue({ Policy: { BlockUnratedItems: ['Book'] } });
+      JellyfinAdminUsersService.updatePolicy.mockImplementation(async (id, token, patch) => ({ ...patch }));
+
+      const res = await request(createApp()).patch('/u1/age-limit').send({ maxAge: 12, blockUnrated: true });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ maxAge: 12, blockUnrated: true });
+      expect(JellyfinAdminUsersService.updatePolicy).toHaveBeenCalledWith('u1', 'admin-token', {
+        MaxParentalRating: 12,
+        MaxParentalSubRating: null,
+        BlockUnratedItems: ['Book', 'Movie', 'Series']
+      });
+      expect(clearVisibilityCache).toHaveBeenCalledWith('u1');
+      expect(UserDirectory.invalidate).toHaveBeenCalled();
+    });
+
+    it('lifts the limit and keeps other blocked kinds', async () => {
+      JellyfinAdminUsersService.getUser.mockResolvedValue({ Policy: { BlockUnratedItems: ['Movie', 'Series', 'Book'] } });
+      JellyfinAdminUsersService.updatePolicy.mockImplementation(async (id, token, patch) => ({ ...patch }));
+
+      const res = await request(createApp()).patch('/u1/age-limit').send({ maxAge: null, blockUnrated: false });
+
+      expect(res.body).toEqual({ maxAge: null, blockUnrated: false });
+      expect(JellyfinAdminUsersService.updatePolicy.mock.calls.at(-1)[2].BlockUnratedItems).toEqual(['Book']);
+    });
+
+    it('refuses anything but an FSK age or none', async () => {
+      for (const body of [{ maxAge: 14, blockUnrated: false }, { maxAge: '12', blockUnrated: false }, { maxAge: 12 }]) {
+        const res = await request(createApp()).patch('/u1/age-limit').send(body);
+        expect(res.status).toBe(400);
+      }
+      expect(JellyfinAdminUsersService.updatePolicy).not.toHaveBeenCalled();
+    });
+  });
+
+  it('lists each user with their age limit', async () => {
+    JellyfinAdminUsersService.listUsers.mockResolvedValue([
+      { Id: 'k1', Name: 'Kind', Policy: { MaxParentalRating: 6, BlockUnratedItems: ['Movie'] } },
+      { Id: 'e1', Name: 'Erwachsen', Policy: {} }
+    ]);
+    const res = await request(createApp()).get('/');
+    expect(res.body.users.map(user => [user.maxAge, user.blockUnrated])).toEqual([[6, true], [null, false]]);
   });
 });

@@ -43,7 +43,7 @@ const validateAgainstTmdb = async (tmdbId, selection) => {
 // Search TMDB
 router.get('/search', requireAuth, asyncHandler(async (req, res) => {
   const { q } = req.query;
-  if (!q) return res.status(400).json({ error: 'Query required' });
+  if (!q) return res.status(400).json({ error: 'Suchbegriff fehlt' });
 
   const { userId, accessToken } = req.session;
   const { results } = await TmdbService.search(q);

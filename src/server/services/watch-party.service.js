@@ -10,7 +10,6 @@ export { isPartyAdmin, MAX_PARTY_MEMBERS };
 
 export class WatchPartyService {
   static parties = new Map();
-  static endedPartiesByOwner = new Map(); // ownerUserId -> resumable snapshot
   static recentPartiesByUser = new Map(); // userId -> Map<partyId, lastSeenAt>
 }
 
@@ -28,7 +27,14 @@ let cleanupInterval = null;
 
 export function startWatchPartyCleanup(intervalMs = 60_000) {
   if (cleanupInterval) return cleanupInterval;
-  cleanupInterval = setInterval(() => WatchPartyService.cleanupExpired(), intervalMs);
+  cleanupInterval = setInterval(() => {
+    WatchPartyService.cleanupExpired();
+    // Answered and expired invitations go as well (they piled up before).
+    // Loaded here: the invitation service imports this module.
+    import('./watch-party-invitation.service.js')
+      .then(module => module.WatchPartyInvitationService.cleanupExpired())
+      .catch(() => {});
+  }, intervalMs);
   cleanupInterval.unref?.();
   return cleanupInterval;
 }

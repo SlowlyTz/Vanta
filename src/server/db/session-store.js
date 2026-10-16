@@ -194,6 +194,12 @@ export class SqliteSessionStore extends session.Store {
       }));
   }
 
+  // Every user with a live session (to sign out accounts Jellyfin deleted).
+  async liveUserIds() {
+    await this.ready;
+    return new Set(this.liveSessions().map(entry => entry.sess.userId).filter(Boolean));
+  }
+
   // The public ids of every live session (to drop what belonged to ended ones).
   async livePublicIds() {
     await this.ready;

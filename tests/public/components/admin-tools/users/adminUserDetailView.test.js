@@ -10,7 +10,8 @@ vi.mock('../../../../../src/public/js/api/admin-users.api.js', () => ({
     banUser: vi.fn(),
     unbanUser: vi.fn(),
     setLibraryAccess: vi.fn(),
-    setStreamLimit: vi.fn()
+    setStreamLimit: vi.fn(),
+    setAgeLimit: vi.fn()
   }
 }));
 
@@ -326,5 +327,33 @@ describe('createAdminUserDetailView', () => {
     expect(input.value).toBe('20');
     minus.click();
     expect(input.value).toBe('19');
+  });
+
+  it('saves the FSK limit and the unrated block, and nothing else', async () => {
+    AdminUsersApi.setAgeLimit.mockResolvedValue({ maxAge: 12, blockUnrated: true });
+    const view = createAdminUserDetailView(makeUser({ maxAge: null, blockUnrated: false }), { libraries, notify: vi.fn(), onReload: vi.fn() });
+    document.body.appendChild(view);
+
+    const fsk12 = [...view.querySelectorAll('.settings-segmented-option')].find(button => button.textContent === 'FSK 12');
+    fsk12.click();
+    const unrated = view.querySelector('input[aria-label="Titel ohne Altersfreigabe sperren"]');
+    toggle(unrated);
+    await flush();
+    expect(view.querySelector('.admin-user-save-bar').hidden).toBe(false);
+
+    getSaveButton(view).click();
+    await flush();
+
+    expect(AdminUsersApi.setAgeLimit).toHaveBeenCalledWith('u1', 12, true);
+    expect(AdminUsersApi.setLibraryAccess).not.toHaveBeenCalled();
+    expect(AdminUsersApi.setStreamLimit).not.toHaveBeenCalled();
+    view.remove();
+  });
+
+  it('shows the limit the account has', () => {
+    const view = createAdminUserDetailView(makeUser({ maxAge: 16, blockUnrated: true }), { libraries });
+    const active = view.querySelector('.settings-segmented-option.is-active');
+    expect(active.textContent).toBe('FSK 16');
+    expect(view.querySelector('input[aria-label="Titel ohne Altersfreigabe sperren"]').checked).toBe(true);
   });
 });

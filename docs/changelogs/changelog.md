@@ -1,4 +1,44 @@
-# Changelog: VANTA 1.0 → 1.1
+# Changelog
+
+## 1.1.1: bugfix patch
+
+Fixes from an audit of server, client and the running app, plus what a few of them needed.
+
+### Stability and security
+- One oversized or broken WebSocket message no longer crashes the server for everyone.
+- Child accounts no longer see titles, posters and trailers above their age limit: lists, search and images follow Jellyfin's parental control. **Nutzerverwaltung** sets the FSK age and "Titel ohne Altersfreigabe sperren" in Jellyfin.
+- A deleted account is signed out on every device at once, and the login says "Dein Konto wurde gelöscht." Accounts deleted in Jellyfin itself are signed out too.
+- Housekeeping no longer deletes the watchlist, settings and push subscriptions of a user created in the last ten minutes.
+- A failing auto-update (a file in the way, a full disk) no longer keeps the server from starting.
+- The daily full catalogue run is no longer skipped while an update runs: it tries again every ten minutes, up to ten times, then notifies the admins ("Probleme beim Katalog-Abgleich", bell and push, can be switched off).
+- Long-running server caches are bounded, and old watch-party invitations are cleared.
+
+### TV
+- The player starts on webOS 5 (Chromium 68) again.
+- The remote's Back leaves the player after seeking, the focused player control has a visible ring on older TVs, and the hidden ready-room player and the "Erneut versuchen" cover no longer take OK and the arrows.
+- Leaving a page before it loaded no longer shows a loading error.
+- The arrows leave a text field at its edge (the code on `#/connect`), and the trailer scroller leaves the arrows to open dialogs.
+
+### Player and streams
+- An open player counts as a stream until it is closed, paused too; one device holds one stream, and leaving a player before it started frees its slot at once.
+- Closing or reloading a tab sends the stop, so the stream limit is free again.
+- A failed quality or audio switch shows the old choice again and says so.
+- Rewatching a film after its end saves progress again.
+- Scrolling works right after leaving the player.
+
+### App
+- Watch parties live as long as anyone is in them; the dialog offers "Weiterschauen" for each live party, next to "Neue Watch Party starten". Restarting an ended party is gone.
+- "Weiter schauen" shows current progress right after watching.
+- The trailer scroller has "Meine Liste" instead of "Favorit", with the right state.
+- Movie request details keep cast, genres and runtime.
+- Phones: "Geräte → Code eingeben" no longer bounces back, and the navigation drawer closes with Back and on every page change.
+- Taking the last title off "Meine Liste" removes its row.
+- The trailer scroller stays at the top when the focus moves.
+- Every error the user sees is German.
+
+---
+
+## 1.0 → 1.1
 
 VANTA 1.1 brings together two update branches: `update-1.01` (fixes, security and performance) and `update-1.02` (new features, the TV interface and polish).
 

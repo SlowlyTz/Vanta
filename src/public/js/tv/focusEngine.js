@@ -336,6 +336,22 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
 }
 
 // Wires the engine to the keyboard and the router.
+// Whether left/right still has room inside a text field. Fields without a
+// readable caret (number, email) and textareas keep the keys.
+function caretCanMove(field, direction) {
+  if (field.tagName !== 'INPUT') return true;
+  let start;
+  let end;
+  try {
+    start = field.selectionStart;
+    end = field.selectionEnd;
+  } catch {
+    return true;
+  }
+  if (start === null || end === null) return true;
+  return direction === 'left' ? end > 0 : start < String(field.value || '').length;
+}
+
 export function bindFocusEngine(engine, { win = window, openKeyboard = null, openActions = null } = {}) {
   // One step per frame: a held arrow key repeats faster than a TV can lay out.
   let stepPending = false;
@@ -374,8 +390,9 @@ export function bindFocusEngine(engine, { win = window, openKeyboard = null, ope
     const direction = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }[event.key]
       || { 37: 'left', 38: 'up', 39: 'right', 40: 'down' }[event.keyCode];
     if (!direction || event.defaultPrevented) return;
-    // In a text field left/right move the cursor; up/down leave the field.
-    if (isTypingTarget(event.target) && (direction === 'left' || direction === 'right')) return;
+    // In a text field left/right move the cursor, and leave the field at its
+    // edge (an empty field at once); up/down always leave it.
+    if (isTypingTarget(event.target) && (direction === 'left' || direction === 'right') && caretCanMove(event.target, direction)) return;
     if (event.target?.closest?.('media-player, .vanta-player-root')) return;
     event.preventDefault();
     step(direction);

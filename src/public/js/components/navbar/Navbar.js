@@ -10,6 +10,7 @@ import { OPEN_WATCH_PARTY_EVENT } from '../mediaActions.js';
 import { createNotificationBell } from '../notificationBell.js';
 import { startScreensaver } from '../screensaver.js';
 import { getCurrentPageScope } from '../../utils/pageScope.js';
+import { followAfterBack, inAppLinkOf } from '../../utils/historyEntry.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -136,8 +137,24 @@ export function Navbar({ onLogout, onChangePassword }) {
     mobileDrawer.updateActive(currentHash);
   };
 
-  const setMobileNavOpen = (open) => {
+  // On a phone the open drawer is a step of its own: Back (Android's too)
+  // closes it instead of leaving the page behind it. `fromHistory`: the
+  // entry is already gone (Back was pressed, or a link took it away).
+  let navEntry = false;
+  const setMobileNavOpen = (open, { fromHistory = false } = {}) => {
     if (mobileNavOpen === open) return;
+
+    if (open) {
+      try {
+        window.history.pushState({ vantaMobileNav: true }, '');
+        navEntry = true;
+      } catch {
+        navEntry = false;
+      }
+    } else if (navEntry) {
+      navEntry = false;
+      if (!fromHistory) window.history.back();
+    }
 
     mobileNavOpen = open;
     element.classList.toggle('mobile-open', mobileNavOpen);
@@ -155,6 +172,32 @@ export function Navbar({ onLogout, onChangePassword }) {
     if (!mobileNavOpen || element.contains(event.target) || mobileDrawer.mobileNavList.contains(event.target)) return;
     setMobileNavOpen(false);
   });
+
+  // Back while the drawer is open closes it; any other way to another page
+  // (Forward, a link elsewhere) closes it too.
+  window.addEventListener('popstate', () => {
+    if (mobileNavOpen) setMobileNavOpen(false, { fromHistory: true });
+  });
+  window.addEventListener('hashchange', () => {
+    if (mobileNavOpen) setMobileNavOpen(false, { fromHistory: true });
+  });
+
+  // A link in the drawer: its history entry goes first, then the page
+  // changes (see utils/historyEntry.js). Capture: before the link's own
+  // handler closes the drawer.
+  const followDrawerLink = event => {
+    if (!mobileNavOpen) return;
+    const target = inAppLinkOf(event);
+    if (!target) return;
+    event.preventDefault();
+    const hadEntry = navEntry;
+    navEntry = false;
+    setMobileNavOpen(false, { fromHistory: true });
+    if (hadEntry) followAfterBack(target);
+    else window.location.hash = target;
+  };
+  mobileDrawer.mobileNavList.addEventListener('click', followDrawerLink, true);
+  element.addEventListener('click', followDrawerLink, true);
 
   window.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;

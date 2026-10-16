@@ -245,7 +245,7 @@ describe('PlaybackService', () => {
 
     it('rejects paths from different origins', () => {
       expect(() => PlaybackService.normalizeJellyfinPath('http://other.server/video.mp4'))
-        .toThrow('Playback target does not belong to the configured Jellyfin server.');
+        .toThrow('Das Wiedergabeziel gehört nicht zum eingestellten Jellyfin-Server.');
     });
   });
 });

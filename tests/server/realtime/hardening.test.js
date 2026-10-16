@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
+import http from 'node:http';
+import { WebSocketServer, WebSocket } from 'ws';
 import {
   isAllowedOrigin, limitMessageRate, rejectUnknownUpgrades, startHeartbeat, WS_MAX_PAYLOAD
 } from '../../../src/server/realtime/hardening.js';
@@ -93,4 +95,36 @@ describe('rejectUnknownUpgrades', () => {
 
 it('caps the payload far below the ws default', () => {
   expect(WS_MAX_PAYLOAD).toBe(64 * 1024);
+});
+
+describe('socket errors', () => {
+  it('a frame over the payload cap closes that socket instead of crashing the server', async () => {
+    const server = http.createServer();
+    const wss = new WebSocketServer({ server, maxPayload: WS_MAX_PAYLOAD });
+    const stop = startHeartbeat(wss, { intervalMs: 60_000 });
+    const uncaught = vi.fn();
+    process.on('uncaughtException', uncaught);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const serverSide = new Promise(resolve => wss.on('connection', ws => resolve(ws)));
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+    try {
+      const client = new WebSocket(`ws://127.0.0.1:${server.address().port}`);
+      await new Promise(resolve => client.on('open', resolve));
+      const ws = await serverSide;
+      const closed = new Promise(resolve => ws.on('close', resolve));
+      client.on('error', () => {});
+      client.send('x'.repeat(WS_MAX_PAYLOAD + 10_000));
+      await closed;
+
+      expect(uncaught).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith('[WebSocket] connection dropped:', expect.stringContaining('Max payload'));
+    } finally {
+      process.off('uncaughtException', uncaught);
+      warn.mockRestore();
+      stop();
+      wss.close();
+      await new Promise(resolve => server.close(resolve));
+    }
+  });
 });

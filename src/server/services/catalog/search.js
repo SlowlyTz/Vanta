@@ -1,3 +1,7 @@
+import { ageRating, withinAgeLimit } from './age-limit.js';
+
+export { ageRating };
+
 // Search over the catalogue mirror that forgives typos: "Brekaing Bad" finds
 // "Breaking Bad". The few hundred titles of a VANTA library fit in memory,
 // so every search scores all of them; no index extension is needed.
@@ -68,17 +72,6 @@ export function scoreText(query, text) {
   return best <= max ? 40 - best * 10 : 0;
 }
 
-// FSK age from a rating as Jellyfin stores it ("FSK-12", "DE-16", "12"),
-// with the usual US ratings mapped; null when unknown.
-const US_RATINGS = { G: 0, 'TV-Y': 0, 'TV-G': 0, 'TV-Y7': 6, PG: 6, 'TV-PG': 6, 'PG-13': 12, 'TV-14': 12, R: 16, 'TV-MA': 18, 'NC-17': 18, M18: 18 };
-export function ageRating(rating) {
-  if (!rating) return null;
-  const text = String(rating).trim().toUpperCase();
-  const number = /^(?:FSK|DE|FSF)?[-\s]?(\d{1,2})$/.exec(text);
-  if (number) return Number(number[1]);
-  return US_RATINGS[text] ?? null;
-}
-
 // A person counts with at most one typo in the name.
 const PERSON_MIN_SCORE = 30;
 
@@ -124,10 +117,10 @@ export function itemMatchesFilters(item, filters = {}) {
   return passesFilters(entry, { ...filters, genres: (filters.genres || []).map(normalizeForSearch).filter(Boolean) });
 }
 
-// `entries`: { id, type, libraryId, name, original, year, age, genres:Set, people:[{ id, name, displayName, imageTag }] }
+// `entries`: { id, type, libraryId, name, original, year, age, officialRating, genres:Set, people:[{ id, name, displayName, imageTag }] }
 // with normalised name/original/people names. Filters: types, genres (any
 // of), decade (1990 means the 1990s; 1960 and older for "älter"), maxAge.
-export function rankEntries(entries, { query = '', filters = {}, libraryIds = null, limit = 50 } = {}) {
+export function rankEntries(entries, { query = '', filters = {}, libraryIds = null, ageLimit = null, limit = 50 } = {}) {
   const normalized = normalizeForSearch(query);
   // Only punctuation ("%", "_"): nothing to look for.
   if (String(query).trim() && !normalized) return [];
@@ -139,6 +132,7 @@ export function rankEntries(entries, { query = '', filters = {}, libraryIds = nu
   const scored = [];
   for (const entry of entries) {
     if (visible && !visible.has(entry.libraryId)) continue;
+    if (!withinAgeLimit(ageLimit, entry)) continue;
     if (!passesFilters(entry, wanted)) continue;
 
     let score = normalized ? Math.max(scoreText(normalized, entry.name), scoreText(normalized, entry.original) - 5) : 1;
@@ -155,7 +149,7 @@ export function rankEntries(entries, { query = '', filters = {}, libraryIds = nu
 }
 
 // The people whose name matches, each once, with how many visible titles.
-export function rankPeople(entries, { query = '', libraryIds = null, limit = 12 } = {}) {
+export function rankPeople(entries, { query = '', libraryIds = null, ageLimit = null, limit = 12 } = {}) {
   const normalized = normalizeForSearch(query);
   if (normalized.length < 3) return [];
   const visible = Array.isArray(libraryIds) ? new Set(libraryIds) : null;
@@ -163,6 +157,7 @@ export function rankPeople(entries, { query = '', libraryIds = null, limit = 12 
   const byId = new Map();
   for (const entry of entries) {
     if (visible && !visible.has(entry.libraryId)) continue;
+    if (!withinAgeLimit(ageLimit, entry)) continue;
     for (const person of entry.people) {
       const score = scorePerson(person.name);
       if (score < PERSON_MIN_SCORE) continue;

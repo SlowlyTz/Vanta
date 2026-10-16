@@ -23,7 +23,6 @@ import { movieItem, createTestParty } from './helpers.js';
 describe('WatchPartyService · Sonstiges', () => {
   beforeEach(() => {
     WatchPartyService.parties.clear();
-    WatchPartyService.endedPartiesByOwner.clear();
     vi.clearAllMocks();
     ItemsService.getItemDetails.mockResolvedValue(movieItem());
   });

@@ -85,12 +85,20 @@ export function runUpdate({
     return { status: 'skipped', reason: `lokale Commits, die nicht auf ${REMOTE}/${BRANCH} sind` };
   }
 
-  const changed = git('diff', '--name-only', from, to).split('\n').filter(Boolean);
-  const dependenciesChanged = changed.some(file => file === 'package.json' || file === 'package-lock.json');
-  log(`${from.slice(0, 7)} → ${to.slice(0, 7)}: ${changed.length} Datei(en) geändert`);
+  // Nothing has changed in the checkout yet: anything failing here (a file
+  // in the way of the merge, a full disk for the backup) leaves the old
+  // state as it is.
+  let dependenciesChanged;
+  try {
+    const changed = git('diff', '--name-only', from, to).split('\n').filter(Boolean);
+    dependenciesChanged = changed.some(file => file === 'package.json' || file === 'package-lock.json');
+    log(`${from.slice(0, 7)} → ${to.slice(0, 7)}: ${changed.length} Datei(en) geändert`);
 
-  backupDatabases({ cwd, backupDir, label: from.slice(0, 7), log });
-  git('merge', '--ff-only', '--quiet', `${REMOTE}/${BRANCH}`);
+    backupDatabases({ cwd, backupDir, label: from.slice(0, 7), log });
+    git('merge', '--ff-only', '--quiet', `${REMOTE}/${BRANCH}`);
+  } catch (error) {
+    return { status: 'skipped', from, to, reason: `Update nicht übernommen (${String(error.message).split('\n')[0]})` };
+  }
 
   const buildAndVerify = () => {
     if (dependenciesChanged) {
@@ -130,7 +138,13 @@ export async function updateOnStart({ env = process.env } = {}) {
   const production = (env.NODE_ENV || 'development') === 'production';
   if (!production || env.AUTO_UPDATE === 'false' || env.VANTA_UPDATED === '1') return;
 
-  const result = runUpdate();
+  // Whatever goes wrong in the update, the server starts on what it has.
+  let result;
+  try {
+    result = runUpdate();
+  } catch (error) {
+    result = { status: 'skipped', reason: String(error?.message || error).split('\n')[0] };
+  }
   if (result.status === 'skipped') console.log(`[Update] übersprungen: ${result.reason}`);
   if (result.status !== 'updated') return;
 

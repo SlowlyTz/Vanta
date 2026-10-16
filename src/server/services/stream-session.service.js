@@ -3,7 +3,10 @@ import { deviceLabel } from '../../public/js/shared/deviceLabel.js';
 
 const DEFAULT_MAX_STREAMS = 1;
 const RESERVED_TTL_MS = 60_000;
-const ACTIVE_TTL_MS = 45_000;
+// An open player reports every 10 s, paused too; browsers slow timers of
+// background tabs down to once a minute, so a stream is only taken for gone
+// after 90 s without a word.
+const ACTIVE_TTL_MS = 90_000;
 const QUALITY_SWITCH_WINDOW_MS = 10_000;
 
 export class StreamSessionService {
@@ -50,7 +53,7 @@ export class StreamSessionService {
   // encodings are dead weight on Jellyfin.
   reserve({ userId, username, itemId, playSessionId, replacesPlaySessionId = null, deviceId = null, userAgent = '' }) {
     if (!playSessionId) {
-      const error = new Error('Playback session could not be tracked');
+      const error = new Error('Wiedergabe-Sitzung konnte nicht erfasst werden');
       error.status = 500;
       throw error;
     }
@@ -143,7 +146,16 @@ export class StreamSessionService {
   }
 
   markStarted(userId, playSessionId) {
-    this.touch(userId, playSessionId, 'playing');
+    return this.touch(userId, playSessionId, 'playing');
+  }
+
+  // A report of a stream the server no longer counts (silent past the TTL,
+  // a ready room that waited long, a page back from the browser's cache):
+  // counted again, as long as the limit allows it (else STREAM_LIMIT_REACHED).
+  resume(session) {
+    const replaced = this.reserve(session);
+    this.touch(session.userId, session.playSessionId, 'playing');
+    return replaced;
   }
 
   touch(userId, playSessionId, state = null) {

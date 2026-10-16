@@ -18,6 +18,9 @@ export function createHousekeeping({
   push = PushService,
   // Loaded on demand: the session store opens sessions.db.
   loadSessions = () => import('../config/session.js').then(module => module.sessionStore),
+  // Loaded on demand like the sessions: it brings the sockets along.
+  signOutDeleted = userId => import('./session-revocation.service.js')
+    .then(module => module.revokeUserAccess(userId, null, { payload: module.accountDeletedPayload() })),
   log = console
 } = {}) {
   const statements = Object.fromEntries(PER_USER_TABLES.map(table => [table, {
@@ -26,11 +29,16 @@ export function createHousekeeping({
   }]));
 
   // Rows of users Jellyfin no longer knows. Without an answer, or with an
-  // empty one, nothing is removed.
+  // empty one, nothing is removed. Asked fresh: a list from the cache would
+  // not yet name a user created minutes ago and delete their first rows.
   const removeDeletedUsers = async () => {
-    const known = await directory.allIds();
+    const known = await directory.allIds({ fresh: true });
     if (!known?.size) return 0;
     let removed = 0;
+    // Deleted in Jellyfin itself: their VANTA sessions end as well.
+    for (const userId of await (await loadSessions()).liveUserIds()) {
+      if (!known.has(String(userId))) await signOutDeleted(userId);
+    }
     for (const { users, remove } of Object.values(statements)) {
       for (const { user_id: userId } of users.all()) {
         if (!known.has(String(userId))) removed += remove.run(userId).changes;

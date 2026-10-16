@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createCatalogScheduler, msUntilNextTime } from '../../../../src/server/services/catalog/scheduler.js';
+import { createCatalogScheduler, msUntilNextTime, FULL_RETRY_MS, FULL_RETRY_LIMIT } from '../../../../src/server/services/catalog/scheduler.js';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -13,14 +13,16 @@ function setup({ empty = false, settings = { updateIntervalMinutes: 10, fullSync
   const current = { ...settings };
   const settingsApi = { read: vi.fn(() => ({ ...current })), current };
   const log = { warn: vi.fn(), info: vi.fn() };
+  const notifyFailure = vi.fn(async () => {});
   const scheduler = createCatalogScheduler({
     sync,
     settings: settingsApi,
     timers: { setTimeout, clearTimeout, setInterval, clearInterval },
     now: () => new Date(),
-    log
+    log,
+    notifyFailure
   });
-  return { sync, settingsApi, scheduler, log };
+  return { sync, settingsApi, scheduler, log, notifyFailure };
 }
 
 describe('msUntilNextTime', () => {
@@ -158,5 +160,47 @@ describe('CatalogScheduler', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('initial sync failed'), 'jellyfin down');
+  });
+
+  describe('full run while an update runs', () => {
+    const busy = { type: 'full', busy: true, error: null };
+
+    it('tries again in ten minutes and then runs', async () => {
+      const { sync, scheduler, notifyFailure } = setup();
+      sync.runFull.mockResolvedValueOnce(busy);
+      scheduler.start();
+      await vi.advanceTimersByTimeAsync(15 * HOUR);
+      expect(sync.runFull).toHaveBeenCalledTimes(1);
+      expect(scheduler.getPlan().fullRetryPending).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(FULL_RETRY_MS);
+      expect(sync.runFull).toHaveBeenCalledTimes(2);
+      expect(scheduler.getPlan()).toMatchObject({ fullRetryPending: false, fullAttempts: 0 });
+      expect(notifyFailure).not.toHaveBeenCalled();
+    });
+
+    it('tells the admins once after ten tries that did not happen or failed', async () => {
+      const { sync, scheduler, notifyFailure } = setup();
+      sync.runFull.mockResolvedValue(busy);
+      sync.runFull.mockResolvedValueOnce({ type: 'full', error: 'Jellyfin down' });
+      scheduler.start();
+      await vi.advanceTimersByTimeAsync(15 * HOUR);
+      await vi.advanceTimersByTimeAsync(FULL_RETRY_MS * (FULL_RETRY_LIMIT - 1));
+
+      expect(sync.runFull).toHaveBeenCalledTimes(FULL_RETRY_LIMIT);
+      expect(notifyFailure).toHaveBeenCalledTimes(1);
+      expect(notifyFailure).toHaveBeenCalledWith({ attempts: FULL_RETRY_LIMIT, reason: 'ein Aktualisierungslauf lief noch' });
+      await vi.advanceTimersByTimeAsync(FULL_RETRY_MS * 3);
+      expect(sync.runFull).toHaveBeenCalledTimes(FULL_RETRY_LIMIT);
+    });
+
+    it('the admin button joins pending retries instead of starting more', async () => {
+      const { sync, scheduler } = setup();
+      sync.runFull.mockResolvedValueOnce(busy);
+      expect(await scheduler.requestFull()).toEqual(busy);
+      expect(await scheduler.requestFull()).toMatchObject({ queued: true });
+      expect(sync.runFull).toHaveBeenCalledTimes(1);
+      scheduler.stop();
+    });
   });
 });

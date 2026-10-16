@@ -64,14 +64,10 @@
   white-space: nowrap;
 }
 
-.trailer-action-like.is-favorite {
-  color: hsl(349, 90%, 72%);
-  border-color: rgba(255, 86, 121, 0.4);
-  background: rgba(255, 69, 108, 0.16);
-}
-
-.trailer-action-like.is-favorite .trailer-action-icon svg {
-  fill: currentColor;
+.trailer-action-list.is-saved {
+  color: #fff;
+  border-color: rgba(var(--abyss-accent), 0.55);
+  background: rgba(var(--abyss-accent), 0.22);
 }
 
 .trailer-feed-state {

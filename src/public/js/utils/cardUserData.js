@@ -131,7 +131,7 @@ function watchForPage(card) {
 export function observeCardUserData(card, item = null) {
   const id = card?.dataset?.itemId;
   if (!id) return;
-  if (!isFresh(cache.get(id))) {
+  if (!isFresh(cache.get(id)) && Date.now() - playerLeftAt >= TTL_MS) {
     const known = summaryFromUserData(item);
     if (known) cache.set(id, { at: Date.now(), summary: known });
   }
@@ -172,9 +172,17 @@ export function updateCardUserData(itemId, patch = {}) {
   return summary;
 }
 
-// After watching, every card shows fresh progress again.
+// When the player was last left: pages shown again from their saved state
+// (home) hold the progress of before and reload what changes with watching.
+let playerLeftAt = 0;
+export const lastPlayerLeftAt = () => playerLeftAt;
+
+// After watching, every card shows fresh progress again: for a minute the
+// cards ask the server, instead of taking the UserData that saved pages
+// still carry from before.
 export function forgetCardUserData({ server = true } = {}) {
   cache.clear();
+  playerLeftAt = Date.now();
   if (server) MediaApi.refreshUserData?.().catch?.(() => {});
 }
 
@@ -194,6 +202,7 @@ if (typeof window !== 'undefined') {
 
 export const __test = {
   cache,
+  resetPlayerLeft: () => { playerLeftAt = 0; },
   queued,
   flush,
   resetObserver: () => {

@@ -230,6 +230,31 @@ describe('settingsDialog hub', () => {
     expect(dialog.settingsDialog.dataset.view).toBe('root');
   });
 
+  it('follows a link out of an area to its page instead of bouncing back (Code eingeben)', async () => {
+    window.location.hash = '#/home';
+    const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });
+    dialog.setSettingsOpen(true);
+    await flushAll();
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {
+      window.setTimeout(() => window.dispatchEvent(new PopStateEvent('popstate')), 0);
+    });
+    const devicesRow = [...dialog.settingsDialog.querySelectorAll('.settings-option')]
+      .find(row => row.querySelector('.settings-option-label')?.textContent === 'Geräte');
+    devicesRow.click();
+    await flushAll();
+
+    dialog.settingsDialog.querySelector('a[href="#/connect"]').click();
+    expect(back).toHaveBeenCalledTimes(1);
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(window.location.hash).toBe('#/connect');
+    expect(dialog.settingsBackdrop?.classList?.contains('open') ?? false).toBe(false);
+    await new Promise(resolve => setTimeout(resolve, 350));
+    expect(window.location.hash).toBe('#/connect');
+    back.mockRestore();
+    window.location.hash = '';
+  });
+
   it('saves a notification choice per kind', async () => {
     const { NotificationsApi } = await import('../../../../src/public/js/api/notifications.api.js');
     const dialog = createSettingsDialog({ onLogout: vi.fn(), onChangePassword: vi.fn() });

@@ -177,3 +177,8 @@
   }
 }
 
+
+/* A row whose last card was taken out (see removeCard). */
+.media-carousel-container[hidden] {
+  display: none;
+}

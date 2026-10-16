@@ -22,7 +22,6 @@ import { movieItem, episodeItem, createTestParty, joinAsViewer } from './helpers
 describe('WatchPartyService · Episode und Lifecycle', () => {
   beforeEach(() => {
     WatchPartyService.parties.clear();
-    WatchPartyService.endedPartiesByOwner.clear();
     vi.clearAllMocks();
     ItemsService.getItemDetails.mockResolvedValue(movieItem());
   });
@@ -58,40 +57,39 @@ describe('WatchPartyService · Episode und Lifecycle', () => {
     expect(byAdmin.playableItemId).toBe('episode-3');
   });
 
-  it('speichert beim Beenden einen Snapshot mit finalPositionMs, der 48h fortsetzbar ist', async () => {
+  it('beendet eine Party mit der letzten Position', async () => {
     const created = await createTestParty();
 
     const ended = WatchPartyService.endParty({ partyId: created.id, ownerUserId: 'owner-1', positionMs: 45_000 });
 
     expect(ended.status).toBe('ended');
     expect(ended.finalPositionMs).toBe(45_000);
-    expect(ended.resumeExpiresAt).toBeGreaterThan(Date.now());
-
-    const resumable = WatchPartyService.getResumableForOwner('owner-1');
-    expect(resumable).toMatchObject({ originalPartyId: created.id, finalPositionMs: 45_000 });
   });
 
-  it('resumeEndedParty erzeugt eine neue Party-ID mit der gespeicherten Position', async () => {
-    const created = await createTestParty();
-    WatchPartyService.endParty({ partyId: created.id, ownerUserId: 'owner-1', positionMs: 30_000 });
+  describe('Lebensdauer', () => {
+    const at = (offsetMs) => Date.now() + offsetMs;
 
-    const resumed = WatchPartyService.resumeEndedParty({
-      userId: 'owner-1',
-      username: 'Alice',
-      originalPartyId: created.id
+    it('lebt weiter, solange jemand verbunden ist, auch ohne den Owner und über Stunden', async () => {
+      const created = await createTestParty();
+      await WatchPartyService.joinParty({ partyId: created.id, userId: 'viewer-1', username: 'Bob', accessToken: 'x' });
+      WatchPartyService.setConnected({ partyId: created.id, userId: 'viewer-1', connected: true });
+
+      WatchPartyService.cleanupExpired(at(12 * 60 * 60 * 1000));
+      expect(WatchPartyService.parties.has(created.id)).toBe(true);
     });
 
-    expect(resumed.id).not.toBe(created.id);
-    expect(resumed.positionMs).toBe(30_000);
-    expect(resumed.status).toBe('lobby');
-    expect(resumed.resumeFrom).toMatchObject({ originalPartyId: created.id, positionMs: 30_000 });
+    it('ist tot, wenn 5 Minuten niemand mehr drin war', async () => {
+      const created = await createTestParty();
+      WatchPartyService.setConnected({ partyId: created.id, userId: 'owner-1', connected: true });
+      WatchPartyService.setConnected({ partyId: created.id, userId: 'owner-1', connected: false });
 
-    expect(WatchPartyService.getResumableForOwner('owner-1')).toBeNull();
-  });
+      WatchPartyService.cleanupExpired(at(4 * 60 * 1000));
+      expect(WatchPartyService.parties.has(created.id)).toBe(true);
+      expect(WatchPartyService.getRecentPartiesForUser('owner-1')).toHaveLength(1);
 
-  it('resumeEndedParty schlägt fehl, wenn keine fortsetzbare Party existiert', () => {
-    expect(() => WatchPartyService.resumeEndedParty({
-      userId: 'owner-1', username: 'Alice', originalPartyId: 'unknown'
-    })).toThrow(expect.objectContaining({ status: 404 }));
+      WatchPartyService.cleanupExpired(at(5 * 60 * 1000 + 1));
+      expect(WatchPartyService.parties.has(created.id)).toBe(false);
+      expect(WatchPartyService.getRecentPartiesForUser('owner-1')).toEqual([]);
+    });
   });
 });

@@ -15,8 +15,6 @@ vi.mock('../../../../src/public/js/api/media.api.js', () => ({
 vi.mock('../../../../src/public/js/api/watch-party.api.js', () => ({
   WatchPartyApi: {
     create: vi.fn(),
-    resume: vi.fn(),
-    resumable: vi.fn(),
     recent: vi.fn(),
     suggestions: vi.fn()
   }
@@ -43,12 +41,11 @@ function seriesCard(overrides = {}) {
 describe('createWatchPartyDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    WatchPartyApi.resumable.mockResolvedValue({ party: null });
     WatchPartyApi.recent.mockResolvedValue({ parties: [] });
     window.location.hash = '';
   });
 
-  it('zeigt „Zuletzt dabei“ mit Beitreten und sperrt volle Partys', async () => {
+  it('öffnet auf „Weiterschauen“ für jede lebende Party und sperrt volle', async () => {
     WatchPartyApi.suggestions.mockResolvedValue({ items: [] });
     WatchPartyApi.recent.mockResolvedValue({ parties: [
       { id: 'p1', itemSnapshot: { type: 'Episode', seriesName: 'Dark', seasonNumber: 1, episodeNumber: 3, backdrop: { id: 's1', tag: 'b' } }, ownerName: 'Lena', status: 'playing', memberCount: 3, maxMembers: 4, full: false },
@@ -59,33 +56,47 @@ describe('createWatchPartyDialog', () => {
     await dialog.open();
     await flush();
 
-    const section = dialog.element.querySelector('.watch-party-recent');
-    expect(section.hidden).toBe(false);
-    const items = [...section.querySelectorAll('.watch-party-recent-item')];
+    expect(dialog.element.querySelector('.watch-party-choice-heading').textContent).toBe('Weiterschauen');
+    const items = [...dialog.element.querySelectorAll('.watch-party-recent-item')];
     expect(items[0].textContent).toContain('Dark · S01E03');
     expect(items[0].textContent).toContain('von Lena · Läuft · 3/4 Plätze');
+    expect(items[0].querySelector('button').textContent).toBe('Weiterschauen');
     expect(items[1].querySelector('button').disabled).toBe(true);
     expect(items[1].querySelector('button').textContent).toBe('Voll');
+    expect(dialog.element.querySelector('.watch-party-choice-button').textContent).toContain('Neue Watch Party starten');
+    expect(WatchPartyApi.suggestions).not.toHaveBeenCalled();
 
     items[0].querySelector('button').click();
     expect(window.location.hash).toBe('#/watch-party/p1');
     expect(dialog.isOpen()).toBe(false);
   });
 
-  it('blendet „Zuletzt dabei“ aus, wenn es nichts gibt oder eine Episode gewählt wird', async () => {
-    WatchPartyApi.suggestions.mockResolvedValue({ items: [seriesCard()] });
+  it('„Neue Watch Party starten“ führt zur Auswahl, Zurück wieder zu „Weiterschauen“', async () => {
+    WatchPartyApi.suggestions.mockResolvedValue({ items: [movieCard()] });
     WatchPartyApi.recent.mockResolvedValue({ parties: [{ id: 'p1', itemSnapshot: { name: 'Dune' }, status: 'lobby', memberCount: 1, maxMembers: 4, full: false }] });
-    MediaApi.getSeasons.mockResolvedValue([]);
 
     const dialog = createWatchPartyDialog();
     await dialog.open();
     await flush();
-    const section = dialog.element.querySelector('.watch-party-recent');
-    expect(section.hidden).toBe(false);
-
-    dialog.element.querySelector('.watch-party-card button, button.watch-party-card').click();
+    dialog.element.querySelector('.watch-party-choice-button').click();
     await flush();
-    expect(section.hidden).toBe(true);
+    expect(WatchPartyApi.suggestions).toHaveBeenCalled();
+    expect(dialog.element.querySelector('.watch-party-recent-item')).toBeNull();
+
+    const back = dialog.element.querySelector('.watch-party-dialog-header button');
+    expect(back.hidden).toBe(false);
+    back.click();
+    expect(dialog.element.querySelector('.watch-party-recent-item')).not.toBeNull();
+  });
+
+  it('ohne lebende Party geht es gleich zur Auswahl, mit Titel gleich zur Party', async () => {
+    WatchPartyApi.suggestions.mockResolvedValue({ items: [] });
+    WatchPartyApi.create.mockResolvedValue({ party: { id: 'new-1' } });
+    const dialog = createWatchPartyDialog();
+    await dialog.openWith(movieCard({ Id: 'movie-9' }));
+    await flush();
+    expect(dialog.element.querySelector('.watch-party-choice-heading')).toBeNull();
+    expect(WatchPartyApi.create).toHaveBeenCalledWith('movie-9');
   });
 
   it('lädt Vorschläge, wenn der Dialog ohne Suche geöffnet wird', async () => {
@@ -168,18 +179,4 @@ describe('createWatchPartyDialog', () => {
     expect(WatchPartyApi.suggestions).toHaveBeenCalledTimes(2);
   });
 
-  it('fragt beim Öffnen nach Neue Party vs Fortsetzen, wenn eine fortsetzbare Party existiert', async () => {
-    WatchPartyApi.resumable.mockResolvedValue({
-      party: { originalPartyId: 'party-1', itemSnapshot: { name: 'Alte Party' } }
-    });
-
-    const dialog = createWatchPartyDialog();
-    await dialog.open();
-    await flush();
-
-    const choices = dialog.element.querySelectorAll('.watch-party-choice-button');
-    expect(choices).toHaveLength(2);
-    expect(choices[0].textContent).toContain('Neue Party starten');
-    expect(choices[1].textContent).toContain('Letzte Party fortsetzen');
-  });
 });

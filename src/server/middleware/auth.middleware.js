@@ -4,7 +4,7 @@ import { UserBanService, bannedPayload } from '../services/user-ban.service.js';
 
 export const isUpstreamUnauthorized = (error) => error?.status === 401;
 
-export const destroyInvalidSession = (req, res, message = 'Session expired. Please log in again.', extra = {}) => {
+export const destroyInvalidSession = (req, res, message = 'Sitzung abgelaufen. Bitte melde dich erneut an.', extra = {}) => {
   const body = { error: message, ...extra };
   if (!req.session) {
     return res.status(401).json(body);
@@ -32,7 +32,7 @@ export const LAST_SEEN_STEP_MS = 5 * 60 * 1000;
 
 export const requireAuth = (req, res, next) => {
   if (!req.session || !req.session.accessToken || !req.session.userId) {
-    return res.status(401).json({ error: 'Unauthorized: Session invalid or expired' });
+    return res.status(401).json({ error: 'Nicht angemeldet: Sitzung ungültig oder abgelaufen' });
   }
   const ban = UserBanService.getBan(req.session.userId);
   if (ban) return endBannedSession(req, res, ban);
@@ -65,13 +65,13 @@ export const requireFreshAdmin = async (req, res, next) => {
     req.session.isAdmin = isAdmin;
 
     if (!isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
+      return res.status(403).json({ error: 'Nur für Admins' });
     }
 
     next();
   } catch (error) {
     console.warn('[Admin Check Error]', error.message);
     req.session.isAdmin = false;
-    return res.status(403).json({ error: 'Admin access required' });
+    return res.status(403).json({ error: 'Nur für Admins' });
   }
 };

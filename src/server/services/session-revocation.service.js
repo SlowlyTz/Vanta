@@ -5,10 +5,16 @@ import { appSocketHub } from '../realtime/app.socket.js';
 import { watchPartySocketHub } from '../realtime/watch-party.socket.js';
 import { bannedPayload } from './user-ban.service.js';
 
+// What a user whose account was deleted is told on the login page.
+export const ACCOUNT_DELETED_MESSAGE = 'Dein Konto wurde gelöscht.';
+export const accountDeletedPayload = () => ({ error: ACCOUNT_DELETED_MESSAGE, code: 'ACCOUNT_DELETED', reason: null });
+
 // Cuts a user off everywhere at once: every session in the store, the
 // Jellyfin tokens behind them, open app sockets (which carry the reason to the
 // client) and watch-party connections. Nothing here may stop the ban itself.
+// `payload`: what the client shows (a ban by default, or accountDeletedPayload).
 export async function revokeUserAccess(userId, ban, {
+  payload = bannedPayload(ban),
   store = sessionStore,
   auth = AuthService,
   appSockets = appSocketHub,
@@ -36,7 +42,7 @@ export async function revokeUserAccess(userId, ban, {
   }));
 
   try {
-    appSockets.endUserSessions(userId, bannedPayload(ban));
+    appSockets.endUserSessions(userId, payload);
     partySockets.closeAllUserConnections(userId);
   } catch (error) {
     log.error?.('[Ban] could not close the sockets:', error.message);

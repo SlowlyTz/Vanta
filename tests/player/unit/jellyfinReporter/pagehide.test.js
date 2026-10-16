@@ -1,0 +1,126 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createJellyfinReporter } from '../../../../src/player/src/jellyfinReporter.js';
+import { createMockPlayer, setupGlobals, restoreGlobals } from './helpers.js';
+
+describe('createJellyfinReporter · closing and coming back', () => {
+  let windowListeners;
+
+  beforeEach(() => {
+    const { mockWindow } = setupGlobals();
+    windowListeners = {};
+    mockWindow.addEventListener = (event, handler) => { windowListeners[event] = handler; };
+  });
+  afterEach(() => restoreGlobals());
+
+  const playing = async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 30, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: (event, payload, options) => {
+        reports.push({ event, options });
+        return Promise.resolve();
+      }
+    });
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    return { reports, player, reporter };
+  };
+
+  it('a tab that closes or reloads sends its stop with keepalive', async () => {
+    const { reports, reporter } = await playing();
+    windowListeners.pagehide({ persisted: false });
+    expect(reports.at(-1)).toEqual({ event: 'stopped', options: { keepalive: true } });
+    reporter.destroy();
+  });
+
+  it('back from the back/forward cache, the stream starts again', async () => {
+    const { reports, player, reporter } = await playing();
+    windowListeners.pagehide({ persisted: true });
+    windowListeners.pageshow({ persisted: true });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(reports.map(r => r.event)).toEqual(['start', 'stopped', 'start']);
+
+    player.paused = true;
+    player.dispatchEvent({ type: 'pause' });
+    await reporter.stop();
+    expect(reports.at(-1).event).toBe('stopped');
+    reporter.destroy();
+  });
+
+  it('a normal page show changes nothing', async () => {
+    const { reports, reporter } = await playing();
+    windowListeners.pageshow({ persisted: false });
+    expect(reports.map(r => r.event)).toEqual(['start']);
+    reporter.destroy();
+  });
+});
+
+describe('createJellyfinReporter · watching again after the end', () => {
+  beforeEach(() => setupGlobals());
+  afterEach(() => restoreGlobals());
+
+  it('a rewatch starts anew and its progress and stop are reported', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 100, paused: false });
+    const reporter = createJellyfinReporter({
+      player,
+      itemId: 'item-1',
+      report: event => { reports.push(event); return Promise.resolve(); }
+    });
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    player.dispatchEvent({ type: 'ended' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    player.currentTime = 5;
+    player.dispatchEvent({ type: 'playing' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    player.currentTime = 40;
+    player.dispatchEvent({ type: 'pause' });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await reporter.stop();
+
+    expect(reports).toEqual(['start', 'ended', 'start', 'progress', 'stopped']);
+    reporter.destroy();
+  });
+});
+
+describe('createJellyfinReporter · a paused player still counts', () => {
+  beforeEach(() => { vi.useFakeTimers(); setupGlobals(); });
+  afterEach(() => { restoreGlobals(); vi.useRealTimers(); });
+
+  it('sends a heartbeat every ten seconds while paused', async () => {
+    const reports = [];
+    const player = createMockPlayer({ currentTime: 30, paused: false });
+    const reporter = createJellyfinReporter({ player, itemId: 'item-1', report: (event, payload) => { reports.push([event, payload.isPaused]); return Promise.resolve(); } });
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await vi.advanceTimersByTimeAsync(0);
+    player.paused = true;
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(reports).toEqual([['start', false], ['progress', true], ['progress', true], ['progress', true]]);
+    reporter.destroy();
+  });
+
+  it('leaves the player when the server says the limit is full', async () => {
+    const onStreamLimit = vi.fn();
+    const player = createMockPlayer({ currentTime: 30, paused: false });
+    const limit = Object.assign(new Error('voll'), { code: 'STREAM_LIMIT_REACHED', status: 429 });
+    const report = vi.fn(event => (event === 'start' ? Promise.resolve() : Promise.reject(limit)));
+    const reporter = createJellyfinReporter({ player, itemId: 'item-1', report, onStreamLimit });
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await vi.advanceTimersByTimeAsync(0);
+    player.currentTime = 40;
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(onStreamLimit).toHaveBeenCalledWith(limit);
+    // No retries, and the timer stopped.
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(report).toHaveBeenCalledTimes(2);
+    reporter.destroy();
+  });
+});

@@ -4,7 +4,7 @@ import { PAGE_LEFT } from '../utils/pageScope.js';
 
 // A request of a page that was left never settles: nothing is left to show
 // its result, and an error would only pop up a toast for a page that is gone.
-const leftBehind = (signal) => signal?.aborted && signal.reason === PAGE_LEFT;
+const leftBehind = (signal) => Boolean(signal?.aborted && (signal.reason === PAGE_LEFT || signal.vantaPageLeft === true));
 const never = () => new Promise(() => {});
 
 const NETWORK_ERROR_EVENT = 'vanta:network-error';
@@ -60,17 +60,19 @@ export async function request(url, options = {}) {
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));
-      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true, code: errJson.code, reason: errJson.reason });
+      const error = createApiError(errJson.error || 'Nicht angemeldet', response, { silent: true, code: errJson.code, reason: errJson.reason });
 
-      // A ban ends the session on the server; the login page explains why.
-      endClientSession(errJson.code === 'BANNED' ? { message: errJson.error, reason: errJson.reason } : null);
+      // A ban or a deleted account ends the session on the server; the login
+      // page explains why.
+      const explained = errJson.code === 'BANNED' || errJson.code === 'ACCOUNT_DELETED';
+      endClientSession(explained ? { message: errJson.error, reason: errJson.reason } : null);
 
       throw error;
     }
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
-      throw createApiError(errJson.error || `Request failed with status ${response.status}`, response, {
+      throw createApiError(errJson.error || `Anfrage fehlgeschlagen (${response.status})`, response, {
         code: errJson.code,
         reason: errJson.reason,
         limit: errJson.limit,

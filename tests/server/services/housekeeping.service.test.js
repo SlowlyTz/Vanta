@@ -27,7 +27,8 @@ describe('Housekeeping', () => {
       directory: { allIds: vi.fn(async () => new Set(['u1'])) },
       notify: { prune: vi.fn(() => 2) },
       push: { pruneEndedSessions: vi.fn(() => 1) },
-      loadSessions: async () => ({ livePublicIds: async () => new Set(['s1']) }),
+      loadSessions: async () => ({ livePublicIds: async () => new Set(['s1']), liveUserIds: async () => new Set(['u1']) }),
+      signOutDeleted: vi.fn(async () => {}),
       log: { warn: vi.fn() }
     };
   });
@@ -42,6 +43,7 @@ describe('Housekeeping', () => {
       expect(count(table, 'u1')).toBe(1);
     }
     expect(deps.push.pruneEndedSessions).toHaveBeenCalledWith(new Set(['s1']));
+    expect(deps.directory.allIds).toHaveBeenCalledWith({ fresh: true });
   });
 
   it('removes nothing when Jellyfin names no users or cannot be asked', async () => {
@@ -53,5 +55,12 @@ describe('Housekeeping', () => {
     expect(result.deletedUsers).toBeNull();
     expect(result.pruned).toBe(2);
     expect(count('watchlist', 'u1')).toBe(1);
+  });
+
+  it('signs out live sessions of accounts deleted in Jellyfin itself', async () => {
+    deps.loadSessions = async () => ({ livePublicIds: async () => new Set(), liveUserIds: async () => new Set(['u1', 'gone']) });
+    await createHousekeeping(deps).run();
+    expect(deps.signOutDeleted).toHaveBeenCalledTimes(1);
+    expect(deps.signOutDeleted).toHaveBeenCalledWith('gone');
   });
 });

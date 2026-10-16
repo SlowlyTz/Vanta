@@ -7,7 +7,9 @@ const REPORT_RETRY_DELAY_MS = 50;
 const normalizeSubtitleStreamIndex = streamIndex =>
   Number.isInteger(streamIndex) && streamIndex >= 0 ? streamIndex : null;
 
-export function createJellyfinReporter({ player, itemId, report }) {
+// `onStreamLimit`: the server no longer counts this stream and the limit is
+// full (it was gone too long, e.g. a phone asleep): the page leaves the player.
+export function createJellyfinReporter({ player, itemId, report, onStreamLimit = null }) {
   let playback = null;
   let started = false;
   let stopped = false;
@@ -18,6 +20,8 @@ export function createJellyfinReporter({ player, itemId, report }) {
   let retryCount = 0;
   let stopInProgress = false;
   let pageHideHandled = false;
+  // Set when the video played to its end; a 'playing' after it starts anew.
+  let endedAt = null;
   let activeSubtitleStreamIndex = null;
 
   const globalListeners = [];
@@ -61,7 +65,8 @@ export function createJellyfinReporter({ player, itemId, report }) {
     if (stopped && event !== 'start' && event !== 'ended') return;
 
     const payload = buildPayload(options.position);
-    if (event === 'progress' && !shouldSendPosition(payload.positionTicks)) return;
+    // A heartbeat goes out even without a new position (paused).
+    if (event === 'progress' && !options.heartbeat && !shouldSendPosition(payload.positionTicks)) return;
 
     const attempt = async () => {
       try {
@@ -69,6 +74,12 @@ export function createJellyfinReporter({ player, itemId, report }) {
         lastSentPositionTicks = payload.positionTicks;
         retryCount = 0;
       } catch (error) {
+    if (error?.code === 'STREAM_LIMIT_REACHED') {
+      retryCount = 0;
+      stopTimer();
+      onStreamLimit?.(error);
+      return;
+    }
     if (retryCount < REPORT_RETRY_LIMIT) {
       retryCount += 1;
       await new Promise(resolve => setTimeout(resolve, REPORT_RETRY_DELAY_MS));
@@ -88,18 +99,25 @@ export function createJellyfinReporter({ player, itemId, report }) {
     progressTimer = null;
   };
 
+  // Playing: the position. Paused: a heartbeat, since an open player counts
+  // as a stream until it is closed (stream-session.service.js).
   const startTimer = () => {
     stopTimer();
     progressTimer = setInterval(() => {
-      if (!player.paused && !switching) sendWithRetry('progress');
+      if (switching) return;
+      if (player.paused) sendWithRetry('progress', { heartbeat: true });
+      else sendWithRetry('progress');
     }, PROGRESS_INTERVAL_MS);
   };
 
   const start = async () => {
-    if (!playback || switching) return;
-    if (!started) {
+    if (!playback || switching || pageHideHandled) return;
+    // Not started yet, or played again after the end (which reported
+    // 'ended'): a fresh start, so the rewatch is saved like any playback.
+    if (!started || (stopped && endedAt !== null)) {
       stopped = false;
       started = true;
+      endedAt = null;
       await sendWithRetry('start');
     } else {
       await sendWithRetry('progress');
@@ -127,6 +145,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
 
   const setPlayback = nextPlayback => {
     playback = nextPlayback;
+    endedAt = null;
     activeSubtitleStreamIndex = normalizeSubtitleStreamIndex(nextPlayback?.subtitleStreamIndex);
     stopped = false;
     switching = false;
@@ -168,19 +187,34 @@ export function createJellyfinReporter({ player, itemId, report }) {
     }
   };
 
-  const onPageHide = event => {
+  // Always keepalive: a tab that closes or reloads (persisted false) is
+  // exactly when the browser would drop a plain request, and the server
+  // would hold the stream slot until its timeout.
+  const onPageHide = () => {
     if (pageHideHandled || stopped) return;
-    const useKeepalive = event.persisted !== false;
     if (!started) {
-      cancel({ keepalive: useKeepalive });
+      cancel({ keepalive: true });
       return;
     }
     pageHideHandled = true;
     stopTimer();
-    report('stopped', buildPayload(getPosition()), { keepalive: useKeepalive }).catch(() => {});
+    report('stopped', buildPayload(getPosition()), { keepalive: true }).catch(() => {});
   };
 
-  const onEnded = () => stop({ ended: true });
+  // Back from the back/forward cache: the page lives again and the stream
+  // counts again with its next start.
+  const onPageShow = event => {
+    if (!event.persisted || !pageHideHandled) return;
+    pageHideHandled = false;
+    started = false;
+    stopped = false;
+    if (!player.paused) start();
+  };
+
+  const onEnded = () => {
+    endedAt = Date.now();
+    return stop({ ended: true });
+  };
 
   player.addEventListener('time-update', onTimeUpdate);
   player.addEventListener('playing', start);
@@ -190,6 +224,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
 
   addGlobalListener(document, 'visibilitychange', onVisibilityChange);
   addGlobalListener(window, 'pagehide', onPageHide, { capture: true });
+  addGlobalListener(window, 'pageshow', onPageShow, { capture: true });
 
   return {
     setPlayback,

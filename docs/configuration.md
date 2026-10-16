@@ -29,7 +29,7 @@ Kept in `db/`, changed by admins in the app:
 |---|---|
 | Admin → Einstellungen → Katalog | Update interval (1–60 min, default 10), daily full sync (default 03:00), manual run |
 | Admin → Einstellungen → Discord | Webhook for new requests and reports (must be a `discord.com/api/webhooks/…` URL) |
-| Admin → Benutzer | Library access, password, ban, concurrent streams (default 1) |
+| Admin → Benutzer | Library access, FSK age limit and the unrated block (written to Jellyfin), password, ban, delete, concurrent streams (default 1) |
 | Admin dashboard | Message to all users as a notification |
 
 Per user, synced to every device (`user_preferences`): default quality, audio/subtitle language, autoplay, intro skip, „Schaust du noch?“ time, opening scene, reduced motion, screensaver. Per device (`localStorage`): TV mode (`vanta.tvMode`), player volume and subtitle style, push fallback (`vanta.push.local`).

@@ -5,7 +5,7 @@ const rect = (element, left, top, width = 40, height = 40) => {
   element.getBoundingClientRect = () => ({ left, top, width, height, right: left + width, bottom: top + height });
 };
 
-function setup({ state = 'ready-playing-idle', canControl = true, party = false } = {}) {
+function setup({ state = 'ready-playing-idle', canControl = true, party = false, phase = null } = {}) {
   document.body.innerHTML = `
     <div class="vanta-player-root"><div class="vanta-player-shell">
       <div class="vanta-player-controls-layer">
@@ -14,11 +14,17 @@ function setup({ state = 'ready-playing-idle', canControl = true, party = false 
         <button class="vanta-player-settings-button">gear</button>
       </div>
       <button class="vanta-player-skip-segment" hidden>skip</button>
+      <div class="vanta-player-loading"><div class="vanta-player-loading-problem-actions">
+        <button class="vanta-player-loading-retry">retry</button>
+        <button class="vanta-player-loading-leave">leave</button>
+      </div></div>
     </div></div>`;
   const root = document.querySelector('.vanta-player-root');
   rect(root.querySelector('.vanta-player-back'), 0, 0);
   rect(root.querySelector('.vanta-player-play'), 100, 300);
   rect(root.querySelector('.vanta-player-settings-button'), 300, 300);
+  rect(root.querySelector('.vanta-player-loading-retry'), 100, 500);
+  rect(root.querySelector('.vanta-player-loading-leave'), 300, 500);
   let uiState = state;
   const disposers = [];
   const context = {
@@ -29,6 +35,7 @@ function setup({ state = 'ready-playing-idle', canControl = true, party = false 
     ui: { getState: () => uiState, setState: s => { uiState = s; }, resetIdle: vi.fn() },
     watchParty: party ? { enabled: true } : null,
     canControlWatchParty: () => canControl,
+    isDeferredReadyRoom: () => phase === 'ready-room',
     togglePlay: vi.fn(),
     seekStep: vi.fn(),
     onBack: vi.fn(),
@@ -67,6 +74,37 @@ describe('bindTvControls', () => {
     current?.dispose();
     vi.useRealTimers();
     document.body.innerHTML = '';
+  });
+
+  it('leaves the remote to the lobby while the player waits hidden in the ready room', () => {
+    current = setup({ state: 'booting', party: true, phase: 'ready-room' });
+    const ready = document.body.appendChild(document.createElement('button'));
+    ready.focus();
+    for (const k of ['Enter', 'ArrowDown', 'ArrowRight']) {
+      const event = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true });
+      ready.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(current.context.togglePlay).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(ready);
+  });
+
+  it('a failed start: OK presses the focused button, the arrows go between the two', () => {
+    current = setup({ state: 'booting' });
+    const retry = current.root.querySelector('.vanta-player-loading-retry');
+    const leave = current.root.querySelector('.vanta-player-loading-leave');
+    retry.focus();
+    const press = (k) => {
+      const event = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true });
+      document.activeElement.dispatchEvent(event);
+      return event;
+    };
+    expect(press('Enter').defaultPrevented).toBe(false);
+    expect(current.context.togglePlay).not.toHaveBeenCalled();
+    press('ArrowRight');
+    expect(document.activeElement).toBe(leave);
+    press('ArrowLeft');
+    expect(document.activeElement).toBe(retry);
   });
 
   it('does nothing outside TV mode', () => {

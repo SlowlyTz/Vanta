@@ -243,3 +243,25 @@
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
+
+/* A short line over the video (see showNotice). */
+.vanta-player-notice {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  z-index: 30;
+  max-width: min(90%, 36rem);
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.78);
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.vanta-player-notice[hidden] {
+  display: none;
+}

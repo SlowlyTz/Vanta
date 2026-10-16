@@ -235,7 +235,7 @@ describe('RequestsApi', () => {
       }));
 
       await expect(RequestsApi.getSeason(42, 2))
-        .rejects.toMatchObject({ message: 'Request failed with status 500', status: 500 });
+        .rejects.toMatchObject({ message: 'Anfrage fehlgeschlagen (500)', status: 500 });
     });
 
     it('markiert eine 401-Antwort als isAuthError und leitet zum Login', async () => {

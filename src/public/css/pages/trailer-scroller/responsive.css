@@ -151,13 +151,13 @@
     background: rgba(14, 14, 20, 0.6);
   }
 
-  .trailer-action-like.is-favorite {
+  .trailer-action-list.is-saved {
     background: transparent;
   }
 
-  .trailer-action-like.is-favorite .trailer-action-icon {
-    border-color: rgba(255, 86, 121, 0.45);
-    background: rgba(255, 69, 108, 0.2);
+  .trailer-action-list.is-saved .trailer-action-icon {
+    border-color: rgba(var(--abyss-accent), 0.6);
+    background: rgba(var(--abyss-accent), 0.25);
   }
 
   .trailer-action-icon svg {

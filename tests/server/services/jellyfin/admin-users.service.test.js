@@ -155,7 +155,7 @@ describe('JellyfinAdminUsersService', () => {
 
     it('rejects a missing password without calling Jellyfin', async () => {
       await expect(JellyfinAdminUsersService.setPassword('user-1', 'admin-token', ''))
-        .rejects.toThrow(/password/i);
+        .rejects.toThrow(/Passwort/);
       expect(jellyfinFetch).not.toHaveBeenCalled();
     });
   });

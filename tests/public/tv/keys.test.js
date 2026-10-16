@@ -68,3 +68,46 @@ describe('createBackHandler', () => {
     expect(leave.exit).toHaveBeenCalled();
   });
 });
+
+describe('bindBackKey', () => {
+  const press = (target, { prevent = false, key = 'GoBack' } = {}) => {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    if (prevent) target.addEventListener('keydown', e => e.preventDefault(), { once: true });
+    target.dispatchEvent(event);
+  };
+
+  it('goes back, but not when a dialog already took the key', async () => {
+    const { bindBackKey } = await import('../../../src/public/js/tv/back.js');
+    const back = vi.fn();
+    const unbind = bindBackKey(back);
+    const button = document.body.appendChild(document.createElement('button'));
+
+    press(button);
+    expect(back).toHaveBeenCalledTimes(1);
+    press(button, { prevent: true });
+    expect(back).toHaveBeenCalledTimes(1);
+
+    unbind();
+    button.remove();
+  });
+
+  it('inside the player a prevented Back still leaves (vidstack prevents every key)', async () => {
+    const { bindBackKey } = await import('../../../src/public/js/tv/back.js');
+    const back = vi.fn();
+    const unbind = bindBackKey(back);
+    const player = document.body.appendChild(document.createElement('media-player'));
+    const control = player.appendChild(document.createElement('button'));
+
+    press(control, { prevent: true });
+    press(control, { prevent: true, key: 'Backspace' });
+    expect(back).toHaveBeenCalledTimes(2);
+
+    // A player overlay that handles Back stops it before it gets here.
+    control.addEventListener('keydown', e => { e.preventDefault(); e.stopPropagation(); }, { once: true });
+    press(control);
+    expect(back).toHaveBeenCalledTimes(2);
+
+    unbind();
+    player.remove();
+  });
+});

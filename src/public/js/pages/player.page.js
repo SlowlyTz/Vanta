@@ -60,12 +60,14 @@ export default function PlayerPage({ id }, pageScope) {
     window.removeEventListener('hashchange', handleHashChange);
     // A player still loading its first source has no controller yet.
     mountAbort.abort();
+    // The page below scrolls again at once; the stop report (with retries)
+    // must not hold it for seconds.
+    unlockViewport();
     try {
       await controller?.destroy();
     } catch (error) {
       console.warn('[Player Cleanup]', error);
     }
-    unlockViewport();
   };
 
   const goBack = () => {

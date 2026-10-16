@@ -1,6 +1,5 @@
 import { WatchPartyService } from '../../services/watch-party.service.js';
 
-const OWNER_DISCONNECT_GRACE_MS = 30_000;
 const SEEK_NOTIFICATION_THROTTLE_MS = 800;
 
 export const countdownMethods = {
@@ -27,41 +26,15 @@ export const countdownMethods = {
     }
   },
 
-  scheduleOwnerDisconnectEnd(partyId, ownerUserId) {
-    this.cancelOwnerDisconnectTimer(partyId);
-
-    const timer = setTimeout(() => {
-      this.ownerDisconnectTimers.delete(partyId);
-      const party = WatchPartyService.parties.get(partyId);
-      if (!party || party.status === 'ended') return;
-
-      const ownerConnected = party.members.get(ownerUserId)?.connected;
-      if (ownerConnected) return;
-
-      this.cancelCountdown(partyId);
-      const ended = WatchPartyService.endParty({ partyId, ownerUserId, reason: 'owner-disconnected' });
-
-      this.broadcastParty(partyId, {
-        type: 'PARTY_ENDED',
-        party: ended,
-        message: 'Die Watch Party wurde beendet, weil der Owner die Verbindung verloren hat.'
-      });
-    }, OWNER_DISCONNECT_GRACE_MS);
-    timer.unref?.();
-    this.ownerDisconnectTimers.set(partyId, timer);
-  },
-
-  cancelOwnerDisconnectTimer(partyId) {
-    const timer = this.ownerDisconnectTimers.get(partyId);
-    if (timer) {
-      clearTimeout(timer);
-      this.ownerDisconnectTimers.delete(partyId);
-    }
-  },
-
   shouldSendSeekNotification(partyId, now) {
     const previous = this.lastSeekNotificationAt.get(partyId) || 0;
     if (now - previous < SEEK_NOTIFICATION_THROTTLE_MS) return false;
+    // One entry per party ever seeked in: the stale ones go.
+    if (this.lastSeekNotificationAt.size > 100) {
+      for (const [id, at] of this.lastSeekNotificationAt) {
+        if (now - at >= SEEK_NOTIFICATION_THROTTLE_MS) this.lastSeekNotificationAt.delete(id);
+      }
+    }
     this.lastSeekNotificationAt.set(partyId, now);
     return true;
   }

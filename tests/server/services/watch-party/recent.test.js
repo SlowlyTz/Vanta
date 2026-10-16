@@ -14,7 +14,6 @@ import { movieItem, createTestParty, joinAsViewer } from './helpers.js';
 describe('WatchPartyService · Zuletzt dabei', () => {
   beforeEach(() => {
     WatchPartyService.parties.clear();
-    WatchPartyService.endedPartiesByOwner.clear();
     WatchPartyService.recentPartiesByUser.clear();
     vi.clearAllMocks();
     ItemsService.getItemDetails.mockResolvedValue(movieItem());

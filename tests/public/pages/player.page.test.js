@@ -215,4 +215,21 @@ describe('PlayerPage viewport lock', () => {
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
     void container;
   });
+
+  it('unlocks at once, while the player still reports its stop', async () => {
+    window.scrollTo = vi.fn();
+    const { mountVantaPlayer } = await import(PLAYER_MODULE_URL);
+    // destroy() waits for the stop report, which may take seconds.
+    mountVantaPlayer.mockResolvedValueOnce({ destroy: () => new Promise(() => {}) });
+    window.location.hash = '#/player/item-1';
+    PlayerPage({ id: 'item-1' });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await flush();
+
+    window.location.hash = '#/home';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+
+    expect(document.documentElement.classList.contains('player-active')).toBe(false);
+    expect(document.body.classList.contains('player-active')).toBe(false);
+  });
 });

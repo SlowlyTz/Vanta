@@ -15,7 +15,6 @@ export class WatchPartySocketHub {
   constructor() {
     this.wss = new WebSocketServer({ noServer: true, maxPayload: WS_MAX_PAYLOAD });
     this.connectionsByParty = new Map(); // partyId -> Map<userId, Set<ws>>
-    this.ownerDisconnectTimers = new Map(); // partyId -> Timeout
     this.countdownTimers = new Map(); // partyId -> Timeout
     this.lastSeekNotificationAt = new Map(); // partyId -> timestamp
     this.initWaiting();
