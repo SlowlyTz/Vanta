@@ -168,16 +168,28 @@ export function createJellyfinReporter({ player, itemId, report }) {
     }
   };
 
-  const onPageHide = event => {
+  // Always keepalive: a tab that closes or reloads (persisted false) is
+  // exactly when the browser would drop a plain request, and the server
+  // would hold the stream slot until its timeout.
+  const onPageHide = () => {
     if (pageHideHandled || stopped) return;
-    const useKeepalive = event.persisted !== false;
     if (!started) {
-      cancel({ keepalive: useKeepalive });
+      cancel({ keepalive: true });
       return;
     }
     pageHideHandled = true;
     stopTimer();
-    report('stopped', buildPayload(getPosition()), { keepalive: useKeepalive }).catch(() => {});
+    report('stopped', buildPayload(getPosition()), { keepalive: true }).catch(() => {});
+  };
+
+  // Back from the back/forward cache: the page lives again and the stream
+  // counts again with its next start.
+  const onPageShow = event => {
+    if (!event.persisted || !pageHideHandled) return;
+    pageHideHandled = false;
+    started = false;
+    stopped = false;
+    if (!player.paused) start();
   };
 
   const onEnded = () => stop({ ended: true });
@@ -190,6 +202,7 @@ export function createJellyfinReporter({ player, itemId, report }) {
 
   addGlobalListener(document, 'visibilitychange', onVisibilityChange);
   addGlobalListener(window, 'pagehide', onPageHide, { capture: true });
+  addGlobalListener(window, 'pageshow', onPageShow, { capture: true });
 
   return {
     setPlayback,

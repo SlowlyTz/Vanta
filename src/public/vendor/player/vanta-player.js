@@ -951,16 +951,18 @@ function ht({ player: e, itemId: t, report: n }) {
 		Number.isFinite(t) && t >= 0 && (c = t);
 	}, j = () => {
 		document.hidden && i && !a && y("progress");
-	}, M = (e) => {
-		if (f || a) return;
-		let t = e.persisted !== !1;
-		if (!i) {
-			O({ keepalive: t });
-			return;
+	}, M = () => {
+		if (!(f || a)) {
+			if (!i) {
+				O({ keepalive: !0 });
+				return;
+			}
+			f = !0, b(), n("stopped", _(g()), { keepalive: !0 }).catch(() => {});
 		}
-		f = !0, b(), n("stopped", _(g()), { keepalive: t }).catch(() => {});
-	}, N = () => k({ ended: !0 });
-	return e.addEventListener("time-update", A), e.addEventListener("playing", S), e.addEventListener("pause", C), e.addEventListener("seeked", C), e.addEventListener("ended", N), h(document, "visibilitychange", j), h(window, "pagehide", M, { capture: !0 }), {
+	}, N = (t) => {
+		!t.persisted || !f || (f = !1, i = !1, a = !1, e.paused || S());
+	}, P = () => k({ ended: !0 });
+	return e.addEventListener("time-update", A), e.addEventListener("playing", S), e.addEventListener("pause", C), e.addEventListener("seeked", C), e.addEventListener("ended", P), h(document, "visibilitychange", j), h(window, "pagehide", M, { capture: !0 }), h(window, "pageshow", N, { capture: !0 }), {
 		setPlayback: E,
 		setSubtitleStreamIndex: D,
 		beforeSourceSwitch: w,
@@ -969,7 +971,7 @@ function ht({ player: e, itemId: t, report: n }) {
 		getPosition: g,
 		progress: C,
 		destroy: () => {
-			b(), f = !0, e.removeEventListener("time-update", A), e.removeEventListener("playing", S), e.removeEventListener("pause", C), e.removeEventListener("seeked", C), e.removeEventListener("ended", N), m.splice(0).forEach((e) => e());
+			b(), f = !0, e.removeEventListener("time-update", A), e.removeEventListener("playing", S), e.removeEventListener("pause", C), e.removeEventListener("seeked", C), e.removeEventListener("ended", P), m.splice(0).forEach((e) => e());
 		}
 	};
 }
