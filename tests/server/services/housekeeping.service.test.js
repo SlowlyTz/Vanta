@@ -42,6 +42,7 @@ describe('Housekeeping', () => {
       expect(count(table, 'u1')).toBe(1);
     }
     expect(deps.push.pruneEndedSessions).toHaveBeenCalledWith(new Set(['s1']));
+    expect(deps.directory.allIds).toHaveBeenCalledWith({ fresh: true });
   });
 
   it('removes nothing when Jellyfin names no users or cannot be asked', async () => {

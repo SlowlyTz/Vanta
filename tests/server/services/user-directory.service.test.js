@@ -21,4 +21,15 @@ describe('UserDirectory', () => {
     expect(await directory.allIds()).toEqual(new Set(['a1', 'k1', 'x1']));
     expect(fetchJson).toHaveBeenCalledTimes(1);
   });
+
+  it('a fresh read names a user created after the list was cached', async () => {
+    const fetchJson = vi.fn(async () => USERS);
+    const directory = createUserDirectory({ fetchJson, apiKey: 'key' });
+    await directory.allIds();
+    fetchJson.mockResolvedValueOnce([...USERS, { Id: 'n1', Name: 'Neu', Policy: {} }]);
+
+    expect((await directory.allIds()).has('n1')).toBe(false);
+    expect((await directory.allIds({ fresh: true })).has('n1')).toBe(true);
+    expect(fetchJson).toHaveBeenCalledTimes(2);
+  });
 });

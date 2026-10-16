@@ -26,9 +26,10 @@ export function createHousekeeping({
   }]));
 
   // Rows of users Jellyfin no longer knows. Without an answer, or with an
-  // empty one, nothing is removed.
+  // empty one, nothing is removed. Asked fresh: a list from the cache would
+  // not yet name a user created minutes ago and delete their first rows.
   const removeDeletedUsers = async () => {
-    const known = await directory.allIds();
+    const known = await directory.allIds({ fresh: true });
     if (!known?.size) return 0;
     let removed = 0;
     for (const { users, remove } of Object.values(statements)) {
