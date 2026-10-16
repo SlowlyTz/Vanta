@@ -121,10 +121,29 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
     if (event === 'stopped' || event === 'ended') streamSessionService.release(userId, report.PlaySessionId);
     await PlaybackApiService.reportPlayback(accessToken, event, report);
 
-    if (event === 'start') {
-      streamSessionService.markStarted(userId, report.PlaySessionId);
-    } else if (event === 'progress') {
-      streamSessionService.touch(userId, report.PlaySessionId);
+    if (event === 'start' || event === 'progress') {
+      const known = event === 'start'
+        ? streamSessionService.markStarted(userId, report.PlaySessionId)
+        : streamSessionService.touch(userId, report.PlaySessionId);
+      // An open player is a stream until it is closed: one the server lost
+      // track of counts again, or ends here when the limit is full.
+      if (!known) {
+        try {
+          const replaced = streamSessionService.resume({
+            userId,
+            username: req.session.username,
+            itemId: report.ItemId,
+            playSessionId: report.PlaySessionId,
+            deviceId: req.session.deviceId || req.sessionID || null,
+            userAgent: req.headers['user-agent'] || ''
+          });
+          stopEncodings(accessToken, (replaced || []).filter(sessionId => sessionId !== report.PlaySessionId));
+        } catch (limitError) {
+          if (limitError.code !== 'STREAM_LIMIT_REACHED') throw limitError;
+          stopEncodings(accessToken, [report.PlaySessionId, ...(limitError.replaced || [])]);
+          return res.status(429).json({ error: limitError.message, code: limitError.code, limit: limitError.limit, activeStreams: limitError.activeStreams });
+        }
+      }
     }
 
     if (event === 'ended') {

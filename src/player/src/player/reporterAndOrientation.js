@@ -9,7 +9,10 @@ export function bindReporterAndOrientation(context) {
   context.reporter = createJellyfinReporter({
     player,
     itemId,
-    report: reportPlayback
+    report: reportPlayback,
+    onStreamLimit: error => {
+      if (!context.destroyed) context.handleFatalPlaybackError(error);
+    }
   });
 
   context.isPhone = isSmartphone();

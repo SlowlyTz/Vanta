@@ -7,7 +7,9 @@ const REPORT_RETRY_DELAY_MS = 50;
 const normalizeSubtitleStreamIndex = streamIndex =>
   Number.isInteger(streamIndex) && streamIndex >= 0 ? streamIndex : null;
 
-export function createJellyfinReporter({ player, itemId, report }) {
+// `onStreamLimit`: the server no longer counts this stream and the limit is
+// full (it was gone too long, e.g. a phone asleep): the page leaves the player.
+export function createJellyfinReporter({ player, itemId, report, onStreamLimit = null }) {
   let playback = null;
   let started = false;
   let stopped = false;
@@ -63,7 +65,8 @@ export function createJellyfinReporter({ player, itemId, report }) {
     if (stopped && event !== 'start' && event !== 'ended') return;
 
     const payload = buildPayload(options.position);
-    if (event === 'progress' && !shouldSendPosition(payload.positionTicks)) return;
+    // A heartbeat goes out even without a new position (paused).
+    if (event === 'progress' && !options.heartbeat && !shouldSendPosition(payload.positionTicks)) return;
 
     const attempt = async () => {
       try {
@@ -71,6 +74,12 @@ export function createJellyfinReporter({ player, itemId, report }) {
         lastSentPositionTicks = payload.positionTicks;
         retryCount = 0;
       } catch (error) {
+    if (error?.code === 'STREAM_LIMIT_REACHED') {
+      retryCount = 0;
+      stopTimer();
+      onStreamLimit?.(error);
+      return;
+    }
     if (retryCount < REPORT_RETRY_LIMIT) {
       retryCount += 1;
       await new Promise(resolve => setTimeout(resolve, REPORT_RETRY_DELAY_MS));
@@ -90,10 +99,14 @@ export function createJellyfinReporter({ player, itemId, report }) {
     progressTimer = null;
   };
 
+  // Playing: the position. Paused: a heartbeat, since an open player counts
+  // as a stream until it is closed (stream-session.service.js).
   const startTimer = () => {
     stopTimer();
     progressTimer = setInterval(() => {
-      if (!player.paused && !switching) sendWithRetry('progress');
+      if (switching) return;
+      if (player.paused) sendWithRetry('progress', { heartbeat: true });
+      else sendWithRetry('progress');
     }, PROGRESS_INTERVAL_MS);
   };
 

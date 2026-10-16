@@ -25,9 +25,10 @@ vi.mock('../../../../src/server/services/playback.service.js', () => ({
 vi.mock('../../../../src/server/services/stream-session.service.js', () => ({
   streamSessionService: {
     reserve: vi.fn(),
-    markStarted: vi.fn(),
-    touch: vi.fn(),
-    release: vi.fn()
+    markStarted: vi.fn(() => true),
+    touch: vi.fn(() => true),
+    release: vi.fn(),
+    resume: vi.fn(() => [])
   }
 }));
 
@@ -228,6 +229,24 @@ describe('Playback Routes stream-limit integration', () => {
     it('touches the session on a progress report', async () => {
       await request(createApp()).post('/report/progress').send(baseBody());
       expect(streamSessionService.touch).toHaveBeenCalledWith('user-1', 'jf-session-1');
+    });
+
+    it('counts a stream again that the server lost track of', async () => {
+      streamSessionService.touch.mockReturnValueOnce(false);
+      const res = await request(createApp()).post('/report/progress').send(baseBody());
+      expect(res.status).toBe(204);
+      expect(streamSessionService.resume).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-1', playSessionId: 'jf-session-1', itemId: 'item-1', deviceId: 'device-1' }));
+    });
+
+    it('ends a lost stream with 429 when the limit is full', async () => {
+      streamSessionService.markStarted.mockReturnValueOnce(false);
+      streamSessionService.resume.mockImplementationOnce(() => {
+        throw Object.assign(new Error('Auf deinem Konto läuft schon ein Stream'), { code: 'STREAM_LIMIT_REACHED', limit: 1, activeStreams: 1 });
+      });
+      const res = await request(createApp()).post('/report/start').send(baseBody());
+      expect(res.status).toBe(429);
+      expect(res.body).toMatchObject({ code: 'STREAM_LIMIT_REACHED' });
+      expect(PlaybackApiService.stopEncoding).toHaveBeenCalledWith('token', 'jf-session-1');
     });
 
     it('releases the session on a stopped report', async () => {
