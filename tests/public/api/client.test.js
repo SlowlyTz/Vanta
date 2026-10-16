@@ -92,6 +92,14 @@ describe('request()', () => {
     window.removeEventListener('vanta:network-error', networkError);
   });
 
+  it('takes a deleted account to the login with the reason', async () => {
+    sessionStorage.clear();
+    global.fetch = vi.fn().mockResolvedValue(mockFetchResponse({ status: 401, body: { error: 'Dein Konto wurde gelöscht.', code: 'ACCOUNT_DELETED', reason: null } }));
+    await expect(request('/api/media/home')).rejects.toMatchObject({ status: 401, code: 'ACCOUNT_DELETED' });
+    expect(JSON.parse(sessionStorage.getItem('vanta.sessionNotice'))).toEqual({ message: 'Dein Konto wurde gelöscht.', reason: null });
+    expect(window.location.hash).toBe('#/login');
+  });
+
   it('also on browsers without AbortSignal.reason (Chromium 68 on TVs)', async () => {
     const { createPageScope } = await import('../../../src/public/js/utils/pageScope.js');
     const reason = Object.getOwnPropertyDescriptor(AbortSignal.prototype, 'reason');

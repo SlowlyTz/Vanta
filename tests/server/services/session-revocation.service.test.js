@@ -4,7 +4,7 @@ vi.mock('../../../src/server/config/session.js', () => ({ sessionStore: {} }));
 vi.mock('../../../src/server/realtime/app.socket.js', () => ({ appSocketHub: {} }));
 vi.mock('../../../src/server/realtime/watch-party.socket.js', () => ({ watchPartySocketHub: {} }));
 
-import { revokeUserAccess } from '../../../src/server/services/session-revocation.service.js';
+import { revokeUserAccess, accountDeletedPayload } from '../../../src/server/services/session-revocation.service.js';
 
 const setup = () => ({
   store: { destroyByUserId: vi.fn(async () => [{ accessToken: 't1' }, { accessToken: 't2' }, {}]) },
@@ -44,5 +44,16 @@ describe('revokeUserAccess', () => {
     again.auth.logout.mockRejectedValue(new Error('down'));
     await revokeUserAccess('u1', null, withPush(again));
     expect(again.partySockets.closeAllUserConnections).toHaveBeenCalledWith('u1');
+  });
+
+  it('tells a deleted account why instead of naming a ban', async () => {
+    const deps = setup();
+    await revokeUserAccess('u1', null, { ...withPush(deps), payload: accountDeletedPayload() });
+    expect(deps.appSockets.endUserSessions).toHaveBeenCalledWith('u1', {
+      error: 'Dein Konto wurde gelöscht.',
+      code: 'ACCOUNT_DELETED',
+      reason: null
+    });
+    expect(deps.store.destroyByUserId).toHaveBeenCalledWith('u1');
   });
 });

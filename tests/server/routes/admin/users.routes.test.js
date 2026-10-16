@@ -24,7 +24,8 @@ vi.mock('../../../../src/server/services/jellyfin/admin-users.service.js', () =>
 }));
 
 vi.mock('../../../../src/server/services/session-revocation.service.js', () => ({
-  revokeUserAccess: vi.fn(async () => ({ sessions: 1 }))
+  revokeUserAccess: vi.fn(async () => ({ sessions: 1 })),
+  accountDeletedPayload: () => ({ error: 'Dein Konto wurde gelöscht.', code: 'ACCOUNT_DELETED', reason: null })
 }));
 
 vi.mock('../../../../src/server/services/user-ban.service.js', async (importOriginal) => ({
@@ -210,6 +211,16 @@ describe('Admin Users Routes', () => {
       expect(res.status).toBe(200);
       expect(JellyfinAdminUsersService.deleteUser).toHaveBeenCalledWith('u1', 'admin-token');
       expect(UserBanService.unban).toHaveBeenCalledWith('u1');
+      // Signed out everywhere at once, told why.
+      expect(revokeUserAccess).toHaveBeenCalledWith('u1', null, {
+        payload: { error: 'Dein Konto wurde gelöscht.', code: 'ACCOUNT_DELETED', reason: null }
+      });
+    });
+
+    it('signs nobody out when Jellyfin did not delete the user', async () => {
+      JellyfinAdminUsersService.deleteUser.mockRejectedValue(Object.assign(new Error('nope'), { status: 404 }));
+      await request(createApp()).delete('/u1');
+      expect(revokeUserAccess).not.toHaveBeenCalled();
     });
   });
 

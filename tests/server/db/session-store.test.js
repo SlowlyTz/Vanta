@@ -58,6 +58,16 @@ describe('SqliteSessionStore', () => {
     expect(await promisify(store, 'get', 'b')).not.toBeNull();
   });
 
+  it('names every user with a live session', async () => {
+    clock = 1_000_000;
+    const store = createStore();
+    await promisify(store, 'set', 'a', { cookie: {}, userId: 'u1' });
+    await promisify(store, 'set', 'b', { cookie: {}, userId: 'u1' });
+    await promisify(store, 'set', 'c', { cookie: {}, userId: 'u2' });
+    await promisify(store, 'set', 'd', { cookie: {} });
+    expect(await store.liveUserIds()).toEqual(new Set(['u1', 'u2']));
+  });
+
   it('ends every session of one user and hands back their data', async () => {
     clock = 1_000_000;
     const store = createStore();

@@ -62,8 +62,10 @@ export async function request(url, options = {}) {
       const errJson = await response.json().catch(() => ({}));
       const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true, code: errJson.code, reason: errJson.reason });
 
-      // A ban ends the session on the server; the login page explains why.
-      endClientSession(errJson.code === 'BANNED' ? { message: errJson.error, reason: errJson.reason } : null);
+      // A ban or a deleted account ends the session on the server; the login
+      // page explains why.
+      const explained = errJson.code === 'BANNED' || errJson.code === 'ACCOUNT_DELETED';
+      endClientSession(explained ? { message: errJson.error, reason: errJson.reason } : null);
 
       throw error;
     }

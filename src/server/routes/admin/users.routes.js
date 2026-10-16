@@ -3,7 +3,7 @@ import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { JellyfinAdminUsersService } from '../../services/jellyfin/admin-users.service.js';
 import { UserBanService } from '../../services/user-ban.service.js';
-import { revokeUserAccess } from '../../services/session-revocation.service.js';
+import { revokeUserAccess, accountDeletedPayload } from '../../services/session-revocation.service.js';
 import { UserSettingsService } from '../../services/user-settings.service.js';
 import { streamSessionService } from '../../services/stream-session.service.js';
 import { getActiveCatalogReader } from '../../services/catalog/reader.js';
@@ -108,6 +108,8 @@ router.delete('/:userId', asyncHandler(async (req, res) => {
   try {
     await JellyfinAdminUsersService.deleteUser(userId, req.session.accessToken);
     UserBanService.unban(userId);
+    // Out at once on every device, with the reason on the login page.
+    await revokeUserAccess(userId, null, { payload: accountDeletedPayload() });
     return res.json({ success: true });
   } catch (error) {
     return respondWithJellyfinError(res, error, 'Nutzer konnte nicht gelöscht werden');
