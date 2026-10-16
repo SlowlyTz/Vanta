@@ -3608,71 +3608,86 @@ function ri(e, { doc: t = document } = {}) {
 		return s && f(s), s;
 	};
 	return a(t, "keydown", (n) => {
-		var a, s, c, l;
-		if (e.destroyed) return;
-		let g = _r(n);
-		if (!g) return;
+		var a, s, c, l, g, _, v;
+		if (e.destroyed || (a = e.isDeferredReadyRoom) != null && a.call(e)) return;
+		let y = _r(n);
+		if (!y) return;
 		if (e.settingsOpen || e.helpOpen) {
-			if (g === "back" && n.key !== "Escape") {
-				var _, v;
-				n.preventDefault(), e.settingsOpen ? (_ = e.settings) == null || _.close() : (v = e.toggleHelp) == null || v.call(e);
+			if (y === "back" && n.key !== "Escape") {
+				var b, x;
+				n.preventDefault(), e.settingsOpen ? (b = e.settings) == null || b.close() : (x = e.toggleHelp) == null || x.call(e);
 			}
 			return;
 		}
-		if (g === "back") return;
-		let y = (a = t.activeElement) == null || (s = a.closest) == null ? void 0 : s.call(a, ".vanta-player-next-episode, .vanta-still-watching, .vanta-sleep-notice");
-		if (y && [
+		if (y === "back") return;
+		let S = (s = t.activeElement) == null || (c = s.closest) == null ? void 0 : c.call(s, ".vanta-player-next-episode, .vanta-still-watching, .vanta-sleep-notice");
+		if (S && [
 			"up",
 			"down",
 			"left",
 			"right"
-		].includes(g)) {
-			n.preventDefault(), n.stopPropagation(), !h(g, y) && !e.stillWatchingOpen && (g === "up" || g === "down") && m();
+		].includes(y)) {
+			n.preventDefault(), n.stopPropagation(), !h(y, S) && !e.stillWatchingOpen && (y === "up" || y === "down") && m();
 			return;
 		}
-		if (y && g === "ok") return;
-		let b = () => {
+		if (S && y === "ok") return;
+		let C = () => {
 			n.preventDefault(), n.stopPropagation();
 		};
-		switch (g) {
+		switch (y) {
 			case "playpause":
 			case "play":
 			case "pause":
-				var x, S;
-				if (b(), !o()) return;
-				g === "play" ? (x = r.play) == null || x.call(r) : g === "pause" ? (S = r.pause) == null || S.call(r) : e.togglePlay(), i.resetIdle();
+				var w, T;
+				if (C(), !o()) return;
+				y === "play" ? (w = r.play) == null || w.call(r) : y === "pause" ? (T = r.pause) == null || T.call(r) : e.togglePlay(), i.resetIdle();
 				return;
 			case "stop":
-				var C;
-				b(), (C = e.onBack) == null || C.call(e);
+				var E;
+				C(), (E = e.onBack) == null || E.call(e);
 				return;
 			case "ff":
 			case "rw":
-				var w;
-				b(), (w = e.seekStep) == null || w.call(e, g === "ff" ? 30 : -30);
+				var D;
+				C(), (D = e.seekStep) == null || D.call(e, y === "ff" ? 30 : -30);
 				return;
 			default:
 		}
+		let O = (l = t.activeElement) == null || (g = l.closest) == null ? void 0 : g.call(l, ".vanta-player-loading-problem-actions button");
+		if (O) {
+			if (y === "ok") return;
+			if ([
+				"up",
+				"down",
+				"left",
+				"right"
+			].includes(y)) {
+				C();
+				let e = [...O.parentElement.querySelectorAll("button")].filter(ni), t = y === "left" || y === "up" ? -1 : 1, n = e[e.indexOf(O) + t];
+				n && n.focus({ preventScroll: !0 });
+			}
+			return;
+		}
 		if (!d()) {
-			if (b(), g === "ok") o() ? e.togglePlay() : m();
-			else if (g === "left" || g === "right") o() ? u(g) : m();
+			if (C(), y === "ok") o() ? e.togglePlay() : m();
+			else if (y === "left" || y === "right") o() ? u(y) : m();
 			else {
 				let e = p();
 				e && t.activeElement !== e ? f(e) : m();
 			}
 			return;
 		}
-		let T = (c = t.activeElement) == null || (l = c.matches) == null ? void 0 : l.call(c, ti);
+		let k = (_ = t.activeElement) == null || (v = _.matches) == null ? void 0 : v.call(_, ti);
 		if ([
 			"up",
 			"down",
 			"left",
 			"right"
-		].includes(g)) {
-			b(), T ? h(g) : m();
+		].includes(y)) {
+			C(), k ? h(y) : m();
 			return;
 		}
-		g === "ok" && !T && (b(), o() && e.togglePlay(), i.resetIdle());
+		y === "ok" && !k && (C(), o() && e.togglePlay(), i.resetIdle());
 	}, !0), a(t, "keyup", (e) => {
 		let t = _r(e);
 		c && (t === "left" || t === "right") && l();

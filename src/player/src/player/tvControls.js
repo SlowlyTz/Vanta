@@ -123,6 +123,9 @@ export function bindTvControls(context, { doc = document } = {}) {
 
   const onKeyDown = (event) => {
     if (context.destroyed) return;
+    // A watch party's ready room: the player waits hidden behind the lobby,
+    // whose own buttons ("Bereit") keep the remote.
+    if (context.isDeferredReadyRoom?.()) return;
     const name = normalizeKey(event);
     if (!name) return;
 
@@ -176,6 +179,21 @@ export function bindTvControls(context, { doc = document } = {}) {
         context.seekStep?.(name === 'ff' ? 30 : -30);
         return;
       default:
+    }
+
+    // A failed start ("Erneut versuchen" / "Zurück"): OK presses the button,
+    // the arrows go between the two.
+    const problemButton = doc.activeElement?.closest?.('.vanta-player-loading-problem-actions button');
+    if (problemButton) {
+      if (name === 'ok') return;
+      if (['up', 'down', 'left', 'right'].includes(name)) {
+        handled();
+        const buttons = [...problemButton.parentElement.querySelectorAll('button')].filter(visible);
+        const step = name === 'left' || name === 'up' ? -1 : 1;
+        const next = buttons[buttons.indexOf(problemButton) + step];
+        if (next) next.focus({ preventScroll: true });
+      }
+      return;
     }
 
     if (!controlsShown()) {
