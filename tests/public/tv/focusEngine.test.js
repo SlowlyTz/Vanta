@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createFocusEngine, directionalScore } from '../../../src/public/js/tv/focusEngine.js';
+import { bindFocusEngine, createFocusEngine, directionalScore } from '../../../src/public/js/tv/focusEngine.js';
 import { openModal, closeAllModals } from '../../../src/public/js/utils/modal.js';
 
 // Lays elements out by data-rect="left,top,width,height".
@@ -274,5 +274,39 @@ describe('focus engine columns, sidebar and fallbacks', () => {
     document.getElementById('b').focus();
     expect(document.getElementById('a').classList.contains('tv-focus')).toBe(false);
     expect(document.getElementById('b').classList.contains('tv-focus')).toBe(true);
+  });
+});
+
+describe('bindFocusEngine: text fields', () => {
+  it('left/right move the caret, and leave the field at its edge (the connect code)', () => {
+    document.body.innerHTML = `<main>
+      <input id="code" type="text" data-rect="100,100,200,40">
+      ${btn('next', '320,100,80,40')}
+    </main>`;
+    place();
+    const moves = [];
+    const engine = { move: direction => moves.push(direction) };
+    const unbind = bindFocusEngine(engine);
+    const input = document.getElementById('code');
+    const press = key => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      return event;
+    };
+
+    input.focus();
+    // Empty: both directions leave.
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
+    expect(moves).toEqual(['right']);
+
+    input.value = 'AB12';
+    input.setSelectionRange(2, 2);
+    expect(press('ArrowRight').defaultPrevented).toBe(false);
+    expect(press('ArrowLeft').defaultPrevented).toBe(false);
+    input.setSelectionRange(4, 4);
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
+    input.setSelectionRange(0, 0);
+    expect(press('ArrowLeft').defaultPrevented).toBe(true);
+    unbind();
   });
 });
