@@ -175,3 +175,49 @@ describe('openMediaActions', () => {
     expect(window.location.hash).toBe('#/player/e7');
   });
 });
+
+describe('removeCard', () => {
+  const rows = () => {
+    document.body.innerHTML = `
+      <div class="media-carousel-container" id="list">
+        <div class="media-carousel-item"><a href="#" data-item-id="a">a</a></div>
+      </div>
+      <div class="media-carousel-container" id="next">
+        <div class="media-carousel-item"><a href="#" data-item-id="b">b</a></div>
+        <div class="media-carousel-item"><a href="#" data-item-id="c">c</a></div>
+      </div>`;
+  };
+
+  it('takes an emptied row away, and the undo brings both back', async () => {
+    vi.useFakeTimers();
+    rows();
+    const { removeCard } = await import('../../../src/public/js/components/mediaActions.js');
+    const undo = removeCard(document.querySelector('[data-item-id="a"]'));
+    vi.advanceTimersByTime(300);
+    expect(document.querySelector('[data-item-id="a"]')).toBeNull();
+    expect(document.getElementById('list').hidden).toBe(true);
+
+    undo();
+    expect(document.getElementById('list').hidden).toBe(false);
+    expect(document.querySelector('[data-item-id="a"]')).not.toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('hands the focus on: to the next card, else to the next row', async () => {
+    vi.useFakeTimers();
+    rows();
+    const { removeCard } = await import('../../../src/public/js/components/mediaActions.js');
+    const b = document.querySelector('[data-item-id="b"]');
+    b.focus();
+    removeCard(b);
+    vi.advanceTimersByTime(300);
+    expect(document.activeElement.dataset.itemId).toBe('c');
+
+    const a = document.querySelector('[data-item-id="a"]');
+    a.focus();
+    removeCard(a);
+    vi.advanceTimersByTime(300);
+    expect(document.activeElement.dataset.itemId).toBe('c');
+    vi.useRealTimers();
+  });
+});

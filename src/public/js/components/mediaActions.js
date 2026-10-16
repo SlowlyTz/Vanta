@@ -119,17 +119,39 @@ function readCard(target) {
 // again from its saved state leaves them out.
 export const hiddenResumeIds = new Set();
 
-// Takes a card out of its row with a short fade; undo puts it back.
+// Where the focus goes when the focused card leaves (a TV has no pointer to
+// fall back on): the next card of the row, else the one before, else the
+// first card of a neighbouring row.
+function focusAfterRemoval(slot, row) {
+  const focusable = element => element?.querySelector?.('[data-item-id]') || null;
+  const sibling = slot.nextElementSibling || slot.previousElementSibling;
+  let next = focusable(sibling);
+  if (!next && row) {
+    const rows = [...document.querySelectorAll('.media-carousel-container')].filter(other => other !== row && !other.hidden);
+    const after = rows.find(other => row.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING);
+    next = focusable(after) || focusable(rows.reverse().find(other => row.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_PRECEDING));
+  }
+  next?.focus?.({ preventScroll: false });
+}
+
+// Takes a card out of its row with a short fade; undo puts it back. A row
+// left without cards goes as well (and comes back with the undo).
 export function removeCard(target) {
   const slot = target.closest('.media-carousel-item') || target;
   const parent = slot.parentElement;
   const next = slot.nextSibling;
+  const row = slot.closest('.media-carousel-container');
   slot.classList.add('is-removing');
-  const timer = window.setTimeout(() => slot.remove(), 260);
+  const timer = window.setTimeout(() => {
+    if (slot.contains(document.activeElement)) focusAfterRemoval(slot, row);
+    slot.remove();
+    if (row && !row.querySelector('.media-carousel-item')) row.hidden = true;
+  }, 260);
   return () => {
     window.clearTimeout(timer);
     slot.classList.remove('is-removing');
     if (!slot.isConnected && parent) parent.insertBefore(slot, next);
+    if (row) row.hidden = false;
   };
 }
 
