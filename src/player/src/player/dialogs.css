@@ -186,10 +186,24 @@
   display: none;
 }
 
-/* TV: the focused control is unmistakable from the sofa. */
-.vanta-player-root.is-tv button:focus-visible,
-.vanta-player-root.is-tv media-mute-button:focus-visible {
+/* TV: the focused control is unmistakable from the sofa. Plain :focus, in
+   rules of their own: Chromium 68/69 (webOS 5, Tizen 5.5) know no
+   :focus-visible and drop every rule that names it, and on a TV every focus
+   comes from the remote anyway. */
+.vanta-player-root.is-tv button:focus,
+.vanta-player-root.is-tv media-mute-button:focus {
   outline: 3px solid #fff;
   outline-offset: 4px;
   border-radius: 999px;
+}
+
+/* Rows of the settings and episode lists: a box, not a pill. */
+.vanta-player-root.is-tv button.vanta-settings-row:focus,
+.vanta-player-root.is-tv button.vanta-settings-option:focus,
+.vanta-player-root.is-tv button.vanta-settings-episode:focus,
+.vanta-player-root.is-tv button.vanta-settings-season:focus,
+.vanta-player-root.is-tv button.vanta-settings-action:focus {
+  outline-offset: -3px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.1);
 }
