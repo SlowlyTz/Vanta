@@ -170,30 +170,48 @@ class TmdbService {
     };
   }
 
+  // Like the series: not served from the tmdb_media row, which holds neither
+  // genres, runtime nor cast (a search writes it for every result, so the
+  // detail page of a searched film lost all three).
   static async getMovieDetails(movieId) {
-    // Check cache
-    const cached = getCached.get(movieId, 'movie');
-    if (cached && (Date.now() - cached.cached_at < CACHE_TTL)) {
-      const trailer = await getYouTubeTrailer('movie', movieId);
-      return { ...cached, id: cached.tmdb_id, media_type: 'movie', trailer };
+    const cacheKey = `tmdb_movie_details_${movieId}`;
+    const cached = getMemoryCache(cacheKey, DETAIL_CACHE_TTL);
+    if (cached) return { ...cached };
+
+    return dedupe(cacheKey, () => this.#fetchMovieDetails(movieId, cacheKey));
+  }
+
+  static async #fetchMovieDetails(movieId, cacheKey) {
+    const row = getCached.get(movieId, 'movie');
+
+    try {
+      const [details, credits, trailer] = await Promise.all([
+        fetchTmdbJson(`/movie/${movieId}`, { language: 'de-DE' }),
+        fetchTmdbJson(`/movie/${movieId}/credits`, { language: 'de-DE' }),
+        getYouTubeTrailer('movie', movieId)
+      ]);
+
+      if (!row || Date.now() - row.cached_at >= CACHE_TTL) {
+        cacheMovie.run(movieId, details.title, details.overview, details.poster_path, details.backdrop_path, details.release_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
+      }
+
+      const result = {
+        id: movieId,
+        ...details,
+        media_type: 'movie',
+        cast: credits.cast?.slice(0, 10) || [],
+        runtime: details.runtime,
+        trailer
+      };
+
+      setMemoryCache(cacheKey, result);
+      return { ...result };
+    } catch (error) {
+      // TMDB slow or down: the row beats a 500, without the parts it lacks.
+      if (!row) throw error;
+      console.error(`[TmdbService] Movie details for ${movieId} unavailable, serving the cached row:`, error.message);
+      return { ...row, id: row.tmdb_id, media_type: 'movie', genres: [], cast: [], trailer: null };
     }
-
-    const [details, credits, trailer] = await Promise.all([
-      fetchTmdbJson(`/movie/${movieId}`, { language: 'de-DE' }),
-      fetchTmdbJson(`/movie/${movieId}/credits`, { language: 'de-DE' }),
-      getYouTubeTrailer('movie', movieId)
-    ]);
-
-    cacheMovie.run(movieId, details.title, details.overview, details.poster_path, details.backdrop_path, details.release_date, details.vote_average ?? 0, details.vote_count ?? 0, Date.now());
-
-    return {
-      id: movieId,
-      ...details,
-      media_type: 'movie',
-      cast: credits.cast?.slice(0, 10) || [],
-      runtime: details.runtime,
-      trailer
-    };
   }
 
   // Deliberately not served from the tmdb_media row: it holds neither seasons nor cast, and its

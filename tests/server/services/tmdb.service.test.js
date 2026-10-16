@@ -122,20 +122,45 @@ describe('TmdbService trailer integration', () => {
     expect(details.trailer).toBeNull();
   });
 
-  it('still resolves a trailer for a cached SQLite movie row that has no stored trailer data', async () => {
+  it('a row a search left behind does not cost the film its genres, runtime and cast', async () => {
     dbState.cachedRows.set(503, {
       tmdb_id: 503, title: 'Cached Movie', overview: '', poster_path: null, backdrop_path: null,
       release_date: '2022-01-01', media_type: 'movie', score: 5, vote_count: 3, cached_at: Date.now()
     });
-
     mockFetchByPath({
+      '/3/movie/503?de-DE': { id: 503, title: 'Cached Movie', runtime: 117, genres: [{ id: 18, name: 'Drama' }] },
+      '/3/movie/503/credits?de-DE': { cast: [{ id: 1, name: 'Sigourney Weaver' }] },
       '/3/movie/503/videos?de-DE': { results: [{ site: 'YouTube', key: 'cached-trailer', type: 'Trailer', name: 'Cached Trailer' }] }
     });
 
     const details = await TmdbService.getMovieDetails(503);
 
-    expect(details.title).toBe('Cached Movie');
+    expect(details).toMatchObject({ title: 'Cached Movie', runtime: 117, genres: [{ id: 18, name: 'Drama' }], cast: [{ name: 'Sigourney Weaver' }] });
     expect(details.trailer).toEqual({ site: 'YouTube', key: 'cached-trailer', name: 'Cached Trailer', type: 'Trailer' });
+  });
+
+  it('opened a second time, the film keeps its cast', async () => {
+    mockFetchByPath({
+      '/3/movie/505?de-DE': { id: 505, title: 'Movie 505', runtime: 90, genres: [{ id: 1, name: 'Krimi' }] },
+      '/3/movie/505/credits?de-DE': { cast: [{ id: 2, name: 'Jodie Foster' }] },
+      '/3/movie/505/videos?de-DE': { results: [] },
+      '/3/movie/505/videos?en-US': { results: [] }
+    });
+    await TmdbService.getMovieDetails(505);
+    const again = await TmdbService.getMovieDetails(505);
+    expect(again).toMatchObject({ runtime: 90, cast: [{ name: 'Jodie Foster' }], genres: [{ name: 'Krimi' }] });
+  });
+
+  it('serves the stored row when TMDB fails', async () => {
+    dbState.cachedRows.set(506, {
+      tmdb_id: 506, title: 'Stored', overview: '', poster_path: null, backdrop_path: null,
+      release_date: '2022-01-01', media_type: 'movie', score: 5, vote_count: 3, cached_at: Date.now()
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('down'); }));
+
+    const details = await TmdbService.getMovieDetails(506);
+    expect(details).toMatchObject({ id: 506, title: 'Stored', media_type: 'movie', cast: [], genres: [] });
   });
 
   it('resolves a trailer for TV details via the /tv videos endpoint', async () => {
