@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { jellyfinJson } from './client.js';
 import { LibraryService } from './library.service.js';
+import { setBounded } from '../../utils/boundedMap.js';
 
 export const YOUTUBE_VIDEO_ID_LENGTH = 11;
 
@@ -156,6 +157,8 @@ const CATALOG_TTL_MS = 10 * 60 * 1000;
 // roundtrip. The shuffle happens per feed, not per catalog fetch, so caching here does not make
 // the feed repeat itself.
 const catalogCache = new Map();
+// Each entry holds a user's whole trailer list.
+const CATALOG_CACHE_MAX = 50;
 
 export class TrailersService {
   // Replaced in tests; asks YouTube whether a trailer still plays.
@@ -190,7 +193,7 @@ export class TrailersService {
         throw error;
       });
 
-    catalogCache.set(cacheKey, { timestamp: Date.now(), promise });
+    setBounded(catalogCache, cacheKey, { timestamp: Date.now(), promise }, { max: CATALOG_CACHE_MAX, isExpired: entry => Date.now() - entry.timestamp >= CATALOG_TTL_MS });
     return promise;
   }
 

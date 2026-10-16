@@ -29,6 +29,12 @@ export const countdownMethods = {
   shouldSendSeekNotification(partyId, now) {
     const previous = this.lastSeekNotificationAt.get(partyId) || 0;
     if (now - previous < SEEK_NOTIFICATION_THROTTLE_MS) return false;
+    // One entry per party ever seeked in: the stale ones go.
+    if (this.lastSeekNotificationAt.size > 100) {
+      for (const [id, at] of this.lastSeekNotificationAt) {
+        if (now - at >= SEEK_NOTIFICATION_THROTTLE_MS) this.lastSeekNotificationAt.delete(id);
+      }
+    }
     this.lastSeekNotificationAt.set(partyId, now);
     return true;
   }

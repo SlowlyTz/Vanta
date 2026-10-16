@@ -1,8 +1,11 @@
 import { LibraryService } from '../jellyfin/library.service.js';
+import { setBounded } from '../../utils/boundedMap.js';
 
 export const INDEX_LIMIT = 2000;
 const INDEX_CACHE_TTL = 30 * 1000;
 
+// Each entry holds a user's parsed catalogue: kept for few users at once.
+const INDEX_CACHE_MAX = 50;
 const indexCache = new Map();
 
 export const cacheMethods = {
@@ -20,7 +23,7 @@ export const cacheMethods = {
         throw error;
       });
 
-    indexCache.set(cacheKey, { timestamp: Date.now(), promise });
+    setBounded(indexCache, cacheKey, { timestamp: Date.now(), promise }, { max: INDEX_CACHE_MAX, isExpired: entry => Date.now() - entry.timestamp >= INDEX_CACHE_TTL });
     return promise;
   }
 };
