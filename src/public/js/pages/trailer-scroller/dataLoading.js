@@ -1,6 +1,7 @@
 import { MediaApi } from '../../api/media.api.js';
 import { appStore } from '../../store/app.store.js';
-import { mergeTrailerPage, markTrailerFavorite } from '../trailer-scroller.state.js';
+import { mergeTrailerPage } from '../trailer-scroller.state.js';
+import { watchlistStore } from '../../store/watchlist.store.js';
 import { getFeedId, setFeedId } from './feedSession.js';
 
 const LOAD_LIMIT = 8;
@@ -102,26 +103,16 @@ export function bindDataLoading(ctx) {
     return index;
   };
 
-  ctx.toggleFavorite = async itemId => {
-    const currentTrailer = ctx.state.trailers.find(trailer => trailer.itemId === itemId);
-    if (!currentTrailer) return;
-
-    const nextIsFavorite = !currentTrailer.isFavorite;
-    ctx.state = markTrailerFavorite(ctx.state, itemId, nextIsFavorite);
-    ctx.renderSlides();
-
+  // "Meine Liste" (the same list as everywhere else): the store changes the
+  // button at once and puts it back when the server refuses.
+  ctx.toggleWatchlist = async itemId => {
+    if (!itemId) return;
     try {
-      if (nextIsFavorite) {
-        await MediaApi.favoriteItem(itemId);
-      } else {
-        await MediaApi.unfavoriteItem(itemId);
-      }
+      const saved = await watchlistStore.toggle(itemId);
+      appStore.showToast(saved ? 'Zu meiner Liste hinzugefügt' : 'Aus meiner Liste entfernt', 'success');
     } catch (error) {
       if (error.isAuthError) return;
-      console.error('[Trailer Favorite Error]', error);
-      appStore.showToast('Favorit konnte nicht aktualisiert werden', 'error');
-      ctx.state = markTrailerFavorite(ctx.state, itemId, currentTrailer.isFavorite);
-      ctx.renderSlides();
+      appStore.showToast(error.message || 'Meine Liste konnte nicht geändert werden', 'error');
     }
   };
 

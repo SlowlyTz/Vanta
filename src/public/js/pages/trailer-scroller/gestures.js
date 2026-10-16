@@ -45,7 +45,7 @@ export function bindGestures(ctx) {
       case 'L':
         {
           const trailer = ctx.state.trailers[ctx.state.activeIndex];
-          if (trailer) ctx.toggleFavorite(trailer.itemId);
+          if (trailer) ctx.toggleWatchlist(trailer.itemId);
         }
         break;
       case 'Enter':

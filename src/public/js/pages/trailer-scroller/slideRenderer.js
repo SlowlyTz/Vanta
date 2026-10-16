@@ -2,8 +2,29 @@ import { createElement } from '../../utils/dom.js';
 import { createScrollerIcon } from './context.js';
 import { createMetaIcon } from '../../components/metaIcons.js';
 import { getBackdropUrlFor } from '../../utils/image.js';
+import { watchlistStore } from '../../store/watchlist.store.js';
+
+// The "Meine Liste" button of a slide, in the state of the list.
+function renderListButton(button, saved) {
+  button.classList.toggle('is-saved', saved);
+  button.setAttribute('aria-pressed', String(saved));
+  button.setAttribute('aria-label', saved ? 'Aus meiner Liste entfernen' : 'Zu meiner Liste hinzufügen');
+  button.replaceChildren(
+    createScrollerIcon(saved ? 'listSaved' : 'listAdd', 'trailer-action-icon'),
+    createElement('span', { className: 'trailer-action-label' }, saved ? 'In meiner Liste' : 'Meine Liste')
+  );
+}
 
 export function bindSlideRenderer(ctx) {
+  // Changed elsewhere (a card's menu, another tab): the buttons follow.
+  const unsubscribeWatchlist = watchlistStore.subscribe(() => {
+    ctx.track?.querySelectorAll('.trailer-action-list').forEach(button => {
+      renderListButton(button, watchlistStore.has(button.dataset.itemId));
+    });
+  });
+  ctx.onCleanup?.(unsubscribeWatchlist);
+  if (!watchlistStore.isLoaded()) watchlistStore.load();
+
   ctx.updateChrome = () => {
     const total = ctx.state.trailers.length;
 
@@ -95,16 +116,13 @@ export function bindSlideRenderer(ctx) {
       thumbnail
     );
 
-    const likeButton = createElement('button', {
-      className: `trailer-action trailer-action-like${trailer.isFavorite ? ' is-favorite' : ''}`,
+    const listButton = createElement('button', {
+      className: 'trailer-action trailer-action-list',
       type: 'button',
-      'aria-label': trailer.isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen',
-      'aria-pressed': String(Boolean(trailer.isFavorite)),
-      onClick: () => ctx.toggleFavorite(trailer.itemId)
-    },
-      createScrollerIcon('favorite', 'trailer-action-icon'),
-      createElement('span', { className: 'trailer-action-label' }, trailer.isFavorite ? 'Gespeichert' : 'Favorit')
-    );
+      dataset: { itemId: trailer.itemId },
+      onClick: () => ctx.toggleWatchlist(trailer.itemId)
+    });
+    renderListButton(listButton, watchlistStore.has(trailer.itemId));
 
     const detailButton = createElement('button', {
       className: 'trailer-action trailer-action-detail',
@@ -128,7 +146,7 @@ export function bindSlideRenderer(ctx) {
       createElement('span', { className: 'trailer-action-label' }, 'Teilen')
     );
 
-    const actions = createElement('div', { className: 'trailer-actions' }, likeButton, detailButton, shareButton);
+    const actions = createElement('div', { className: 'trailer-actions' }, listButton, detailButton, shareButton);
 
     const meta = createElement('div', { className: 'trailer-info-meta' });
     if (trailer.year) {
@@ -226,14 +244,8 @@ export function bindSlideRenderer(ctx) {
     existingSlides.forEach((slide, index) => {
       const trailer = ctx.state.trailers[index];
       if (!trailer) return;
-      const likeButton = slide.querySelector('.trailer-action-like');
-      if (likeButton) {
-        likeButton.classList.toggle('is-favorite', trailer.isFavorite);
-        likeButton.setAttribute('aria-label', trailer.isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen');
-        likeButton.setAttribute('aria-pressed', String(Boolean(trailer.isFavorite)));
-        const likeLabel = likeButton.querySelector('.trailer-action-label');
-        if (likeLabel) likeLabel.textContent = trailer.isFavorite ? 'Gespeichert' : 'Favorit';
-      }
+      const listButton = slide.querySelector('.trailer-action-list');
+      if (listButton) renderListButton(listButton, watchlistStore.has(trailer.itemId));
 
       const overview = slide.querySelector('.trailer-info-overview');
       if (overview) {

@@ -20,6 +20,10 @@ vi.mock('../../../src/public/js/api/media.api.js', () => ({
   }
 }));
 
+vi.mock('../../../src/public/js/api/watchlist.api.js', () => ({
+  WatchlistApi: { ids: vi.fn(async () => ({ ids: [] })), add: vi.fn(async () => ({})), remove: vi.fn(async () => ({})) }
+}));
+
 vi.mock('../../../src/public/js/store/app.store.js', () => ({
   appStore: {
     showToast: vi.fn()
@@ -131,12 +135,33 @@ describe('TrailerScrollerPage', () => {
     expect(page.querySelector('.trailer-video-container .trailer-action')).toBeNull();
     expect(page.querySelectorAll('.trailer-info .trailer-action')).toHaveLength(3);
     expect(Array.from(page.querySelectorAll('.trailer-action-label')).map(el => el.textContent))
-      .toEqual(['Favorit', 'Details', 'Teilen']);
+      .toEqual(['Meine Liste', 'Details', 'Teilen']);
     expect(playerMocks.createPlayer).toHaveBeenCalledWith(
       expect.any(String),
       'youtube-1',
       expect.objectContaining({ autoplay: 1, muted: false })
     );
+  });
+
+  it('"Meine Liste" shows and changes the same list as the rest of the app', async () => {
+    const { watchlistStore } = await import('../../../src/public/js/store/watchlist.store.js');
+    const { WatchlistApi } = await import('../../../src/public/js/api/watchlist.api.js');
+    const trailer = makeTrailer();
+    MediaApi.getTrailers.mockResolvedValue({ feedId: 'feed-1', items: [trailer], nextCursor: null, hasMore: false });
+    watchlistStore.ids = new Set([trailer.itemId]);
+    watchlistStore.loaded = true;
+
+    const page = await mountScroller();
+    const button = page.querySelector('.trailer-action-list');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.textContent.trim()).toBe('In meiner Liste');
+
+    button.click();
+    await Promise.resolve();
+    expect(WatchlistApi.remove).toHaveBeenCalledWith(trailer.itemId);
+    expect(page.querySelector('.trailer-action-list').getAttribute('aria-pressed')).toBe('false');
+    expect(page.querySelector('.trailer-action-list').textContent.trim()).toBe('Meine Liste');
+    watchlistStore.clear();
   });
 
   it('shows an inline retry state instead of an empty page when loading fails', async () => {

@@ -8,7 +8,9 @@ let scrollerInstanceCounter = 0;
 const SCROLLER_ICONS = {
   previous: '<path d="m18 15-6-6-6 6"></path>',
   next: '<path d="m6 9 6 6 6-6"></path>',
-  favorite: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"></path>',
+  // "Meine Liste": the bookmark of the other list buttons, with + or ✓.
+  listAdd: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"></path><path d="M12 7.5v6M9 10.5h6"></path>',
+  listSaved: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"></path><path d="m9 10.5 2 2 4-4"></path>',
   details: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path>',
   share: '<circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="m8.2 10.8 7.6-4.5"></path><path d="m8.2 13.2 7.6 4.5"></path>',
   film: '<rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="m10 9 5 3-5 3Z"></path>',

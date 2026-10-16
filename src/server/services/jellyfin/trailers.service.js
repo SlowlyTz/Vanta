@@ -108,8 +108,7 @@ export function normalizeTrailer(item) {
     primaryImageTag: item.ImageTags?.Primary || null,
     backdropImageTag: item.BackdropImageTags?.[0] || null,
     youtubeVideoId,
-    youtubeUrl: `https://www.youtube.com/watch?v=${youtubeVideoId}`,
-    isFavorite: Boolean(item.UserData?.IsFavorite)
+    youtubeUrl: `https://www.youtube.com/watch?v=${youtubeVideoId}`
   };
 }
 
