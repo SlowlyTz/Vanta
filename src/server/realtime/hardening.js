@@ -46,11 +46,24 @@ export function rejectUnknownUpgrades(server, isKnownPath) {
   });
 }
 
+// A frame over WS_MAX_PAYLOAD, invalid UTF-8 or a bad opcode makes ws emit
+// 'error' on the socket; without a listener that is an uncaught exception and
+// takes the whole server down. The socket is cut off instead, which runs the
+// normal close handling.
+export function guardSocketErrors(ws, { log = console } = {}) {
+  ws.on('error', error => {
+    log.warn?.('[WebSocket] connection dropped:', error?.message || error);
+    try { ws.terminate(); } catch { /* already gone */ }
+  });
+}
+
 // Pings every client on an interval; one that has not answered the previous
 // ping is gone (a phone that lost its network sends no close) and is cut off,
-// which runs the same close handling as a normal disconnect.
+// which runs the same close handling as a normal disconnect. Also guards every
+// socket against errors (see guardSocketErrors).
 export function startHeartbeat(wss, { intervalMs = HEARTBEAT_INTERVAL_MS } = {}) {
   wss.on('connection', ws => {
+    guardSocketErrors(ws);
     ws.isAlive = true;
     ws.on('pong', () => { ws.isAlive = true; });
   });
