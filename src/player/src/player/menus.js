@@ -38,12 +38,18 @@ export function bindMenus(context) {
               replacesPlaySessionId: currentPlayback.playSessionId
             });
             if (context.destroyed) return;
-            await context.sourceSwitch.switchTo(playback, {
+            const result = await context.sourceSwitch.switchTo(playback, {
               position: context.sourceSwitch.captureState().position,
               shouldPlay: context.sourceSwitch.getIntendsToPlay(),
               label: 'Qualität wird gewechselt …'
             });
             if (context.destroyed) return;
+            if (!result?.success) {
+              // The old stream plays again: the menu says so, too.
+              context.updateMenus(context.sourceSwitch.getCurrentPlayback() || currentPlayback);
+              context.showNotice?.('Qualität konnte nicht gewechselt werden. Die bisherige läuft weiter.');
+              return;
+            }
             context.updateMenus(playback);
           } catch (error) {
             if (!context.destroyed && !context.handleFatalPlaybackError(error)) context.showError(error.message);
@@ -65,12 +71,18 @@ export function bindMenus(context) {
           replacesPlaySessionId: currentPlayback.playSessionId
         });
         if (context.destroyed) return;
-        await context.sourceSwitch.switchTo(playback, {
+        const result = await context.sourceSwitch.switchTo(playback, {
           position: context.sourceSwitch.captureState().position,
           shouldPlay: context.sourceSwitch.getIntendsToPlay(),
           label: 'Tonspur wird gewechselt …'
         });
         if (context.destroyed) return;
+        if (!result?.success) {
+          // No language is remembered that did not play.
+          context.updateMenus(context.sourceSwitch.getCurrentPlayback() || currentPlayback);
+          context.showNotice?.('Tonspur konnte nicht gewechselt werden. Die bisherige läuft weiter.');
+          return;
+        }
         context.updateMenus(playback);
         context.preferences?.update({ audioLanguage: context.audioMenu.getCurrentLanguage() });
       } catch (error) {

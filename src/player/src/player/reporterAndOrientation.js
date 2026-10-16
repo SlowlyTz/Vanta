@@ -38,6 +38,22 @@ export function bindReporterAndOrientation(context) {
   });
   context.disposers.push(() => context.inlineLoading.end());
 
+  // A short line over the video that goes by itself (a quality or audio
+  // switch that did not work and was taken back).
+  const notice = document.createElement('div');
+  notice.className = 'vanta-player-notice';
+  notice.setAttribute('role', 'status');
+  notice.hidden = true;
+  (context.root.querySelector('.vanta-player-shell') || context.root).appendChild(notice);
+  let noticeTimer = null;
+  context.showNotice = (message, { durationMs = 4000 } = {}) => {
+    notice.textContent = message;
+    notice.hidden = false;
+    window.clearTimeout(noticeTimer);
+    noticeTimer = window.setTimeout(() => { notice.hidden = true; }, durationMs);
+  };
+  context.disposers.push(() => window.clearTimeout(noticeTimer));
+
   // A failed start or stream: the cover comes back and says why (it used to
   // show "Stream wird geladen …" for good, hiding the error).
   context.showError = (message) => {

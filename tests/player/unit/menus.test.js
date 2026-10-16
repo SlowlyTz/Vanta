@@ -140,6 +140,35 @@ describe('bindMenus', () => {
     expect(env.context.preferences.update).toHaveBeenCalledWith({ audioLanguage: 'ger' });
   });
 
+  it('nimmt einen gescheiterten Tonspurwechsel auch im Menü zurück und merkt sich die Sprache nicht', async () => {
+    env = setup();
+    const playback = {
+      quality: null,
+      subtitles: [],
+      audioStreamIndex: 1,
+      audioTracks: [{ index: 1, language: 'eng', label: 'Englisch', isDefault: true }, { index: 2, language: 'ger', label: 'Deutsch' }]
+    };
+    const switched = { ...playback, audioStreamIndex: 2 };
+    env.context.sourceSwitch = {
+      getCurrentPlayback: () => playback,
+      captureState: () => ({ position: 42 }),
+      getIntendsToPlay: () => true,
+      switchTo: vi.fn().mockResolvedValue({ success: false, rolledBack: true })
+    };
+    env.context.resolvePlayback = vi.fn().mockResolvedValue(switched);
+    env.context.preferences = { get: () => ({}), update: vi.fn() };
+    env.context.showNotice = vi.fn();
+    env.context.updateMenus(playback);
+
+    env.context.audioMenu.select(2);
+    for (let i = 0; i < 4; i += 1) await Promise.resolve();
+
+    expect(env.context.preferences.update).not.toHaveBeenCalled();
+    env.dom.settingsButton.click();
+    expect(env.root.querySelector('.vanta-settings-row[data-page="audio"]').getAttribute('aria-label')).toBe('Tonspur: Englisch');
+    expect(env.context.showNotice).toHaveBeenCalledWith(expect.stringContaining('Tonspur konnte nicht gewechselt werden'));
+  });
+
   describe('Nächste Folge in der Watch Party', () => {
     const episodeContext = {
       currentEpisodeId: 'e1',
@@ -221,7 +250,7 @@ describe('bindMenus', () => {
           getCurrentPlayback: () => current,
           captureState: () => ({ position: 42 }),
           getIntendsToPlay: () => true,
-          switchTo: vi.fn().mockResolvedValue(undefined)
+          switchTo: vi.fn().mockResolvedValue({ success: true })
         }
       });
       return env.context;

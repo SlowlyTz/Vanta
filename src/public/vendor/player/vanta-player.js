@@ -1022,7 +1022,7 @@ function vt(e) {
 		getLoadIndicator: () => e.loadIndicator,
 		onLeave: () => e.onBack ? e.onBack() : window.history.back()
 	});
-	return e.disposers.push(a.dispose), e.setLoading = a.setVisible, e.setLoadingStatus = a.setStatus, e.setInlineLoading = (t) => {
+	e.disposers.push(a.dispose), e.setLoading = a.setVisible, e.setLoadingStatus = a.setStatus, e.setInlineLoading = (t) => {
 		var n;
 		t && !i.loading.classList.contains("is-hidden") || (i.inlineLoading.hidden = !t, (n = e.loadIndicator) == null || n.setInlineVisible(t));
 	}, e.inlineLoading = st({
@@ -1043,7 +1043,15 @@ function vt(e) {
 			var n;
 			return (n = e.loadIndicator) == null ? void 0 : n.setSlow(t);
 		}
-	}), e.disposers.push(() => e.inlineLoading.end()), e.showError = (t) => {
+	}), e.disposers.push(() => e.inlineLoading.end());
+	let o = document.createElement("div");
+	o.className = "vanta-player-notice", o.setAttribute("role", "status"), o.hidden = !0, (e.root.querySelector(".vanta-player-shell") || e.root).appendChild(o);
+	let s = null;
+	return e.showNotice = (e, { durationMs: t = 4e3 } = {}) => {
+		o.textContent = e, o.hidden = !1, window.clearTimeout(s), s = window.setTimeout(() => {
+			o.hidden = !0;
+		}, t);
+	}, e.disposers.push(() => window.clearTimeout(s)), e.showError = (t) => {
 		e.sourceSwitch.clearSeekTimer(), e.inlineLoading.end(), e.setInlineLoading(!1), e.ui.setState("buffering"), e.setLoading(!0, "Stream wird geladen …"), a.showProblem(t || "Der Stream konnte nicht geladen werden.", { fatal: !0 });
 	}, e;
 }
@@ -2791,16 +2799,23 @@ function wr(e) {
 	let { root: t, player: n, reporter: r, watchParty: i, episodeBrowser: a, dom: o, ui: s } = e, c = t.querySelector(".vanta-player-shell"), l = i != null && i.disableQualityMenu ? null : ln({ onSelect: async (t) => {
 		let n = e.sourceSwitch.getCurrentPlayback();
 		if (n) try {
-			let r = await e.resolvePlayback("auto", {
+			let i = await e.resolvePlayback("auto", {
 				qualityProfile: t,
 				replacesPlaySessionId: n.playSessionId
 			});
-			if (e.destroyed || (await e.sourceSwitch.switchTo(r, {
+			if (e.destroyed) return;
+			let a = await e.sourceSwitch.switchTo(i, {
 				position: e.sourceSwitch.captureState().position,
 				shouldPlay: e.sourceSwitch.getIntendsToPlay(),
 				label: "Qualität wird gewechselt …"
-			}), e.destroyed)) return;
-			e.updateMenus(r);
+			});
+			if (e.destroyed) return;
+			if (!(a != null && a.success)) {
+				var r;
+				e.updateMenus(e.sourceSwitch.getCurrentPlayback() || n), (r = e.showNotice) == null || r.call(e, "Qualität konnte nicht gewechselt werden. Die bisherige läuft weiter.");
+				return;
+			}
+			e.updateMenus(i);
 		} catch (t) {
 			!e.destroyed && !e.handleFatalPlaybackError(t) && e.showError(t.message);
 		}
@@ -2809,17 +2824,24 @@ function wr(e) {
 		let n = e.sourceSwitch.getCurrentPlayback();
 		if (n) try {
 			var r;
-			let i = await e.resolvePlayback("auto", {
+			let a = await e.resolvePlayback("auto", {
 				audioStreamIndex: t,
 				mediaSourceId: n.mediaSourceId || void 0,
 				replacesPlaySessionId: n.playSessionId
 			});
-			if (e.destroyed || (await e.sourceSwitch.switchTo(i, {
+			if (e.destroyed) return;
+			let o = await e.sourceSwitch.switchTo(a, {
 				position: e.sourceSwitch.captureState().position,
 				shouldPlay: e.sourceSwitch.getIntendsToPlay(),
 				label: "Tonspur wird gewechselt …"
-			}), e.destroyed)) return;
-			e.updateMenus(i), (r = e.preferences) == null || r.update({ audioLanguage: e.audioMenu.getCurrentLanguage() });
+			});
+			if (e.destroyed) return;
+			if (!(o != null && o.success)) {
+				var i;
+				e.updateMenus(e.sourceSwitch.getCurrentPlayback() || n), (i = e.showNotice) == null || i.call(e, "Tonspur konnte nicht gewechselt werden. Die bisherige läuft weiter.");
+				return;
+			}
+			e.updateMenus(a), (r = e.preferences) == null || r.update({ audioLanguage: e.audioMenu.getCurrentLanguage() });
 		} catch (t) {
 			!e.destroyed && !e.handleFatalPlaybackError(t) && e.showError(t.message);
 		}
