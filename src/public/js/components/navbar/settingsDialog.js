@@ -14,6 +14,7 @@ import { createNotificationsView } from '../settings/views/notificationsView.js'
 import { createPlaybackView } from '../settings/views/playbackView.js';
 import { createAppearanceView } from '../settings/views/appearanceView.js';
 import { createDevicesView } from '../settings/views/devicesView.js';
+import { followAfterBack, inAppLinkOf } from '../../utils/historyEntry.js';
 
 // From this width the hub and the open area stand side by side.
 const SPLIT_QUERY = '(min-width: 900px)';
@@ -339,28 +340,14 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   // closing the dialog would go back from the new page again. Capture phase:
   // before a link's own handler closes the dialog.
   settingsDialog.addEventListener('click', event => {
-    const link = event.target?.closest?.('a[href^="#/"]');
-    if (!link || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    const target = inAppLinkOf(event);
+    if (!target) return;
     event.preventDefault();
-    const target = link.getAttribute('href');
     const hadEntry = historyEntry;
     historyEntry = false;
     setSettingsOpen(false);
-    if (!hadEntry) {
-      window.location.hash = target;
-      return;
-    }
-    let done = false;
-    const follow = () => {
-      if (done) return;
-      done = true;
-      window.removeEventListener('popstate', follow);
-      window.location.hash = target;
-    };
-    window.addEventListener('popstate', follow);
-    window.history.back();
-    // A browser that sends no popstate here still gets there.
-    window.setTimeout(follow, 300);
+    if (hadEntry) followAfterBack(target);
+    else window.location.hash = target;
   }, true);
 
   // Turning a tablet: the layout follows while the dialog is open.
