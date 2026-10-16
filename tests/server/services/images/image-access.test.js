@@ -6,15 +6,22 @@ vi.mock('../../../../src/server/config/env.js', () => ({
 
 import { createImageAccess } from '../../../../src/server/services/images/image-access.js';
 
-const reader = (libraries) => ({ libraryOf: (id) => libraries[id] });
+// `libraries`: id -> library id, or { libraryId, type, officialRating }.
+const reader = (libraries) => ({
+  accessOf: (id) => {
+    const entry = libraries[id];
+    if (entry === undefined) return undefined;
+    return typeof entry === 'string' ? { libraryId: entry, type: 'Movie', officialRating: null } : entry;
+  }
+});
 
-function setup({ libraries = {}, visible = ['lib-movies'], jellyfin = 200 } = {}) {
+function setup({ libraries = {}, visible = ['lib-movies'], ageLimit = null, jellyfin = 200 } = {}) {
   let time = 0;
   const fetchItem = vi.fn(async () => (jellyfin instanceof Error ? Promise.reject(jellyfin) : { ok: jellyfin === 200, status: jellyfin }));
-  const visibleLibraries = vi.fn(async () => visible);
+  const visibleLibraries = vi.fn(async () => ({ libraryIds: visible, ageLimit }));
   const access = createImageAccess({
     getReader: () => reader(libraries),
-    visibleLibraries,
+    catalogAccess: visibleLibraries,
     fetchItem,
     now: () => time,
     log: { warn: vi.fn() }
@@ -33,8 +40,27 @@ describe('image access', () => {
   });
 
   it('lets a user with access to every library see every catalogue title', async () => {
-    const { access } = setup({ libraries: { k1: 'lib-kids-hidden' }, visible: null });
+    const { access, fetchItem } = setup({ libraries: { k1: 'lib-kids-hidden' }, visible: null });
     expect(await ask(access, 'k1')).toBe(true);
+    expect(fetchItem).not.toHaveBeenCalled();
+  });
+
+  it('keeps posters of titles above the account\'s age limit to itself', async () => {
+    const { access, fetchItem } = setup({
+      visible: null,
+      ageLimit: { maxAge: 12, blockUnrated: ['Movie'] },
+      libraries: {
+        fsk12: { libraryId: 'lib-movies', type: 'Movie', officialRating: 'FSK-12' },
+        fsk18: { libraryId: 'lib-movies', type: 'Movie', officialRating: 'FSK-18' },
+        unratedMovie: { libraryId: 'lib-movies', type: 'Movie', officialRating: null },
+        unratedSeries: { libraryId: 'lib-movies', type: 'Series', officialRating: null }
+      }
+    });
+    expect(await ask(access, 'fsk12')).toBe(true);
+    expect(await ask(access, 'fsk18')).toBe(false);
+    expect(await ask(access, 'unratedMovie')).toBe(false);
+    expect(await ask(access, 'unratedSeries')).toBe(true);
+    expect(fetchItem).not.toHaveBeenCalled();
   });
 
   it('asks Jellyfin once for anything else and remembers the answer for a while', async () => {

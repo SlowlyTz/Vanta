@@ -1,7 +1,7 @@
 import { createElement } from '../../../utils/dom.js';
 import { AdminUsersApi } from '../../../api/admin-users.api.js';
 import { openBanDialog, openDeleteDialog } from './adminUserDialogs.js';
-import { buildRenameField, buildPasswordField, buildLibraryField, buildStreamLimitField } from './adminUserDetailView/fields.js';
+import { buildRenameField, buildPasswordField, buildLibraryField, buildStreamLimitField, buildAgeLimitField } from './adminUserDetailView/fields.js';
 import { createUserBadges, userInitial } from './adminUserRow.js';
 
 export function createAdminUserDetailView(user, {
@@ -97,6 +97,7 @@ export function createAdminUserDetailView(user, {
   const passwordField = buildPasswordField();
   const libraryField = buildLibraryField(user, libraries, { onChange: () => updateSaveBar() });
   const streamField = buildStreamLimitField(user);
+  const ageField = buildAgeLimitField(user);
 
   const saveAllBtn = createElement('button', {
     className: 'btn-primary admin-user-save-all',
@@ -110,7 +111,7 @@ export function createAdminUserDetailView(user, {
     onClick: () => onReload?.()
   }, 'Verwerfen');
 
-  const fields = () => [renameField, passwordField, libraryField, streamField];
+  const fields = () => [renameField, passwordField, libraryField, ageField, streamField];
   // The save bar only shows while something differs from what is saved.
   const saveBar = createElement('div', { className: 'admin-user-save-bar', hidden: true },
     createElement('span', { className: 'admin-user-save-bar-text' }, 'Ungespeicherte Änderungen'),
@@ -153,6 +154,10 @@ export function createAdminUserDetailView(user, {
           libraryUndo = previous;
         }
       });
+    }
+    if (ageField.hasChanged()) {
+      const { maxAge, blockUnrated } = ageField.getValue();
+      tasks.push({ label: 'Altersfreigabe', run: () => AdminUsersApi.setAgeLimit(user.id, maxAge, blockUnrated) });
     }
     if (streamField.hasChanged()) {
       const maxConcurrentStreams = streamField.getValue();
@@ -209,6 +214,7 @@ export function createAdminUserDetailView(user, {
   const body = createElement('div', { className: 'admin-user-detail-body' },
     section('Konto', renameField.element, passwordField.element),
     section('Zugriff', libraryField.element),
+    section('Altersfreigabe', ageField.element),
     section('Streams', streamField.element),
     dangerZone
   );

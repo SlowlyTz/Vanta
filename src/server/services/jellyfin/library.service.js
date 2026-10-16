@@ -4,7 +4,7 @@ import { getFeaturedPublisherById, matchFeaturedPublisher } from '../../../publi
 import { ItemsService } from './items.service.js';
 import { findNextEpisode } from '../../../player/src/nextEpisode.js';
 import { getActiveCatalogReader } from '../catalog/reader.js';
-import { getVisibleLibraryIds } from '../catalog/visibility.js';
+import { getCatalogAccess } from '../catalog/visibility.js';
 import { visibleResumeItems } from '../resume-visibility.js';
 import { itemMatchesFilters } from '../catalog/search.js';
 
@@ -29,8 +29,7 @@ async function fromCatalog(userId, token, read) {
   const reader = getActiveCatalogReader();
   if (!reader) return null;
 
-  const libraryIds = await getVisibleLibraryIds(userId, token);
-  return read(reader, libraryIds);
+  return read(reader, await getCatalogAccess(userId, token));
 }
 
 function getItems(userId, token, params = {}) {
@@ -115,8 +114,8 @@ export class LibraryService {
   }
 
   static async getMovies(userId, token) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.newest({ type: 'Movie', libraryIds, limit: 24 }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.newest({ type: 'Movie', libraryIds, ageLimit, limit: 24 }));
     if (mirrored) return mirrored;
 
     const data = await getItems(userId, token, {
@@ -130,8 +129,8 @@ export class LibraryService {
   }
 
   static async getSeries(userId, token) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.newest({ type: 'Series', libraryIds, limit: 24 }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.newest({ type: 'Series', libraryIds, ageLimit, limit: 24 }));
     if (mirrored) return mirrored;
 
     const data = await getItems(userId, token, {
@@ -145,8 +144,8 @@ export class LibraryService {
   }
 
   static async search(userId, token, query) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.search({ query, libraryIds, limit: 50 }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.search({ query, libraryIds, ageLimit, limit: 50 }));
     if (mirrored) return mirrored;
 
     const data = await getItems(userId, token, {
@@ -163,9 +162,9 @@ export class LibraryService {
   // the same filters applied to what it found.
   static async searchFull(userId, token, query, filters = {}, { limit = 60 } = {}) {
     const text = String(query || '').trim();
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) => ({
-      items: reader.search({ query: text, libraryIds, filters, limit }),
-      people: filters.peopleToo === false ? [] : reader.searchPeople({ query: text, libraryIds })
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) => ({
+      items: reader.search({ query: text, libraryIds, ageLimit, filters, limit }),
+      people: filters.peopleToo === false ? [] : reader.searchPeople({ query: text, libraryIds, ageLimit })
     }));
     if (mirrored) return mirrored;
 
@@ -189,18 +188,18 @@ export class LibraryService {
 
   // The screensaver's titles; without the catalogue there are none.
   static async getScreensaverItems(userId, token, limit = 30) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) => reader.screensaver({ libraryIds, limit }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) => reader.screensaver({ libraryIds, ageLimit, limit }));
     return mirrored || [];
   }
 
   // Null without the catalogue: then every decade stays on offer.
   static async getDecades(userId, token) {
-    return fromCatalog(userId, token, (reader, libraryIds) => reader.decades({ libraryIds }));
+    return fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) => reader.decades({ libraryIds, ageLimit }));
   }
 
   static async getGenres(userId, token, type) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.genres({ type, libraryIds }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.genres({ type, libraryIds, ageLimit }));
     if (mirrored) return mirrored;
 
     const data = await jellyfinJson('/Genres', {
@@ -211,8 +210,8 @@ export class LibraryService {
   }
 
   static async getStudios(userId, token) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.studios({ libraryIds }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.studios({ libraryIds, ageLimit }));
     if (mirrored) return mirrored;
 
     const data = await jellyfinJson('/Studios', {
@@ -228,8 +227,8 @@ export class LibraryService {
   }
 
   static async getLibrary(userId, token, type, genre = null, studio = null, page = 1, limit = 50) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.page({ type, libraryIds, genre, studios: studio ? [studio] : [], page, limit }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.page({ type, libraryIds, ageLimit, genre, studios: studio ? [studio] : [], page, limit }));
     if (mirrored) return mirrored;
 
     const types = type.split(',').map(t => t.trim()).filter(Boolean);
@@ -277,8 +276,8 @@ export class LibraryService {
       return { items: [], totalRecordCount: 0 };
     }
 
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.page({ type, libraryIds, genre, studios: studioNames, page, limit }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.page({ type, libraryIds, ageLimit, genre, studios: studioNames, page, limit }));
     if (mirrored) return mirrored;
 
     const types = type.split(',').map(t => t.trim()).filter(Boolean);
@@ -308,8 +307,8 @@ export class LibraryService {
   }
 
   static async getAllMoviesAndSeries(userId, token, limit = 2000) {
-    const mirrored = await fromCatalog(userId, token, (reader, libraryIds) =>
-      reader.all({ libraryIds }));
+    const mirrored = await fromCatalog(userId, token, (reader, { libraryIds, ageLimit }) =>
+      reader.all({ libraryIds, ageLimit }));
     if (mirrored) return mirrored;
 
     const data = await getItems(userId, token, {

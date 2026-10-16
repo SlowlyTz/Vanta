@@ -6,7 +6,7 @@ import { UserDirectory } from './user-directory.service.js';
 import { AppSettingsService } from './app-settings.service.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
 import { formatEpisodeCode } from '../../public/js/shared/episodeCode.js';
-import { ageRating } from './catalog/search.js';
+import { withinAgeLimit } from './catalog/age-limit.js';
 
 // What causes a notification. Each trigger runs after the action itself
 // succeeded and never fails it.
@@ -23,18 +23,15 @@ const EPISODE_LOOKUPS_PARALLEL = 4;
 
 const quote = (text) => `„${text}“`;
 
-// Within the user's parental limit (see user-directory.service.js). A
-// rating VANTA cannot read lets the title through; an unrated one only
-// where Jellyfin does not block unrated titles of its kind.
-const withinAgeLimit = (user, item) => {
-  if (!Number.isFinite(user.maxAge)) return true;
-  if (!item.OfficialRating) return !user.blockUnrated?.includes(item.Type);
-  const age = ageRating(item.OfficialRating);
-  return age === null || age <= user.maxAge;
-};
+// Within the user's parental limit (see user-directory.service.js and
+// catalog/age-limit.js).
+const withinUserAgeLimit = (user, item) => withinAgeLimit(
+  Number.isFinite(user.maxAge) || user.blockUnrated?.length ? { maxAge: Number.isFinite(user.maxAge) ? user.maxAge : null, blockUnrated: user.blockUnrated || [] } : null,
+  item
+);
 
 const visibleTo = (user, item) =>
-  (user.libraryIds === null || user.libraryIds.includes(item.LibraryId)) && withinAgeLimit(user, item);
+  (user.libraryIds === null || user.libraryIds.includes(item.LibraryId)) && withinUserAgeLimit(user, item);
 
 // `run` over `items`, at most `limit` at a time; results in order.
 async function mapLimited(items, limit, run) {

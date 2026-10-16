@@ -1,5 +1,6 @@
 import { normalizeText } from './sync.service.js';
 import { normalizeForSearch, ageRating, rankEntries, rankPeople } from './search.js';
+import { withinAgeLimit } from './age-limit.js';
 
 const SORTS = {
   sortName: 'sort_name COLLATE NOCASE ASC, name COLLATE NOCASE ASC',
@@ -18,19 +19,49 @@ const parseTypes = (type) => {
 };
 
 // Read side of the catalogue mirror. Every method takes the caller's visible
-// library ids so per-user library access is applied to the mirror the same
-// way Jellyfin applies it to its own queries. Results are the stored Jellyfin
-// items, so the frontend receives exactly what it did before.
+// library ids and age limit (see age-limit.js), so per-user access is applied
+// to the mirror the same way Jellyfin applies it to its own queries. Results
+// are the stored Jellyfin items, so the frontend receives exactly what it did
+// before.
 export function createCatalogReader(db) {
   const count = db.prepare('SELECT COUNT(*) AS count FROM catalog_items');
 
   const rowsToItems = (rows) => rows.map(row => JSON.parse(row.data));
 
+  // The ratings the catalogue holds ("FSK-12", "PG-13" …), a few dozen at
+  // most: an age limit becomes the list of those it allows.
+  let ratingsCache = null;
+  const knownRatings = () => {
+    const current = signature();
+    if (ratingsCache?.signature !== current) {
+      ratingsCache = {
+        signature: current,
+        ratings: db.prepare('SELECT DISTINCT official_rating AS rating FROM catalog_items WHERE official_rating IS NOT NULL').all().map(row => row.rating)
+      };
+    }
+    return ratingsCache.ratings;
+  };
+
+  const ageClause = (ageLimit, clauses, params) => {
+    if (!ageLimit) return;
+    const allowed = knownRatings().filter(rating => withinAgeLimit(ageLimit, { officialRating: rating }));
+    const blocked = ageLimit.blockUnrated || [];
+    const rated = allowed.length ? `i.official_rating IN (${allowed.map(() => '?').join(', ')})` : '0';
+    const unrated = blocked.length
+      ? `(i.official_rating IS NULL AND i.type NOT IN (${blocked.map(() => '?').join(', ')}))`
+      : 'i.official_rating IS NULL';
+    clauses.push(`(${rated} OR ${unrated})`);
+    params.push(...allowed, ...blocked);
+  };
+
   // Builds the WHERE clause shared by every query. `libraryIds` null means
-  // "no restriction" (admins), an empty array means "nothing visible".
-  const buildWhere = ({ types = [], libraryIds = null, genre = null, studios = [], withTrailer = false, withBackdrop = false, query = null }) => {
+  // "no restriction" (admins), an empty array means "nothing visible";
+  // `ageLimit` null means no parental limit.
+  const buildWhere = ({ types = [], libraryIds = null, ageLimit = null, genre = null, studios = [], withTrailer = false, withBackdrop = false, query = null }) => {
     const clauses = [];
     const params = [];
+
+    ageClause(ageLimit, clauses, params);
 
     if (types.length > 0) {
       clauses.push(`i.type IN (${types.map(() => '?').join(', ')})`);
@@ -103,6 +134,7 @@ export function createCatalogReader(db) {
         original: normalizeForSearch(row.original_title),
         year: row.production_year,
         age: ageRating(row.official_rating),
+        officialRating: row.official_rating,
         rating: row.community_rating,
         genres: genres.get(row.id) || new Set(),
         people: people.get(row.id) || []
@@ -125,16 +157,16 @@ export function createCatalogReader(db) {
   return {
     isReady: () => count.get().count > 0,
 
-    newest: ({ type, libraryIds = null, limit = 24 }) => {
+    newest: ({ type, libraryIds = null, ageLimit = null, limit = 24 }) => {
       const types = parseTypes(type);
       if (!types) return null;
-      return select({ types, libraryIds }, { sort: 'newest', limit });
+      return select({ types, libraryIds, ageLimit }, { sort: 'newest', limit });
     },
 
-    page: ({ type, libraryIds = null, genre = null, studios = [], page = 1, limit = 50 }) => {
+    page: ({ type, libraryIds = null, ageLimit = null, genre = null, studios = [], page = 1, limit = 50 }) => {
       const types = parseTypes(type);
       if (!types) return null;
-      const filters = { types, libraryIds, genre, studios };
+      const filters = { types, libraryIds, ageLimit, genre, studios };
       return {
         items: select(filters, { limit, offset: (page - 1) * limit }),
         totalRecordCount: total(filters)
@@ -142,11 +174,11 @@ export function createCatalogReader(db) {
     },
 
     // Typo-tolerant, also through cast and crew (see search.js).
-    search: ({ query, libraryIds = null, limit = 50, filters = {} }) =>
-      itemsByIds(rankEntries(entries(), { query, filters, libraryIds, limit })),
+    search: ({ query, libraryIds = null, ageLimit = null, limit = 50, filters = {} }) =>
+      itemsByIds(rankEntries(entries(), { query, filters, libraryIds, ageLimit, limit })),
 
-    searchPeople: ({ query, libraryIds = null, limit = 12 }) =>
-      rankPeople(entries(), { query, libraryIds, limit }),
+    searchPeople: ({ query, libraryIds = null, ageLimit = null, limit = 12 }) =>
+      rankPeople(entries(), { query, libraryIds, ageLimit, limit }),
 
     // Per library: how many titles, and the newest few with a poster (for the
     // library access list of the admin area).
@@ -165,8 +197,8 @@ export function createCatalogReader(db) {
 
     // The decades the user's films and series come from (1990, 2000 …),
     // newest first: the search offers only those as a filter.
-    decades: ({ libraryIds = null } = {}) => {
-      const { where, params } = buildWhere({ types: ['Movie', 'Series'], libraryIds });
+    decades: ({ libraryIds = null, ageLimit = null } = {}) => {
+      const { where, params } = buildWhere({ types: ['Movie', 'Series'], libraryIds, ageLimit });
       const clause = where ? `${where} AND i.production_year IS NOT NULL` : 'WHERE i.production_year IS NOT NULL';
       return db.prepare(`SELECT DISTINCT (i.production_year / 10) * 10 AS decade FROM catalog_items i ${clause} ORDER BY decade DESC`)
         .all(...params)
@@ -177,8 +209,8 @@ export function createCatalogReader(db) {
     // Titles with a backdrop for the screensaver: the newest and the best
     // rated ones, in a random order. Only those two short lists are read from
     // the database. `random` is injectable for tests.
-    screensaver: ({ libraryIds = null, limit = 30, random = Math.random } = {}) => {
-      const filters = { types: ['Movie', 'Series'], libraryIds, withBackdrop: true };
+    screensaver: ({ libraryIds = null, ageLimit = null, limit = 30, random = Math.random } = {}) => {
+      const filters = { types: ['Movie', 'Series'], libraryIds, ageLimit, withBackdrop: true };
       const newest = select(filters, { sort: 'newest', limit });
       const rated = select(filters, { sort: 'rating', limit });
       const byId = new Map([...newest, ...rated].map(item => [item.Id, item]));
@@ -189,15 +221,15 @@ export function createCatalogReader(db) {
         .slice(0, limit);
     },
 
-    all: ({ libraryIds = null, withTrailer = false, limit = null } = {}) =>
-      select({ types: ['Movie', 'Series'], libraryIds, withTrailer }, { limit }),
+    all: ({ libraryIds = null, ageLimit = null, withTrailer = false, limit = null } = {}) =>
+      select({ types: ['Movie', 'Series'], libraryIds, ageLimit, withTrailer }, { limit }),
 
     // Names only, like Jellyfin's /Genres and /Studios but restricted to what
     // the caller can actually see.
-    genres: ({ type, libraryIds = null }) => {
+    genres: ({ type, libraryIds = null, ageLimit = null }) => {
       const types = parseTypes(type);
       if (!types) return null;
-      const { where, params } = buildWhere({ types, libraryIds });
+      const { where, params } = buildWhere({ types, libraryIds, ageLimit });
       return db.prepare(`
         SELECT g.genre AS Name, COUNT(*) AS count FROM catalog_item_genres g
         JOIN catalog_items i ON i.id = g.item_id ${where}
@@ -207,8 +239,8 @@ export function createCatalogReader(db) {
 
     // `ItemCount` says how many visible titles carry the studio, so the
     // publisher page can hide one-off entries.
-    studios: ({ libraryIds = null } = {}) => {
-      const { where, params } = buildWhere({ libraryIds });
+    studios: ({ libraryIds = null, ageLimit = null } = {}) => {
+      const { where, params } = buildWhere({ libraryIds, ageLimit });
       return db.prepare(`
         SELECT s.studio AS Name, s.studio_normalized AS Id, COUNT(*) AS count FROM catalog_item_studios s
         JOIN catalog_items i ON i.id = s.item_id ${where}
@@ -223,8 +255,16 @@ export function createCatalogReader(db) {
       return rows.length === 0 ? undefined : (rows[0].library_id ?? null);
     },
 
-    byProviderId: ({ tmdbId = null, imdbId = null, type = null, libraryIds = null }) => {
-      const filters = buildWhere({ types: parseTypes(type) || [], libraryIds });
+    // What access to a movie or series depends on; undefined when the
+    // catalogue does not know the id.
+    accessOf: (itemId) => {
+      const rows = db.prepare('SELECT library_id, type, official_rating FROM catalog_items WHERE id = ?').all(String(itemId));
+      if (rows.length === 0) return undefined;
+      return { libraryId: rows[0].library_id ?? null, type: rows[0].type, officialRating: rows[0].official_rating ?? null };
+    },
+
+    byProviderId: ({ tmdbId = null, imdbId = null, type = null, libraryIds = null, ageLimit = null }) => {
+      const filters = buildWhere({ types: parseTypes(type) || [], libraryIds, ageLimit });
       const clauses = [];
       const params = [...filters.params];
       if (tmdbId) { clauses.push('i.tmdb_id = ?'); params.push(String(tmdbId)); }

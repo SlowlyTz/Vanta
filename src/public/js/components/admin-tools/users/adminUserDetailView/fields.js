@@ -1,4 +1,5 @@
 import { createElement } from '../../../../utils/dom.js';
+import { segmentedRow } from '../../../settings/controls.js';
 
 function setsEqual(a, b) {
   if (a.size !== b.size) return false;
@@ -250,5 +251,53 @@ export function buildStreamLimitField(user) {
       return Number.isInteger(value) && value >= 0 && value <= 20;
     },
     hasChanged: () => parseInt(input.value, 10) !== user.maxConcurrentStreams
+  };
+}
+
+const AGE_OPTIONS = [
+  { value: null, label: 'Keine' },
+  { value: 0, label: 'FSK 0' },
+  { value: 6, label: 'FSK 6' },
+  { value: 12, label: 'FSK 12' },
+  { value: 16, label: 'FSK 16' },
+  { value: 18, label: 'FSK 18' }
+];
+
+// Jellyfin's parental control: up to which FSK age the account sees titles,
+// and whether films and series without a rating are hidden from it.
+export function buildAgeLimitField(user) {
+  const original = { maxAge: user.maxAge ?? null, blockUnrated: Boolean(user.blockUnrated) };
+  let maxAge = original.maxAge;
+  // A limit Jellyfin holds that is no FSK age (set there): shown as is.
+  const options = AGE_OPTIONS.some(option => option.value === maxAge)
+    ? AGE_OPTIONS
+    : [...AGE_OPTIONS, { value: maxAge, label: `Stufe ${maxAge}` }];
+  const ages = segmentedRow({
+    label: 'Höchste Altersfreigabe',
+    description: 'Titel mit höherer Freigabe sieht das Konto nicht, auch nicht in der Suche.',
+    options,
+    value: maxAge,
+    onChange: value => { maxAge = value; }
+  });
+
+  const unratedSwitch = createElement('input', {
+    type: 'checkbox',
+    role: 'switch',
+    className: 'settings-switch-input',
+    checked: original.blockUnrated,
+    'aria-label': 'Titel ohne Altersfreigabe sperren'
+  });
+  const unratedRow = createElement('label', { className: 'admin-library-all' },
+    createElement('span', { className: 'admin-library-all-text' },
+      createElement('strong', {}, 'Titel ohne Altersfreigabe sperren'),
+      createElement('span', {}, 'Filme und Serien, für die Jellyfin keine Freigabe kennt.')
+    ),
+    createElement('span', { className: 'settings-switch' }, unratedSwitch, createElement('span', { className: 'settings-switch-track', 'aria-hidden': 'true' }))
+  );
+
+  return {
+    element: createElement('div', { className: 'admin-user-field-group' }, ages.element, unratedRow),
+    getValue: () => ({ maxAge, blockUnrated: unratedSwitch.checked }),
+    hasChanged: () => maxAge !== original.maxAge || unratedSwitch.checked !== original.blockUnrated
   };
 }

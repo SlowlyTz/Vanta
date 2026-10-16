@@ -1,20 +1,21 @@
 import { getActiveCatalogReader } from '../catalog/reader.js';
-import { getVisibleLibraryIds } from '../catalog/visibility.js';
+import { getCatalogAccess } from '../catalog/visibility.js';
+import { withinAgeLimit } from '../catalog/age-limit.js';
 import { jellyfinRawFetch } from '../jellyfin/client.js';
 
 const TTL_MS = 10 * 60 * 1000;
 const MAX_ENTRIES = 20000;
 
 // Whether a user may see an item's images. The rendition cache is shared by
-// everyone, so without this a user could load posters of libraries they have
-// no access to. Movies and series are answered from the catalogue and the
-// user's libraries; anything else (seasons, episodes, people) is asked of
+// everyone, so without this a user could load posters of libraries (or age
+// ratings) they have no access to. Movies and series are answered from the
+// catalogue, the user's libraries and age limit; anything else (seasons, episodes, people) is asked of
 // Jellyfin with the user's own token once and remembered for a while.
 // Only a clear "no" from Jellyfin denies: a Jellyfin that cannot be reached
 // must not turn every picture into a placeholder.
 export function createImageAccess({
   getReader = getActiveCatalogReader,
-  visibleLibraries = getVisibleLibraryIds,
+  catalogAccess = getCatalogAccess,
   fetchItem = (userId, token, itemId) => jellyfinRawFetch(`/Users/${userId}/Items/${itemId}`, { token, timeoutMs: 10 * 1000 }),
   ttlMs = TTL_MS,
   maxEntries = MAX_ENTRIES,
@@ -49,11 +50,11 @@ export function createImageAccess({
     async canSee({ userId, token, itemId }) {
       if (!userId || !itemId) return false;
 
-      const libraryId = getReader()?.libraryOf?.(itemId);
-      if (libraryId) {
+      const item = getReader()?.accessOf?.(itemId);
+      if (item?.libraryId) {
         try {
-          const visible = await visibleLibraries(userId, token);
-          return visible === null || visible.includes(libraryId);
+          const { libraryIds, ageLimit } = await catalogAccess(userId, token);
+          return (libraryIds === null || libraryIds.includes(item.libraryId)) && withinAgeLimit(ageLimit, item);
         } catch {
           // No library list (Jellyfin down, nothing cached): ask per item.
         }

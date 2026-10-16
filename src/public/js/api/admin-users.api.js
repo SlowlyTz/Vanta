@@ -49,6 +49,14 @@ export const AdminUsersApi = {
     });
   },
 
+  // `maxAge`: null or an FSK age (0, 6, 12, 16, 18).
+  setAgeLimit(userId, maxAge, blockUnrated) {
+    return request(`/api/admin/users/${userId}/age-limit`, {
+      method: 'PATCH',
+      body: { maxAge, blockUnrated }
+    });
+  },
+
   setStreamLimit(userId, maxConcurrentStreams) {
     return request(`/api/admin/users/${userId}/stream-limit`, {
       method: 'PATCH',
