@@ -53,7 +53,7 @@ export class StreamSessionService {
   // encodings are dead weight on Jellyfin.
   reserve({ userId, username, itemId, playSessionId, replacesPlaySessionId = null, deviceId = null, userAgent = '' }) {
     if (!playSessionId) {
-      const error = new Error('Playback session could not be tracked');
+      const error = new Error('Wiedergabe-Sitzung konnte nicht erfasst werden');
       error.status = 500;
       throw error;
     }

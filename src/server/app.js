@@ -80,7 +80,7 @@ app.use('/api/version', versionRoutes);
 app.use('/api/health', healthRoutes);
 
 // An API path nobody handles is a JSON 404, never the app's index.html.
-app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+app.use('/api', (req, res) => res.status(404).json({ error: 'Nicht gefunden' }));
 
 app.use('/', pageRoutes);
 

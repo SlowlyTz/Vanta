@@ -30,7 +30,7 @@ function buildProfileHandler(loadPage, errorLabel) {
       if (isUpstreamUnauthorized(error)) {
         return destroyInvalidSession(req, res);
       }
-      return res.status(500).json({ error: `Failed to fetch ${errorLabel.toLowerCase()}` });
+      return res.status(500).json({ error: 'Liste konnte nicht geladen werden' });
     }
   });
 }
@@ -45,7 +45,7 @@ router.get('/stats', requireAuth, asyncHandler(async (req, res) => {
     if (isUpstreamUnauthorized(error)) {
       return destroyInvalidSession(req, res);
     }
-    return res.status(500).json({ error: 'Failed to fetch profile stats' });
+    return res.status(500).json({ error: 'Statistik konnte nicht geladen werden' });
   }
 }));
 

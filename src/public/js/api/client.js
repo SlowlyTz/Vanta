@@ -60,7 +60,7 @@ export async function request(url, options = {}) {
 
     if (response.status === 401) {
       const errJson = await response.json().catch(() => ({}));
-      const error = createApiError(errJson.error || 'Unauthorized', response, { silent: true, code: errJson.code, reason: errJson.reason });
+      const error = createApiError(errJson.error || 'Nicht angemeldet', response, { silent: true, code: errJson.code, reason: errJson.reason });
 
       // A ban or a deleted account ends the session on the server; the login
       // page explains why.
@@ -72,7 +72,7 @@ export async function request(url, options = {}) {
 
     if (!response.ok) {
       const errJson = await response.json().catch(() => ({}));
-      throw createApiError(errJson.error || `Request failed with status ${response.status}`, response, {
+      throw createApiError(errJson.error || `Anfrage fehlgeschlagen (${response.status})`, response, {
         code: errJson.code,
         reason: errJson.reason,
         limit: errJson.limit,

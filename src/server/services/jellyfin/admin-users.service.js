@@ -27,7 +27,7 @@ export class JellyfinAdminUsersService {
   static async updateUserName(userId, adminToken, name) {
     const trimmedName = String(name || '').trim();
     if (!trimmedName) {
-      const error = new Error('Name is required');
+      const error = new Error('Name ist erforderlich');
       error.status = 400;
       throw error;
     }
@@ -55,7 +55,7 @@ export class JellyfinAdminUsersService {
   static async setPassword(userId, adminToken, newPassword) {
     const password = typeof newPassword === 'string' ? newPassword : '';
     if (!password) {
-      const error = new Error('New password is required');
+      const error = new Error('Neues Passwort fehlt');
       error.status = 400;
       throw error;
     }

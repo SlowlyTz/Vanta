@@ -101,7 +101,7 @@ describe('Library Routes', () => {
       const res = await request(createApp()).get('/library?type=Movie&studio=Warner%20Bros&publisher=warner-bros');
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/either studio or publisher/i);
+      expect(res.body.error).toMatch(/Studio oder Publisher/);
       expect(LibraryService.getLibrary).not.toHaveBeenCalled();
       expect(LibraryService.getLibraryByPublisher).not.toHaveBeenCalled();
     });

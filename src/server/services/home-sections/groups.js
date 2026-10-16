@@ -19,7 +19,7 @@ export const groupMethods = {
       return this._buildPublisherSections(userId, accessToken);
     }
 
-    const error = new Error(`Unknown home section group: ${group}`);
+    const error = new Error(`Unbekannter Bereich der Startseite: ${group}`);
     error.status = 400;
     throw error;
   }

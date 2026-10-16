@@ -21,7 +21,7 @@ const USER_DATA_BATCH = 100;
 
 const router = express.Router();
 
-router.get('/home', requireAuth, jellyfinRoute('Media Home Error', 'Failed to fetch media library data', async (req, res) => {
+router.get('/home', requireAuth, jellyfinRoute('Media Home Error', 'Startseite konnte nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
 
   const [resume, movies, series] = await Promise.all([
@@ -45,11 +45,11 @@ router.get('/home-sections/:group', requireAuth, asyncHandler(async (req, res) =
     if (isUpstreamUnauthorized(error)) {
       return destroyInvalidSession(req, res);
     }
-    return res.status(error.status || 500).json({ error: 'Failed to fetch home section group' });
+    return res.status(error.status || 500).json({ error: 'Bereich der Startseite konnte nicht geladen werden' });
   }
 }));
 
-router.get('/search', requireAuth, jellyfinRoute('Media Search Error', 'Failed to search media items', async (req, res) => {
+router.get('/search', requireAuth, jellyfinRoute('Media Search Error', 'Suche fehlgeschlagen', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { q } = req.query;
 
@@ -76,7 +76,7 @@ export function parseSearchFilters(query = {}) {
   };
 }
 
-router.get('/search/full', requireAuth, jellyfinRoute('Media Search Error', 'Failed to search media items', async (req, res) => {
+router.get('/search/full', requireAuth, jellyfinRoute('Media Search Error', 'Suche fehlgeschlagen', async (req, res) => {
   const { userId, accessToken } = req.session;
   const query = String(req.query.q || '').slice(0, 100).trim();
   const filters = parseSearchFilters(req.query);
@@ -97,7 +97,7 @@ router.get('/search/full', requireAuth, jellyfinRoute('Media Search Error', 'Fai
   return res.json(result);
 }));
 
-router.get('/search/decades', requireAuth, jellyfinRoute('Media Decades Error', 'Failed to fetch decades', async (req, res) => {
+router.get('/search/decades', requireAuth, jellyfinRoute('Media Decades Error', 'Jahrzehnte konnten nicht geladen werden', async (req, res) => {
   res.json({ decades: await LibraryService.getDecades(req.session.userId, req.session.accessToken) });
 }));
 
@@ -106,7 +106,7 @@ router.get('/screensaver', requireAuth, jellyfinRoute('Screensaver Error', 'Bild
   res.json({ items: await LibraryService.getScreensaverItems(req.session.userId, req.session.accessToken, limit) });
 }));
 
-router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Failed to fetch item details', async (req, res) => {
+router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Details konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
@@ -114,7 +114,7 @@ router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Failed t
   return res.json(item);
 }));
 
-router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error', 'Failed to fetch similar items', async (req, res) => {
+router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error', 'Ähnliche Titel konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
@@ -122,7 +122,7 @@ router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error'
   return res.json(items);
 }));
 
-router.get('/item/:id/seasons', requireAuth, jellyfinRoute('Media Seasons Error', 'Failed to fetch seasons', async (req, res) => {
+router.get('/item/:id/seasons', requireAuth, jellyfinRoute('Media Seasons Error', 'Staffeln konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
@@ -130,7 +130,7 @@ router.get('/item/:id/seasons', requireAuth, jellyfinRoute('Media Seasons Error'
   return res.json(seasons);
 }));
 
-router.get('/item/:id/episodes', requireAuth, jellyfinRoute('Media Episodes Error', 'Failed to fetch episodes', async (req, res) => {
+router.get('/item/:id/episodes', requireAuth, jellyfinRoute('Media Episodes Error', 'Folgen konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
   const { seasonId } = req.query;
@@ -142,7 +142,7 @@ router.get('/item/:id/episodes', requireAuth, jellyfinRoute('Media Episodes Erro
 // "Als gesehen markieren" and back, for a film, an episode, a season or a
 // whole series (Jellyfin applies it to every episode below). The progress
 // cache of the user starts over, so every card shows the new state.
-const setPlayed = (played) => jellyfinRoute('Media Played Error', played ? 'Failed to mark as played' : 'Failed to mark as unplayed', async (req, res) => {
+const setPlayed = (played) => jellyfinRoute('Media Played Error', played ? 'Konnte nicht als gesehen markiert werden' : 'Konnte nicht als ungesehen markiert werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
@@ -156,17 +156,17 @@ const setPlayed = (played) => jellyfinRoute('Media Played Error', played ? 'Fail
 router.post('/item/:id/played', requireAuth, requireValidId, setPlayed(true));
 router.delete('/item/:id/played', requireAuth, requireValidId, setPlayed(false));
 
-router.get('/genres', requireAuth, jellyfinRoute('Media Genres Error', 'Failed to fetch genres', async (req, res) => {
+router.get('/genres', requireAuth, jellyfinRoute('Media Genres Error', 'Genres konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { type } = req.query;
 
-  if (!type) return res.status(400).json({ error: 'Type is required' });
+  if (!type) return res.status(400).json({ error: 'Typ fehlt' });
 
   const genres = await LibraryService.getGenres(userId, accessToken, type);
   return res.json(genres);
 }));
 
-router.get('/studios', requireAuth, jellyfinRoute('Media Studios Error', 'Failed to fetch studios', async (req, res) => {
+router.get('/studios', requireAuth, jellyfinRoute('Media Studios Error', 'Studios konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
 
   const studios = await LibraryService.getStudios(userId, accessToken);
@@ -177,9 +177,9 @@ router.get('/library', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
   const { type, genre, studio, publisher, page, limit } = req.query;
 
-  if (!type) return res.status(400).json({ error: 'Type is required' });
+  if (!type) return res.status(400).json({ error: 'Typ fehlt' });
   if (studio && publisher) {
-    return res.status(400).json({ error: 'Use either studio or publisher, not both' });
+    return res.status(400).json({ error: 'Entweder Studio oder Publisher angeben, nicht beides' });
   }
 
   const pageNum = Math.max(1, parseInt(page) || 1);
@@ -204,7 +204,7 @@ router.get('/library', requireAuth, asyncHandler(async (req, res) => {
     if (isUpstreamUnauthorized(error)) {
       return destroyInvalidSession(req, res);
     }
-    return res.status(500).json({ error: 'Failed to fetch library items' });
+    return res.status(500).json({ error: 'Bibliothek konnte nicht geladen werden' });
   }
 }));
 

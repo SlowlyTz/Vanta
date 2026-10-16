@@ -18,7 +18,7 @@ export const PLAYBACK_STATES = new Set(SHARED_PLAYBACK_STATES);
 
 export function assertOwner(party, userId) {
   if (party.ownerUserId !== userId) {
-    throw forbidden('Only the party owner can perform this action');
+    throw forbidden('Das darf nur der Owner der Watch Party');
   }
 }
 

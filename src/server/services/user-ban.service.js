@@ -83,7 +83,7 @@ export function createUserBanService({ dbDir = DEFAULT_USER_DB_DIR, recheckMs = 
 
       const trimmedReason = String(reason || '').trim();
       if (!trimmedReason) {
-        const error = new Error('Ban reason is required');
+        const error = new Error('Ein Sperrgrund ist erforderlich');
         error.status = 400;
         throw error;
       }

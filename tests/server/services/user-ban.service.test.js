@@ -46,8 +46,8 @@ describe('UserBanService', () => {
   });
 
   it('rejects a ban with an empty or whitespace-only reason', () => {
-    expect(() => service.ban('user-1', 'alice', '')).toThrow(/reason/i);
-    expect(() => service.ban('user-1', 'alice', '   ')).toThrow(/reason/i);
+    expect(() => service.ban('user-1', 'alice', '')).toThrow(/Sperrgrund/);
+    expect(() => service.ban('user-1', 'alice', '   ')).toThrow(/Sperrgrund/);
     expect(service.isBanned('user-1')).toBe(false);
   });
 

@@ -255,7 +255,7 @@ export class LibraryService {
   static async getPublisherStudioNames(userId, token, publisherId) {
     const publisher = getFeaturedPublisherById(publisherId);
     if (!publisher) {
-      const error = new Error(`Unknown publisher: ${publisherId}`);
+      const error = new Error(`Unbekannter Publisher: ${publisherId}`);
       error.status = 400;
       throw error;
     }

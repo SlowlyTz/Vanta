@@ -4,14 +4,14 @@ import { SENSITIVE_QUERY_PARAMS, PLAYBACK_SUBTITLE_QUERY_PARAMS, deleteQueryPara
 export const pathMethods = {
   normalizeJellyfinPath(pathOrUrl, { stripPlaybackSubtitles = false } = {}) {
     if (!pathOrUrl || typeof pathOrUrl !== 'string') {
-      throw new Error('Playback target is missing.');
+      throw new Error('Wiedergabeziel fehlt.');
     }
 
     const baseUrl = new URL(env.JELLYFIN_BASE_URL);
     const url = new URL(pathOrUrl, baseUrl);
 
     if (url.origin !== baseUrl.origin) {
-      throw new Error('Playback target does not belong to the configured Jellyfin server.');
+      throw new Error('Das Wiedergabeziel gehört nicht zum eingestellten Jellyfin-Server.');
     }
 
     deleteQueryParams(url, SENSITIVE_QUERY_PARAMS);

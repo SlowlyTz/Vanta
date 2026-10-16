@@ -205,7 +205,7 @@ describe('Playback Routes stream-limit integration', () => {
       const res = await request(createApp()).get('/item-1');
 
       expect(res.status).toBe(500);
-      expect(res.body.error).toBe('Failed to resolve playback media source');
+      expect(res.body.error).toBe('Wiedergabequelle konnte nicht ermittelt werden');
     });
   });
 

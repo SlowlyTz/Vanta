@@ -6,7 +6,7 @@ import { EMPTY_PARTY_TTL_MS, ENDED_PARTY_RETENTION_MS, MAX_PARTY_MEMBERS, assert
 export const lifecycleMethods = {
   getPartyOrThrow(partyId) {
     const party = this.parties.get(partyId);
-    if (!party) throw notFound('Watch party not found');
+    if (!party) throw notFound('Watch Party nicht gefunden');
     return party;
   },
 

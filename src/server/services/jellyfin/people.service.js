@@ -20,7 +20,7 @@ export class PeopleService {
     if (data.Items && data.Items.length > 0) {
       return this.getPersonDetails(userId, token, data.Items[0].Id);
     }
-    throw new Error(`Person not found: ${personName}`);
+    throw new Error(`Person nicht gefunden: ${personName}`);
   }
 
   static async getPersonItems(userId, token, personId) {

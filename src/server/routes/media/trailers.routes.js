@@ -5,7 +5,7 @@ import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 
 const router = express.Router();
 
-router.get('/trailers', requireAuth, jellyfinRoute('Media Trailers Error', 'Failed to fetch trailers', async (req, res) => {
+router.get('/trailers', requireAuth, jellyfinRoute('Media Trailers Error', 'Trailer konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { feedId, cursor, limit, target } = req.query;
 
@@ -18,7 +18,7 @@ router.get('/trailers', requireAuth, jellyfinRoute('Media Trailers Error', 'Fail
   return res.json(result);
 }));
 
-router.post('/item/:id/favorite', requireAuth, jellyfinRoute('Media Favorite Error', 'Failed to set favorite', async (req, res) => {
+router.post('/item/:id/favorite', requireAuth, jellyfinRoute('Media Favorite Error', 'Favorit konnte nicht gesetzt werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
@@ -26,7 +26,7 @@ router.post('/item/:id/favorite', requireAuth, jellyfinRoute('Media Favorite Err
   return res.json(result);
 }));
 
-router.delete('/item/:id/favorite', requireAuth, jellyfinRoute('Media Unfavorite Error', 'Failed to remove favorite', async (req, res) => {
+router.delete('/item/:id/favorite', requireAuth, jellyfinRoute('Media Unfavorite Error', 'Favorit konnte nicht entfernt werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 

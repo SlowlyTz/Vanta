@@ -40,7 +40,7 @@ const buildPlaybackReport = body => {
   const playbackRate = Number(body.playbackRate);
 
   if (!body.itemId || !body.playSessionId || !Number.isFinite(positionTicks) || positionTicks < 0) {
-    const error = new Error('Invalid playback report payload');
+    const error = new Error('Ungültige Wiedergabe-Meldung');
     error.status = 400;
     throw error;
   }
@@ -97,7 +97,7 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
       return destroyInvalidSession(req, res);
     }
     if (!res.headersSent) {
-      return res.status(500).json({ error: 'Failed to proxy playback resource' });
+      return res.status(500).json({ error: 'Stream konnte nicht geladen werden' });
     }
   }
 }));
@@ -107,7 +107,7 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
   const { event } = req.params;
 
   if (!REPORT_EVENTS.has(event)) {
-    return res.status(400).json({ error: 'Unsupported playback report event' });
+    return res.status(400).json({ error: 'Unbekannte Wiedergabe-Meldung' });
   }
 
   try {
@@ -159,7 +159,7 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
     if (error.status === 400) {
       return res.status(400).json({ error: error.message });
     }
-    return res.status(502).json({ error: 'Failed to report playback state' });
+    return res.status(502).json({ error: 'Wiedergabestand konnte nicht gemeldet werden' });
   }
 }));
 
@@ -194,11 +194,11 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
     : null;
 
   if (!['auto', 'hls'].includes(requestedMode)) {
-    return res.status(400).json({ error: 'Unsupported playback mode' });
+    return res.status(400).json({ error: 'Unbekannter Wiedergabemodus' });
   }
 
   if (!isValidQualityProfile(requestedQualityProfile)) {
-    return res.status(400).json({ error: 'Unsupported quality profile' });
+    return res.status(400).json({ error: 'Unbekannte Qualitätsstufe' });
   }
 
   try {
@@ -206,7 +206,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
     const shouldForceHls = requestedMode === 'hls' || forcesHls(userAgent);
 
     if (requestedQualityProfile === 'direct' && shouldForceHls) {
-      return res.status(400).json({ error: 'Direct Play is disabled by server configuration' });
+      return res.status(400).json({ error: 'Direkte Wiedergabe ist auf diesem Server abgeschaltet' });
     }
 
     const qualityConstraints = getQualityConstraints(requestedQualityProfile);
@@ -273,7 +273,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
     if (isUpstreamUnauthorized(error)) {
       return destroyInvalidSession(req, res);
     }
-    return res.status(500).json({ error: 'Failed to resolve playback media source' });
+    return res.status(500).json({ error: 'Wiedergabequelle konnte nicht ermittelt werden' });
   }
 }));
 

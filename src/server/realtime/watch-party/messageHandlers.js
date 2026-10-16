@@ -189,7 +189,7 @@ export const messageHandlerMethods = {
   handleOwnerControl({ partyId, userId, message }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
     if (!isPartyAdmin(party, userId)) {
-      throw ownerError('Only party admins can control playback');
+      throw ownerError('Nur Admins der Watch Party steuern die Wiedergabe');
     }
 
     if (!isPlaybackControlAllowed(party)) {

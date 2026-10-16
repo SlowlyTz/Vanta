@@ -14,7 +14,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
     return res.json(person);
   } catch (error) {
     console.error(`[Media Person Error] ID ${id}:`, error.message);
-    return res.status(500).json({ error: 'Failed to fetch person details' });
+    return res.status(500).json({ error: 'Person konnte nicht geladen werden' });
   }
 }));
 
@@ -27,7 +27,7 @@ router.get('/:id/items', requireAuth, asyncHandler(async (req, res) => {
     return res.json(items);
   } catch (error) {
     console.error(`[Media Person Items Error] ID ${id}:`, error.message);
-    return res.status(500).json({ error: 'Failed to fetch person items' });
+    return res.status(500).json({ error: 'Titel der Person konnten nicht geladen werden' });
   }
 }));
 
@@ -40,7 +40,7 @@ router.get('/by-name/:name', requireAuth, asyncHandler(async (req, res) => {
     return res.json(person);
   } catch (error) {
     console.error(`[Media Person By Name Error] ${name}:`, error.message);
-    return res.status(500).json({ error: 'Failed to find person details' });
+    return res.status(500).json({ error: 'Person nicht gefunden' });
   }
 }));
 
@@ -53,7 +53,7 @@ router.get('/by-name/:name/items', requireAuth, asyncHandler(async (req, res) =>
     return res.json(items);
   } catch (error) {
     console.error(`[Media Person Items By Name Error] ${name}:`, error.message);
-    return res.status(500).json({ error: 'Failed to fetch person items' });
+    return res.status(500).json({ error: 'Titel der Person konnten nicht geladen werden' });
   }
 }));
 

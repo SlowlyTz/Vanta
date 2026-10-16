@@ -33,7 +33,7 @@ router.post('/login', asyncHandler(async (req, res) => {
   const { username, password, rememberMe } = req.body;
 
   if (!username) {
-    return res.status(400).json({ error: 'Username is required' });
+    return res.status(400).json({ error: 'Benutzername fehlt' });
   }
 
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
@@ -94,10 +94,10 @@ router.get('/me', asyncHandler(async (req, res) => {
       }
 
       console.warn('[Auth Me Admin Check Error]', error.message);
-      return res.status(503).json({ error: 'Could not verify Jellyfin session' });
+      return res.status(503).json({ error: 'Die Anmeldung bei Jellyfin ließ sich nicht prüfen' });
     }
   }
-  return res.status(401).json({ error: 'Not authenticated' });
+  return res.status(401).json({ error: 'Nicht angemeldet' });
 }));
 
 router.post('/password', requireAuth, asyncHandler(async (req, res) => {
@@ -105,7 +105,7 @@ router.post('/password', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken } = req.session;
 
   if (!newPassword || typeof newPassword !== 'string') {
-    return res.status(400).json({ error: 'New password is required' });
+    return res.status(400).json({ error: 'Neues Passwort fehlt' });
   }
 
   try {
@@ -115,7 +115,7 @@ router.post('/password', requireAuth, asyncHandler(async (req, res) => {
     console.error('[Change Password Error]', error.message);
     const status = error.status === 400 || error.status === 401 || error.status === 403 ? 403 : 500;
     return res.status(status).json({
-      error: status === 403 ? 'Current password is invalid' : 'Failed to change password'
+      error: status === 403 ? 'Das aktuelle Passwort stimmt nicht' : 'Passwort konnte nicht geändert werden'
     });
   }
 }));
@@ -139,7 +139,7 @@ router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error('[Logout Error]', err);
-      return res.status(500).json({ error: 'Failed to log out' });
+      return res.status(500).json({ error: 'Abmelden fehlgeschlagen' });
     }
     res.clearCookie('connect.sid');
     return res.json({ success: true });
