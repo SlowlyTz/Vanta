@@ -87,6 +87,22 @@ describe('observeCardUserData', () => {
     expect(MediaApi.getUserData).toHaveBeenCalledTimes(1);
   });
 
+  it('right after the player, asks the server instead of the stale UserData a saved page carries', () => {
+    window.location.hash = '#/player/m1';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    window.location.hash = '#/home';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    const element = card({ id: 'm1' });
+    observeCardUserData(element, { Id: 'm1', Type: 'Movie', RunTimeTicks: 100, UserData: { Played: false, PlaybackPositionTicks: 10 } });
+    expect(element.querySelector('.media-progress-bar')).toBeNull();
+    expect(observed).toContain(element);
+
+    vi.advanceTimersByTime(61_000);
+    const later = card({ id: 'm2' });
+    observeCardUserData(later, { Id: 'm2', Type: 'Movie', RunTimeTicks: 100, UserData: { Played: false, PlaybackPositionTicks: 50 } });
+    expect(later.querySelector('.media-progress-fill').style.width).toBe('50%');
+  });
+
   it('starts over after the player was left', async () => {
     __test.cache.set('a', { at: Date.now(), summary: { played: true } });
     window.location.hash = '#/player/a';
@@ -104,6 +120,7 @@ describe('cardUserData per page and from elsewhere', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     forgetCardUserData({ server: false });
+    __test.resetPlayerLeft();
     observed = [];
     __test.resetObserver();
     window.IntersectionObserver = class {
