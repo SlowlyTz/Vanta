@@ -334,6 +334,35 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   };
   window.addEventListener('popstate', onPopState);
 
+  // A link out of an area ("Code eingeben" → #/connect): the area's history
+  // entry goes first, then the page changes. Following the link at once and
+  // closing the dialog would go back from the new page again. Capture phase:
+  // before a link's own handler closes the dialog.
+  settingsDialog.addEventListener('click', event => {
+    const link = event.target?.closest?.('a[href^="#/"]');
+    if (!link || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    event.preventDefault();
+    const target = link.getAttribute('href');
+    const hadEntry = historyEntry;
+    historyEntry = false;
+    setSettingsOpen(false);
+    if (!hadEntry) {
+      window.location.hash = target;
+      return;
+    }
+    let done = false;
+    const follow = () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('popstate', follow);
+      window.location.hash = target;
+    };
+    window.addEventListener('popstate', follow);
+    window.history.back();
+    // A browser that sends no popstate here still gets there.
+    window.setTimeout(follow, 300);
+  }, true);
+
   // Turning a tablet: the layout follows while the dialog is open.
   splitQuery?.addEventListener?.('change', () => {
     if (settingsOpen) setSettingsView(isSplit() ? settingsView : 'root');
