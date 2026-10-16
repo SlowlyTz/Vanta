@@ -11,7 +11,8 @@ export const NOTIFICATION_KINDS = Object.freeze([
   { kind: 'watch_party_invite', label: 'Watch-Party-Einladungen', description: 'Jemand lädt dich zu einer Watch Party ein.', on: true },
   { kind: 'app_update', label: 'Neue VANTA-Version', description: 'Eine neue Version ist da.', on: false },
   { kind: 'announcement', label: 'Mitteilungen', description: 'Nachrichten der Admins an alle.', on: true },
-  { kind: 'admin_new_request', label: 'Neue Anfragen und Meldungen', description: 'Für Admins: etwas wartet auf eine Entscheidung.', on: true, adminOnly: true }
+  { kind: 'admin_new_request', label: 'Neue Anfragen und Meldungen', description: 'Für Admins: etwas wartet auf eine Entscheidung.', on: true, adminOnly: true },
+  { kind: 'admin_sync_failed', label: 'Probleme beim Katalog-Abgleich', description: 'Für Admins: der tägliche Abgleich mit Jellyfin ist mehrmals gescheitert.', on: true, adminOnly: true }
 ]);
 
 export const NOTIFICATION_KIND_IDS = NOTIFICATION_KINDS.map(entry => entry.kind);

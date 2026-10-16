@@ -16,7 +16,8 @@ const catalog = vi.hoisted(() => ({
   },
   scheduler: {
     getPlan: vi.fn(),
-    reload: vi.fn()
+    reload: vi.fn(),
+    requestFull: vi.fn(() => Promise.resolve({ type: 'full' }))
   },
   settings: {
     update: vi.fn()
@@ -98,19 +99,28 @@ describe('Admin catalog routes', () => {
     expect(catalog.sync.runUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it('starts a full run in the background and answers 202', async () => {
+  it('starts a full run in the background through the scheduler and answers 202', async () => {
     const res = await request(createApp()).post('/sync/full');
 
     expect(res.status).toBe(202);
-    expect(catalog.sync.runFull).toHaveBeenCalledTimes(1);
+    expect(catalog.scheduler.requestFull).toHaveBeenCalledTimes(1);
+    expect(res.body).toMatchObject({ started: true, queued: false });
   });
 
-  it('reports started=false when a run is already in progress', async () => {
+  it('says the full run waits when an update is in progress', async () => {
     catalog.sync.isRunning.mockReturnValue(true);
+    catalog.sync.runningType = vi.fn(() => 'update');
 
     const res = await request(createApp()).post('/sync/full');
 
     expect(res.status).toBe(202);
-    expect(res.body.started).toBe(false);
+    expect(res.body).toMatchObject({ started: false, queued: true });
+  });
+
+  it('a running full run is no queue', async () => {
+    catalog.sync.isRunning.mockReturnValue(true);
+    catalog.sync.runningType = vi.fn(() => 'full');
+    const res = await request(createApp()).post('/sync/full');
+    expect(res.body).toMatchObject({ started: false, queued: false });
   });
 });

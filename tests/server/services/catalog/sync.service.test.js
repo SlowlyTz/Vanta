@@ -418,3 +418,23 @@ describe('CatalogSync newly read fields', () => {
     expect((await sync.runUpdate())).toMatchObject({ updated: 1 });
   });
 });
+
+describe('CatalogSync runs at the same time', () => {
+  it('a full run asked for during an update answers busy, an update joins a running full run', async () => {
+    const { source, sync } = setup([movie('m1')]);
+    let release;
+    source.fetchAll.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+
+    const update = sync.runUpdate();
+    expect(await sync.runFull()).toEqual({ type: 'full', busy: true, error: null });
+    expect(sync.runUpdate()).toBe(update);
+    release({ libraries: LIBRARIES, items: [movie('m1')], episodeCount: 1 });
+    expect((await update).type).toBe('update');
+
+    source.fetchAll.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    const full = sync.runFull();
+    expect(sync.runUpdate()).toBe(full);
+    release({ libraries: LIBRARIES, items: [movie('m1')], episodeCount: 1 });
+    expect((await full).type).toBe('full');
+  });
+});

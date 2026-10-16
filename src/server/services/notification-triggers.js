@@ -125,6 +125,20 @@ export function createNotificationTriggers({
       });
     },
 
+    // The daily full catalogue run gave up (see catalog/scheduler.js).
+    adminSyncFailed({ attempts, reason }) {
+      return safely('admin_sync_failed', async () => {
+        const admins = await directory.admins();
+        await notify.notify({
+          userIds: admins.map(admin => admin.id),
+          kind: 'admin_sync_failed',
+          title: 'Katalog-Abgleich fehlgeschlagen',
+          body: `Der vollständige Abgleich mit Jellyfin ist nach ${attempts} Versuchen nicht gelaufen: ${reason}`,
+          url: '/#/admin/settings'
+        });
+      });
+    },
+
     watchPartyInvite(invitation, inviterName) {
       return safely('watch_party_invite', () => notify.notify({
         userIds: [invitation.invitedUserId],

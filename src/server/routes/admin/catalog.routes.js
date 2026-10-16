@@ -36,11 +36,14 @@ router.post('/sync/update', asyncHandler(async (req, res) => {
   res.status(202).json({ started: !alreadyRunning, ...buildStatus(catalog) });
 }));
 
+// While an update runs the full run waits for it (tried again every ten
+// minutes, see scheduler.js); `queued` says so.
 router.post('/sync/full', asyncHandler(async (req, res) => {
   const catalog = await getCatalog();
   const alreadyRunning = catalog.sync.isRunning();
-  catalog.sync.runFull();
-  res.status(202).json({ started: !alreadyRunning, ...buildStatus(catalog) });
+  const queued = catalog.sync.runningType?.() === 'update' || catalog.scheduler.getPlan().fullRetryPending === true;
+  catalog.scheduler.requestFull();
+  res.status(202).json({ started: !alreadyRunning && !queued, queued, ...buildStatus(catalog) });
 }));
 
 export default router;

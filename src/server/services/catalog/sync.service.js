@@ -244,8 +244,14 @@ export function createCatalogSync({ db, source, now = Date.now, log = console, a
       .catch(error => log.warn?.(`[CatalogSync] afterRun fehlgeschlagen: ${error.message}`));
   };
 
+  // An update run takes over a running one (a full run covers it). A full
+  // run asked for while an update runs does not happen: it answers at once
+  // with `busy` (the scheduler tries again later).
+  let currentType = null;
   const run = (type) => {
-    if (current) return current;
+    if (current && (type === currentType || currentType === 'full')) return current;
+    if (current) return Promise.resolve({ type, busy: true, error: null });
+    currentType = type;
 
     current = (async () => {
       const startedAt = now();
@@ -272,6 +278,7 @@ export function createCatalogSync({ db, source, now = Date.now, log = console, a
         if (!record.error) writeMeta('lastSuccess', record);
         db.persist();
         current = null;
+        currentType = null;
         if (!record.error) {
           logSummary(record);
           notifyAfterRun(record, details);
@@ -288,6 +295,7 @@ export function createCatalogSync({ db, source, now = Date.now, log = console, a
     runUpdate: () => run('update'),
     runFull: () => run('full'),
     isRunning: () => current !== null,
+    runningType: () => currentType,
     isEmpty: () => statements.countItems.get().count === 0,
     getStatus: () => ({
       running: current !== null,
