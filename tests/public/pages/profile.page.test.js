@@ -42,10 +42,12 @@ beforeEach(() => {
 });
 
 describe('profile addresses', () => {
-  it('tells the overview from the whole lists', () => {
-    expect(viewFromHash('#/profile')).toBe('overview');
+  it('names the tab of an address; the plain profile has none', () => {
+    expect(viewFromHash('#/profile')).toBe('');
     expect(viewFromHash('#/profile?tab=continue')).toBe('continue');
+    expect(viewFromHash('#/profile?tab=watchlist')).toBe('watchlist');
     expect(viewFromHash('#/profile?tab=history')).toBe('history');
+    expect(viewFromHash('#/profile?tab=nope')).toBe('');
     expect(viewFromHash('#/watchlist')).toBe('watchlist');
     expect(viewFromHash('#/favorites')).toBe('favorites');
     expect(viewFromHash('#/home')).toBeNull();
@@ -59,48 +61,30 @@ describe('profile addresses', () => {
   });
 });
 
-describe('ProfilePage overview', () => {
+describe('ProfilePage', () => {
   beforeEach(() => {
+    localStorage.clear();
     window.history.replaceState(null, '', '#/profile');
   });
 
-  it('shows the name, the numbers and the favourite genres', async () => {
+  it('shows the head with the numbers and, under it, the lists as tabs', async () => {
+    MediaApi.getProfileContinueWatching.mockResolvedValue(page([makeItem('1')]));
     const container = ProfilePage();
     expect(container.querySelector('.profile-stats').classList.contains('is-loading')).toBe(true);
     await flush();
 
-    expect(container.querySelector('.profile-name').textContent).toBeTruthy();
     expect([...container.querySelectorAll('.profile-stat-value')].map(value => value.textContent)).toEqual(['42', '1.211', '6', '128 Std.']);
     expect(container.querySelector('.profile-genres').textContent).toBe('Am liebsten: Drama · Krimi');
     expect(container.querySelector('.profile-last').textContent).toBe('Zuletzt gesehen: Movie last');
-    expect(container.querySelector('.profile-stats').classList.contains('is-loading')).toBe(false);
-  });
-
-  it('links each whole list from the head', () => {
-    const container = ProfilePage();
-    expect([...container.querySelectorAll('.profile-shortcut')].map(link => link.getAttribute('href')))
-      .toEqual(['#/profile?tab=continue', '#/watchlist', '#/favorites', '#/profile?tab=history']);
-  });
-
-  it('shows a row for each list that has titles, in order, and none for empty ones', async () => {
-    MediaApi.getProfileContinueWatching.mockResolvedValue(page([makeSeries('s1')]));
-    MediaApi.getProfileHistory.mockResolvedValue(page([makeItem('h1'), makeItem('h2')]));
-    const container = ProfilePage();
-    await flush();
-
-    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 20, { signal: expect.any(AbortSignal) });
-    const rows = [...container.querySelectorAll('[data-profile-list]')];
-    expect(rows.map(row => row.dataset.profileList)).toEqual(['continue', 'history']);
-    expect(rows[0].dataset.resumeRow).toBe('true');
-    expect(rows[1].querySelectorAll('.media-card')).toHaveLength(2);
-    expect(container.querySelector('.skeleton-carousel')).toBeNull();
-    expect(container.querySelector('.profile-empty').hidden).toBe(true);
-  });
-
-  it('says so when every list is empty', async () => {
-    const container = ProfilePage();
-    await flush();
-    expect(container.querySelector('.profile-empty').hidden).toBe(false);
+    expect([...container.querySelectorAll('.profile-tab-button')].map(button => button.textContent))
+      .toEqual(['Weiter schauen', 'Meine Liste', 'Favoriten', 'Verlauf']);
+    // The hero comes first, the tabs right under it.
+    expect(container.firstElementChild.classList.contains('profile-hero')).toBe(true);
+    expect(container.querySelector('.profile-shortcut')).toBeNull();
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Weiter schauen');
+    expect(container.querySelectorAll('.profile-tab-content .media-card')).toHaveLength(1);
+    // The plain profile names its tab in the address.
+    expect(window.location.hash).toBe('#/profile?tab=continue');
   });
 
   it('keeps the numbers out when they cannot be loaded', async () => {
@@ -111,33 +95,20 @@ describe('ProfilePage overview', () => {
     expect(container.querySelector('.profile-genres').hidden).toBe(true);
   });
 
-  it('builds the page anew between the overview and a list', () => {
-    const container = ProfilePage();
-    expect(container.handleHashChange('#/profile')).toBe(true);
-    expect(container.handleHashChange('#/watchlist')).toBe(false);
-    expect(container.handleHashChange('#/home')).toBe(false);
-  });
-});
-
-describe('ProfilePage lists', () => {
-  beforeEach(() => {
-    window.history.replaceState(null, '', '#/profile?tab=continue');
-  });
-
-  it('opens Weiter schauen whole from its address', async () => {
-    MediaApi.getProfileContinueWatching.mockResolvedValue(page([makeItem('1')]));
-    const container = ProfilePage();
+  it('opens the last tab chosen next time', async () => {
+    let container = ProfilePage();
+    await flush();
+    [...container.querySelectorAll('.profile-tab-button')].find(button => button.textContent === 'Verlauf').click();
     await flush();
 
-    expect(MediaApi.getProfileContinueWatching).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
-    expect(container.querySelector('.profile-list-title').textContent).toBe('Weiter schauen');
-    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Weiter schauen');
-    expect(container.querySelector('.profile-tab-button.active').hasAttribute('data-tv-autofocus')).toBe(true);
-    expect(container.querySelector('.profile-hero')).toBeNull();
-    expect(MediaApi.getProfileHistory).not.toHaveBeenCalled();
+    window.history.replaceState(null, '', '#/profile');
+    container = ProfilePage();
+    await flush();
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Verlauf');
+    expect(window.location.hash).toBe('#/profile?tab=history');
   });
 
-  it('opens favorites when the route asks for them', async () => {
+  it('the old addresses of the lists open their tab on the profile', async () => {
     window.history.replaceState(null, '', '#/favorites');
     MediaApi.getProfileFavorites.mockResolvedValue(page([makeItem('1')]));
     const container = ProfilePage({ initialTab: 'favorites' });
@@ -145,6 +116,8 @@ describe('ProfilePage lists', () => {
 
     expect(MediaApi.getProfileFavorites).toHaveBeenCalledWith(1, 24, { signal: expect.any(AbortSignal) });
     expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Favoriten');
+    expect(container.querySelector('.profile-hero')).not.toBeNull();
+    expect(window.location.hash).toBe('#/profile?tab=favorites');
   });
 
   it('shows only the content loader while the head and the tabs stay', async () => {
@@ -196,27 +169,29 @@ describe('ProfilePage lists', () => {
     const card = container.querySelector('.media-card');
     expect(card.querySelector('.media-card-badge').textContent).toBe('SERIE');
     expect(card.getAttribute('href')).toBe('#/item/s2');
-    expect(container.querySelector('.profile-list-title').textContent).toBe('Verlauf');
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Verlauf');
   });
 
-  it('keeps its own hash changes between lists', () => {
+  it('keeps its own hash changes between the tabs', () => {
     const container = ProfilePage();
-    expect(container.handleHashChange('#/favorites')).toBe(true);
+    expect(container.handleHashChange('#/profile?tab=favorites')).toBe(true);
     expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Favoriten');
-    expect(container.handleHashChange('#/profile')).toBe(false);
+    expect(container.handleHashChange('#/watchlist')).toBe(true);
+    expect(container.querySelector('.profile-tab-button.active').textContent).toBe('Meine Liste');
+    expect(container.handleHashChange('#/profile')).toBe(true);
     expect(container.handleHashChange('#/home')).toBe(false);
   });
 
   it('shows "Meine Liste" whole, and explains an empty one', async () => {
-    window.history.replaceState(null, '', '#/watchlist');
+    window.history.replaceState(null, '', '#/profile?tab=watchlist');
     WatchlistApi.list.mockResolvedValue({ items: [makeItem('w1'), makeSeries('w2')] });
-    let container = ProfilePage({ initialTab: 'watchlist' });
+    let container = ProfilePage();
     await flush();
     expect([...container.querySelectorAll('.media-card')].map(card => card.dataset.itemId)).toEqual(['w1', 'w2']);
     expect(container.querySelector('.profile-load-more')).toBeNull();
 
     WatchlistApi.list.mockResolvedValue({ items: [] });
-    container = ProfilePage({ initialTab: 'watchlist' });
+    container = ProfilePage();
     await flush();
     expect(container.textContent).toContain('Deine Liste ist leer');
   });

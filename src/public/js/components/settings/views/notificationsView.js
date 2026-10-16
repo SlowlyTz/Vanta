@@ -3,7 +3,7 @@ import { NotificationsApi } from '../../../api/notifications.api.js';
 import { appStore } from '../../../store/app.store.js';
 import { NOTIFICATION_KINDS } from '../../../shared/notificationKinds.js';
 import { disablePush, enablePush, isLocalPush, pushSupport, renewPush, showLocalNotification, syncPushSubscription } from '../../../utils/pushSubscription.js';
-import { settingsCard, settingsNote, switchRow } from '../controls.js';
+import { settingsCard, settingsNote, switchCell, switchRow } from '../controls.js';
 
 const SUPPORT_TEXT = {
   denied: 'Der Browser blockiert Benachrichtigungen für VANTA. Erlaube sie in den Website-Einstellungen des Browsers und versuche es dann erneut.',
@@ -14,6 +14,17 @@ const SUPPORT_TEXT = {
 // A browser without a push service (Helium, ungoogled Chromium) gets them
 // from the open app.
 const LOCAL_TEXT = 'Dieser Browser hat keinen Push-Dienst. Benachrichtigungen erscheinen hier als Systemmeldung, solange VANTA in einem Tab offen ist (auch im Hintergrund).';
+
+const BELL_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
+const PHONE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>';
+
+// The two columns over the switches: what each one turns on.
+function columnHead(icon, text) {
+  const head = createElement('span', { className: 'settings-kind-column' });
+  head.innerHTML = icon;
+  head.appendChild(createElement('span', {}, text));
+  return head;
+}
 
 // "Benachrichtigungen": push on this device, and per kind push and the list
 // under the bell. `onStatus` gets "An"/"Aus" for the row in the hub.
@@ -37,7 +48,7 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
     const support = pushSupport();
     const deviceSwitch = switchRow({
       label: 'Push auf diesem Gerät',
-      description: local ? 'Als Systemmeldung, solange VANTA offen ist.' : deviceOn ? 'Dieses Gerät bekommt Benachrichtigungen, auch wenn VANTA zu ist.' : 'Benachrichtigungen auch bei geschlossener App.',
+      description: local ? 'Als Systemmeldung, solange VANTA offen ist.' : 'Auch wenn VANTA geschlossen ist.',
       checked: deviceOn,
       disabled: support !== 'ready' && !deviceOn,
       onChange: async (checked, input) => {
@@ -89,25 +100,27 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
       }
     }, 'Testbenachrichtigung senden');
 
+    // Per kind: the text on the left (it may wrap), the two switches always
+    // on the right, under the column heads.
     const kindRows = (prefs?.kinds || []).map(entry => {
       const meta = NOTIFICATION_KINDS.find(kind => kind.kind === entry.kind);
       const kindLabel = meta?.label || entry.kind;
-      const pushSwitch = switchRow({ label: 'Push', checked: entry.push, onChange: value => save({ kinds: [{ kind: entry.kind, push: value }] }) });
-      const listSwitch = switchRow({ label: 'Liste', checked: entry.inApp, onChange: value => save({ kinds: [{ kind: entry.kind, inApp: value }] }) });
-      // "Push" alone does not say which kind a screen reader is on.
-      pushSwitch.input.setAttribute('aria-label', `${kindLabel}: Push`);
-      listSwitch.input.setAttribute('aria-label', `${kindLabel}: Liste`);
+      const inAppSwitch = switchCell({ label: `${kindLabel}: in der App`, checked: entry.inApp, onChange: value => save({ kinds: [{ kind: entry.kind, inApp: value }] }) });
+      const pushSwitch = switchCell({ label: `${kindLabel}: Push`, checked: entry.push, onChange: value => save({ kinds: [{ kind: entry.kind, push: value }] }) });
       return createElement('div', { className: 'settings-kind-row' },
         createElement('span', { className: 'settings-control-text' },
           createElement('span', { className: 'settings-control-label' }, kindLabel),
-          createElement('span', { className: 'settings-control-description' }, meta?.description || '')
+          meta?.description ? createElement('span', { className: 'settings-control-description' }, meta.description) : null
         ),
-        createElement('div', { className: 'settings-kind-switches' },
-          pushSwitch.element,
-          listSwitch.element
-        )
+        inAppSwitch.element,
+        pushSwitch.element
       );
     });
+    const kindHead = createElement('div', { className: 'settings-kind-row settings-kind-head', 'aria-hidden': 'true' },
+      createElement('span', {}),
+      columnHead(BELL_ICON, 'In der App'),
+      columnHead(PHONE_ICON, 'Push')
+    );
 
     element.replaceChildren(
       settingsCard('Dieses Gerät',
@@ -117,7 +130,7 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
         createElement('div', { className: 'settings-card-actions' }, testButton)
       ),
       prefs
-        ? settingsCard('Was du bekommst', ...kindRows, settingsNote('„Liste“ ist die Glocke oben; „Push“ geht an alle Geräte, auf denen Push an ist.'))
+        ? settingsCard('Was du bekommst', kindHead, ...kindRows)
         : settingsCard('Was du bekommst', settingsNote('Wird geladen …'))
     );
   };

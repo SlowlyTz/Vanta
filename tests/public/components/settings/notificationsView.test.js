@@ -24,7 +24,10 @@ describe('notifications view', () => {
     await view.refresh();
     expect(syncPushSubscription).toHaveBeenCalled();
     expect(onStatus).toHaveBeenLastCalledWith('An');
-    const labels = [...view.element.querySelectorAll('.settings-kind-switches input')].map(input => input.getAttribute('aria-label'));
-    expect(labels).toEqual(['Mitteilungen: Push', 'Mitteilungen: Liste']);
+    const labels = [...view.element.querySelectorAll('.settings-kind-row:not(.settings-kind-head) input')].map(input => input.getAttribute('aria-label'));
+    expect(labels).toEqual(['Mitteilungen: in der App', 'Mitteilungen: Push']);
+    // The columns say what each switch is; the old note is gone.
+    expect(view.element.querySelector('.settings-kind-head').textContent).toBe('In der AppPush');
+    expect(view.element.textContent).not.toContain('„Liste“ ist die Glocke');
   });
 });

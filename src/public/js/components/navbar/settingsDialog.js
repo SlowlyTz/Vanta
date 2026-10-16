@@ -2,7 +2,7 @@ import { createElement } from '../../utils/dom.js';
 import { bindSheetSwipe } from '../../utils/sheetSwipe.js';
 import {
   createBackIcon, createCloseIcon, createPasswordIcon, createProfileIcon, createLogoutIcon,
-  createBellIcon, createPlaybackIcon, createAppearanceIcon, createDevicesIcon, createBookmarkIcon, createChevronIcon
+  createBellIcon, createPlaybackIcon, createAppearanceIcon, createDevicesIcon, createChevronIcon
 } from './icons.js';
 import { createSettingsProfile } from './settingsOverview.js';
 import { createPasswordForm } from './settingsPassword.js';
@@ -81,8 +81,8 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   rows.appearance = hubRow({ label: 'Darstellung', icon: createAppearanceIcon(), onClick: () => openArea('appearance') });
   rows.devices = hubRow({ label: 'Geräte', icon: createDevicesIcon(), onClick: () => openArea('devices') });
   rows.password = hubRow({ label: 'Passwort ändern', icon: createPasswordIcon(), onClick: () => openArea('password') });
-  const profileRow = hubRow({ label: 'Profil, Verlauf & Favoriten', icon: createProfileIcon(), onClick: navigateTo('#/profile') });
-  const watchlistRow = hubRow({ label: 'Meine Liste', icon: createBookmarkIcon(), onClick: navigateTo('#/watchlist') });
+  // The lists (Meine Liste, Verlauf …) are tabs on the profile.
+  const profileRow = hubRow({ label: 'Profil', icon: createProfileIcon(), onClick: navigateTo('#/profile') });
 
   // Push, devices, the password and the admin area are not run from a TV.
   if (tv) {
@@ -124,7 +124,7 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
     dataset: { view: 'root', tvGroup: '' }
   },
     settingsProfile.element,
-    group('Konto', profileRow.element, watchlistRow.element, rows.password.element),
+    group('Konto', profileRow.element, rows.password.element),
     group('App', rows.notifications.element, rows.playback.element, rows.appearance.element, rows.devices.element),
     adminSection,
     createElement('div', { className: 'settings-logout-section' }, logoutBtn),

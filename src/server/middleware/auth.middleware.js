@@ -59,6 +59,19 @@ const isAdminCached = async (userId, token, now = Date.now()) => {
 
 export const clearAdminCheckCache = () => adminChecks.clear();
 
+// The role from Jellyfin (cached briefly), also kept on the session; false
+// when Jellyfin cannot be asked. For what a non-admin must not see without
+// being refused outright (the admin kinds of notifications).
+export const isFreshAdmin = async (req) => {
+  try {
+    const isAdmin = await isAdminCached(req.session.userId, req.session.accessToken);
+    req.session.isAdmin = isAdmin;
+    return isAdmin;
+  } catch {
+    return req.session.isAdmin === true;
+  }
+};
+
 export const requireFreshAdmin = async (req, res, next) => {
   try {
     const isAdmin = await isAdminCached(req.session.userId, req.session.accessToken);

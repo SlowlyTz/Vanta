@@ -553,7 +553,7 @@ html.tv-mode .tv-shell .content-section {
 
 /* ---- Profile --------------------------------------------------------------
    The head runs under the sidebar to the screen edges, like the home hero. */
-html.tv-mode .profile-overview .profile-hero {
+html.tv-mode .profile-page .profile-hero {
   min-height: 62vh;
   margin-left: calc(-1 * var(--tv-content-left));
   margin-right: calc(-1 * var(--tv-safe-x));
@@ -596,41 +596,32 @@ html.tv-mode .profile-stat-label {
   font-size: 0.75rem;
 }
 
-html.tv-mode .profile-tab-content,
-html.tv-mode .profile-rows {
+html.tv-mode .profile-tab-content {
   padding-left: 0;
   padding-right: 0;
 }
 
 html.tv-mode .tv-shell .profile-list {
-  padding: 0;
+  padding: 1.2rem 0 0;
 }
 
 /* Pills: room around them for the ring (the line scrolls sideways on
    phones, which would cut it). */
-html.tv-mode .profile-tabs,
-html.tv-mode .profile-shortcuts {
+html.tv-mode .profile-tabs {
   overflow: visible;
   flex-wrap: nowrap;
   padding: 0.5rem 0.4rem;
   margin: -0.5rem -0.4rem 1rem;
 }
 
-html.tv-mode .profile-shortcut,
 html.tv-mode .profile-tab-button {
   margin-right: 0.7rem;
   padding: 0.55rem 1.2rem;
   font-size: 0.85rem;
 }
 
-html.tv-mode .profile-shortcut.tv-focus,
 html.tv-mode .profile-tab-button.tv-focus {
   box-shadow: var(--tv-ring);
-}
-
-html.tv-mode .profile-shortcut.tv-focus {
-  background: var(--text-primary);
-  color: var(--bg-primary);
 }
 
 html.tv-mode .heart-container:focus-within {
@@ -914,10 +905,11 @@ html.tv-mode .settings-dialog.is-tv .settings-switch {
 }
 
 html.tv-mode .settings-dialog.is-tv .settings-switch-track::after {
-  top: 0.18rem;
-  left: 0.18rem;
+  top: 0.12rem;
+  left: 0.12rem;
   width: 1.14rem;
   height: 1.14rem;
+  background-size: 0.7rem 0.7rem;
 }
 
 html.tv-mode .settings-dialog.is-tv .settings-switch-input:checked + .settings-switch-track::after {
@@ -967,6 +959,34 @@ html.tv-mode .settings-dialog.is-tv .settings-segmented-option {
 }
 
 html.tv-mode .settings-dialog.is-tv .settings-segmented-option.tv-focus {
+  box-shadow: var(--tv-ring);
+}
+
+/* A longer choice: the dropdown in rem, its menu ringed like the rest. */
+html.tv-mode .settings-dialog.is-tv .settings-dropdown-toggle {
+  min-width: 9rem;
+  min-height: 2.4rem;
+  padding: 0 0.8rem 0 1rem;
+  border-radius: 0.7rem;
+  font-size: 0.9rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-dropdown-menu {
+  max-height: 18rem;
+  padding: 0.3rem;
+  border-radius: 0.8rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-dropdown-option {
+  min-height: 2.4rem;
+  padding: 0 1rem 0 0.8rem;
+  border-radius: 0.55rem;
+  font-size: 0.9rem;
+}
+
+html.tv-mode .settings-dialog.is-tv .settings-dropdown-toggle.tv-focus,
+html.tv-mode .settings-dialog.is-tv .settings-dropdown-option.tv-focus {
+  background: rgba(255, 255, 255, 0.12);
   box-shadow: var(--tv-ring);
 }
 

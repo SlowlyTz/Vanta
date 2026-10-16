@@ -11,7 +11,7 @@ export const TV_SIDEBAR_ENTRIES = [
   { key: 'home', label: 'Home', href: '#/home', icon: () => createNavIcon('home') },
   { key: 'movies', label: 'Filme', href: '#/movies', icon: () => createNavIcon('movies') },
   { key: 'series', label: 'Serien', href: '#/series', icon: () => createNavIcon('series') },
-  { key: 'watchlist', label: 'Meine Liste', href: '#/watchlist', icon: () => createNavIcon('watchlist') },
+  { key: 'watchlist', label: 'Meine Liste', href: '#/profile?tab=watchlist', icon: () => createNavIcon('watchlist') },
   { key: 'requests', label: 'Anfragen', href: '#/requests', icon: () => createNavIcon('requests') },
   { key: 'party', label: 'Watch Party', action: 'watchParty', icon: () => createTopbarIcon('group') },
   { key: 'profile', label: 'Profil', href: '#/profile', icon: () => createTopbarIcon('profile') },

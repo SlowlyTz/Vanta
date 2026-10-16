@@ -11,11 +11,12 @@ vi.mock('../../../src/server/realtime/app.socket.js', () => ({ appSocketHub: { s
 const { createNotificationsRouter, TEST_PUSH_INTERVAL_MS } = await import('../../../src/server/routes/notifications.routes.js');
 const { publicSessionId } = await import('../../../src/server/db/session-store.js');
 
-const appWith = ({ notify, push, isAdmin = false, session = {}, now }) => {
+// `jellyfinAdmin`: what Jellyfin says now (default: what the session says).
+const appWith = ({ notify, push, isAdmin = false, jellyfinAdmin = isAdmin, session = {}, now }) => {
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => { req.sessionID = 'sid-1'; req.session = Object.assign(session, { userId: 'u1', accessToken: 't', isAdmin }); next(); });
-  app.use('/api/notifications', createNotificationsRouter({ notify, push, now }));
+  app.use('/api/notifications', createNotificationsRouter({ notify, push, now, adminCheck: async () => jellyfinAdmin }));
   return app;
 };
 
@@ -40,6 +41,11 @@ describe('/api/notifications', () => {
     expect(res.body.kinds.some(k => k.kind === 'admin_new_request')).toBe(false);
     const admin = await request(appWith({ notify, push, isAdmin: true })).get('/api/notifications/preferences');
     expect(admin.body.kinds.some(k => k.kind === 'admin_new_request')).toBe(true);
+  });
+
+  it('no admin kinds for a session from before a demotion in Jellyfin', async () => {
+    const res = await request(appWith({ notify, push, isAdmin: true, jellyfinAdmin: false })).get('/api/notifications/preferences');
+    expect(res.body.kinds.some(k => k.kind.startsWith('admin_'))).toBe(false);
   });
 
   it('saves preferences', async () => {

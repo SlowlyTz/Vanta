@@ -4,22 +4,22 @@ import { WatchlistApi } from '../api/watchlist.api.js';
 import { watchlistStore } from '../store/watchlist.store.js';
 import { removeCard } from '../components/mediaActions.js';
 import { MediaCard } from '../components/mediaCard.js';
-import { MediaCarousel } from '../components/mediaCarousel.js';
 import { appStore } from '../store/app.store.js';
 import { authStore } from '../store/auth.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
-import { createCarouselSkeleton } from '../components/skeleton.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { getBackdropUrlFor } from '../utils/image.js';
 
-// The profile: a head with what one has watched, then a row for each of
-// one's lists (#/profile). Each list also opens whole, as a grid with a
-// switch between the lists: #/profile?tab=continue, #/watchlist,
-// #/profile?tab=history and #/favorites.
+// The profile: a head with what one has watched, then one's lists as tabs
+// right under it (Weiter schauen, Meine Liste, Favoriten, Verlauf), the
+// chosen one whole as a grid. The tab is in the address
+// (#/profile?tab=watchlist), so Back and reloading keep it; the last one
+// chosen opens next time. #/watchlist and #/favorites are old addresses of
+// two of the tabs.
 
 const LIMIT = 24;
-const ROW_LIMIT = 20;
+const TAB_KEY = 'vanta.profile.tab';
 
 const LISTS = [
   {
@@ -33,7 +33,7 @@ const LISTS = [
   {
     key: 'watchlist',
     label: 'Meine Liste',
-    hash: '#/watchlist',
+    hash: '#/profile?tab=watchlist',
     // The whole list at once (it is short); newest first.
     load: async (page, limit, options) => {
       const { items } = await WatchlistApi.list(options);
@@ -44,7 +44,7 @@ const LISTS = [
   {
     key: 'favorites',
     label: 'Favoriten',
-    hash: '#/favorites',
+    hash: '#/profile?tab=favorites',
     load: (page, limit, options) => MediaApi.getProfileFavorites(page, limit, options),
     emptyText: 'Du hast noch keine Favoriten markiert.'
   },
@@ -59,15 +59,27 @@ const LISTS = [
 
 const listOf = key => LISTS.find(list => list.key === key);
 
-// Which view an address shows: 'overview', a list's key, or null when it is
-// not the profile's.
+// Which tab an address shows: a list's key, '' for the profile without one
+// (the last tab chosen), or null when it is not the profile's.
 export const viewFromHash = (hash) => {
   const [path, query = ''] = hash.split('?');
   if (path === '#/watchlist') return 'watchlist';
   if (path === '#/favorites') return 'favorites';
   if (path !== '#/profile') return null;
   const tab = new URLSearchParams(query).get('tab');
-  return tab === 'history' || tab === 'continue' ? tab : 'overview';
+  return listOf(tab) ? tab : '';
+};
+
+const rememberedTab = () => {
+  try {
+    const key = localStorage.getItem(TAB_KEY);
+    return listOf(key) ? key : 'continue';
+  } catch {
+    return 'continue';
+  }
+};
+const rememberTab = key => {
+  try { localStorage.setItem(TAB_KEY, key); } catch { /* private mode */ }
 };
 
 const formatCount = value => (Number.isFinite(value) ? new Intl.NumberFormat('de-DE').format(value) : '–');
@@ -86,7 +98,7 @@ function createEmptyPageState() {
 }
 
 // The head: the last title one watched behind it, the initial, the name and
-// the numbers; its links lead to each whole list.
+// the numbers.
 function ProfileHero({ user, signal }) {
   const name = user?.name || user?.Name || user?.username || user?.Username || 'Profil';
   const backdrop = createElement('div', { className: 'profile-hero-backdrop', 'aria-hidden': 'true' });
@@ -105,13 +117,6 @@ function ProfileHero({ user, signal }) {
   const genres = createElement('p', { className: 'profile-genres', hidden: true });
   const last = createElement('p', { className: 'profile-last', hidden: true });
 
-  const shortcuts = createElement('nav', { className: 'profile-shortcuts', 'aria-label': 'Deine Listen', 'data-tv-row': '' },
-    ...LISTS.map(list => createElement('a', {
-      className: 'profile-shortcut',
-      href: list.hash
-    }, list.label))
-  );
-
   const element = createElement('section', { className: 'profile-hero' },
     backdrop,
     createElement('div', { className: 'profile-hero-inner' },
@@ -124,8 +129,7 @@ function ProfileHero({ user, signal }) {
         )
       ),
       statsEl,
-      last,
-      shortcuts
+      last
     )
   );
 
@@ -156,68 +160,11 @@ function ProfileHero({ user, signal }) {
   return element;
 }
 
-// #/profile: the head and a row per list; empty lists leave no row.
-function renderOverview(container, { signal }) {
-  const rows = createElement('div', { className: 'content-section profile-rows' });
-  const empty = EmptyState({
-    title: 'Noch ganz leer hier',
-    message: 'Was du anfängst, dir merkst oder als Favorit markierst, erscheint hier.',
-    action: { label: 'Entdecken', onClick: () => { window.location.hash = '#/home'; } },
-    className: 'profile-empty'
-  });
-  empty.hidden = true;
-
-  let pending = LISTS.length;
-  let shown = 0;
-  const settle = () => {
-    pending -= 1;
-    if (pending === 0 && shown === 0) empty.hidden = false;
-  };
-
-  const loadRow = (list, slot) => {
-    list.load(1, ROW_LIMIT, { signal }).then(({ items = [] }) => {
-      const row = items.length
-        ? MediaCarousel({ title: list.label, items, landscape: Boolean(list.landscape), href: list.hash, resumeRow: list.key === 'continue' })
-        : null;
-      if (row && list.key === 'watchlist') row.dataset.watchlistRow = '';
-      if (row) {
-        row.dataset.profileList = list.key;
-        shown += 1;
-        slot.replaceWith(row);
-      } else {
-        slot.remove();
-      }
-    }).catch(error => {
-      if (error?.isAuthError || error?.name === 'AbortError') return;
-      console.error('[Profile Row Load Error]', error);
-      const failed = ErrorState({ title: list.label, message: 'Konnte nicht geladen werden.', retry: () => {
-        const again = createCarouselSkeleton({ title: list.label, landscape: Boolean(list.landscape), count: 6 });
-        failed.replaceWith(again);
-        pending += 1;
-        loadRow(list, again);
-      } });
-      failed.classList.add('profile-row-error');
-      shown += 1;
-      slot.replaceWith(failed);
-    }).finally(settle);
-  };
-
-  LISTS.forEach(list => {
-    const slot = createCarouselSkeleton({ title: list.label, landscape: Boolean(list.landscape), count: 6 });
-    rows.appendChild(slot);
-    loadRow(list, slot);
-  });
-  rows.appendChild(empty);
-  container.appendChild(rows);
-}
-
-// A whole list as a grid, with the switch between the lists above it.
+// The lists: the tabs, and the chosen one whole as a grid below them.
 function renderList(container, { signal, initial }) {
   const state = { activeTab: initial, pages: {} };
   LISTS.forEach(list => { state.pages[list.key] = createEmptyPageState(); });
 
-  const title = createElement('h2', { className: 'profile-list-title' });
-  const count = createElement('span', { className: 'profile-list-count' });
   const tabButtons = new Map();
   const tabsNav = createElement('div', { className: 'profile-tabs', role: 'tablist', 'data-tv-row': '' });
   LISTS.forEach(list => {
@@ -246,7 +193,6 @@ function renderList(container, { signal, initial }) {
       if (active) button.setAttribute('data-tv-autofocus', '');
       else button.removeAttribute('data-tv-autofocus');
     });
-    title.textContent = listOf(state.activeTab).label;
     // On a phone the pills scroll sideways: the chosen one comes into view.
     const active = tabButtons.get(state.activeTab);
     window.requestAnimationFrame(() => {
@@ -260,7 +206,6 @@ function renderList(container, { signal, initial }) {
     const list = listOf(state.activeTab);
     const tabState = state.pages[state.activeTab];
     contentEl.innerHTML = '';
-    count.textContent = tabState.loaded && tabState.items.length ? formatCount(tabState.items.length) + (tabState.page < tabState.totalPages ? '+' : '') : '';
 
     if (tabState.loading && tabState.items.length === 0) {
       contentEl.appendChild(createSectionLoader({ label: `${list.label} wird geladen` }));
@@ -324,6 +269,7 @@ function renderList(container, { signal, initial }) {
 
   const setActiveTab = (tabKey) => {
     state.activeTab = tabKey;
+    rememberTab(tabKey);
     renderTabButtons();
     const tabState = state.pages[tabKey];
     if (!tabState.loaded && !tabState.loading) {
@@ -333,11 +279,7 @@ function renderList(container, { signal, initial }) {
     }
   };
 
-  container.appendChild(createElement('div', { className: 'content-section profile-list' },
-    createElement('div', { className: 'profile-list-head' },
-      createElement('a', { className: 'profile-back', href: '#/profile' }, '‹ Profil'),
-      createElement('div', { className: 'profile-list-heading' }, title, count)
-    ),
+  container.appendChild(createElement('section', { className: 'content-section profile-list', 'aria-label': 'Deine Listen' },
     tabsNav,
     contentEl
   ));
@@ -365,40 +307,30 @@ export default function ProfilePage({ initialTab = null } = {}, pageScope) {
   const scope = resolvePageScope(pageScope);
   const { signal } = scope;
   const fromHash = viewFromHash(window.location.hash || '');
-  const view = initialTab && listOf(initialTab) ? initialTab : (fromHash && fromHash !== 'overview' && !initialTab ? fromHash : 'overview');
+  const tab = listOf(initialTab) ? initialTab : (fromHash || rememberedTab());
+  // The old addresses of the lists (#/watchlist, #/favorites) and the plain
+  // profile show the tab's own address.
+  const wanted = listOf(tab).hash;
+  if (window.location.hash !== wanted && fromHash !== null) window.history.replaceState(window.history.state, '', wanted);
 
-  const container = createElement('div', { className: `page-container profile-page ${view === 'overview' ? 'profile-overview' : 'profile-list-view'}`, 'data-tv-backdrop': '' });
-
-  let list = null;
-  if (view === 'overview') {
-    // The head runs up under the navbar.
-    container.dataset.edgeTop = 'true';
-    container.appendChild(ProfileHero({ user: authStore.getState().user, signal }));
-    renderOverview(container, { signal });
-  } else {
-    list = renderList(container, { signal, initial: view });
-  }
+  const container = createElement('div', { className: 'page-container profile-page', 'data-tv-backdrop': '' });
+  // The head runs up under the navbar.
+  container.dataset.edgeTop = 'true';
+  container.appendChild(ProfileHero({ user: authStore.getState().user, signal }));
+  const list = renderList(container, { signal, initial: tab });
 
   const unsubscribeWatchlist = watchlistStore.subscribe(({ ids }) => {
-    if (!watchlistStore.isLoaded()) return;
-    if (list) {
-      list.syncWatchlist(ids);
-      return;
-    }
-    container.querySelectorAll('[data-watchlist-row] [data-item-id]').forEach(card => {
-      if (!ids.has(card.dataset.itemId)) removeCard(card);
-    });
+    if (watchlistStore.isLoaded()) list.syncWatchlist(ids);
   });
   scope.onLeave(() => unsubscribeWatchlist());
 
-  // Between two lists the page stays and switches; to or from the overview
-  // the router builds it anew.
+  // Between the tabs the page stays and switches.
   container.handleHashChange = (hash) => {
     const next = viewFromHash(hash);
-    if (!next) return false;
-    if (!list) return next === 'overview';
-    if (next === 'overview') return false;
-    if (next !== list.state.activeTab) list.setActiveTab(next);
+    if (next === null) return false;
+    const key = next || list.state.activeTab;
+    if (key !== list.state.activeTab) list.setActiveTab(key);
+    if (hash !== listOf(key).hash) window.history.replaceState(window.history.state, '', listOf(key).hash);
     return true;
   };
 

@@ -121,15 +121,16 @@ async function tvChecks(page) {
     await page.wait(3500);
     check((await clipped('.media-carousel-container .media-card')) === '', 'TV detail: no section cuts the cards of its rows');
   }
-  await page.goto(`${base}/?tv=1#/profile`);
+  await page.goto(`${base}/?tv=1#/profile?tab=continue`);
   await page.wait(3000);
-  check((await page.focus()).includes('profile-shortcut'), 'TV profile: starts on the links to the lists');
-  check((await clipped('.profile-shortcut')) === '', 'TV profile: the links to the lists are not cut');
+  check((await page.focus()).includes('profile-tab-button'), 'TV profile: starts on the tabs of the lists');
+  check((await clipped('.profile-tab-button')) === '', 'TV profile: the tabs are not cut');
   await page.key('ArrowRight');
   await page.key('Enter');
-  await page.wait(3000);
-  check((await page.eval('location.hash')) === '#/watchlist' && (await page.focus()).includes('profile-tab-button'), 'TV profile: a link opens its list, on its own tab');
-  check((await clipped('.profile-tab-button')) === '', 'TV profile: the tabs of a list are not cut');
+  await page.wait(2500);
+  check((await page.eval('location.hash')) === '#/profile?tab=watchlist' && (await page.focus()).includes('profile-tab-button'), 'TV profile: a tab opens its list in place');
+  await page.key('ArrowDown');
+  check((await page.focus()).includes('media-card') || (await page.eval(`Boolean(document.querySelector('.profile-tab-content .search-empty-state'))`)), 'TV profile: down reaches the list');
 
   // An empty page hands the focus to the sidebar; the admin area is not there.
   await page.goto(`${base}/?tv=1#/admin`);

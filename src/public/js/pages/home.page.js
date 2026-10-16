@@ -298,7 +298,7 @@ export default function HomePage(params, pageScope) {
         title: 'Meine Liste',
         items: data.watchlist,
         landscape: false,
-        href: '#/watchlist'
+        href: '#/profile?tab=watchlist'
       });
       if (watchlistCarousel) {
         watchlistCarousel.dataset.watchlistRow = '';

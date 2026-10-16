@@ -18,12 +18,13 @@ export function isNavLinkActive(link, currentHash) {
       return currentHash.startsWith('#/report');
     case 'search':
       return currentHash.startsWith('#/search');
+    // Meine Liste is a tab of the profile (#/profile?tab=watchlist).
     case 'watchlist':
-      return currentHash.startsWith('#/watchlist');
+      return currentHash.startsWith('#/watchlist') || currentHash.startsWith('#/profile?tab=watchlist');
     case 'favorites':
-      return currentHash.startsWith('#/favorites');
+      return currentHash.startsWith('#/favorites') || currentHash.startsWith('#/profile?tab=favorites');
     case 'profile':
-      return currentHash.startsWith('#/profile');
+      return currentHash.startsWith('#/profile') && !currentHash.startsWith('#/profile?tab=watchlist');
     default:
       return false;
   }

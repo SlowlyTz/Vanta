@@ -30,7 +30,7 @@ Debug: `?wpSkew=3000` fakes a clock 3 s ahead; `localStorage['vanta.debug.sync']
 
 ## TV mode
 
-On by itself for Tizen, webOS, Android/Google TV and Fire TV browsers, asked once on TV-like screens, switchable per device (Einstellungen → Darstellung, `?tv=1` / `?tv=0`). Supported from Chromium 68 (webOS 5, Tizen 5.5).
+On by itself for Tizen, webOS, Android/Google TV and Fire TV browsers, asked once on TV-like screens, switchable per device (Einstellungen → Darstellung, the „TV-Ansicht“ / „Desktop-Ansicht“ button on the login page, `?tv=1` / `?tv=0`). The choice is kept in the browser (`vanta.tvMode`). Supported from Chromium 68 (webOS 5, Tizen 5.5).
 
 - `html.tv-mode`, 1 rem = 1.25 % of the width, `css/bundles/tv.css`; sidebar instead of navbar; no admin area.
 - **Focus engine** (`js/tv/focusEngine.js`): arrow keys move to the nearest element, line by line vertically.
@@ -64,7 +64,7 @@ Requests search TMDB for movies, series, seasons or single episodes; the cross-c
 - **Meine Liste** (`watchlist`): per user, apart from Jellyfin favourites. A film leaves it once watched to the end after it was added.
 - **Weiter schauen**: grouped per series; hiding an entry lasts until an episode is played again.
 - **Cards** fetch the viewer's progress in batches once visible (`/api/media/userdata`, cached 1 min).
-- **Profile** (`#/profile`): watch stats from all played items (`/api/media/profile/stats`, cached 5 min per user), then a row per list. The full lists are `#/profile?tab=continue`, `#/watchlist`, `#/favorites`, `#/profile?tab=history`.
+- **Profile** (`#/profile`): watch stats from all played items (`/api/media/profile/stats`, cached 5 min per user), and under them the lists as tabs (Weiter schauen, Meine Liste, Favoriten, Verlauf), the chosen one whole as a grid. The tab is in the address (`#/profile?tab=watchlist`) and remembered per device; `#/watchlist` and `#/favorites` open their tab.
 
 ## Trailer scroller
 

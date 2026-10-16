@@ -246,3 +246,38 @@ describe('LoginPage', () => {
     expect(LoginPage().querySelector('.login-error').classList.contains('hidden')).toBe(true);
   });
 });
+
+describe('login view toggle', () => {
+  const fakeWindow = (search, hash = '#/login') => ({
+    location: { pathname: '/', search, hash, reload: vi.fn() },
+    history: { state: null, replaceState: vi.fn() }
+  });
+
+  it('switches a desktop to the TV view and reloads without ?tv=', async () => {
+    const { createViewToggle } = await import('../../../src/public/js/pages/login.page.js');
+    localStorage.removeItem('vanta.tvMode');
+    document.documentElement.classList.remove('tv-mode');
+    const win = fakeWindow('?x=1&tv=0');
+    const button = createViewToggle({ win });
+    expect(button.textContent).toBe('TV-Ansicht');
+    button.click();
+    expect(localStorage.getItem('vanta.tvMode')).toBe('on');
+    expect(win.history.replaceState).toHaveBeenCalledWith(null, '', '/?x=1#/login');
+    expect(win.location.reload).toHaveBeenCalled();
+  });
+
+  it('takes a TV-mode desktop back to the desktop view', async () => {
+    const { createViewToggle } = await import('../../../src/public/js/pages/login.page.js');
+    document.documentElement.classList.add('tv-mode');
+    const win = fakeWindow('?tv=1');
+    const button = createViewToggle({ win });
+    expect(button.textContent).toBe('Desktop-Ansicht');
+    button.click();
+    expect(localStorage.getItem('vanta.tvMode')).toBe('off');
+    expect(win.history.replaceState).toHaveBeenCalledWith(null, '', '/#/login');
+    // Also without a ?tv= to drop, the page loads anew.
+    expect(win.location.reload).toHaveBeenCalled();
+    document.documentElement.classList.remove('tv-mode');
+    localStorage.removeItem('vanta.tvMode');
+  });
+});

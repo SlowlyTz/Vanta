@@ -1,7 +1,7 @@
 import { createElement } from '../../../utils/dom.js';
 import { preferencesStore } from '../../../store/preferences.store.js';
 import { appStore } from '../../../store/app.store.js';
-import { segmentedRow, settingsCard, switchRow } from '../controls.js';
+import { choiceRow, segmentedRow, settingsCard, switchRow } from '../controls.js';
 
 const QUALITY = [
   { value: 'auto', label: 'Auto' },
@@ -37,14 +37,14 @@ export function createPlaybackView({ onStatus = () => {} } = {}) {
 
   const render = () => {
     const prefs = preferencesStore.getState();
+    // One list, short labels: three choices sit beside their label, longer
+    // ones open under it.
     element.replaceChildren(
-      settingsCard('Folgen',
-        switchRow({ label: 'Nächste Folge automatisch', description: '10 Sekunden nach dem Hinweis am Ende einer Folge.', checked: prefs.autoplayNextEpisode, onChange: value => save({ autoplayNextEpisode: value }) }).element,
-        switchRow({ label: 'Intro automatisch überspringen', description: 'Erkannte Intros und Rückblicke werden übersprungen.', checked: prefs.autoSkipIntro, onChange: value => save({ autoSkipIntro: value }) }).element,
-        segmentedRow({ label: '„Schaust du noch?“', description: 'Pausiert nach so langer Wiedergabe ohne Eingabe.', options: STILL_WATCHING, value: prefs.stillWatchingHours, onChange: value => save({ stillWatchingHours: value }) }).element
-      ),
-      settingsCard('Bild und Ton',
-        segmentedRow({ label: 'Standard-Qualität', options: QUALITY, value: prefs.defaultQuality, onChange: value => save({ defaultQuality: value }) }).element,
+      settingsCard(null,
+        switchRow({ label: 'Nächste Folge automatisch', checked: prefs.autoplayNextEpisode, onChange: value => save({ autoplayNextEpisode: value }) }).element,
+        switchRow({ label: 'Intro überspringen', checked: prefs.autoSkipIntro, onChange: value => save({ autoSkipIntro: value }) }).element,
+        choiceRow({ label: '„Schaust du noch?“', description: 'Fragt nach, wenn so lange nichts gedrückt wurde.', options: STILL_WATCHING, value: prefs.stillWatchingHours, onChange: value => save({ stillWatchingHours: value }) }).element,
+        choiceRow({ label: 'Qualität', options: QUALITY, value: prefs.defaultQuality, onChange: value => save({ defaultQuality: value }) }).element,
         segmentedRow({ label: 'Tonspur', options: AUDIO, value: prefs.audioLanguage, onChange: value => save({ audioLanguage: value }) }).element,
         segmentedRow({ label: 'Untertitel', options: SUBTITLES, value: prefs.subtitleLanguage, onChange: value => save({ subtitleLanguage: value }) }).element
       )

@@ -439,3 +439,49 @@
     transform: none;
   }
 }
+
+/* Top right: switch between the TV and the desktop view of this device. */
+.login-view-toggle {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(10, 10, 14, 0.8);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.login-view-toggle svg {
+  margin-right: 8px;
+}
+
+.login-view-toggle:hover,
+.login-view-toggle:focus-visible {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(30, 30, 38, 0.75);
+  outline: none;
+}
+
+html.tv-mode .login-view-toggle {
+  top: var(--tv-safe-y, 2rem);
+  right: var(--tv-safe-x, 2.5rem);
+  min-height: 2.4rem;
+  padding: 0 1.1rem;
+  font-size: 0.85rem;
+}
+
+html.tv-mode .login-view-toggle.tv-focus {
+  box-shadow: var(--tv-ring);
+}

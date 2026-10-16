@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth } from '../middleware/auth.middleware.js';
+import { requireAuth, isFreshAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { NotificationsService } from '../services/notifications.service.js';
 import { NotifyService, readPreferences, writePreferences } from '../services/notify.service.js';
@@ -9,7 +9,7 @@ import { publicSessionId } from '../db/session-store.js';
 // One test push per user in this time; each one wakes every device.
 export const TEST_PUSH_INTERVAL_MS = 30 * 1000;
 
-export function createNotificationsRouter({ notify = NotifyService, push = PushService, now = () => Date.now() } = {}) {
+export function createNotificationsRouter({ notify = NotifyService, push = PushService, now = () => Date.now(), adminCheck = isFreshAdmin } = {}) {
   const router = express.Router();
   const isAdmin = (req) => req.session.isAdmin === true;
   const lastTestAt = new Map(); // userId -> time of the last test push
@@ -46,13 +46,15 @@ export function createNotificationsRouter({ notify = NotifyService, push = PushS
     res.json({ unread: notify.markRead(req.session.userId, id === null ? null : Number(id)) });
   }));
 
+  // The admin kinds only for whom Jellyfin calls an admin now: a session
+  // from before a demotion must not keep them.
   router.get('/preferences', requireAuth, asyncHandler(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ ...readPreferences(req.session.userId, { isAdmin: isAdmin(req) }), devices: push.deviceCount(req.session.userId) });
+    res.json({ ...readPreferences(req.session.userId, { isAdmin: await adminCheck(req) }), devices: push.deviceCount(req.session.userId) });
   }));
 
   router.put('/preferences', requireAuth, asyncHandler(async (req, res) => {
-    res.json(writePreferences(req.session.userId, req.body || {}, { isAdmin: isAdmin(req) }));
+    res.json(writePreferences(req.session.userId, req.body || {}, { isAdmin: await adminCheck(req) }));
   }));
 
   // The public VAPID key a browser subscribes with.

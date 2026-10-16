@@ -262,7 +262,7 @@ describe('settingsDialog hub', () => {
     dialog.setSettingsView('notifications');
     await flushAll();
 
-    const pushSwitch = dialog.settingsDialog.querySelector('.settings-kind-row .settings-switch-input');
+    const pushSwitch = dialog.settingsDialog.querySelector('.settings-kind-row input[aria-label$=": Push"]');
     pushSwitch.checked = false;
     pushSwitch.dispatchEvent(new Event('change'));
     expect(NotificationsApi.savePreferences).toHaveBeenCalledWith({ kinds: [{ kind: 'request_update', push: false }] });
@@ -274,10 +274,22 @@ describe('settingsDialog hub', () => {
     dialog.setSettingsOpen(true);
     dialog.setSettingsView('playback');
 
-    const option = [...dialog.settingsDialog.querySelectorAll('.settings-panel-playback .settings-segmented-option')].find(button => button.textContent === '720p');
-    option.click();
+    // Quality has many choices: a dropdown on its row.
+    const quality = [...dialog.settingsDialog.querySelectorAll('.settings-panel-playback .settings-choice')]
+      .find(choice => choice.querySelector('.settings-control-label').textContent === 'Qualität');
+    const toggle = quality.querySelector('.settings-dropdown-toggle');
+    expect(quality.querySelector('.settings-dropdown-menu').hidden).toBe(true);
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    [...quality.querySelectorAll('.settings-dropdown-option')].find(button => button.textContent === '720p').click();
     await flushAll();
     expect(PreferencesApi.update).toHaveBeenCalledWith({ defaultQuality: '720p' });
+    expect(quality.querySelector('.settings-dropdown-value').textContent).toBe('720p');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    // Three choices stay a row of buttons beside the label.
+    const audio = [...dialog.settingsDialog.querySelectorAll('.settings-panel-playback .settings-control-block')]
+      .find(block => block.querySelector('.settings-control-label').textContent === 'Tonspur');
+    expect(audio.classList.contains('is-inline')).toBe(true);
   });
 });
 

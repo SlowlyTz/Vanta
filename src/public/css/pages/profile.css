@@ -174,90 +174,15 @@
   font-size: 0.86rem;
 }
 
-.profile-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0 0 -10px;
-}
-
-.profile-shortcut {
-  margin: 0 10px 10px 0;
-  padding: 10px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text-primary);
-  font-size: 0.92rem;
-  font-weight: 650;
-  white-space: nowrap;
-  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.profile-shortcut:hover,
-.profile-shortcut:focus-visible {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.profile-shortcut:active {
-  transform: scale(0.97);
-}
-
-/* ---- The rows ---- */
-.profile-rows {
-  padding-top: var(--spacing-md);
-}
-
-.profile-empty,
-.profile-row-error {
-  margin: var(--spacing-xl) auto;
-}
-
-/* ---- A whole list ---- */
+/* ---- The lists, as tabs under the head ---- */
 .profile-list {
-  padding-top: var(--spacing-xl);
-}
-
-.profile-list-head {
-  margin-bottom: 18px;
-}
-
-.profile-back {
-  display: inline-block;
-  margin-bottom: 6px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: color var(--transition-fast);
-}
-
-.profile-back:hover {
-  color: var(--text-primary);
-}
-
-.profile-list-heading {
-  display: flex;
-  align-items: baseline;
-}
-
-.profile-list-title {
-  font-size: clamp(1.9rem, 4vw, 2.8rem);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.profile-list-count {
-  margin-left: 14px;
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  font-weight: 650;
+  padding-top: var(--spacing-lg);
 }
 
 .profile-tabs {
   position: relative;
   display: flex;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   padding-bottom: 2px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -343,23 +268,10 @@
     font-size: 1.45rem;
   }
 
-  /* One line that scrolls sideways to the screen edge instead of wrapped
-     ones. */
-  .profile-shortcuts {
-    flex-wrap: nowrap;
-    margin-right: -14px;
-    padding-right: 14px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
+  /* One line that scrolls sideways to the screen edge. */
   .profile-tabs {
     margin-right: -14px;
     padding-right: 14px;
-  }
-
-  .profile-shortcuts::-webkit-scrollbar {
-    display: none;
   }
 
   .profile-list {

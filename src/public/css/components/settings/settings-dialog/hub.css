@@ -188,6 +188,157 @@
   gap: 10px;
 }
 
+/* Up to three choices: beside the label, like a switch. */
+.settings-control-block.is-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.settings-control-block.is-inline .settings-control-text {
+  flex: 1 1 10rem;
+}
+
+/* A longer choice: a dropdown on the right of its row. The menu floats
+   over the page and opens with a short fade and slide (closing reverses
+   it); it opens upwards where the panel has no room below. */
+.settings-choice {
+  cursor: default;
+}
+
+.settings-dropdown {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.settings-dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 8.5rem;
+  min-height: 38px;
+  padding: 0 12px 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.settings-dropdown-toggle:hover,
+.settings-dropdown-toggle:focus-visible,
+.settings-dropdown.is-open .settings-dropdown-toggle {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.settings-dropdown-chevron {
+  width: 8px;
+  height: 8px;
+  margin-left: 12px;
+  border-right: 2px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.settings-dropdown.is-open .settings-dropdown-chevron {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.settings-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  max-height: 16rem;
+  padding: 5px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgb(28, 28, 34);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top right;
+  transition: opacity 160ms ease, transform 160ms ease;
+  pointer-events: none;
+}
+
+.settings-dropdown.opens-up .settings-dropdown-menu {
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateY(6px) scale(0.97);
+  transform-origin: bottom right;
+}
+
+.settings-dropdown.is-open .settings-dropdown-menu {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.settings-dropdown-menu[hidden] {
+  display: none;
+}
+
+.settings-dropdown-option {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px 0 12px;
+  column-gap: 18px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: rgba(255, 255, 255, 0.85);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.settings-dropdown-option:hover,
+.settings-dropdown-option:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+/* The chosen one: bold, with a tick at the end. */
+.settings-dropdown-option.is-active {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.settings-dropdown-option.is-active::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  margin-left: auto;
+  padding-left: 0;
+  border-right: 2px solid #30d158;
+  border-bottom: 2px solid #30d158;
+  transform: rotate(45deg) translate(-2px, -1px);
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-dropdown-menu,
+  .settings-dropdown-chevron {
+    transition: none;
+  }
+}
+
 .settings-control-text {
   display: grid;
   gap: 2px;
@@ -225,30 +376,36 @@
 .settings-switch-track {
   position: absolute;
   inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  transition: background var(--transition-fast);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
   pointer-events: none;
 }
 
+/* Off: a grey knob on a dark track. On: a white knob with a tick on green,
+   so the state reads at a glance (the white accent did not). */
 .settings-switch-track::after {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 3px;
+  top: 2px;
+  left: 2px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.55) center / 12px 12px no-repeat;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  transition: transform var(--transition-fast);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
 
 .settings-switch-input:checked + .settings-switch-track {
-  background: rgb(var(--abyss-accent));
+  border-color: #30d158;
+  background: #30d158;
 }
 
 .settings-switch-input:checked + .settings-switch-track::after {
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f9e45' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   transform: translateX(18px);
 }
 
@@ -293,24 +450,38 @@
 }
 
 /* Per kind of notification: push and the list, side by side. */
+/* Kinds of notifications: text, then two fixed columns of switches ("In der
+   App" under the bell, "Push"), so the switches never wrap under the text. */
 .settings-kind-row {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem;
+  align-items: center;
+  column-gap: 8px;
 }
 
-.settings-kind-switches {
+.settings-kind-head {
+  padding: 2px 0 6px;
+}
+
+.settings-kind-column {
   display: flex;
-  gap: 16px;
-}
-
-.settings-kind-switches .settings-control-row {
-  gap: 8px;
-  padding: 0;
-  border: 0;
-}
-
-.settings-kind-switches .settings-control-label {
+  flex-direction: column;
+  align-items: center;
   color: rgba(255, 255, 255, 0.6);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.settings-kind-column svg {
+  margin-bottom: 3px;
+}
+
+.settings-switch-cell {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .settings-note {
@@ -332,6 +503,12 @@
 }
 
 .settings-inline-button {
+  /* Also used as a link ("Code eingeben"): the text sits in the middle. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);

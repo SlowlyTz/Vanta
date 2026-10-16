@@ -5,6 +5,7 @@ import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 import { formatClock } from '../shared/time.js';
 import { takeSessionNotice } from '../utils/sessionNotice.js';
 import { createTvPairing } from './login/tvPairing.js';
+import { setTvChoice } from '../utils/tvMode.js';
 
 const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
 const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
@@ -262,6 +263,7 @@ export default function LoginPage(params, pageScope) {
   });
 
   const container = createElement('div', { className: 'login-page' },
+    createViewToggle(),
     createElement('section', { className: 'login-panel' },
       createElement('div', { className: 'login-panel-inner' },
         createElement('header', { className: 'login-header' },
@@ -305,3 +307,33 @@ export default function LoginPage(params, pageScope) {
 
   return container;
 }
+
+const MONITOR_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+const TV_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="2"/><path d="m8 2 4 3 4-3M7 21h10"/></svg>';
+
+// Top right: the other view for this device, in case VANTA guessed wrong
+// (a desktop that once got ?tv=1, a TV it did not recognise). It reloads,
+// without a ?tv= in the address, which would set the old view again.
+export function createViewToggle({ win = window, doc = document } = {}) {
+  const tv = doc.documentElement.classList.contains('tv-mode');
+  const label = tv ? 'Desktop-Ansicht' : 'TV-Ansicht';
+  const button = createElement('button', {
+    type: 'button',
+    className: 'login-view-toggle',
+    'aria-label': tv ? 'Zur Desktop-Ansicht wechseln' : 'Zur TV-Ansicht wechseln',
+    onClick: () => {
+      setTvChoice(tv ? 'off' : 'on');
+      const params = new URLSearchParams(win.location.search);
+      params.delete('tv');
+      const search = params.toString();
+      // The address without ?tv=, then a real reload: an address that only
+      // differs in nothing but the hash would not load the page anew.
+      win.history.replaceState(win.history.state, '', `${win.location.pathname}${search ? `?${search}` : ''}${win.location.hash}`);
+      win.location.reload();
+    }
+  });
+  button.innerHTML = tv ? MONITOR_ICON : TV_ICON;
+  button.appendChild(createElement('span', {}, label));
+  return button;
+}
+
