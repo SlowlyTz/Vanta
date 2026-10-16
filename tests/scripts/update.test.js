@@ -104,6 +104,19 @@ describe('update script', () => {
     expect(trace()).toEqual([]);
   });
 
+  it('keeps the old state when the merge cannot happen (an untracked file in the way)', () => {
+    const before = git(server, 'rev-parse', 'HEAD');
+    pushCommit({ 'new.txt': 'from origin' });
+    write(server, 'new.txt', 'made here');
+
+    const result = update();
+
+    expect(result).toMatchObject({ status: 'skipped', reason: expect.stringContaining('Update nicht übernommen') });
+    expect(git(server, 'rev-parse', 'HEAD')).toBe(before);
+    expect(fs.readFileSync(path.join(server, 'new.txt'), 'utf8')).toBe('made here');
+    expect(trace()).toEqual([]);
+  });
+
   it('keeps only the newest five backups', () => {
     for (let i = 0; i < 7; i += 1) {
       pushCommit({ 'app.txt': `v${i + 2}` });
