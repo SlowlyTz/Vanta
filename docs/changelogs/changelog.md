@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.2: settings and profile
+
+### Settings
+- Switches show at a glance when they are on: green with a tick, grey when off.
+- **Benachrichtigungen:** the kinds are a table with two columns under a bell ("In der App") and a phone ("Push"); the switches always sit on the right, long descriptions wrap. The admin kinds follow the current role in Jellyfin.
+- **Wiedergabe** and **Darstellung** are one list each, with shorter texts. Up to three choices sit beside their label; longer ones (quality, „Schaust du noch?“, screensaver time) are dropdowns whose menu floats over the page with an open and close animation, also with the remote.
+- "Code eingeben" is centred; the settings no longer list "Meine Liste" separately.
+
+### Profile
+- Weiter schauen, Meine Liste, Favoriten and Verlauf are tabs right under the profile, the chosen list whole below; the tab is in the address and remembered. `#/watchlist` and `#/favorites` open their tab.
+
+### Login
+- A button top right switches between the TV and the desktop view of this device and reloads at once.
+
+---
+
 ## 1.1.1: bugfix patch
 
 Fixes from an audit of server, client and the running app, plus what a few of them needed.

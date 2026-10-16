@@ -5,6 +5,6 @@
 // the client bundles its own copy, so an open tab still knows the version it
 // was loaded with and the update overlay can show "1.1 → 1.1.1" once the
 // server runs a newer one.
-export const APP_VERSION = '1.1.1';
+export const APP_VERSION = '1.1.2';
 
 export const formatVersion = (version) => (version ? `Version ${version}` : '');
