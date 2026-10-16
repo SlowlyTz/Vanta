@@ -36,17 +36,6 @@ export const WatchPartyApi = {
     return request('/api/watch-parties/recent');
   },
 
-  resumable() {
-    return request('/api/watch-parties/resumable');
-  },
-
-  resume(originalPartyId) {
-    return request('/api/watch-parties/resume', {
-      method: 'POST',
-      body: { originalPartyId }
-    });
-  },
-
   resolveInviteUser(partyId, username) {
     return request(`/api/watch-parties/${encodeURIComponent(partyId)}/invitations/resolve-user`, {
       method: 'POST',

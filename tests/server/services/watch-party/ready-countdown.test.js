@@ -22,7 +22,6 @@ import { movieItem, createTestParty, joinAsViewer } from './helpers.js';
 describe('WatchPartyService · Ready Room und Countdown', () => {
   beforeEach(() => {
     WatchPartyService.parties.clear();
-    WatchPartyService.endedPartiesByOwner.clear();
     vi.clearAllMocks();
     ItemsService.getItemDetails.mockResolvedValue(movieItem());
   });
@@ -63,16 +62,15 @@ describe('WatchPartyService · Ready Room und Countdown', () => {
     expect(party.seq).toBe(seqBefore);
   });
 
-  it('beginCountdownIfReady nutzt party.positionMs statt immer 0 (z.B. nach einem Resume)', async () => {
+  it('beginCountdownIfReady nutzt party.positionMs statt immer 0', async () => {
     const created = await createTestParty();
-    WatchPartyService.endParty({ partyId: created.id, ownerUserId: 'owner-1', positionMs: 60_000 });
-    const resumed = WatchPartyService.resumeEndedParty({ userId: 'owner-1', username: 'Alice', originalPartyId: created.id });
-    await joinAsViewer(resumed.id);
-    WatchPartyService.openReadyRoom({ partyId: resumed.id, ownerUserId: 'owner-1' });
-    WatchPartyService.setPlayerReady({ partyId: resumed.id, userId: 'owner-1', ready: true, state: 'ready' });
-    WatchPartyService.setPlayerReady({ partyId: resumed.id, userId: 'viewer-1', ready: true, state: 'ready' });
+    await joinAsViewer(created.id);
+    WatchPartyService.parties.get(created.id).positionMs = 60_000;
+    WatchPartyService.openReadyRoom({ partyId: created.id, ownerUserId: 'owner-1' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'owner-1', ready: true, state: 'ready' });
+    WatchPartyService.setPlayerReady({ partyId: created.id, userId: 'viewer-1', ready: true, state: 'ready' });
 
-    const { positionMs } = WatchPartyService.beginCountdownIfReady({ partyId: resumed.id });
+    const { positionMs } = WatchPartyService.beginCountdownIfReady({ partyId: created.id });
     expect(positionMs).toBe(60_000);
   });
 

@@ -10,7 +10,6 @@ export { isPartyAdmin, MAX_PARTY_MEMBERS };
 
 export class WatchPartyService {
   static parties = new Map();
-  static endedPartiesByOwner = new Map(); // ownerUserId -> resumable snapshot
   static recentPartiesByUser = new Map(); // userId -> Map<partyId, lastSeenAt>
 }
 

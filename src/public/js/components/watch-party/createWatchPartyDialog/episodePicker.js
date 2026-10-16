@@ -87,6 +87,7 @@ export function bindEpisodePicker(ctx) {
 
   ctx.handleBack = () => {
     if (ctx.currentView === 'pick-episode') ctx.showPickMediaView();
+    else if (ctx.currentView === 'pick-media' && ctx.liveParties?.length) ctx.showContinueChoice();
   };
 
   return ctx;

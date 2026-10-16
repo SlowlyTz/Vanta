@@ -26,9 +26,6 @@ export const connectionLifecycleMethods = {
     WatchPartyService.setConnected({ partyId, userId: user.userId, connected: true });
     member.hasConnectedOnce = true;
 
-    if (party.ownerUserId === user.userId) {
-      this.cancelOwnerDisconnectTimer(partyId);
-    }
     // Back in time: the party goes on waiting until their player has loaded.
     this.cancelWaitDropout(partyId, user.userId);
 
@@ -70,10 +67,8 @@ export const connectionLifecycleMethods = {
       // A member who drops out while the next episode loads is not waited for.
       this.startEpisodeIfReady(partyId);
 
-      if (currentParty.ownerUserId === user.userId && currentParty.status !== 'ended') {
-        this.scheduleOwnerDisconnectEnd(partyId, user.userId);
-      }
-
+      // Nobody ends the party for leaving, the owner neither: it goes on for
+      // those still in it and is over once nobody is (cleanupExpired).
       this.broadcastParty(
         partyId,
         createNotification('member_left', { userId: user.userId, username: user.username }),

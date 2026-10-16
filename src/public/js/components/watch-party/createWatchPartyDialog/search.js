@@ -78,7 +78,8 @@ export function bindSearch(ctx) {
   ctx.showPickMediaView = () => {
     ctx.currentView = 'pick-media';
     ctx.titleEl.textContent = 'Watch Party starten';
-    ctx.backButton.hidden = true;
+    // Back to "Weiterschauen" when there is something to go on with.
+    ctx.backButton.hidden = !ctx.liveParties?.length;
     ctx.searchInput.hidden = false;
     ctx.seasonTabs.hidden = true;
     ctx.seasonTabs.innerHTML = '';

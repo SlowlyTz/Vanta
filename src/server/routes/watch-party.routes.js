@@ -41,33 +41,9 @@ router.get('/suggestions', requireAuth, asyncHandler(async (req, res) => {
   return res.json({ items });
 }));
 
-router.get('/resumable', requireAuth, asyncHandler(async (req, res) => {
-  const snapshot = WatchPartyService.getResumableForOwner(req.session.userId);
-  return res.json({ party: snapshot });
-}));
-
 // Parties the user was recently in that still run (see services/watch-party/recent.js).
 router.get('/recent', requireAuth, asyncHandler(async (req, res) => {
   return res.json({ parties: WatchPartyService.getRecentPartiesForUser(req.session.userId) });
-}));
-
-router.post('/resume', requireAuth, asyncHandler(async (req, res) => {
-  const { originalPartyId } = req.body || {};
-
-  if (!originalPartyId) {
-    return res.status(400).json({ error: 'originalPartyId is required' });
-  }
-
-  const party = WatchPartyService.resumeEndedParty({
-    userId: req.session.userId,
-    username: req.session.username,
-    originalPartyId
-  });
-
-  return res.status(201).json({
-    party,
-    inviteUrl: `/#/watch-party/${party.id}`
-  });
 }));
 
 router.post('/:partyId/join', requireAuth, asyncHandler(async (req, res) => {
@@ -116,7 +92,6 @@ router.post('/:partyId/end', requireAuth, asyncHandler(async (req, res) => {
     reason: 'owner-ended'
   });
 
-  watchPartySocketHub.cancelOwnerDisconnectTimer(req.params.partyId);
   watchPartySocketHub.cancelCountdown(req.params.partyId);
   watchPartySocketHub.broadcastParty(party.id, {
     type: 'PARTY_ENDED',

@@ -1,4 +1,3 @@
-import { WatchPartyApi } from '../../../api/watch-party.api.js';
 import { openModal } from '../../../utils/modal.js';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -26,17 +25,15 @@ export function bindShell(ctx) {
         onClose: () => ctx.setOpen(false)
       });
 
-      void ctx.loadRecentParties?.();
-      try {
-        const { party: snapshot } = await WatchPartyApi.resumable();
-        if (!ctx.open) return;
-        if (snapshot) ctx.showResumeChoice(snapshot);
-        else ctx.showPickMediaView();
-        if (!snapshot && item) await ctx.handleSelect(item);
-      } catch (error) {
-        console.error('[Watch Party Resumable Check Error]', error);
-        if (ctx.open) ctx.showPickMediaView();
+      // A party the user is still part of: "Weiterschauen" first.
+      const parties = await ctx.loadRecentParties();
+      if (!ctx.open) return;
+      if (parties.length > 0) {
+        ctx.showContinueChoice(item);
+        return;
       }
+      ctx.showPickMediaView();
+      if (item) await ctx.handleSelect(item);
     } else {
       ctx.backdrop.classList.remove('open');
       ctx.backdrop.setAttribute('aria-hidden', 'true');

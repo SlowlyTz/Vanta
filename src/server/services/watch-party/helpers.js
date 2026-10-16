@@ -1,10 +1,10 @@
 import { PLAYBACK_STATES as SHARED_PLAYBACK_STATES } from '../../../public/js/shared/partyStatus.js';
 import { forbidden } from './errors.js';
 
-export const PARTY_TTL_MS = 6 * 60 * 60 * 1000;
-export const LOBBY_IDLE_TTL_MS = 30 * 60 * 1000;
+// A party lives as long as someone is in it. Nobody connected for this long
+// (time enough to reload or get the Wi-Fi back) and it is over.
+export const EMPTY_PARTY_TTL_MS = 5 * 60 * 1000;
 export const ENDED_PARTY_RETENTION_MS = 5 * 60 * 1000;
-export const RESUME_TTL_MS = 48 * 60 * 60 * 1000;
 export const COUNTDOWN_MS = 5000;
 // Head start before the five counted seconds: covers the message's trip to
 // every client and lets the countdown scene fade in, so all five digits get a
