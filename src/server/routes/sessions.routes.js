@@ -1,3 +1,5 @@
+// "Geräte" in the settings: where the user is signed in, and signing one of
+// those devices out.
 import express from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -9,8 +11,6 @@ import { appSocketHub } from '../realtime/app.socket.js';
 
 const SIGNED_OUT = { error: 'Dieses Gerät wurde abgemeldet.', code: 'SIGNED_OUT' };
 
-// "Geräte" in the settings: where the user is signed in, and signing one of
-// those devices out.
 export function createSessionsRouter({
   store = sessionStore,
   auth = AuthService,

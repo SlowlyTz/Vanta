@@ -1,3 +1,5 @@
+// The one way to notify a user: per-kind preferences, the in-app feed, Web
+// Push to their devices and a hint to their open apps.
 import db from '../db/database.js';
 import { NOTIFICATION_KINDS, NOTIFICATION_KIND_IDS, kindsFor } from '../../public/js/shared/notificationKinds.js';
 import { PushService } from './push.service.js';
@@ -66,9 +68,8 @@ export function writePreferences(userId, patch = {}, { isAdmin = false } = {}) {
 
 const unique = (values) => [...new Set((values || []).filter(Boolean).map(String))];
 
-// The one way to notify: checks each user's choice, keeps the in-app entry,
-// pushes to their devices and tells their open apps. Never throws into the
-// action that caused it (a decision on a request must not fail on a push).
+// Never throws into the action that caused it (a decision on a request must
+// not fail on a push).
 export function createNotifyService({ push = PushService, sockets = appSocketHub, now = () => Date.now(), log = console } = {}) {
   return {
     // The caller picks the recipients (admin kinds go to admins only).
@@ -97,7 +98,7 @@ export function createNotifyService({ push = PushService, sockets = appSocketHub
           }
           return { userId, inApp: choice.inApp, pushed };
         } catch (error) {
-          log.warn?.(`[Notify] ${kind} an ${userId} fehlgeschlagen: ${error.message}`);
+          log.warn?.(`[Notify] ${kind} to ${userId} failed: ${error.message}`);
           return { userId, inApp: false, pushed: 0, error: error.message };
         }
       };
@@ -107,11 +108,6 @@ export function createNotifyService({ push = PushService, sockets = appSocketHub
         results.push(...await Promise.all(recipients.slice(i, i + NOTIFY_BATCH).map(deliver)));
       }
       return results;
-    },
-
-    // Fire and forget, for triggers inside other actions.
-    send(options) {
-      this.notify(options).catch(error => log.warn?.(`[Notify] ${options.kind} fehlgeschlagen: ${error.message}`));
     },
 
     feed(userId, limit = FEED_LIMIT) {

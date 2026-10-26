@@ -1,3 +1,5 @@
+// Admin start page (#/admin): server status, pending work, recent activity,
+// the tools menu and a message to everyone.
 import { createElement } from '../../utils/dom.js';
 import { AdminDashboardApi } from '../../api/admin-dashboard.api.js';
 import { AdminSettingsApi } from '../../api/admin-settings.api.js';
@@ -53,9 +55,7 @@ const stat = (value, label) => createElement('div', { className: 'admin-dash-sta
 
 const dot = (ok) => createElement('span', { className: `admin-dash-dot ${ok ? 'is-ok' : 'is-bad'}`, 'aria-hidden': 'true' });
 
-// The admin start page (#/admin): how VANTA is doing right now, what waits,
-// what happened lately, the tools, and a message to everyone. Refreshed
-// every 10 s while the tab is visible; `scope` ends it with the page.
+// Refreshed every 10 s while the tab is visible; `scope` ends it with the page.
 export function createAdminDashboard({ tools = [], onSelect, scope }) {
   const statusGrid = createElement('div', { className: 'admin-dash-grid' });
   const streamsSlot = createElement('div');

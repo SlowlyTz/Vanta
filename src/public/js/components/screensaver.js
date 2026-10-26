@@ -1,3 +1,4 @@
+// Library screensaver: a full-screen backdrop slideshow with a clock, plus the idle watch that can start it.
 import { createElement } from '../utils/dom.js';
 import { openModal } from '../utils/modal.js';
 import { getBackdropUrlFor, getItemImageUrl, cssUrl } from '../utils/image.js';
@@ -52,10 +53,9 @@ const clockParts = (date) => ({
   date: new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)
 });
 
-// Full screen: backdrops of the library slowly moving (Ken Burns), one every
-// 12 s, with title, year, rating, genres and two lines of description, and
-// the time in a corner. Input first shows the controls ("Ansehen",
-// "Bildschirmschoner beenden"); Escape or Back ends it.
+// Slowly moving backdrops (Ken Burns), one per SLIDE_MS, with title, facts and
+// description, and the time in a corner. Input first shows the controls
+// ("Zum Titel", "Bildschirmschoner beenden"); Escape or Back ends it.
 export function openScreensaver({ items, onClose = null, pageScope = null, now = () => new Date() }) {
   const reduced = prefersReducedMotion();
   const slides = createElement('div', { className: 'screensaver-slides', 'aria-hidden': 'true' });

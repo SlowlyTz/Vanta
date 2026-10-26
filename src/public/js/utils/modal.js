@@ -1,11 +1,7 @@
+// The one way VANTA opens a modal dialog: focus trap, Escape and backdrop
+// close, scroll lock, inert background, focus return, and closing with its
+// page. Modals stack; only the topmost one reacts to keys.
 import { resolvePageScope } from './pageScope.js';
-
-// The one way VANTA opens a modal dialog. It gives every dialog the same
-// behaviour: focus moves in and stays inside (Tab wraps around), Escape and a
-// click on the backdrop close it, the page behind cannot scroll and is inert
-// for assistive technology, focus returns to where it was, and the dialog
-// closes when its page is left (Back while it is open included).
-// Several can be stacked; only the topmost one reacts to keys.
 
 const FOCUSABLE = [
   'a[href]', 'area[href]', 'button:not([disabled])', 'input:not([disabled]):not([type="hidden"])',

@@ -1,7 +1,7 @@
-import { seekTo } from './seek.js';
-
 // Skippable segments (intro, recap) get a button while they run; the outro
 // drives the next-episode prompt (see nextEpisode.js).
+
+import { seekTo } from './seek.js';
 
 const SKIP_LABELS = { intro: 'Intro überspringen', recap: 'Rückblick überspringen' };
 // No button for the last moments of a segment: it would vanish mid-click.

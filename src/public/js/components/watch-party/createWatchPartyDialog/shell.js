@@ -1,3 +1,4 @@
+// Watch party dialog shell: opening and closing via openModal, plus the debounced search input.
 import { openModal } from '../../../utils/modal.js';
 
 const SEARCH_DEBOUNCE_MS = 300;

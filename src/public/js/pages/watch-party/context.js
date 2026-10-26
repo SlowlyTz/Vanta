@@ -1,3 +1,5 @@
+// Creates the watch party page context: party state, server clock and all page DOM.
+
 import { createElement } from '../../utils/dom.js';
 import { authStore } from '../../store/auth.store.js';
 import { createServerClock, readSkewFromLocation } from '../../realtime/serverClock.js';

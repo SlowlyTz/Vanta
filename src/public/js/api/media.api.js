@@ -1,7 +1,8 @@
+// Media endpoints: browsing, search, playback, images and per-user item data.
+// Most read calls take `{ signal }` (a page scope's) as their last argument.
 import { request } from './client.js';
 
 export const MediaApi = {
-  // Read calls take `{ signal }` (a page scope's) as their last argument.
   getHome({ signal } = {}) {
     return request('/api/media/home', { signal });
   },

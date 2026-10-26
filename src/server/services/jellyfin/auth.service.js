@@ -1,3 +1,4 @@
+// Jellyfin sign-in: password and Quick Connect login, logout, current user and password change.
 import { jellyfinFetch, jellyfinJson } from './client.js';
 
 export class AuthService {

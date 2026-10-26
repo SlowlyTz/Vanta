@@ -1,6 +1,4 @@
-/* ---------------------------------
-   PAGE HEADING
-   --------------------------------- */
+/* Centred page heading. */
 .page-heading {
   display: flex;
   flex-direction: column;

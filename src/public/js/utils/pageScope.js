@@ -1,13 +1,10 @@
-// The lifetime of one routed page. The router creates a scope per page,
-// hands it to the page factory and calls leave() when the page is replaced,
-// before its DOM is dropped. Anything a page or its components start that
-// would outlive the DOM (listeners on window, observers, timers, store
-// subscriptions, requests) registers its cleanup with onLeave() or passes
-// `signal` to the request; then nothing keeps running after navigation.
+// The lifetime of one routed page: the router creates a scope per page and
+// calls leave() before its DOM is dropped. Whatever would outlive the DOM
+// registers its cleanup with onLeave() or passes `signal` to its requests.
 
-// The abort reason of a page that was left: requests aborted for it never
-// settle (see api/client.js), so the gone page neither renders nor shows an
-// error for them.
+// The abort reason of a page that was left: requests that passed the scope's
+// `signal` never settle (see api/client.js), so the gone page neither renders
+// nor shows an error for them.
 export const PAGE_LEFT = Object.freeze({ name: 'PageLeft', message: 'The page was left' });
 
 export function createPageScope() {
@@ -61,10 +58,8 @@ export function createPageScope() {
 }
 
 // The scope of the page being built right now (page factories run
-// synchronously), else the page on screen. Components find their page here
-// without every caller passing it along, also when they are built after a
-// request: requests of a left page never settle, so that code does not run
-// for a page that is gone.
+// synchronously), else the page on screen. Components built after a request
+// find their page here too: a left page's signalled requests never settle.
 let currentScope = null;
 let activeScope = null;
 

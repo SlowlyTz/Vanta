@@ -1,3 +1,6 @@
+// three.js scene of the countdown: one particle cloud morphing from digit to
+// digit.
+
 import {
   BufferAttribute,
   CustomBlending,

@@ -1,12 +1,11 @@
+// Runs a catalogue sync from the command line (`npm run refresh`).
 import { formatRunSummary } from './sync.service.js';
 
 const isConnectionRefused = (error) =>
   error?.cause?.code === 'ECONNREFUSED' || error?.code === 'ECONNREFUSED';
 
-// Runs a catalogue sync from the command line. A running server owns the
-// database file, so the command must not write it while one is up: it first
-// asks the server over its local endpoint and only syncs in-process when no
-// server answers.
+// A running server owns the database file, so the server is asked first over its local
+// endpoint; the sync only runs in-process when no server answers.
 export async function runRefresh({
   full = false,
   port,

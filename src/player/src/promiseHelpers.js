@@ -1,3 +1,5 @@
+// Waiting for a media event as a promise, with a timeout and failure events.
+
 export function once(target, eventName, timeoutMs, rejectEvents = []) {
   return new Promise((resolve, reject) => {
     let timeout;

@@ -27,7 +27,6 @@ vi.mock('../../../../src/server/services/watch-party.service.js', () => ({
     banMember: vi.fn(),
     serializeParty: vi.fn(party => party)
   },
-  startWatchPartyCleanup: vi.fn(),
   isPartyAdmin: vi.fn((party, userId) => party.ownerUserId === userId || party.members?.get?.(userId)?.role === 'admin')
 }));
 

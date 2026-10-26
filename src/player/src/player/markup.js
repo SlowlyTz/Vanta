@@ -1,3 +1,5 @@
+// The player's DOM: icons, controls and overlays, built as one template.
+
 import { escapeHtml } from '../html.js';
 
 export const HLS_FRAGMENT_TIMEOUT_MS = 90_000;

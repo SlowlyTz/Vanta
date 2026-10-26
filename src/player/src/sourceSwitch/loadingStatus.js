@@ -1,3 +1,6 @@
+// Source switch: waits for the first frame of a new source and applies the
+// intended play state.
+
 const DIRECT_FIRST_FRAME_TIMEOUT_MS = 30_000;
 const HLS_FIRST_FRAME_TIMEOUT_MS = 210_000;
 

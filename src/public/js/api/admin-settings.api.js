@@ -1,3 +1,4 @@
+// Admin settings endpoints: Discord webhook and catalog sync.
 import { request } from './client.js';
 
 export const AdminSettingsApi = {

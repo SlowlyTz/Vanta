@@ -1,8 +1,5 @@
-/* ---------------------------------
-   ADMIN · NUTZER — Liste
-   Eine Karte je Nutzer: Avatar, Name mit Badges, Streams; die ganze Karte
-   öffnet die Detailansicht.
-   --------------------------------- */
+/* Admin users list: one card per user (avatar, name with badges, streams);
+   the whole card opens the detail view. */
 .admin-users-view,
 .admin-users-list-view {
   display: flex;

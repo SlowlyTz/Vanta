@@ -1,8 +1,5 @@
-/* ---------------------------------
-   UI-KIT — gemeinsame Bausteine der Werkzeug-Seiten (Anfragen, Meldung)
-   Dasselbe Glas wie Navigation, Einstellungen und Admin-Bereich: dunkle
-   Flächen, feine Kanten, kleine Versal-Überschriften über Gruppen.
-   --------------------------------- */
+/* Shared building blocks of the tool pages (requests, report), in the same
+   glass as the nav, settings and admin area. */
 .ui-page {
   --ui-surface: rgba(255, 255, 255, 0.04);
   --ui-surface-hover: rgba(255, 255, 255, 0.065);
@@ -66,7 +63,7 @@
   text-transform: uppercase;
 }
 
-/* Segmented control (Tabs, Umfang) */
+/* Segmented control (tabs, scope) */
 .ui-segmented {
   display: inline-flex;
   gap: 2px;

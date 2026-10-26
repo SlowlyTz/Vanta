@@ -1,3 +1,5 @@
+// Watch-party roles: labels and who may promote, demote or ban whom.
+
 export function roleLabel(role) {
   if (role === 'owner') return 'Gastgeber';
   if (role === 'admin') return 'Admin';

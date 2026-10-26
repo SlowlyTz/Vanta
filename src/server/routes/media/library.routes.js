@@ -1,10 +1,11 @@
+// Library browsing: home rows, search, item details, seasons and episodes,
+// genres, studios and paged library lists.
 import express from 'express';
-import { LibraryService } from '../../services/jellyfin/library.service.js';
+import { LibraryService } from '../../services/browse/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
-import { HomeSectionsService } from '../../services/home-sections.service.js';
-import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { HomeSectionsService } from '../../services/browse/home-sections.service.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
 import { UserDataService } from '../../services/user-data.service.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 import { validateIdParam } from '../../utils/ids.js';
@@ -35,21 +36,10 @@ router.get('/home', requireAuth, jellyfinRoute('Media Home Error', 'Startseite k
   return res.json({ resume, movies, series });
 }));
 
-router.get('/home-sections/:group', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  const { group } = req.params;
-
-  try {
-    const sections = await HomeSectionsService.getHomeSectionGroup(userId, accessToken, group);
-    return res.json({ sections });
-  } catch (error) {
-    console.error(`[Media Home Section Group Error:${group}]`, error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(error.status || 500).json({ error: 'Bereich der Startseite konnte nicht geladen werden' });
-  }
-}));
+router.get('/home-sections/:group', requireAuth, jellyfinRoute('Media Home Section Group Error', 'Bereich der Startseite konnte nicht geladen werden', async (req, res) => {
+  const sections = await HomeSectionsService.getHomeSectionGroup(req.session.userId, req.session.accessToken, req.params.group);
+  return res.json({ sections });
+}, { passThrough: [400] }));
 
 router.get('/search', requireAuth, jellyfinRoute('Media Search Error', 'Suche fehlgeschlagen', async (req, res) => {
   const { userId, accessToken } = req.session;
@@ -175,7 +165,7 @@ router.get('/studios', requireAuth, jellyfinRoute('Media Studios Error', 'Studio
   return res.json(studios);
 }));
 
-router.get('/library', requireAuth, asyncHandler(async (req, res) => {
+router.get('/library', requireAuth, jellyfinRoute('Media Library Error', 'Bibliothek konnte nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { type, genre, studio, publisher, page, limit } = req.query;
 
@@ -186,28 +176,16 @@ router.get('/library', requireAuth, asyncHandler(async (req, res) => {
 
   const pageNum = Math.max(1, parseInt(page) || 1);
   const limitNum = Math.max(1, Math.min(MAX_LIBRARY_LIMIT, parseInt(limit) || 50));
-
-  try {
-    const result = publisher
-      ? await LibraryService.getLibraryByPublisher(userId, accessToken, type, publisher, genre, pageNum, limitNum)
-      : await LibraryService.getLibrary(userId, accessToken, type, genre, studio, pageNum, limitNum);
-    return res.json({
-      items: result.items,
-      totalItems: result.totalRecordCount,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(result.totalRecordCount / limitNum)
-    });
-  } catch (error) {
-    if (error.status === 400) {
-      return res.status(400).json({ error: error.message });
-    }
-    console.error('[Media Library Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Bibliothek konnte nicht geladen werden' });
-  }
-}));
+  const result = publisher
+    ? await LibraryService.getLibraryByPublisher(userId, accessToken, type, publisher, genre, pageNum, limitNum)
+    : await LibraryService.getLibrary(userId, accessToken, type, genre, studio, pageNum, limitNum);
+  return res.json({
+    items: result.items,
+    totalItems: result.totalRecordCount,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(result.totalRecordCount / limitNum)
+  });
+}, { passThrough: [400] }));
 
 export default router;

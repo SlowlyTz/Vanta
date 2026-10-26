@@ -1,11 +1,9 @@
-/* ---------------------------------
-   FOOTER — one slim line
---------------------------------- */
+/* App footer: one slim line. */
 .app-footer {
   margin-top: var(--spacing-xxl);
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   background: var(--bg-primary);
-  /* --text-secondary: muted grey on black falls below 4.5:1 at this size. */
+  /* Secondary, not muted: muted grey on black falls below 4.5:1 at this size. */
   color: var(--text-secondary);
   font-size: 0.85rem;
 }

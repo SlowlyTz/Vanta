@@ -1,3 +1,5 @@
+// Shared helpers of the requests page: status labels, saved search state, and
+// season merging and request coverage checks.
 import { getRequestScope } from '../../shared/requestScope.js';
 
 export { getRequestScope, getScopeLabel } from '../../shared/requestScope.js';

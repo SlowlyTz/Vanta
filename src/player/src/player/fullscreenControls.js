@@ -1,3 +1,5 @@
+// Fullscreen button and state, including the landscape lock on phones.
+
 import {
   isFullscreen, enterFullscreen, exitFullscreen, isInlineFullscreen, enterInlineFullscreen, exitInlineFullscreen
 } from '../platform.js';

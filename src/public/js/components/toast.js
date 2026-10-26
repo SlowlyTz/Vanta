@@ -1,3 +1,4 @@
+// Toast notifications, appended to #toast-container.
 export class Toast {
   // `action` ({ label, onClick }) adds a button such as "Rückgängig"; the
   // toast then stays a little longer and closes once it is used.
@@ -51,7 +52,7 @@ export class Toast {
 
     container.appendChild(toast);
 
-    // Trigger slide out before removing
+    // A toast with an action stays at least 6 s.
     setTimeout(dismiss, action?.label ? Math.max(duration, 6000) : duration);
     return { dismiss };
   }

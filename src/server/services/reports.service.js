@@ -1,6 +1,9 @@
+// Problem reports on titles: validated against Jellyfin as the reporting
+// user sees them, then decided by an admin.
 import db from '../db/database.js';
 import { ItemsService } from './jellyfin/items.service.js';
 import { toScopeInteger } from './request-scope.js';
+import { httpError } from '../utils/httpError.js';
 import {
   REPORT_PROBLEM_KEYS,
   REPORT_SCOPES,
@@ -23,7 +26,6 @@ const getOpenDuplicate = db.prepare(`
 `);
 const updateReportStatus = db.prepare('UPDATE reports SET status = ?, handled_by = ?, updated_at = ? WHERE id = ?');
 
-const httpError = (message, status) => Object.assign(new Error(message), { status });
 
 const normalizeReport = row => (row ? {
   ...row,
@@ -56,26 +58,26 @@ export class ReportsService {
   // season or episode must exist there.
   static async create({ userId, username, token }, input) {
     const report = validateReportInput(input);
-    if (report.error) throw httpError(report.error, 400);
+    if (report.error) throw httpError(400, report.error);
 
     const item = await ItemsService.getItemDetails(userId, token, report.itemId).catch(() => null);
-    if (!item || !['Movie', 'Series'].includes(item.Type)) throw httpError('Titel nicht gefunden', 404);
-    if (item.Type === 'Movie' && report.scope !== 'all') throw httpError('Filme können nur als Ganzes gemeldet werden', 400);
+    if (!item || !['Movie', 'Series'].includes(item.Type)) throw httpError(404, 'Titel nicht gefunden');
+    if (item.Type === 'Movie' && report.scope !== 'all') throw httpError(400, 'Filme können nur als Ganzes gemeldet werden');
 
     let episodeName = null;
     if (report.scope !== 'all') {
       const seasons = await ItemsService.getSeasons(userId, token, item.Id);
-      if (!seasons.some(season => season.IndexNumber === report.seasonNumber)) throw httpError('Staffel nicht gefunden', 400);
+      if (!seasons.some(season => season.IndexNumber === report.seasonNumber)) throw httpError(400, 'Staffel nicht gefunden');
     }
     if (report.scope === 'episode') {
       const episodes = await ItemsService.getEpisodes(userId, token, item.Id);
       const episode = episodes.find(entry => entry.ParentIndexNumber === report.seasonNumber && entry.IndexNumber === report.episodeNumber);
-      if (!episode) throw httpError('Folge nicht gefunden', 400);
+      if (!episode) throw httpError(400, 'Folge nicht gefunden');
       episodeName = episode.Name || null;
     }
 
     const duplicate = getOpenDuplicate.get(userId, item.Id, report.scope, report.problem, report.seasonNumber, report.episodeNumber);
-    if (duplicate) throw httpError('Du hast dieses Problem bereits gemeldet', 409);
+    if (duplicate) throw httpError(409, 'Du hast dieses Problem bereits gemeldet');
 
     const now = Date.now();
     const result = insertReport.run(
@@ -102,7 +104,7 @@ export class ReportsService {
   // status again writes nothing.
   static decide(id, status, handledBy) {
     const report = getReportById.get(id);
-    if (!report) throw httpError('Meldung nicht gefunden', 404);
+    if (!report) throw httpError(404, 'Meldung nicht gefunden');
     if (report.status === status) return { report: normalizeReport(report), changed: false };
     updateReportStatus.run(status, handledBy || null, Date.now(), id);
     return { report: normalizeReport(getReportById.get(id)), changed: true };

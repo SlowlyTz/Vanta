@@ -1,3 +1,6 @@
+/* Layers of the player: tap layer, controls, top bar, centre transport and
+   bottom bar, plus their TV sizes. */
+
 /* The tap layer takes the gestures on the picture (see touchTaps.js). */
 .vanta-player-tap-layer {
   position: absolute;

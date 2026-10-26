@@ -1,11 +1,6 @@
-// Stylesheets of single areas (admin, requests, player, watch party …) load
-// with their page instead of with the app shell. A route names its bundles
-// (css/bundles/<name>.css); the router waits for them before it shows the
-// page, so nothing appears unstyled. Each bundle is linked once and stays.
-//
-// In production the server writes the hashed file of every bundle into
-// index.html (#vanta-page-styles, from the Vite manifest); in development the
-// bundles are served as they are and resolve their @imports themselves.
+// Per-area stylesheet bundles (css/bundles/<name>.css) that load with their
+// page; the router waits for them so nothing shows unstyled. In production
+// index.html maps each bundle to its hashed file (#vanta-page-styles).
 
 // Files a bundle needs besides its own, in this order after it. The player's
 // stylesheet has a fixed URL because its build is separate from the app's.
@@ -13,9 +8,8 @@ const EXTRA_FILES = {
   player: ['/vendor/player/vanta-player.css']
 };
 
-// The order index.html used to link these files in. Whatever is loaded
-// first, the links always stand in this order, so the cascade is the same as
-// when they were all linked up front.
+// Fixed cascade order: whatever loads first, the links always stand in this
+// order.
 const BUNDLE_ORDER = ['login', 'publishers', 'profile', 'requests', 'admin', 'trailer-scroller', 'watch-party', 'player'];
 
 // A stylesheet that cannot load must not hold the page back forever.

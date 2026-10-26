@@ -1,3 +1,6 @@
+// Pages of the settings flyout: options, subtitles, episodes, participants and
+// sleep timer.
+
 import { formatEpisodeCode, findEpisode, findSeasonIdOfEpisode } from '../episodes.js';
 import { canBan, canDemote, canPromote, roleLabel } from '../watchPartyParticipants.js';
 import { memberHue, memberStatus } from '../partyStatus.js';

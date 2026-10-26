@@ -1,3 +1,5 @@
+// Request page of one TMDB title: the hero with its state, then the movie's
+// request action or the series picker (also for a series partly in the library).
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
@@ -122,9 +124,6 @@ function buildCast(cast) {
   );
 }
 
-// Request page of one TMDB title: the hero with its state, then either the
-// movie's action or the series picker (whole series, seasons, episodes —
-// also for a series that is partly in the library already).
 export default function RequestDetailPage({ type, id }, pageScope) {
   const { signal } = resolvePageScope(pageScope);
   const tmdbId = parseInt(id, 10);

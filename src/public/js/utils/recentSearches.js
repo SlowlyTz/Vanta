@@ -1,3 +1,4 @@
+// The last searches on this device, newest first, each once.
 const KEY = 'vanta.search.recent';
 export const MAX_RECENT_SEARCHES = 10;
 
@@ -18,7 +19,6 @@ const write = (list) => {
   }
 };
 
-// The last searches on this device, newest first, each once.
 export const recentSearches = {
   list: read,
   add(query) {

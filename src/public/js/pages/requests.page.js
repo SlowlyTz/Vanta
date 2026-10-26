@@ -1,3 +1,5 @@
+// Requests page ("Anfragen"): search TMDB for a missing title to request, or
+// follow the state of one's own requests.
 import { createElement } from '../utils/dom.js';
 import { RequestsApi } from '../api/requests.api.js';
 import { appStore } from '../store/app.store.js';
@@ -79,8 +81,6 @@ function myRequestCard(request, isNew) {
   );
 }
 
-// "Anfragen": search TMDB for a missing title and request it, or follow the
-// state of one's own requests.
 export default function RequestsPage(params = {}, pageScope) {
   const scope = resolvePageScope(pageScope);
   const view = params.view === 'list' ? 'list' : 'new';

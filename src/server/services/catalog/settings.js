@@ -1,3 +1,4 @@
+// Catalogue sync schedule settings (update interval, daily full-sync time) with validation.
 import { AppSettingsService } from '../app-settings.service.js';
 
 export const SETTING_KEYS = {
@@ -31,8 +32,8 @@ export const parseFullSyncTime = (value) => {
   return { value: text };
 };
 
-// Settings live in the existing app_settings key/value table; unset or invalid
-// stored values fall back to the defaults rather than breaking the scheduler.
+// Stored in the app_settings key/value table; unset or invalid values fall back to the
+// defaults rather than breaking the scheduler.
 export function createCatalogSettings({ store = AppSettingsService } = {}) {
   const read = () => {
     const interval = parseUpdateInterval(store.get(SETTING_KEYS.updateIntervalMinutes));

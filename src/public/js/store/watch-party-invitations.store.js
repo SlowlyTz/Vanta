@@ -1,3 +1,4 @@
+// Pending watch party invitations, loaded on login and kept current by the app socket.
 import { WatchPartyApi } from '../api/watch-party.api.js';
 import { appStore } from './app.store.js';
 import { Store } from './store.js';

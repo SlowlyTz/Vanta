@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { activeSkipSegment, bindSegments, findOutro } from '../../../src/player/src/segments.js';
-import { computeNextEpisodeTimings, shouldShowNextEpisodePrompt } from '../../../src/player/src/nextEpisode.js';
+import { computeNextEpisodeTimings, shouldShowNextEpisodePrompt } from '../../../src/public/js/shared/nextEpisode.js';
 
 const intro = { type: 'intro', startMs: 30_000, endMs: 110_000 };
 const recap = { type: 'recap', startMs: 0, endMs: 25_000 };

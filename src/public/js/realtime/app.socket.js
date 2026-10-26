@@ -1,3 +1,4 @@
+// The app-wide WebSocket (/ws/app) for server pushes, with reconnects.
 // Reconnects back off from 1.5 s to 30 s while the server keeps refusing
 // (restart, expired session); an open socket starts over.
 const RECONNECT_DELAY_MS = 1500;

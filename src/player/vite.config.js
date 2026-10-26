@@ -1,3 +1,6 @@
+// Build of the player bundle: vanta-player.js and vanta-player.css under
+// public/vendor/player, loaded by the app at a fixed path.
+
 import { defineConfig } from 'vite';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';

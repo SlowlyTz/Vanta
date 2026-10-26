@@ -1,3 +1,5 @@
+// First-visit intro dialog of the trailer scroller.
+
 import { createElement } from '../../utils/dom.js';
 import { markIntroAsSeen } from '../trailer-scroller.state.js';
 

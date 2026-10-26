@@ -1,45 +1,16 @@
+// Admin settings: the Discord webhook that announces new requests and reports.
 import express from 'express';
 import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppSettingsService } from '../../services/app-settings.service.js';
-import { isAllowedWebhookUrl, buildTestEmbed, sendWebhookEmbed } from '../../services/discord-webhook.service.js';
+import { isAllowedWebhookUrl, buildTestEmbed, sendWebhookEmbed, webhookStatus } from '../../services/discord-webhook.service.js';
 
 const router = express.Router();
 
 router.use(requireAuth, requireFreshAdmin);
 
-// Maskiert die Webhook-URL für die Ausgabe an den Client: Schema, Host und der Webhook-Id
-// bleiben sichtbar ("Pfadanfang"), der Token-Anteil wird bis auf die letzten 4 Zeichen durch
-// … ersetzt. Die volle URL verlässt den Server nach dem Speichern nie wieder.
-function maskWebhookUrl(url) {
-  if (!url) return null;
-
-  try {
-    const parsed = new URL(url);
-    const segments = parsed.pathname.split('/').filter(Boolean); // ['api', 'webhooks', '<id>', '<token>']
-    const webhooksIndex = segments.indexOf('webhooks');
-    const id = segments[webhooksIndex + 1] || '';
-    const token = segments[webhooksIndex + 2] || '';
-    const maskedToken = token.length > 4 ? `…${token.slice(-4)}` : token;
-    return `${parsed.origin}/api/webhooks/${id}/${maskedToken}`;
-  } catch {
-    return null;
-  }
-}
-
-function currentStatus() {
-  const url = AppSettingsService.get('discord_webhook_url');
-  const enabled = AppSettingsService.get('discord_webhook_enabled') === 'true';
-
-  return {
-    configured: Boolean(url),
-    enabled,
-    maskedUrl: maskWebhookUrl(url)
-  };
-}
-
 router.get('/discord-webhook', asyncHandler(async (req, res) => {
-  res.json(currentStatus());
+  res.json(webhookStatus());
 }));
 
 router.put('/discord-webhook', asyncHandler(async (req, res) => {
@@ -65,7 +36,7 @@ router.put('/discord-webhook', asyncHandler(async (req, res) => {
     AppSettingsService.set('discord_webhook_enabled', enabled ? 'true' : 'false');
   }
 
-  res.json(currentStatus());
+  res.json(webhookStatus());
 }));
 
 router.delete('/discord-webhook', asyncHandler(async (req, res) => {

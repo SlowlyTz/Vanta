@@ -1,3 +1,4 @@
+// Top navigation bar: tabs, action icons and the mobile drawer, plus the settings and watch party dialogs it owns.
 import { createElement } from '../../utils/dom.js';
 import { createMobileDrawer } from './mobileDrawer.js';
 import { TOP_TABS, TOP_ACTIONS } from './navLinks.js';

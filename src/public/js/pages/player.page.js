@@ -1,3 +1,5 @@
+// Player page: resolves what to play (a series or season starts its next
+// episode), mounts the player and carries state over to the next episode.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { loadEpisodeContext } from '../utils/episodeContext.js';

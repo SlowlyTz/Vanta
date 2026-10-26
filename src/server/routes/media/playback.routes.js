@@ -1,3 +1,5 @@
+// Playback: resolving a stream, the stream proxy, progress reports and
+// transcode progress.
 import express from 'express';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
 import { PlaybackService } from '../../services/playback.service.js';
@@ -5,12 +7,13 @@ import { streamSessionService } from '../../services/stream-session.service.js';
 import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { forwardHeaders, pipeReadable, isAbortError, upstreamAbortSignal, FORWARD_HEADERS } from './proxyHelpers.js';
-import { isValidQualityProfile, getQualityConstraints } from './playback.validation.js';
+import { isValidQualityProfile, getQualityConstraints } from '../../services/playback/qualityProfiles.js';
 import { pickAudioStreamIndex } from '../../services/playback/audioTracks.js';
 import { getTranscodeProgress } from '../../services/playback/transcodeProgress.js';
 import { isTvDirectPlatform } from '../../services/jellyfin/fields.js';
 import { detectTv } from '../../../public/js/shared/tvDetect.js';
 import { validateIdParam } from '../../utils/ids.js';
+import { buildPlaybackReport } from '../../services/playback/report.js';
 
 const router = express.Router();
 
@@ -19,12 +22,10 @@ router.param('id', validateIdParam);
 // heard of the session, so it gets no report (a stop would overwrite the
 // resume position); only the slot and the encoding are freed.
 const REPORT_EVENTS = new Set(['start', 'progress', 'stopped', 'ended', 'cancel']);
-const PLAY_METHODS = new Set(['DirectPlay', 'DirectStream', 'Transcode']);
 // Every stream goes out as HLS, except to a Samsung or LG TV recognised
 // for sure: those play HEVC, AC3 and MKV themselves (see fields.js) and fall
 // back to HLS in the player when a file does not start.
-const FORCE_HLS_TRANSCODING = true;
-const forcesHls = userAgent => FORCE_HLS_TRANSCODING && !isTvDirectPlatform(detectTv(userAgent).platform);
+const forcesHls = userAgent => !isTvDirectPlatform(detectTv(userAgent).platform);
 
 // Fire and forget: Jellyfin's idle timer ends a job this misses.
 const stopEncodings = (token, playSessionIds = []) => {
@@ -33,36 +34,6 @@ const stopEncodings = (token, playSessionIds = []) => {
       console.warn(`[Playback] could not stop the encoding ${playSessionId}:`, error.message);
     });
   });
-};
-
-const nullableInteger = value => Number.isInteger(value) ? value : null;
-
-const buildPlaybackReport = body => {
-  const positionTicks = Number(body.positionTicks);
-  const volumeLevel = Number(body.volumeLevel);
-  const playbackRate = Number(body.playbackRate);
-
-  if (!body.itemId || !body.playSessionId || !Number.isFinite(positionTicks) || positionTicks < 0) {
-    const error = new Error('Ungültige Wiedergabe-Meldung');
-    error.status = 400;
-    throw error;
-  }
-
-  return {
-    ItemId: String(body.itemId),
-    MediaSourceId: body.mediaSourceId ? String(body.mediaSourceId) : null,
-    PlaySessionId: String(body.playSessionId),
-    PositionTicks: Math.round(positionTicks),
-    IsPaused: Boolean(body.isPaused),
-    IsMuted: Boolean(body.isMuted),
-    VolumeLevel: Number.isFinite(volumeLevel) ? Math.max(0, Math.min(100, Math.round(volumeLevel))) : 100,
-    PlaybackRate: Number.isFinite(playbackRate) && playbackRate > 0 ? playbackRate : 1,
-    PlayMethod: PLAY_METHODS.has(body.playMethod) ? body.playMethod : 'DirectPlay',
-    CanSeek: body.canSeek !== false,
-    AudioStreamIndex: nullableInteger(body.audioStreamIndex),
-    SubtitleStreamIndex: nullableInteger(body.subtitleStreamIndex),
-    RepeatMode: 'RepeatNone'
-  };
 };
 
 router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
@@ -202,22 +173,41 @@ router.get('/:id/transcode-progress', requireAuth, asyncHandler(async (req, res)
   }
 }));
 
+// What the player asks for, with everything malformed dropped.
+function parsePlaybackQuery(query) {
+  const pick = (value, pattern) => (typeof value === 'string' && pattern.test(value) ? value : null);
+  const audioIndex = query.audioStreamIndex;
+  return {
+    requestedMode: String(query.mode || 'auto').toLowerCase(),
+    requestedQualityProfile: String(query.qualityProfile || 'auto').toLowerCase(),
+    requestedAudioStreamIndex: audioIndex !== undefined && /^\d+$/.test(String(audioIndex)) ? Number(audioIndex) : null,
+    mediaSourceId: pick(query.mediaSourceId, /^[0-9a-f-]{32,36}$/i),
+    replacesPlaySessionId: pick(query.replacesPlaySessionId, /^[\w-]{1,128}$/),
+    requestedAudioLanguage: pick(query.audioLanguage, /^[a-z]{2,3}$/i)?.toLowerCase() || null
+  };
+}
+
+// PlaybackInfo from Jellyfin. A remembered language (no explicit track yet):
+// if the source has a track in it other than its default, it is asked again
+// with that track, so the stream starts in the right language.
+async function fetchPlaybackInfo({ userId, accessToken, id, infoOptions, audioStreamIndex, audioLanguage }) {
+  const playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, infoOptions);
+  if (audioStreamIndex !== null || !audioLanguage) return { playbackInfo, audioStreamIndex };
+  const source = playbackInfo?.MediaSources?.[0];
+  const preferred = pickAudioStreamIndex(source, audioLanguage);
+  if (preferred === null || preferred === source?.DefaultAudioStreamIndex) return { playbackInfo, audioStreamIndex };
+  return {
+    playbackInfo: await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, { ...infoOptions, audioStreamIndex: preferred, mediaSourceId: source?.Id || null }),
+    audioStreamIndex: preferred
+  };
+}
+
 router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const { userId, accessToken, username } = req.session;
   const { id } = req.params;
-  const requestedMode = String(req.query.mode || 'auto').toLowerCase();
-  const requestedQualityProfile = String(req.query.qualityProfile || 'auto').toLowerCase();
-  const audioIndexParam = req.query.audioStreamIndex;
-  const requestedAudioStreamIndex = audioIndexParam !== undefined && /^\d+$/.test(String(audioIndexParam)) ? Number(audioIndexParam) : null;
-  const mediaSourceId = typeof req.query.mediaSourceId === 'string' && /^[0-9a-f-]{32,36}$/i.test(req.query.mediaSourceId)
-    ? req.query.mediaSourceId
-    : null;
-  const replacesPlaySessionId = typeof req.query.replacesPlaySessionId === 'string' && /^[\w-]{1,128}$/.test(req.query.replacesPlaySessionId)
-    ? req.query.replacesPlaySessionId
-    : null;
-  const requestedAudioLanguage = typeof req.query.audioLanguage === 'string' && /^[a-z]{2,3}$/i.test(req.query.audioLanguage)
-    ? req.query.audioLanguage.toLowerCase()
-    : null;
+  const {
+    requestedMode, requestedQualityProfile, requestedAudioStreamIndex, mediaSourceId, replacesPlaySessionId, requestedAudioLanguage
+  } = parsePlaybackQuery(req.query);
 
   if (!['auto', 'hls'].includes(requestedMode)) {
     return res.status(400).json({ error: 'Unbekannter Wiedergabemodus' });
@@ -244,24 +234,9 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       audioStreamIndex: requestedAudioStreamIndex,
       mediaSourceId
     };
-    let playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, infoOptions);
-    let audioStreamIndex = requestedAudioStreamIndex;
-
-    // A remembered language (no explicit track yet): if this source has a
-    // track in it other than its default, ask again with that track, so the
-    // stream starts in the right language instead of switching after start.
-    if (audioStreamIndex === null && requestedAudioLanguage) {
-      const source = playbackInfo?.MediaSources?.[0];
-      const preferred = pickAudioStreamIndex(source, requestedAudioLanguage);
-      if (preferred !== null && preferred !== source?.DefaultAudioStreamIndex) {
-        playbackInfo = await PlaybackApiService.getPlaybackInfo(userId, accessToken, id, {
-          ...infoOptions,
-          audioStreamIndex: preferred,
-          mediaSourceId: source?.Id || null
-        });
-        audioStreamIndex = preferred;
-      }
-    }
+    const { playbackInfo, audioStreamIndex } = await fetchPlaybackInfo({
+      userId, accessToken, id, infoOptions, audioStreamIndex: requestedAudioStreamIndex, audioLanguage: requestedAudioLanguage
+    });
 
     const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
       forceHlsTranscoding: shouldForceHls,

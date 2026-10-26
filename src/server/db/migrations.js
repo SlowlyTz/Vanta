@@ -1,8 +1,6 @@
-// There is no migration runner: CREATE TABLE IF NOT EXISTS never touches an existing
-// db/requests.db, so a column added to the schema would stay missing forever. Every
-// column below is therefore both part of the CREATE TABLE in database.js and patched
-// in here. sql.js accepts CHECK on an added column (only PRIMARY KEY and UNIQUE are
-// forbidden) and applies the DEFAULT to the rows that already exist.
+// Schema patches for an existing db/requests.db: CREATE TABLE IF NOT EXISTS never
+// alters a table, so every later column is both in its CREATE TABLE and added here.
+// sql.js accepts CHECK and DEFAULT on an added column (not PRIMARY KEY or UNIQUE).
 const REQUEST_COLUMNS = [
   ['request_scope', "TEXT NOT NULL DEFAULT 'all' CHECK(request_scope IN ('all', 'season', 'episode'))"],
   ['season_number', 'INTEGER'],
@@ -18,19 +16,7 @@ const getColumnNames = (sqlite, table) => {
 
 // Idempotent: adds only the columns PRAGMA table_info does not report yet.
 // Returns the names it actually added, so the caller can skip persisting for a no-op.
-export const migrateRequestsTable = (sqlite) => {
-  const existing = getColumnNames(sqlite, 'requests');
-  if (existing.size === 0) return [];
-
-  const added = [];
-  for (const [name, definition] of REQUEST_COLUMNS) {
-    if (existing.has(name)) continue;
-    sqlite.run(`ALTER TABLE requests ADD COLUMN ${name} ${definition}`);
-    added.push(name);
-  }
-
-  return added;
-};
+export const migrateRequestsTable = (sqlite) => addMissingColumns(sqlite, 'requests', REQUEST_COLUMNS);
 
 // Columns added to push_subscriptions after it shipped: the session (public
 // id) a device subscribed in, so signing that session out ends its pushes.
@@ -110,7 +96,7 @@ const rebuildTable = (sqlite, table, createSql) => {
     : [];
   sqlite.run(`DROP TABLE ${table}`);
   sqlite.run(`ALTER TABLE ${table}_new RENAME TO ${table}`);
-  // Ids of deleted rows stay used, as before.
+  // Keep the AUTOINCREMENT counter so ids of deleted rows are not handed out again.
   if (sequence) sqlite.run(`UPDATE sqlite_sequence SET seq = MAX(seq, ${Number(sequence.values[0][0])}) WHERE name = '${table}'`);
 };
 
@@ -137,4 +123,3 @@ export const migrateTmdbMediaKey = (sqlite) => {
   return true;
 };
 
-export { REQUEST_COLUMNS, PUSH_SUBSCRIPTION_COLUMNS };

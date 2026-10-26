@@ -1,3 +1,5 @@
+// Source switch: waits for the new source's duration and restores the position.
+
 import { once } from '../promiseHelpers.js';
 import { clampSeekTarget, END_EPSILON_SECONDS } from '../seek.js';
 import { syncPlayingState } from './loadingStatus.js';
@@ -88,7 +90,7 @@ export async function performSeek(state, targetPosition, { version } = {}) {
   try {
     await seekedPromise;
   } catch {
-    // Seek timeout or error – still clean up below
+    // Timeout or error: the cleanup below still runs.
   } finally {
     if (currentSeek !== state.seekVersion) return;
     state.lastRequestedPosition = null;

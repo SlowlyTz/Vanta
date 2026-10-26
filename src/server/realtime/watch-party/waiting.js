@@ -1,11 +1,9 @@
+// Watch-party hub methods for "wait for buffering": a member stuck buffering pauses
+// the party until everyone loading has enough buffered, then all start together.
+// No time limit; an admin can go on by hand, the host can switch it off.
 import { WatchPartyService } from '../../services/watch-party.service.js';
-import { getEffectivePosition, setTimeline } from '../../services/watch-party/helpers.js';
-
-// "Wait for buffering": when a member's player has been stuck buffering for a
-// few seconds while the party plays, the whole party pauses until that member
-// (and anyone else still loading by then) has enough video buffered again,
-// then everyone starts together. There is no time limit; an admin can always
-// go on by hand, and the host can switch the wait off for the session.
+import { getEffectivePosition, setTimeline } from '../../services/watch-party/timeline.js';
+import { httpError } from '../../utils/httpError.js';
 
 export const BUFFERING_GRACE_MS = 3_000;
 export const READY_BUFFER_MS = 3_000;
@@ -129,9 +127,7 @@ export const waitingMethods = {
   setWaitForBuffering({ partyId, userId, enabled }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
     if (party.ownerUserId !== userId) {
-      const error = new Error('Nur der Gastgeber kann das ändern.');
-      error.status = 403;
-      throw error;
+      throw httpError(403, 'Nur der Gastgeber kann das ändern.');
     }
     party.waitForBuffering = Boolean(enabled);
     if (!party.waitForBuffering && party.waiting) {

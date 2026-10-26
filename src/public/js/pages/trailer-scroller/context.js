@@ -1,3 +1,5 @@
+// Creates the trailer scroller's shared context: state, player manager, header and track.
+
 import { createElement } from '../../utils/dom.js';
 import { YouTubePlayerManager } from './player.js';
 import { createScrollerViewportLock } from './viewport.js';

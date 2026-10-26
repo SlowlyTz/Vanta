@@ -1,5 +1,5 @@
-/* Admin area (#/admin…): its tools, the request and report items it lists,
-   and its own layout, in the order index.html used to link them. */
+/* Imports of the admin area (#/admin…): its tools, the request and report
+   items it lists and its layout, in cascade order. */
 @import '../components/admin-tools/requests-tool.css';
 @import '../components/admin-tools/users-tool.css';
 @import '../pages/report.css';

@@ -1,3 +1,4 @@
+// Access-log format (morgan) that keeps secrets and playback paths out of logged URLs.
 import morgan from 'morgan';
 
 // Query parameters that must never land in a log file.

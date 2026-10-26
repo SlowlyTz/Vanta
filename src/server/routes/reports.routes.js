@@ -1,3 +1,4 @@
+// Problem reports on library titles: filed by users, resolved or dismissed by admins.
 import express from 'express';
 import { requireAuth, requireFreshAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -8,7 +9,6 @@ import { NotificationTriggers } from '../services/notification-triggers.js';
 
 const router = express.Router();
 
-// Report a problem with a title in the library.
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const { userId, username, accessToken } = req.session;
   const { itemId, scope, seasonNumber, episodeNumber, problem, message } = req.body || {};
@@ -19,7 +19,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     );
     res.status(201).json(report);
     notifyNotificationsChanged();
-    sendReportCreated(report).catch(error => console.error('[Discord Webhook] Trigger fehlgeschlagen:', error.message));
+    sendReportCreated(report).catch(error => console.error('[Discord Webhook] trigger failed:', error.message));
     NotificationTriggers.adminWork({ kind: 'report', username, title: report.title, url: '/#/admin/requests' });
   } catch (error) {
     if (error.status) return res.status(error.status).json({ error: error.message });

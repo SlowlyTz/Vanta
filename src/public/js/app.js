@@ -1,3 +1,5 @@
+// Entry point: registers the routes and, once the DOM is ready, boots TV mode,
+// the global overlays, realtime and the router.
 // First: fills in what older TV browsers lack before any other module runs.
 import './polyfills.js';
 import { router } from './router.js';
@@ -10,7 +12,6 @@ import { initDetailPrefetch } from './utils/prefetch.js';
 import { initMediaActions } from './components/mediaActions.js';
 import { applyTvUrlOverride, isTvMode, markTvSuggested, setTvChoice, shouldSuggestTvMode } from './utils/tvMode.js';
 
-// Define routing mappings using dynamic ES modules imports
 router.add('#/login', () => import('./pages/login.page.js'), { styles: ['login'], guestOnly: true });
 router.add('#/home', () => import('./pages/home.page.js'), { requiresAuth: true });
 router.add('#/movies', () => import('./pages/library.page.js'), { requiresAuth: true, defaultParams: { type: 'Movie' } });
@@ -66,7 +67,6 @@ async function suggestTvMode() {
   window.location.reload();
 }
 
-// Initialise client router on page load
 document.addEventListener('DOMContentLoaded', async () => {
   applyTvUrlOverride();
   const tv = isTvMode();

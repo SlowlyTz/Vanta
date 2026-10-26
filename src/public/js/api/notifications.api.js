@@ -1,3 +1,4 @@
+// Notification endpoints: counts, the bell's feed, preferences and Web Push.
 import { request } from './client.js';
 
 export const NotificationsApi = {

@@ -1,3 +1,5 @@
+// Watch-party card at the top of the settings flyout.
+
 import { memberHue, memberStatus } from '../partyStatus.js';
 import { escapeHtml } from '../html.js';
 import { memberInitial } from '../../../public/js/shared/members.js';

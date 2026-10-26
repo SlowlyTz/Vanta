@@ -1,3 +1,5 @@
+// Keeps vidstack's timeline in step with the <video> when its store stalls.
+
 export const TIMELINE_CHECK_MS = 500;
 export const TIMELINE_MAX_LAG_SECONDS = 1;
 

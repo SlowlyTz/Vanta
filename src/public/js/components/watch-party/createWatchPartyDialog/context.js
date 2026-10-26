@@ -1,3 +1,4 @@
+// Shared state and DOM of the watch party dialog, plus small item helpers for its parts.
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 

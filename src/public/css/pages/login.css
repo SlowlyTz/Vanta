@@ -1,8 +1,5 @@
-/* ---------------------------------
-   LOGIN PAGE
-   Mobile first: the backdrop sits behind the form. From 900px the page
-   becomes a two column grid, form left, backdrop right.
---------------------------------- */
+/* Login page. Mobile first: the backdrop sits behind the form; from 900px
+   it is a two column grid, form left, backdrop right. */
 .login-page {
   position: relative;
   isolation: isolate;

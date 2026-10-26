@@ -1,10 +1,5 @@
-/* Genehmigen/Ablehnen-Buttons, wie sie von adminRequestItem.js
-   (src/public/js/components/admin-tools/requests/adminRequestItem.js)
-   verwendet werden. Das restliche Zeilenlayout lebt inzwischen in
-   css/components/admin-tools/requests-tool.css (admin-request-item-*) —
-   die frühere In-Page-Admin-Sektion (.requests-section, .requests-list,
-   .requests-admin-toggle, .request-item*) ist mit dem Umzug der
-   Admin-Verwaltung auf die eigene Seite (#/admin) entfallen. */
+/* Approve/reject buttons of admin request items (adminRequestItem.js); the
+   row layout is in components/admin-tools/requests-tool.css. */
 .request-admin-action {
   white-space: nowrap;
   padding: 6px 12px;
@@ -36,8 +31,7 @@
   background: rgba(239, 68, 68, 0.25);
 }
 
-/* Umfang der Anfrage in der Admin-Zeile; das Zeilenlayout selbst liegt in
-   css/components/admin-tools/requests-tool.css. */
+/* Scope chip in the admin request row */
 .admin-request-item-scope {
   padding: 1px 8px;
   border-radius: 999px;

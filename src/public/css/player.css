@@ -1,3 +1,5 @@
+/* Player page frame (html.player-active): locks the page while the player is open. */
+
 html.player-active,
 body.player-active {
   width: 100%;

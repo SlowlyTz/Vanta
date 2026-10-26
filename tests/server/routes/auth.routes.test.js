@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import authRoutes, { REMEMBER_ME_MAX_AGE_MS } from '../../../src/server/routes/auth.routes.js';
+import authRoutes from '../../../src/server/routes/auth.routes.js';
+import { REMEMBER_ME_MAX_AGE_MS } from '../../../src/server/services/session-login.js';
 
 vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
   AuthService: {

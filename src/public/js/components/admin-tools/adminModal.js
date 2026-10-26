@@ -1,17 +1,9 @@
+// The single modal helper of the admin area (overlay, close button, Escape,
+// backdrop click), shared by the confirmation dialogs and the user detail view.
 import { createElement } from '../../utils/dom.js';
 import { createCloseIcon } from '../navbar/icons.js';
 import { bindSheetSwipe } from '../../utils/sheetSwipe.js';
 import { openModal } from '../../utils/modal.js';
-
-// Einziger Modal-Helfer des Admin-Bereichs: Overlay, Schließen-Button, Escape
-// und Backdrop-Klick. Wird sowohl von den Bestätigungsdialogen (Sperren,
-// Löschen) als auch von der Nutzer-Detailansicht genutzt, damit es nicht zwei
-// Implementierungen mit auseinanderlaufendem Verhalten gibt.
-//
-// `variant` hängt eine Zusatzklasse ans Overlay, über die Breite und
-// Stapelreihenfolge gesteuert werden — die Detailansicht braucht deutlich mehr
-// Platz als eine Rückfrage und muss unter den Bestätigungsdialogen liegen, die
-// aus ihr heraus geöffnet werden.
 
 // Every open overlay lives on document.body, which the router never clears.
 // The registry lets a page close whatever is still open when it goes away.
@@ -21,6 +13,8 @@ export function closeAllAdminModals() {
   for (const modal of [...openModals]) modal.close();
 }
 
+// `variant` adds an overlay class for width and stacking: the detail view is
+// wider and must sit below the confirmations opened from it.
 export function openAdminModal(contentEl, { variant = '', onClose } = {}) {
   const overlay = createElement('div', {
     className: `admin-user-dialog-overlay${variant ? ` ${variant}` : ''}`

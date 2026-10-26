@@ -1,3 +1,4 @@
+// Player wiring shared by the player page and the watch party.
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { playerHeading } from './playerHeading.js';

@@ -1,3 +1,4 @@
+// Per-user check whether an item's images may be served from the shared rendition cache.
 import { getActiveCatalogReader } from '../catalog/reader.js';
 import { getCatalogAccess } from '../catalog/visibility.js';
 import { withinAgeLimit } from '../catalog/age-limit.js';
@@ -6,13 +7,9 @@ import { jellyfinRawFetch } from '../jellyfin/client.js';
 const TTL_MS = 10 * 60 * 1000;
 const MAX_ENTRIES = 20000;
 
-// Whether a user may see an item's images. The rendition cache is shared by
-// everyone, so without this a user could load posters of libraries (or age
-// ratings) they have no access to. Movies and series are answered from the
-// catalogue, the user's libraries and age limit; anything else (seasons, episodes, people) is asked of
-// Jellyfin with the user's own token once and remembered for a while.
-// Only a clear "no" from Jellyfin denies: a Jellyfin that cannot be reached
-// must not turn every picture into a placeholder.
+// Movies and series are checked against the catalogue; anything else is asked of Jellyfin with
+// the user's token and remembered. Only a clear "no" denies, so an unreachable Jellyfin does not
+// turn every picture into a placeholder.
 export function createImageAccess({
   getReader = getActiveCatalogReader,
   catalogAccess = getCatalogAccess,
@@ -41,7 +38,7 @@ export function createImageAccess({
       if ([400, 403, 404].includes(response.status)) return remember(key, false);
       return true;
     } catch (error) {
-      log.warn?.(`[Bilder] Zugriff auf ${itemId} nicht prüfbar: ${error.message}`);
+      log.warn?.(`[Images] access to ${itemId} could not be checked: ${error.message}`);
       return true;
     }
   };

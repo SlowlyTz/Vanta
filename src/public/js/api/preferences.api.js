@@ -1,3 +1,4 @@
+// The signed-in user's settings (see shared/preferences.js).
 import { request } from './client.js';
 
 export const PreferencesApi = {

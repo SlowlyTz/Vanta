@@ -1,3 +1,5 @@
+// Fetch wrapper behind every API module: JSON bodies, error objects with the
+// server's details, session end on 401 and tracking of the deployed build.
 import { BUILD_HEADER, reportServerBuild } from '../utils/appVersion.js';
 import { endClientSession } from '../utils/sessionNotice.js';
 import { PAGE_LEFT } from '../utils/pageScope.js';

@@ -1,3 +1,5 @@
+// Seeking within the seekable range, kept clear of the very end.
+
 import { clampPosition } from './time.js';
 
 export const END_EPSILON_SECONDS = 0.25;

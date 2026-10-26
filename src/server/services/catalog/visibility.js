@@ -1,17 +1,13 @@
+// Per-user catalogue access (visible libraries and age limit), cached from the Jellyfin policy.
 import { jellyfinJson } from '../jellyfin/client.js';
 import { ageLimitOf } from './age-limit.js';
 
 const TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
 
-// What a user may see of the catalogue: `libraryIds` (null for all of them)
-// and `ageLimit` (null for none, see age-limit.js). It is read from the
-// user's access policy (GET /Users/{id}, which a user may ask about
-// themselves), not from /Users/{id}/Views: the views follow the user's
-// display settings, so libraries hidden from "My media" were missing and
-// grouped libraries came back under ids no catalogue item carries (a library
-// page then counted 0 titles). An admin's change in Jellyfin shows up here
-// within the TTL; one made in VANTA clears the user's entry at once.
+// `libraryIds` (null = all) and `ageLimit` (null = none) come from the user's policy, not
+// /Users/{id}/Views, whose display settings hide libraries and regroup them under unknown ids.
+// Jellyfin-side changes show up within the TTL; changes made in VANTA clear the entry at once.
 export async function getCatalogAccess(userId, token, { fetchJson = jellyfinJson, now = Date.now } = {}) {
   const cached = cache.get(userId);
   if (cached && now() - cached.timestamp < TTL_MS) return cached.access;
@@ -33,11 +29,6 @@ export async function getCatalogAccess(userId, token, { fetchJson = jellyfinJson
   };
   cache.set(userId, { access, timestamp: now() });
   return access;
-}
-
-// Which libraries a user may see: null for all of them, otherwise their ids.
-export async function getVisibleLibraryIds(userId, token, options) {
-  return (await getCatalogAccess(userId, token, options)).libraryIds;
 }
 
 // One user (after a change to their account) or everyone.

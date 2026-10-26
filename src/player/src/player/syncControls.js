@@ -1,3 +1,5 @@
+// Playback control and sync state for the watch-party page.
+
 import { clampSeekTarget } from '../seek.js';
 
 const HAVE_FUTURE_DATA = 3;

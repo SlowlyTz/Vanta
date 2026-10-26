@@ -1,3 +1,4 @@
+// The admin dashboard (#/admin) and the message to everyone.
 import express from 'express';
 import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
@@ -8,7 +9,6 @@ import { UserDirectory } from '../../services/user-directory.service.js';
 const TITLE_MAX = 80;
 const BODY_MAX = 300;
 
-// The admin dashboard (#/admin) and the message to everyone.
 export function createDashboardRouter({ dashboard = AdminDashboard, notify = NotifyService, directory = UserDirectory } = {}) {
   const router = express.Router();
   router.use(requireAuth, requireFreshAdmin);

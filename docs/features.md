@@ -8,16 +8,16 @@ Wrong passwords: three per username and address lock for a minute, each further 
 
 ## Player
 
-- Built separately (`src/player/`, vidstack + hls.js on demand). Keys: Space/K, ←/→ ±10 s, ↑/↓ volume, M, F, C, 0–9; `?` shows all.
+- Built separately (`src/player/`, vidstack + hls.js on demand). Keys: Space/K, J/L and ←/→ ±10 s, ↑/↓ volume, M, F, C, Esc, 0–9; `?` shows all (generated from `player/shortcuts.js`). Pausing while a stream is still being prepared waits for it instead of breaking the start.
 - **Segments** (`/api/media/segments/:id`): Jellyfin media segments, Intro Skipper results and chapter names, merged per type. Intro/recap get a skip button (automatic if set); the credits start the next-episode prompt, which starts the episode after 10 s.
 - **Sleep timer**, **„Schaust du noch?“** (after 4 h without input by default), **AirPlay** on Safari; none of them in watch parties.
-- **Loading**: progress from buffered seconds and the segment in flight, before that Jellyfin's transcode progress. A failed start names its reason; after 40 s without a picture the cover says so.
+- **Loading**: progress from buffered seconds and the segment in flight, before that Jellyfin's transcode progress. A failed start names its reason in German; after 40 s without a picture the cover says so. The cover has its own back button.
 
 ## Watch party
 
 Up to four people. The server holds one timeline: position, playing, the server time it was anchored at, and a sequence number.
 
-A party lives as long as anyone is connected, the owner or not; nobody connected for 5 min and it is over (the owner can also end it). The watch-party dialog offers „Weiterschauen“ for each live party the user was in, next to „Neue Watch Party starten“.
+A party lives as long as anyone is connected, the owner or not; nobody connected for 5 min and it is over (the owner can also end it). The watch-party dialog offers „Weiterschauen“ for each live party the user was in, next to „Neue Watch Party starten“; a title picked in the dialog is confirmed before the party is created. Invitations go by exact username to accounts that signed in (also from a stored session after a restart), never to someone banned from the party.
 
 - Clients measure their clock offset with `TIME_PING`/`TIME_PONG` (lowest round trip wins, every 30 s).
 - Admin play/pause/seek becomes a `TIMELINE` message; old sequence numbers are dropped.
@@ -30,17 +30,17 @@ Debug: `?wpSkew=3000` fakes a clock 3 s ahead; `localStorage['vanta.debug.sync']
 
 ## TV mode
 
-On by itself for Tizen, webOS, Android/Google TV and Fire TV browsers, asked once on TV-like screens, switchable per device (Einstellungen → Darstellung, the „TV-Ansicht“ / „Desktop-Ansicht“ button on the login page, `?tv=1` / `?tv=0`). The choice is kept in the browser (`vanta.tvMode`). Supported from Chromium 68 (webOS 5, Tizen 5.5).
+On by itself for Tizen, webOS, Android/Google TV and Fire TV browsers, asked once on TV-like screens, switchable per device (Einstellungen → Darstellung, the „TV-Ansicht“ / „Normale Ansicht“ button on the login page (not on phones; on a TV it asks first), `?tv=1` / `?tv=0`). The choice is kept in the browser (`vanta.tvMode`). Supported from Chromium 68 (webOS 5, Tizen 5.5).
 
 - `html.tv-mode`, 1 rem = 1.25 % of the width, `css/bundles/tv.css`; sidebar instead of navbar; no admin area.
 - **Focus engine** (`js/tv/focusEngine.js`): arrow keys move to the nearest element, line by line vertically.
   - `[data-tv-row]` keeps left/right inside; card rows remember their last card and stop at their end.
   - `[data-tv-column]` keeps up/down inside (sidebar, settings areas).
   - `[data-tv-group]` remembers its last focus (settings menu).
-  - `[data-tv-autofocus]` is where a page starts.
+  - `[data-tv-autofocus]` is where a page starts. A row entered the first time starts at its chosen tab or first visible card; left into the sidebar lands on the current page.
   - A page opened anew starts at its top. „Zurück“ restores the focus it had, keyed to the history entry.
-- **Keys** (`js/tv/keys.js`, `back.js`): Back closes a dialog → steps back in settings → closes the sidebar → leaves the player → asks before leaving from home. The menu key opens a card's actions.
-- **On-screen keyboard** for every text field. **Player**: OK pauses, holding ←/→ spools, ↑/↓ show the controls.
+- **Keys** (`js/shared/remoteKeys.js`, `tv/back.js`): Back first steps back inside a dialog (settings areas), then closes it → closes the sidebar → a step of the page itself (search filters) → leaves the player → asks before leaving from home. The menu key opens a card's actions. Abmelden in the settings asks first.
+- **On-screen keyboard** for every text field (text fields never take the focus by themselves, which would open the TV's keyboard). **Player**: OK pauses, holding ←/→ spools (also from the big play button while paused), ↑/↓ show the controls. **Trailers** play full screen: OK pauses, ←/→ jump 10 s.
 - **Sign-in by phone**: the TV shows a code and QR; `#/connect` on a signed-in phone approves a Jellyfin Quick Connect request (must be enabled in Jellyfin). Codes last 5 min.
 
 ## Notifications
@@ -64,11 +64,11 @@ Requests search TMDB for movies, series, seasons or single episodes; the cross-c
 - **Meine Liste** (`watchlist`): per user, apart from Jellyfin favourites. A film leaves it once watched to the end after it was added.
 - **Weiter schauen**: grouped per series; hiding an entry lasts until an episode is played again.
 - **Cards** fetch the viewer's progress in batches once visible (`/api/media/userdata`, cached 1 min).
-- **Profile** (`#/profile`): watch stats from all played items (`/api/media/profile/stats`, cached 5 min per user), and under them the lists as tabs (Weiter schauen, Meine Liste, Favoriten, Verlauf), the chosen one whole as a grid. The tab is in the address (`#/profile?tab=watchlist`) and remembered per device; `#/watchlist` and `#/favorites` open their tab.
+- **Profile** (`#/profile`): watch stats from all played items, series marked watched as a whole included (`/api/media/profile/stats`, cached 5 min per user), and under them the lists as tabs (Weiter schauen, Meine Liste, Favoriten, Verlauf), the chosen one whole as a grid. The tab is in the address (`#/profile?tab=watchlist`) and remembered per device; `#/watchlist` and `#/favorites` open their tab.
 
 ## Trailer scroller
 
-YouTube trailers from Jellyfin metadata, with „Meine Liste“, details and share. Only the slide in view has a player. Videos YouTube no longer plays are filtered by its oEmbed answer, cached for a day.
+YouTube trailers from Jellyfin metadata, with „Meine Liste“, details and share. Only the slide in view has a player; the random order of a feed is kept in server memory, not in the session. Videos YouTube no longer plays are filtered by its oEmbed answer, cached for a day.
 
 ## Smaller pieces
 
@@ -76,4 +76,6 @@ YouTube trailers from Jellyfin metadata, with „Meine Liste“, details and sha
 - **Screensaver**: on home after 10 min without input (5–30 min or off in the settings), backdrops of titles the user may see; the navbar or sidebar button starts it anywhere.
 - **Card menu**: long press, right click or the remote's menu key: continue, Meine Liste, remove from „Weiter schauen“ (with undo), share link, details, watched, start a watch party.
 - **Publishers**: curated studio and service hubs (Disney, Warner Bros., Netflix, …) from the catalogue's studios.
+- **Genres**: TMDB's English series genres are shown in German (`js/shared/genreLabels.js`); home genre rows need at least four titles; genre tags on a detail page lead to their list.
+- **Unknown addresses** show „Seite nicht gefunden“.
 - **Admin dashboard** (`#/admin`, not on TVs): server and Jellyfin state, active streams, open work, catalogue, storage, parties and recent activity, refreshed every 10 s.

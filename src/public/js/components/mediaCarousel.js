@@ -1,3 +1,4 @@
+// Carousel row of media cards with an optional "Alle anzeigen" link.
 import { createElement } from '../utils/dom.js';
 import { MediaCard } from './mediaCard.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';

@@ -1,9 +1,9 @@
+// Report step 3: what is wrong. "Anderes" makes the description required, the
+// presets take an optional one.
 import { createElement, focusTextField } from '../../utils/dom.js';
 import { REPORT_PROBLEMS, REPORT_MESSAGE_MAX } from '../../shared/reports.js';
 import { iconElement } from './icons.js';
 
-// Step 3: what is wrong. "Anderes" makes the description required, the
-// presets take an optional one.
 export function createProblemStep({ onChange }) {
   let problem = null;
 

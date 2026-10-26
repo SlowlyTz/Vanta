@@ -1,10 +1,10 @@
+// Small yes/no question in the app's dialog style. Resolves true for the
+// confirm button, false for "Nein", Escape, a backdrop click or leaving the page.
 import { createElement } from '../utils/dom.js';
 import { openModal } from '../utils/modal.js';
 
-// Small yes/no question in the app's dialog style. Resolves true for the
-// confirm button, false for "Nein", Escape, a click on the backdrop or when
-// the page is left. `focusCancel` starts on "Nein" (for a step that cannot
-// be undone, where OK pressed twice must not decide it).
+// `focusCancel` starts on "Nein" for a step that cannot be undone, so a double
+// OK press cannot decide it.
 export function confirmDialog({ title, message, confirmLabel = 'Ja', cancelLabel = 'Nein', focusCancel = false }) {
   return new Promise((resolve) => {
     let result = false;

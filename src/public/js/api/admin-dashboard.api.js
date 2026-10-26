@@ -1,3 +1,4 @@
+// Admin dashboard endpoints: overview and announcements to all users.
 import { request } from './client.js';
 
 export const AdminDashboardApi = {

@@ -1,9 +1,10 @@
+// The watch-party WebSocket (/ws/watch-party/:partyId); the hub's methods live
+// in watch-party/*.js and are mixed into its prototype.
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
 import { UserBanService } from '../services/user-ban.service.js';
 import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat, upgradePathname } from './hardening.js';
 import { registerTokenDevice } from '../services/jellyfin/client.js';
-import { startWatchPartyCleanup } from '../services/watch-party.service.js';
 import { connectionRegistryMethods } from './watch-party/connectionRegistry.js';
 import { countdownMethods } from './watch-party/countdowns.js';
 import { messageHandlerMethods } from './watch-party/messageHandlers.js';
@@ -57,8 +58,6 @@ export class WatchPartySocketHub {
 
       this.handleConnection({ ws, partyId, user });
     });
-
-    startWatchPartyCleanup({ onRemoved: partyId => this.forgetParty(partyId) });
 
     return this.wss;
   }

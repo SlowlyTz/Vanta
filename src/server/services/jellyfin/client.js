@@ -1,12 +1,14 @@
+// Low-level Jellyfin HTTP client: auth header, per-token device ids and request timeouts.
 import crypto from 'crypto';
 import env from '../../config/env.js';
 import { setBounded } from '../../utils/boundedMap.js';
+import { httpError } from '../../utils/httpError.js';
 
 export const JELLYFIN_BASE_URL = env.JELLYFIN_BASE_URL;
 
 // Each login gets a device id of its own, so Jellyfin keeps one session per
-// browser (its transcoding progress is reported per device). Sessions from
-// before that keep the shared id.
+// browser (its transcoding progress is reported per device). Tokens without a
+// registered device fall back to the shared id.
 export const SHARED_DEVICE_ID = 'vanta-web-client-id';
 const deviceIdsByToken = new Map();
 const MAX_TOKEN_DEVICES = 10_000;
@@ -40,10 +42,9 @@ export function getAuthHeader(token = null, deviceId = deviceIdForToken(token)) 
   return header;
 }
 
-// How long a Jellyfin call may take in total (answer and body) before it is
-// given up; without a limit a hanging Jellyfin hung every route waiting on it.
-// Callers that need longer (the catalogue sync) pass their own `timeoutMs`,
-// 0 switches the limit off.
+// How long a Jellyfin call may take in total (answer and body), so a hanging
+// Jellyfin cannot stall every route waiting on it. Slower callers (the
+// catalogue sync) pass their own `timeoutMs`; 0 switches the limit off.
 export const JELLYFIN_TIMEOUT_MS = 15 * 1000;
 
 const withTimeout = (signal, timeoutMs) => {
@@ -55,10 +56,7 @@ const withTimeout = (signal, timeoutMs) => {
 // A timeout reads as 504 to the routes, so it is told apart from a refusal.
 const asTimeoutError = (error, method, path) => {
   if (error?.name !== 'TimeoutError') return error;
-  const timeoutError = new Error(`${method} ${path} timed out`);
-  timeoutError.status = 504;
-  timeoutError.cause = error;
-  return timeoutError;
+  return httpError(504, `${method} ${path} timed out`, { cause: error });
 };
 
 export async function jellyfinRawFetch(path, {

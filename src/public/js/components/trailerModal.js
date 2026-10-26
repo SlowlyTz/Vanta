@@ -1,3 +1,4 @@
+// YouTube trailer modal, plus parsing a video id out of a YouTube URL.
 import { createElement } from '../utils/dom.js';
 import { YouTubePlayerManager } from '../pages/trailer-scroller/player.js';
 import { openModal } from '../utils/modal.js';

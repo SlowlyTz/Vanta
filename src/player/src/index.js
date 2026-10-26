@@ -1,3 +1,6 @@
+// Entry of the player bundle (vendor/player/vanta-player.js): `mountVantaPlayer`
+// builds the player context and binds every feature onto it.
+
 import 'vidstack/define/media-player.js';
 import 'vidstack/define/media-outlet.js';
 import 'vidstack/define/media-time-slider.js';

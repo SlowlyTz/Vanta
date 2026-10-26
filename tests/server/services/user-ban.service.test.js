@@ -52,7 +52,7 @@ describe('UserBanService', () => {
   });
 
   it('rejects a ban without a userId', () => {
-    expect(() => service.ban(null, 'alice', 'reason')).toThrow(/userId/i);
+    expect(() => service.ban(null, 'alice', 'reason')).toThrow(/Kein Nutzer/);
   });
 
   it('overwrites an existing ban entry for the same userId instead of duplicating it', () => {

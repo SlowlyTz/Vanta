@@ -1,7 +1,11 @@
+// Watch party methods to create, join, end and expire parties (mixed into WatchPartyService).
 import crypto from 'crypto';
 import { ItemsService } from '../jellyfin/items.service.js';
 import { notFound, forbidden, badRequest, conflict } from './errors.js';
-import { EMPTY_PARTY_TTL_MS, ENDED_PARTY_RETENTION_MS, MAX_PARTY_MEMBERS, assertOwner, getEffectivePosition, createItemSnapshot } from './helpers.js';
+import { EMPTY_PARTY_TTL_MS, ENDED_PARTY_RETENTION_MS, MAX_PARTY_MEMBERS } from './constants.js';
+import { assertOwner } from './permissions.js';
+import { getEffectivePosition } from './timeline.js';
+import { createItemSnapshot } from './itemSnapshot.js';
 
 export const lifecycleMethods = {
   getPartyOrThrow(partyId) {
@@ -54,7 +58,7 @@ export const lifecycleMethods = {
 
     this.parties.set(id, party);
     this.rememberRecentParty(userId, id);
-    return this.serializeParty(party, userId);
+    return this.serializeParty(party);
   },
 
   async joinParty({ partyId, userId, username, accessToken }) {
@@ -92,7 +96,7 @@ export const lifecycleMethods = {
     }
 
     this.rememberRecentParty(userId, party.id, now);
-    return this.serializeParty(party, userId);
+    return this.serializeParty(party);
   },
 
   endParty({ partyId, ownerUserId, positionMs = null, reason = 'owner-ended' }) {
@@ -108,7 +112,7 @@ export const lifecycleMethods = {
     party.endedByUserId = ownerUserId;
     party.endReason = reason;
 
-    return this.serializeParty(party, ownerUserId);
+    return this.serializeParty(party);
   },
 
   // Over: nobody connected for EMPTY_PARTY_TTL_MS (measured from the last

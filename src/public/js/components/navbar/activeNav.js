@@ -1,3 +1,4 @@
+// Decides which nav link is highlighted for the current hash route.
 export function isNavLinkActive(link, currentHash) {
   switch (link.key) {
     case 'home':

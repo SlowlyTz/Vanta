@@ -1,3 +1,5 @@
+/* App shell and page layout: containers, section spacing and grids. */
+
 /* App shell */
 
 .app-shell {
@@ -60,8 +62,6 @@
     transition: none;
   }
 }
-
-/* Navigation bar */
 
 /* Page containers */
 

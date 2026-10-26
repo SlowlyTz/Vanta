@@ -1,11 +1,10 @@
+// Search bar of an admin area: debounces the input and hands it to the area,
+// which does the filtering itself (tool.setFilter).
 import { createElement } from '../../utils/dom.js';
 import { createTopbarIcon, createCloseIcon } from '../../components/navbar/icons.js';
 
 const SEARCH_DEBOUNCE_MS = 150;
 
-// Suchleiste eines Admin-Bereichs. Die Suche ist auf den Bereich beschränkt,
-// in dem die Leiste steht — gefiltert wird im Bereich selbst (tool.setFilter),
-// hier wird die Eingabe nur entprellt und nach außen gereicht.
 export function createAdminHeader({ onSearch, placeholder = 'Suchen…', label = 'Suchen' } = {}) {
   let debounceTimer = null;
 

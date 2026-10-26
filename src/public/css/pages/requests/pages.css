@@ -1,7 +1,5 @@
-/* ---------------------------------
-   ANFRAGEN — Suche, Meine Anfragen, Anfrage-Seite, Serien-Picker
-   Bausteine aus components/ui-kit.css.
-   --------------------------------- */
+/* Requests pages: search, my requests, request page, series picker; built on
+   components/ui-kit.css. */
 .requests-tabs {
   align-self: flex-start;
 }
@@ -89,7 +87,7 @@
   font-size: 0.78rem;
 }
 
-/* Meine Anfragen */
+/* My requests */
 .request-filters {
   align-self: flex-start;
   max-width: 100%;
@@ -153,7 +151,7 @@
   white-space: nowrap;
 }
 
-/* Anfrage-Seite */
+/* Request page */
 .request-back {
   align-self: flex-start;
   margin-bottom: -6px;
@@ -260,7 +258,7 @@
   position: static;
 }
 
-/* Serien-Picker */
+/* Series picker */
 .series-picker {
   gap: 12px;
 }
@@ -356,7 +354,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Besetzung */
+/* Cast */
 .request-cast-row {
   display: flex;
   gap: 12px;

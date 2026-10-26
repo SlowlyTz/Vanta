@@ -1,2 +1,3 @@
-/* Player page frame; the player's own stylesheet comes from /vendor/player. */
+/* Imports of the player page frame, in cascade order; the player's own
+   stylesheet comes from /vendor/player. */
 @import '../player.css';

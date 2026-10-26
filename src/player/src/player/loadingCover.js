@@ -1,3 +1,5 @@
+// The full loading cover over the player, with its status line and errors.
+
 export const COVER_FADE_MS = 200;
 // A start that shows nothing after this long says so instead of spinning on.
 export const START_WATCHDOG_MS = 40_000;

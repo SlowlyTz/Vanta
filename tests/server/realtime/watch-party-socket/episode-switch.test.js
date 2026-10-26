@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createFakeWs } from './helpers.js';
 
 vi.mock('../../../../src/server/config/session.js', () => ({ sessionMiddleware: (req, res, next) => next() }));
-vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
+vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })),
   ItemsService: { getItemDetails: vi.fn(), getSeasons: vi.fn(), getEpisodes: vi.fn() }
 }));
 

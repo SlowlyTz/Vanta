@@ -1,3 +1,5 @@
+/* Watch-party page on tablets and phones. */
+
 /* Tablets: the card moves under the hero. */
 @media (max-width: 960px) {
   .watch-party-lobby-inner {

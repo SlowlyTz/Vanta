@@ -1,3 +1,4 @@
+/* Imports of the player stylesheets, in cascade order. */
 @import "./player/base.css";
 @import "./player/layout.css";
 @import "./player/controls.css";

@@ -1,8 +1,7 @@
-// Graceful stop for SIGINT/SIGTERM. A signal listener replaces Node's own
-// exit, so this must end the process itself. pm2 sends SIGINT and kills after
-// 1.6 s, systemd and Docker allow longer; everything that matters (writing the
-// databases) happens first and synchronously, then open requests get the rest
-// of `timeoutMs` before the process exits anyway. A second signal exits at once.
+// Graceful stop for SIGINT/SIGTERM; a signal listener replaces Node's exit, so
+// this ends the process. pm2 kills 1.6 s after SIGINT, so the databases are
+// written first and synchronously; open requests get the rest of `timeoutMs`.
+// A second signal exits at once.
 export const SERVICE_RESTART = 1012;
 
 export function createShutdown({

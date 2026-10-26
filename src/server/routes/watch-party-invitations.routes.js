@@ -1,3 +1,5 @@
+// Watch party invitations: the pending list, accept and decline; both sides
+// are told over the app socket.
 import express from 'express';
 import { WatchPartyInvitationService } from '../services/watch-party-invitation.service.js';
 import { requireAuth } from '../middleware/auth.middleware.js';

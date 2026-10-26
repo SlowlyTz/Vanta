@@ -1,6 +1,4 @@
-/* ---------------------------------
-   MELDUNG (#/report) — Bausteine aus components/ui-kit.css
-   --------------------------------- */
+/* Report page (#/report), built on components/ui-kit.css. */
 .report-tabs .ui-new-dot {
   margin-left: 2px;
 }
@@ -168,7 +166,7 @@
   margin-top: 6px;
 }
 
-/* Meine Meldungen */
+/* My reports */
 .report-list {
   display: flex;
   flex-direction: column;

@@ -1,3 +1,5 @@
+// Report step 2 for a series: the whole series, one season, or one episode, picked
+// from what is actually in the library.
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { formatEpisodeCode } from '../../shared/episodeCode.js';
@@ -9,8 +11,6 @@ const MODES = [
   { key: 'episode', label: 'Folge' }
 ];
 
-// Step 2 for a series: the whole series, one season, or one episode, picked
-// from what is actually in the library.
 export function createScopeStep({ onChange }) {
   let series = null;
   let seasons = [];

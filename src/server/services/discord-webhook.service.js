@@ -1,3 +1,4 @@
+// Discord webhook for new requests and problem reports (admin setting).
 import { AppSettingsService } from './app-settings.service.js';
 import { formatScopeLabel } from './request-scope.js';
 import { getProblemLabel, getReportScopeLabel } from '../../public/js/shared/reports.js';
@@ -5,15 +6,12 @@ import { getProblemLabel, getReportScopeLabel } from '../../public/js/shared/rep
 const DISCORD_LIMITS = { title: 256, description: 4096, fieldValue: 1024 };
 const DESCRIPTION_PREVIEW_LENGTH = 300;
 const WEBHOOK_TIMEOUT_MS = 5000;
-const EMBED_COLOR = 0x5865f2; // Discord-Blurple als fester Akzentwert
-const REPORT_COLOR = 0xef4444; // Problemmeldungen heben sich rot ab
+const EMBED_COLOR = 0x5865f2; // Discord blurple
+const REPORT_COLOR = 0xef4444; // reports stand out in red
 const TMDB_TYPE_LABEL = { movie: 'Film', tv: 'Serie' };
 
-// Verhindert, dass der Webhook-Versand für POSTs an beliebige (auch interne) Netzadressen
-// missbraucht wird, z. B. den Jellyfin-Server im selben Netz. Der Endpunkt ist zwar bereits
-// durch requireFreshAdmin geschützt, diese Einschränkung schließt SSRF-artige Zwecke aber
-// vollständig aus. Bewusst als einzelne, klar benannte Funktion isoliert, damit sie bei
-// Bedarf gezielt entfernt werden kann.
+// Only Discord webhooks: the admin setting must not turn VANTA into a client
+// for arbitrary (internal) addresses such as the Jellyfin server.
 export function isAllowedWebhookUrl(url) {
   if (typeof url !== 'string') return false;
 
@@ -38,9 +36,8 @@ const getReleaseYear = (media) => {
   return date ? String(date).slice(0, 4) : null;
 };
 
-// Baut das Embed-Objekt für eine neue Anfrage. Rein und ohne Netzwerk, damit direkt testbar.
-// `media` sind die TMDB-Details (aus tmdb_media / RequestsService.create), da Jahr und
-// Overview nicht in der requests-Tabelle liegen.
+// The embed for a new request. `media` are the TMDB details (year and
+// overview are not in the requests table).
 export function buildRequestEmbed(request, media = null) {
   const year = getReleaseYear(media);
 
@@ -69,7 +66,7 @@ export function buildRequestEmbed(request, media = null) {
   return embed;
 }
 
-// Beispiel-Embed für den Testen-Button im Einstellungen-Panel.
+// The embed of the settings panel's test button.
 export function buildTestEmbed() {
   return {
     title: 'Testnachricht von Vanta',
@@ -79,9 +76,7 @@ export function buildTestEmbed() {
   };
 }
 
-// Sendet ein fertiges Embed an eine Webhook-URL. Wirft nie, sondern meldet Erfolg/Fehler
-// im Rückgabewert zurück, damit sowohl der Testen-Button als auch der Auto-Versand
-// bei neuen Anfragen denselben Pfad nutzen können.
+// Posts an embed; never throws, the result says how it went.
 export async function sendWebhookEmbed(url, embed) {
   try {
     const response = await fetch(url, {
@@ -97,28 +92,26 @@ export async function sendWebhookEmbed(url, embed) {
   }
 }
 
-// Liest die Konfiguration, prüft den Ein/Aus-Schalter und sendet das Embed für eine neue
-// Anfrage. Wirft niemals nach außen; Fehler landen nur in console.error. Der Aufrufer
-// (requests.routes.js) ruft das fire-and-forget auf, der Nutzer wartet nie auf Discord.
-export async function sendRequestCreated(request, media) {
+// Sends to the configured webhook when it is switched on. Fire and forget:
+// never throws, failures are only logged.
+async function sendIfEnabled(buildEmbed) {
   try {
     const enabled = AppSettingsService.get('discord_webhook_enabled') === 'true';
     const url = AppSettingsService.get('discord_webhook_url');
     if (!enabled || !url) return;
 
-    const embed = buildRequestEmbed(request, media);
-    const result = await sendWebhookEmbed(url, embed);
-
+    const result = await sendWebhookEmbed(url, buildEmbed());
     if (!result.ok) {
-      console.error('[Discord Webhook] Versand fehlgeschlagen:', result.status ?? result.error);
+      console.error('[Discord Webhook] delivery failed:', result.status ?? result.error);
     }
   } catch (error) {
-    console.error('[Discord Webhook] Unerwarteter Fehler beim Versand:', error.message);
+    console.error('[Discord Webhook] unexpected error:', error.message);
   }
 }
 
-// Embed für eine neue Problemmeldung: rot, damit sie sich im Kanal von den
-// Anfragen abhebt. Rein und ohne Netzwerk, damit direkt testbar.
+export const sendRequestCreated = (request, media) => sendIfEnabled(() => buildRequestEmbed(request, media));
+
+// The embed for a new problem report, in red to stand out from requests.
 export function buildReportEmbed(report) {
   const year = report.production_year ? ` (${report.production_year})` : '';
   const embed = {
@@ -135,18 +128,31 @@ export function buildReportEmbed(report) {
   return embed;
 }
 
-// Wie sendRequestCreated: fire-and-forget, wirft nie nach außen.
-export async function sendReportCreated(report) {
-  try {
-    const enabled = AppSettingsService.get('discord_webhook_enabled') === 'true';
-    const url = AppSettingsService.get('discord_webhook_url');
-    if (!enabled || !url) return;
+export const sendReportCreated = (report) => sendIfEnabled(() => buildReportEmbed(report));
 
-    const result = await sendWebhookEmbed(url, buildReportEmbed(report));
-    if (!result.ok) {
-      console.error('[Discord Webhook] Versand fehlgeschlagen:', result.status ?? result.error);
-    }
-  } catch (error) {
-    console.error('[Discord Webhook] Unerwarteter Fehler beim Versand:', error.message);
+// The webhook URL as the client may see it: origin and id, the token cut to
+// its last four characters. The full URL never leaves the server again.
+export function maskWebhookUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const segments = parsed.pathname.split('/').filter(Boolean); // ['api', 'webhooks', '<id>', '<token>']
+    const webhooksIndex = segments.indexOf('webhooks');
+    const id = segments[webhooksIndex + 1] || '';
+    const token = segments[webhooksIndex + 2] || '';
+    const maskedToken = token.length > 4 ? `…${token.slice(-4)}` : token;
+    return `${parsed.origin}/api/webhooks/${id}/${maskedToken}`;
+  } catch {
+    return null;
   }
+}
+
+// What the admin panel shows of the webhook setting.
+export function webhookStatus() {
+  const url = AppSettingsService.get('discord_webhook_url');
+  return {
+    configured: Boolean(url),
+    enabled: AppSettingsService.get('discord_webhook_enabled') === 'true',
+    maskedUrl: maskWebhookUrl(url)
+  };
 }

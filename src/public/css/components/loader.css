@@ -1,4 +1,4 @@
-/* Local section loader: mounts inline inside the section it belongs to, never fixed/global */
+/* Section loader: shown inline inside its section, never fixed over the page. */
 .section-loader {
   display: flex;
   flex-direction: column;

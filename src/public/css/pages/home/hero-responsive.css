@@ -1,3 +1,4 @@
+/* Home page hero on smaller screens. */
 @media (max-width: 768px) {
   .home-hero {
     height: 74svh;

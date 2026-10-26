@@ -1,3 +1,4 @@
+// App footer: one slim line with the brand, the main routes and the copyright.
 import { createElement } from '../utils/dom.js';
 
 const FOOTER_LINKS = [
@@ -11,7 +12,6 @@ const FOOTER_LINKS = [
   { label: 'Problem melden', href: '#/report' }
 ];
 
-// One slim line: brand, the main routes and the copyright.
 export function Footer() {
   const year = new Date().getFullYear();
 

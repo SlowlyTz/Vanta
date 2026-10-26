@@ -4,7 +4,7 @@
 // the page hands the value over (`initialIdleMs`, `onIdleChange`). A watch
 // party never asks; the others are still watching.
 
-import { normalizeKey } from '../../public/js/tv/keys.js';
+import { normalizeKey } from '../../public/js/shared/remoteKeys.js';
 
 const TICK_MS = 1_000;
 

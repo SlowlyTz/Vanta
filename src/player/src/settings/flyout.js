@@ -1,9 +1,9 @@
-import { escapeHtml } from '../html.js';
-
 // The one settings entry point of the player: a flyout that grows out of the
 // gear button (a side sheet on phones) with a small stack of pages. The start
 // page lists rows with their current value; a row drills into its page, which
 // slides in from the right while the flyout animates to the new size.
+
+import { escapeHtml } from '../html.js';
 
 const CLOSE_DURATION_MS = 180;
 const NON_TEXT_INPUTS = new Set(['checkbox', 'radio', 'button', 'submit', 'range']);

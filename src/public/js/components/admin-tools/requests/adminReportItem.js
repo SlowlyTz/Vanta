@@ -1,3 +1,5 @@
+// One problem report in the admin list, with "Erledigt" / "Verwerfen" while
+// it is open; the reporter sees the decision on their reports page.
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { ReportsApi } from '../../../api/reports.api.js';
@@ -19,9 +21,6 @@ const icon = (key, className = 'request-admin-action-icon') => {
 
 const formatDate = value => new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-// A problem report in the admin list. Red "Problem" marker, the problem and
-// what it concerns, the reporter's words, and "Erledigt" / "Verwerfen" while
-// it is open. The reporter sees the decision on their Meldung page.
 export function createAdminReportItem(report, { onChange, onNotify, showStatus = false } = {}) {
   const dot = () => createElement('span', { className: 'admin-request-item-dot', 'aria-hidden': 'true' }, '·');
 

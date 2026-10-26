@@ -1,3 +1,4 @@
+// Navigation targets: all links (mobile drawer), the top-bar tabs and the top-bar actions.
 export const NAV_LINKS = [
   { key: 'home', label: 'Startseite', href: '#/home' },
   { key: 'movies', label: 'Filme', href: '#/movies', type: 'Movie' },

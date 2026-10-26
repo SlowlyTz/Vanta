@@ -1,3 +1,4 @@
+/* Imports of the admin users tool styles, in cascade order. */
 @import './users-tool/list-view.css';
 @import './users-tool/detail-view.css';
 @import './users-tool/library-selector.css';

@@ -47,7 +47,7 @@ vi.mock('../../../../src/server/services/user-ban.service.js', async (importOrig
 
 vi.mock('../../../../src/server/services/user-settings.service.js', () => ({
   UserSettingsService: {
-    getMaxConcurrentStreams: vi.fn(),
+    getSettings: vi.fn(() => ({ maxConcurrentStreams: 1 })),
     setMaxConcurrentStreams: vi.fn()
   }
 }));
@@ -97,7 +97,7 @@ describe('Admin Users Routes', () => {
     clearAdminCheckCache();
     AuthService.isUserAdmin.mockResolvedValue(true);
     UserBanService.getBan.mockReturnValue(null);
-    UserSettingsService.getMaxConcurrentStreams.mockReturnValue(1);
+    UserSettingsService.getSettings.mockReturnValue({ maxConcurrentStreams: 1 });
     streamSessionService.getActiveCount.mockReturnValue(0);
   });
 
@@ -121,7 +121,7 @@ describe('Admin Users Routes', () => {
       ]);
       // Only the listed user is banned, not the admin asking.
       UserBanService.getBan.mockImplementation(id => (id === 'u1' ? { reason: 'Account geteilt' } : null));
-      UserSettingsService.getMaxConcurrentStreams.mockReturnValue(2);
+      UserSettingsService.getSettings.mockReturnValue({ maxConcurrentStreams: 2 });
       streamSessionService.getActiveCount.mockReturnValue(1);
 
       const res = await request(createApp()).get('/');
@@ -330,7 +330,7 @@ describe('Admin Users Routes', () => {
     });
 
     it('returns 400 when the service rejects an invalid limit', async () => {
-      const validationError = new Error('maxConcurrentStreams must be an integer between 0 and 20');
+      const validationError = new Error('Das Stream-Limit muss eine ganze Zahl von 0 bis 20 sein');
       validationError.status = 400;
       UserSettingsService.setMaxConcurrentStreams.mockImplementation(() => { throw validationError; });
 

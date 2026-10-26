@@ -1,3 +1,5 @@
+// Watch party dialog for inviting a user by exact username.
+
 import { createElement, focusTextField } from '../../utils/dom.js';
 import { WatchPartyApi } from '../../api/watch-party.api.js';
 import { appStore } from '../../store/app.store.js';
@@ -39,7 +41,7 @@ export function bindInviteModal(ctx) {
 
     try {
       const { user } = await WatchPartyApi.resolveInviteUser(ctx.partyId, username);
-      // Typed on since: only the answer for what the field shows counts.
+      // The user kept typing: only the reply for the current field value counts.
       if (username !== ctx.inviteUsernameInput.value.trim()) return;
       if (!user) {
         ctx.inviteResult.textContent = 'Kein exakter Treffer';

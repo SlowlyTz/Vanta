@@ -1,4 +1,4 @@
-/* Media Card Component - Apple TV Parallax hover effect */
+/* Media cards (poster and landscape) with their hover lift, progress and badges. */
 .media-card {
   position: relative;
   display: flex;
@@ -10,7 +10,7 @@
 .media-card-image-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 2/3; /* Poster Aspect Ratio */
+  aspect-ratio: 2/3;
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-card);

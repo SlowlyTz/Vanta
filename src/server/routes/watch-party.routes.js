@@ -1,3 +1,5 @@
+// Watch parties: create, join, kick, end and invite; changes go out over the
+// party and app sockets.
 import express from 'express';
 import { WatchPartyService } from '../services/watch-party.service.js';
 import { WatchPartyInvitationService } from '../services/watch-party-invitation.service.js';
@@ -67,7 +69,7 @@ router.post('/:partyId/kick', requireAuth, asyncHandler(async (req, res) => {
   const { userId } = req.body || {};
 
   if (!userId) {
-    return res.status(400).json({ error: 'userId is required' });
+    return res.status(400).json({ error: 'Kein Nutzer angegeben' });
   }
 
   const party = WatchPartyService.kickMember({

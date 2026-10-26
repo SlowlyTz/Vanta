@@ -1,3 +1,6 @@
+// Reports playback start, progress and stop to the server, which passes them
+// on to Jellyfin and counts the open player as a stream.
+
 import { toTicks } from './time.js';
 import { isStreamLimitError } from './streamLimit.js';
 

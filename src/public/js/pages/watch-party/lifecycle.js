@@ -1,3 +1,5 @@
+// Watch party teardown, route-leave handling and the player viewport lock.
+
 export function bindLifecycle(ctx) {
   ctx.goHome = () => {
     ctx.cleanup();

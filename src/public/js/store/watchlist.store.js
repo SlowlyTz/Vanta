@@ -1,9 +1,8 @@
+// Which titles are on "Meine Liste", so cards, the detail button and the context menu
+// show it at once. Loaded on login; changes are optimistic and undone when refused.
 import { WatchlistApi } from '../api/watchlist.api.js';
 import { Store } from './store.js';
 
-// Which titles are on "Meine Liste", so a card, the detail button and the
-// context menu show the right state at once. Loaded on login; changes are
-// applied optimistically and put back when the server refuses them.
 class WatchlistStore extends Store {
   constructor() {
     super();

@@ -1,3 +1,5 @@
+// Start and teardown: the first source, and the controller handed to the page.
+
 import { exitPictureInPicture, exitInlineFullscreen } from '../platform.js';
 import { exitSmartphoneFullscreen } from '../orientation.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
@@ -22,11 +24,9 @@ export async function preparePlayerInitialPlayback(context) {
     if (initialPlaybackPrepared) return;
     if (initialPlaybackPromise) return initialPlaybackPromise;
 
-    // Loading a fresh source can itself fire native play/pause/seeked events (e.g. the
-    // <media-player autoplay> attribute racing with our own shouldPlay bookkeeping) well
-    // outside the echo tokens the sync methods book. Without suppression here, the watch
-    // party owner's own boot would get echoed back to the server as a manual OWNER_PLAY/
-    // OWNER_SEEK, producing phantom notifications and bogus party-state changes.
+    // Loading a fresh source can fire play/pause/seeked events of its own,
+    // outside the echo tokens the sync books. Without this the owner's own
+    // start would go to the party as manual OWNER_PLAY/OWNER_SEEK commands.
     const suppressOwnerEcho = Boolean(watchParty?.enabled);
     if (suppressOwnerEcho) context.beginOwnerEchoSuppression();
 
@@ -83,7 +83,7 @@ export async function preparePlayerInitialPlayback(context) {
     try {
       await prepareInitialPlayback({ position: resumePosition });
     } catch {
-      // visible error handling happens in prepareInitialPlayback
+      // The error is shown by prepareInitialPlayback.
     }
   }
 
@@ -119,10 +119,10 @@ export function createPlayerController(context) {
       context.sourceSwitch.clearSeekTimer();
       context.echoTokens.clear();
 
-      // Start final reporting before tearing down reporter state so keepalive can flush.
+      // The final report starts before the reporter is torn down.
       const stopPromise = context.reporter.stop({ keepalive: true });
 
-      // Begin PiP cleanup while the video element is still present.
+      // Leave picture-in-picture while the <video> still exists.
       const pipPromise = exitPictureInPicture().catch(() => {});
 
       exitInlineFullscreen(root);
@@ -137,8 +137,8 @@ export function createPlayerController(context) {
       player.destroy?.();
       root.innerHTML = '';
 
-      // Callers that immediately request a new stream (e.g. next-episode navigation) must
-      // await this so the server releases the stream-limit slot before the new one is reserved.
+      // A caller that requests a new stream right away (next episode) awaits
+      // this, so the server frees the stream slot before the next is taken.
       return Promise.all([
         isPhone ? exitSmartphoneFullscreen().catch(() => {}) : Promise.resolve(),
         pipPromise,

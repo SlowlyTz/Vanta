@@ -1,3 +1,5 @@
+// Watch party ready phase: preloading the video, reporting progress and the Ready button.
+
 import { timelinePositionAt } from './driftController.js';
 
 export const PRELOAD_TIMEOUT_MS = 45_000;

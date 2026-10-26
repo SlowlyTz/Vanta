@@ -6,7 +6,7 @@ import {
   createNextEpisodeGate,
   nextEpisodeSkipAt,
   NEXT_EPISODE_COUNTDOWN_SECONDS
-} from '../../../src/player/src/nextEpisode.js';
+} from '../../../src/public/js/shared/nextEpisode.js';
 
 describe('computeNextEpisodeTimings', () => {
   it('zeigt das Overlay ohne Abspann bei 97 % und zählt bis kurz vor das Dateiende', () => {

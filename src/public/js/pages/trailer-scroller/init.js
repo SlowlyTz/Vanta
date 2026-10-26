@@ -1,3 +1,5 @@
+// Trailer scroller startup: restores the initial trailer, loads the feed and shows the intro.
+
 import { createIntroModal } from './intro.js';
 import { appStore } from '../../store/app.store.js';
 import { getFeedId } from './feedSession.js';

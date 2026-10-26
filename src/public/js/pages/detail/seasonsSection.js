@@ -1,3 +1,4 @@
+// Season tabs and the episode grid on a series' detail page.
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { MediaCard } from '../../components/mediaCard.js';

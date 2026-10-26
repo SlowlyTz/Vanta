@@ -1,3 +1,5 @@
+// Media API (/api/media): mounts library, playback, image, person, profile,
+// segment, resume and progress routes.
 import express from 'express';
 import libraryRoutes from './library.routes.js';
 import trailerRoutes from './trailers.routes.js';

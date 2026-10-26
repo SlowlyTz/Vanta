@@ -1,4 +1,4 @@
-/* Toast Notifications */
+/* Toast notifications. */
 #toast-container {
   position: fixed;
   bottom: var(--spacing-xl);

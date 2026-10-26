@@ -1,7 +1,10 @@
+// "Weiter schauen" beyond what Jellyfin offers: the episode to continue a
+// series with, and taking a title out of the row (with undo).
 import db from '../db/database.js';
 import { jellyfinJson } from './jellyfin/client.js';
 import { COMMON_ITEM_FIELDS } from './jellyfin/fields.js';
 import { setResumeFilter } from './resume-visibility.js';
+import { httpError } from '../utils/httpError.js';
 
 const listHidden = db.prepare('SELECT series_id, hidden_at FROM resume_hidden WHERE user_id = ?');
 const hideSeries = db.prepare(`
@@ -10,12 +13,9 @@ const hideSeries = db.prepare(`
 `);
 const unhideSeries = db.prepare('DELETE FROM resume_hidden WHERE user_id = ? AND series_id = ?');
 
-const fail = (status, message) => Object.assign(new Error(message), { status });
 
 const seriesIdOf = (item) => (item?.Type === 'Series' ? item.Id : item?.SeriesId || null);
 
-// "Weiter schauen" beyond what Jellyfin offers: the episode to continue a
-// series with, and taking a title out of the row (with undo).
 export function createResumeService({ fetchJson = jellyfinJson, now = () => Date.now() } = {}) {
   const setPosition = (userId, token, itemId, positionTicks) => fetchJson(`/UserItems/${itemId}/UserData`, {
     token,
@@ -41,7 +41,7 @@ export function createResumeService({ fetchJson = jellyfinJson, now = () => Date
       try {
         item = await fetchJson(`/Users/${userId}/Items/${itemId}`, { token });
       } catch (error) {
-        if (error.status === 404 || error.status === 400) throw fail(404, 'Titel nicht gefunden');
+        if (error.status === 404 || error.status === 400) throw httpError(404, 'Titel nicht gefunden');
         throw error;
       }
       const seriesId = seriesIdOf(item);
@@ -64,7 +64,7 @@ export function createResumeService({ fetchJson = jellyfinJson, now = () => Date
         await setPosition(userId, token, String(undo.itemId), Math.round(ticks));
         return;
       }
-      throw fail(400, 'Nichts rückgängig zu machen');
+      throw httpError(400, 'Nichts rückgängig zu machen');
     },
 
     // Drops episodes of hidden series that were last played before they were

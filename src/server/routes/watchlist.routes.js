@@ -1,3 +1,5 @@
+// "Meine Liste". The ids are what the cards and menus need to show the
+// state; the full list is for the home row and the profile tab.
 import express from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { jellyfinRoute } from '../utils/jellyfinRoute.js';
@@ -5,8 +7,6 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { WatchlistService } from '../services/watchlist.service.js';
 import { requireValidId } from '../utils/ids.js';
 
-// "Meine Liste". The ids are what the cards and menus need to show the
-// state; the full list is for the home row and the profile tab.
 export function createWatchlistRouter({ service = WatchlistService } = {}) {
   const router = express.Router();
 

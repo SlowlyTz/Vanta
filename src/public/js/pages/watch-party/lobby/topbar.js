@@ -1,3 +1,5 @@
+// Watch party top bar: back button and the host's menu with a two-click "end party".
+
 import { createElement } from '../../../utils/dom.js';
 import { icon } from './icons.js';
 

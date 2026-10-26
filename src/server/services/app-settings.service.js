@@ -1,3 +1,5 @@
+// Key/value settings of the app (app_settings in requests.db). A factory, so
+// tests can pass their own database.
 import defaultDb from '../db/database.js';
 
 const getSetting = (db) => db.prepare('SELECT value FROM app_settings WHERE key = ?');
@@ -6,9 +8,6 @@ const upsertSetting = (db) => db.prepare(`
 `);
 const deleteSetting = (db) => db.prepare('DELETE FROM app_settings WHERE key = ?');
 
-// Schmaler Wrapper um die bereits bestehende app_settings-Tabelle (key/value/updated_at).
-// Kein Schema-Change, keine Migration. Als Factory mit injizierbarem DB-Handle exportiert,
-// damit Tests ihn isoliert gegen ein eigenes DB-Handle laufen lassen können.
 export function createAppSettingsService({ db = defaultDb } = {}) {
   const getStatement = getSetting(db);
   const upsertStatement = upsertSetting(db);

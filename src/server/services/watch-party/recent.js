@@ -1,9 +1,9 @@
-import { MAX_PARTY_MEMBERS } from './helpers.js';
+// "Zuletzt dabei": the parties a user joined, newest first, as long as they
+// still run and the user was not banned. Kept in memory like the parties.
+import { MAX_PARTY_MEMBERS } from './constants.js';
 
 export const RECENT_PARTIES_LIMIT = 5;
 
-// "Zuletzt dabei": the parties a user joined, newest first, as long as they
-// still run and the user was not banned. Kept in memory like the parties.
 export const recentPartyMethods = {
   rememberRecentParty(userId, partyId, now = Date.now()) {
     if (!userId || !partyId) return;

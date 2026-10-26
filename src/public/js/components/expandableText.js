@@ -1,13 +1,12 @@
+// Text clamped to a few lines with an inline "… mehr lesen" that unfolds it.
 import { createElement } from '../utils/dom.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 
 const MORE_LABEL = 'mehr lesen';
 const LESS_LABEL = 'weniger anzeigen';
 
-// Text clamped to a few lines with an inline "… mehr lesen" that unfolds it.
-// The cut is found by measuring, so the ellipsis and the link really sit at
-// the end of the last visible line. Shows the full text where nothing can be
-// measured (no layout yet, jsdom).
+// The cut is measured, so the ellipsis and the link really end the last visible
+// line. Shows the full text where nothing can be measured (no layout yet, jsdom).
 export function createExpandableText({ text, lines = 2, className = '' }) {
   const full = String(text || '').trim();
   const words = full.split(/\s+/).filter(Boolean);

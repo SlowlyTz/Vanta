@@ -1,8 +1,5 @@
-/* ---------------------------------
-   OFFLINE OVERLAY
-   Full-screen notice while the app has no connection. offline.html carries a
-   copy of these rules inline, keep both in sync.
---------------------------------- */
+/* Full-screen notice while the app has no connection, and the update notice.
+   offline.html carries a copy of these rules inline; keep both in sync. */
 .offline-overlay {
   position: fixed;
   top: 0;

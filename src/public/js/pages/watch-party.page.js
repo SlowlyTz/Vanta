@@ -1,3 +1,4 @@
+// Watch party page: wires the watch-party modules onto one shared context.
 import { createWatchPartyContext } from './watch-party/context.js';
 import { bindLifecycle } from './watch-party/lifecycle.js';
 import { bindRendering } from './watch-party/rendering.js';

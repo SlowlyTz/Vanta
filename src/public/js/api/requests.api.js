@@ -1,3 +1,4 @@
+// Media request endpoints: TMDB search and details, creating requests, admin decisions.
 import { request } from './client.js';
 
 class RequestsApiClient {

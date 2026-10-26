@@ -1,3 +1,4 @@
+// The WebSocket of one watch party, reconnecting with backoff until closed.
 const RECONNECT_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 10000;
 

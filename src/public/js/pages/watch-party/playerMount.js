@@ -1,3 +1,5 @@
+// Mounts the Vanta player for a watch party (hidden preload or visible) and switches episodes.
+
 import { MediaApi } from '../../api/media.api.js';
 import { appStore } from '../../store/app.store.js';
 import { loadEpisodeContext } from '../../utils/episodeContext.js';

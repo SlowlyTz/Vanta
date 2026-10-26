@@ -2506,7 +2506,7 @@ function pr(e, { setTimer: t = (e, t) => window.setInterval(e, t), clearTimer: n
 	return a.addEventListener("ended", y), e.disposers.push(() => a.removeEventListener("ended", y)), h(), _;
 }
 //#endregion
-//#region src/player/src/nextEpisode.js
+//#region src/public/js/shared/nextEpisode.js
 var mr = .97, hr = .5;
 function gr({ duration: e, outro: t = null, promptThreshold: n = mr, countdownSeconds: r = 10 } = {}) {
 	if (!Number.isFinite(e) || e <= 0) return null;
@@ -2595,7 +2595,7 @@ function Sr(e, t = e == null ? void 0 : e.currentEpisodeId) {
 	return null;
 }
 //#endregion
-//#region src/public/js/tv/keys.js
+//#region src/public/js/shared/remoteKeys.js
 var Cr = {
 	ArrowUp: "up",
 	Up: "up",
@@ -3693,24 +3693,8 @@ function oi(e) {
 		a.destroy(), o.destroy();
 	}), e;
 }
-Object.freeze({
-	name: "PageLeft",
-	message: "The page was left"
-}), [
-	"a[href]",
-	"area[href]",
-	"button:not([disabled])",
-	"input:not([disabled]):not([type=\"hidden\"])",
-	"select:not([disabled])",
-	"textarea:not([disabled])",
-	"iframe",
-	"audio[controls]",
-	"video[controls]",
-	"[contenteditable]:not([contenteditable=\"false\"])",
-	"[tabindex]:not([tabindex=\"-1\"])"
-].join(",");
 //#endregion
-//#region src/public/js/tv/focusEngine.js
+//#region src/public/js/shared/focusGeometry.js
 function si(e, t, n) {
 	let r, i;
 	if (n === "left" || n === "right") {

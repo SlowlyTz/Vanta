@@ -1,3 +1,4 @@
+// Pure state helpers for the trailer scroller: paging, active index and the intro flag.
 export const LOAD_THRESHOLD = 3;
 export const INTRO_SEEN_KEY = 'vantaTrailerScrollerIntroSeen';
 

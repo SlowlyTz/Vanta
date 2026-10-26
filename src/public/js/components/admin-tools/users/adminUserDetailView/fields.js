@@ -1,3 +1,5 @@
+// Editable fields of the admin user detail view; each reports its value and
+// whether it differs from what is saved.
 import { createElement } from '../../../../utils/dom.js';
 import { segmentedRow } from '../../../settings/controls.js';
 

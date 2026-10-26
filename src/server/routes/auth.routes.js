@@ -1,3 +1,4 @@
+// Login, logout, the current user and password change, all against Jellyfin.
 import express from 'express';
 import { AuthService } from '../services/jellyfin/auth.service.js';
 import { UserBanService } from '../services/user-ban.service.js';
@@ -10,7 +11,6 @@ import { loginThrottle, formatLockDuration } from '../services/login-throttle.se
 
 const router = express.Router();
 
-export { REMEMBER_ME_MAX_AGE_MS };
 
 const BAN_MESSAGE = 'Login fehlgeschlagen: Dein Benutzerkonto ist gesperrt.';
 const WRONG_CREDENTIALS = 'Benutzername oder Passwort ist falsch.';

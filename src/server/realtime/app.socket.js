@@ -1,3 +1,5 @@
+// The app WebSocket (/ws/app): one per open app, for session ends and
+// notification changes pushed by the server.
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
 import { UserBanService } from '../services/user-ban.service.js';

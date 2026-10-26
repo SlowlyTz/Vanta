@@ -1,8 +1,5 @@
-/* ---------------------------------
-   PLAYED TOGGLE
-   The check that marks an item played: 44px next to the favourite heart on
-   the detail page, compact on episode cards.
---------------------------------- */
+/* The check that marks an item played: 44px next to the favourite heart on
+   the detail page, compact on episode cards. */
 .played-toggle {
   display: inline-flex;
   align-items: center;

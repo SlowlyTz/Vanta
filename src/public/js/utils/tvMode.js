@@ -1,8 +1,8 @@
-import { detectTv } from '../shared/tvDetect.js';
-
 // The 10-foot interface: on by itself on a known TV, suggested where it looks
 // like one, and switchable per device (settings → Darstellung, or ?tv=1 /
-// ?tv=0 in the address). The choice is kept per device.
+// ?tv=0 in the address).
+import { detectTv } from '../shared/tvDetect.js';
+
 export const TV_MODE_KEY = 'vanta.tvMode';
 const SUGGESTION_KEY = 'vanta.tvMode.suggested';
 

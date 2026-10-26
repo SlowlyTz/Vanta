@@ -1,3 +1,5 @@
+// Reduced-motion check and the shared panel slide.
+
 // Less motion: asked for by the system, or switched on in the settings
 // ("Weniger Bewegung", html.reduce-motion, set by intro-gate.js and the
 // preferences store).
@@ -14,11 +16,9 @@ export function prefersReducedMotion() {
 // settings' areas move alike: 420 ms on --abyss-ease).
 export const SLIDE_MS = 420;
 
-// Swaps two panels of one container with a slide: `forward` brings `to` in
-// from the right while `from` moves a little to the left, `back` the other
-// way round. Both are visible while they move; `from` ends hidden. With less
-// motion they just swap. Returns a function that finishes at once (for a
-// second swap before the first one ended).
+// Swaps two panels of one container with a slide (`forward` brings `to` in
+// from the right, `back` the other way); `from` ends hidden. With less motion
+// they just swap. Returns a function that finishes at once (for a second swap).
 export function slidePanels({ from, to, direction = 'forward', win = window }) {
   const finish = () => {
     if (from) {

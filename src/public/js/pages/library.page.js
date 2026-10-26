@@ -1,3 +1,5 @@
+// Library grid for a type, genre, studio or publisher, loaded in batches as
+// the user scrolls and restored on the way back from a detail page.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';
@@ -5,7 +7,7 @@ import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 import { whenConnected } from '../utils/whenConnected.js';
-import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
+import { getFeaturedPublisherById } from '../shared/featuredPublishers.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';

@@ -1,9 +1,5 @@
-// The subscribe/notify part every store shares. A store extends it and
-// implements getState(); notify() hands the current state to every listener.
-// `emitOnSubscribe` gives a new listener the current state at once (the
-// notification and invitation stores), the auth store only reports changes.
-// `generation` changes when a store is cleared at logout; an answer that left
-// before (`isCurrent(generation)` false) belongs to the previous account.
+// Base class of every store: notify() hands getState() to all listeners; with
+// `emitOnSubscribe` (the default) a new listener also gets the current state at once.
 export class Store {
   constructor({ emitOnSubscribe = true } = {}) {
     this.listeners = new Set();
@@ -11,6 +7,8 @@ export class Store {
     this.generation = 0;
   }
 
+  // Called when a store is cleared at logout: an answer that started before then
+  // fails `isCurrent(generation)`, as it belongs to the previous account.
   nextGeneration() {
     this.generation += 1;
     this.loading = null;

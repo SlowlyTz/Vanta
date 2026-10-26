@@ -1,3 +1,4 @@
+/* Imports of the mobile navigation drawer, in cascade order. */
 @import './mobile-drawer/drawer-shell.css';
 @import './mobile-drawer/accordion.css';
 @import './mobile-drawer/backdrop.css';

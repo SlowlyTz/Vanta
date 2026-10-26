@@ -1,3 +1,5 @@
+// Renders the watch party lobby, waiting pill, error and ended states.
+
 import { createElement } from '../../utils/dom.js';
 import { connectedMemberCount } from './helpers.js';
 

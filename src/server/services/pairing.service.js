@@ -1,6 +1,9 @@
+// Signing a TV in with a phone: a six-digit code the phone confirms, backed
+// by Jellyfin Quick Connect.
 import crypto from 'crypto';
 import { AuthService } from './jellyfin/auth.service.js';
 import { createDeviceId } from './jellyfin/client.js';
+import { httpError } from '../utils/httpError.js';
 
 export const PAIRING_TTL_MS = 5 * 60 * 1000;
 export const MAX_OPEN_PER_IP = 10;
@@ -9,14 +12,11 @@ export const MAX_OPEN_PER_IP = 10;
 export const MAX_OPEN_TOTAL = 200;
 
 // The service's own answers (`expose`), told apart from Jellyfin's errors.
-const fail = (status, message, code = undefined) => Object.assign(new Error(message), { status, code, expose: true });
+const fail = (status, message, code = undefined) => httpError(status, message, { code, expose: true });
 
-// Signing a TV in with a phone. The TV asks for a six-digit code (and opens a
-// Jellyfin Quick Connect request with a device id of its own); a signed-in
-// phone confirms the code, which approves the Quick Connect request with the
-// phone user's token; the TV then signs in through Quick Connect and gets a
-// session of its own. The phone's token is never handed over. Codes live
-// five minutes, in memory, and are used up once the TV signed in.
+// The TV holds a Quick Connect request with its own device id; the phone
+// approves it with its token, which is never handed over. Codes live five
+// minutes in memory and are used up once the TV signed in.
 export function createPairingService({
   auth = AuthService,
   now = () => Date.now(),

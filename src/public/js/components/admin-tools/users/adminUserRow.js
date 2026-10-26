@@ -1,3 +1,5 @@
+// One row of the admin user list, plus the initial and badge helpers shared
+// with the detail view.
 import { createElement } from '../../../utils/dom.js';
 import { createChevronIcon } from '../../navbar/icons.js';
 
@@ -17,8 +19,8 @@ export function createUserBadges(user) {
   return badges;
 }
 
-// Eine Zeile der Nutzerliste. Die ganze Zeile öffnet die Detailansicht;
-// Sperren und Löschen liegen dort, damit die Liste auch am Handy ruhig bleibt.
+// The whole row opens the detail view; ban and delete live there to keep the
+// list calm on a phone.
 export function createAdminUserRow(user, { onEdit } = {}) {
   const streamInfo = createElement('span', { className: 'admin-user-stream-info' },
     `${user.activeStreams}/${user.maxConcurrentStreams} Streams`);

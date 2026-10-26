@@ -1,3 +1,4 @@
+// Report step 1: find the title in the library.
 import { createElement, focusTextField } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { getItemImageUrl } from '../../utils/image.js';
@@ -16,8 +17,7 @@ export const posterThumb = (item, className = 'ui-thumb') => createElement('img'
   loading: 'lazy'
 });
 
-// Step 1: find the title in the library. Once picked, the step shrinks to the
-// chosen title with an "Ändern" button.
+// Once picked, the step shrinks to the chosen title with an "Ändern" button.
 export function createTitleStep({ onSelect }) {
   let debounce = null;
   let runId = 0;

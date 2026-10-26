@@ -1,3 +1,5 @@
+// Hash router: matches routes, guards auth, loads each page lazily into the
+// app shell (navbar and footer, or the TV sidebar) and runs it in a page scope.
 import { authStore } from './store/auth.store.js';
 import { createElement } from './utils/dom.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from './utils/auth-redirect.js';

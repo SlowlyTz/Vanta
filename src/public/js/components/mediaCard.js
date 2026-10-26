@@ -1,3 +1,4 @@
+// Poster or landscape card for a title that links to its detail page.
 import { createElement } from '../utils/dom.js';
 import { getItemImageSources } from '../utils/image.js';
 import { formatTicksToDuration, formatYear } from '../utils/format.js';
@@ -26,7 +27,6 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   const imageType = landscape ? 'Backdrop' : 'Primary';
   const image = getItemImageSources(item, imageType, landscape ? 'landscape' : 'poster');
 
-  // Playback progress for resumable items
   let progressPercent = 0;
   if (item.UserData && item.UserData.PlaybackPositionTicks && item.RunTimeTicks) {
     progressPercent = (item.UserData.PlaybackPositionTicks / item.RunTimeTicks) * 100;
@@ -74,7 +74,6 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
     );
   }
 
-  // Type label badge for series
   if (item.Type === 'Series') {
     imageContainerChildren.push(
       createElement('div', { className: 'media-card-badge' }, 'SERIE')

@@ -1,4 +1,6 @@
+// Admin-side Jellyfin user management: users, libraries, names, passwords, policies.
 import { jellyfinJson, jellyfinFetch } from './client.js';
+import { httpError } from '../../utils/httpError.js';
 
 export class JellyfinAdminUsersService {
   static async listUsers(adminToken) {
@@ -27,9 +29,7 @@ export class JellyfinAdminUsersService {
   static async updateUserName(userId, adminToken, name) {
     const trimmedName = String(name || '').trim();
     if (!trimmedName) {
-      const error = new Error('Name ist erforderlich');
-      error.status = 400;
-      throw error;
+      throw httpError(400, 'Name ist erforderlich');
     }
 
     const user = await this.getUser(userId, adminToken);
@@ -55,9 +55,7 @@ export class JellyfinAdminUsersService {
   static async setPassword(userId, adminToken, newPassword) {
     const password = typeof newPassword === 'string' ? newPassword : '';
     if (!password) {
-      const error = new Error('Neues Passwort fehlt');
-      error.status = 400;
-      throw error;
+      throw httpError(400, 'Neues Passwort fehlt');
     }
 
     const body = { CurrentPw: '', NewPw: password };

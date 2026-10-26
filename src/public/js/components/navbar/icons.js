@@ -1,3 +1,4 @@
+// Inline SVG icons for the navbar, mobile drawer, settings dialog and admin cards.
 import { createElement } from '../../utils/dom.js';
 
 function createIcon(className, svgMarkup) {
@@ -124,15 +125,6 @@ export function createTopbarIcon(key) {
   };
 
   return createIcon('navbar-action-icon', icons[key] || icons.search);
-}
-
-export function createUserIcon() {
-  return createIcon('settings-profile-icon', `
-    <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 21a8 8 0 0 0-16 0"></path>
-      <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-  `);
 }
 
 export function createProfileIcon() {

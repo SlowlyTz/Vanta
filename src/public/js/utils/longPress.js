@@ -1,3 +1,4 @@
+// Opens a card's context menu on long press, right click or the menu key.
 export const LONG_PRESS_MS = 500;
 export const LONG_PRESS_MOVE_PX = 10;
 

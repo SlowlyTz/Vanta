@@ -1,12 +1,13 @@
+// Locks page scrolling while the full-screen trailer scroller is mounted.
+
 export function createScrollerViewportLock(win = window, doc = document) {
   let restoreScrollY = 0;
   let locked = false;
   let footer = null;
 
-  // #app does not scroll during the scroller (overflow hidden), but moving
-  // the focus (Tab onto the footer) still shifts it, which pushed the header
-  // out of view and stayed so for the next visit. It is held at the top, and
-  // the footer behind the full-screen route takes no focus.
+  // #app is overflow hidden here, but moving the focus (Tab onto the footer) still
+  // scrolls it and pushes the header out of view. Hold it at the top and make the
+  // footer behind the full-screen route inert.
   const app = () => doc.getElementById('app');
   const holdAtTop = () => {
     const element = app();

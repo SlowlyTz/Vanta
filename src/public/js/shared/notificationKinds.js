@@ -1,7 +1,7 @@
-// DOM-free: shared by the web app and the server.
+// What VANTA notifies about; DOM-free, shared by the web app and the server.
 
-// What VANTA notifies about. `on` is the default for push and the in-app
-// list; a user can switch both per kind. Admin kinds only reach admins.
+// `on` is the default for push and the in-app list; a user can switch both per
+// kind. Admin kinds only reach admins.
 export const NOTIFICATION_KINDS = Object.freeze([
   { kind: 'request_update', label: 'Meine Anfragen', description: 'Eine Anfrage wurde angenommen oder abgelehnt.', on: true },
   { kind: 'request_available', label: 'Angefragtes ist da', description: 'Ein angefragter Titel ist jetzt verfügbar.', on: true },

@@ -1,3 +1,4 @@
+// App-wide UI helper: shows toasts (the component loads on first use).
 class AppStore {
   // `options.action` ({ label, onClick }) adds a button, e.g. "Rückgängig".
   async showToast(message, type = 'info', options = {}) {

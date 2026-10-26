@@ -1,5 +1,7 @@
+// Jellyfin people: a person's details and the titles they appear in.
 import { jellyfinJson } from './client.js';
 import { COMMON_ITEM_FIELDS } from './fields.js';
+import { httpError } from '../../utils/httpError.js';
 
 export class PeopleService {
   static async getPersonDetails(userId, token, personId) {
@@ -20,9 +22,7 @@ export class PeopleService {
     if (data.Items && data.Items.length > 0) {
       return this.getPersonDetails(userId, token, data.Items[0].Id);
     }
-    const error = new Error(`Person nicht gefunden: ${personName}`);
-    error.status = 404;
-    throw error;
+    throw httpError(404, `Person nicht gefunden: ${personName}`);
   }
 
   static async getPersonItems(userId, token, personId) {

@@ -1,11 +1,9 @@
+// Registry of the admin page areas: the menu is built from this list, and each
+// #/admin/<id> route builds exactly one of them via `create`.
 import { ADMIN_REQUESTS_TOOL, createAdminRequestsTool } from './requests/AdminRequestsTool.js';
 import { ADMIN_USERS_TOOL, createAdminUsersTool } from './users/AdminUsersTool.js';
 import { ADMIN_SETTINGS_TOOL, createAdminSettingsPanel } from '../../pages/admin/adminSettingsPanel.js';
 
-// Registry der Bereiche auf der Admin-Seite (src/public/js/pages/admin.page.js).
-// Das Menü unter #/admin wird aus dieser Liste erzeugt, die Bereichsrouten
-// (#/admin/<id>) bauen genau einen davon — deshalb steckt die Beschreibung in
-// `meta` und die Instanziierung dahinter in `create`.
 const ADMIN_TOOLS = [
   { meta: ADMIN_REQUESTS_TOOL, create: createAdminRequestsTool },
   { meta: ADMIN_USERS_TOOL, create: createAdminUsersTool },

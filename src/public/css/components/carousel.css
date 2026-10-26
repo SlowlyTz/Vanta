@@ -1,4 +1,4 @@
-/* Media Carousel Component */
+/* Horizontal media carousels and the featured carousel. */
 .horizontal-carousel-container {
   position: relative;
   width: 100%;
@@ -68,14 +68,14 @@
 
 .media-carousel {
   display: flex;
-  align-items: flex-start; /* Prevent vertical stretching of items with varying title lengths */
+  align-items: flex-start; /* Cards with longer titles do not stretch the others. */
   gap: var(--spacing-lg);
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
   min-width: 0;
   scroll-padding-inline: 4px;
-  padding: 10px 4px 20px; /* padding prevent shadow cropping */
+  padding: 10px 4px 20px; /* Room for the card shadows. */
   scrollbar-width: none;
 }
 
@@ -84,12 +84,12 @@
 }
 
 .media-carousel-item {
-  flex: 0 0 160px; /* Default Poster width */
+  flex: 0 0 160px;
   min-width: 0;
 }
 
 .media-carousel.landscape-carousel .media-carousel-item {
-  flex: 0 0 300px; /* Landscape width */
+  flex: 0 0 300px;
 }
 
 @media (min-width: 768px) {

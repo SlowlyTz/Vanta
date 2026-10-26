@@ -1,3 +1,5 @@
+// Trailer scroller: the ?trailer= hash param, share/detail URLs and the return trailer in sessionStorage.
+
 const TRAILER_QUERY_PARAM = 'trailer';
 const RETURN_TRAILER_KEY = 'vantaTrailerScrollerReturnTrailerId';
 const RETURN_TRAILER_DATA_KEY = 'vantaTrailerScrollerReturnTrailerData';

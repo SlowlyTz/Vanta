@@ -1,3 +1,4 @@
+/* Imports of the watch party dialog, in cascade order. */
 @import './watch-party-dialog/dialog-shell.css';
 @import './watch-party-dialog/season-tabs.css';
 @import './watch-party-dialog/poster-grid.css';

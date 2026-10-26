@@ -1,7 +1,7 @@
-import { subtitleMethods } from './playback/subtitles.js';
-import { pathMethods } from './playback/pathUtils.js';
-import { streamSelectionMethods } from './playback/streamSelection.js';
+// Playback answers: picking the stream from Jellyfin's PlaybackInfo and
+// proxying its paths so the token never reaches the browser.
+import * as paths from './playback/pathUtils.js';
+import * as subtitles from './playback/subtitles.js';
+import * as selection from './playback/streamSelection.js';
 
-export class PlaybackService {}
-
-Object.assign(PlaybackService, subtitleMethods, pathMethods, streamSelectionMethods);
+export const PlaybackService = { ...paths, ...subtitles, ...selection };

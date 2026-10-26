@@ -1,3 +1,5 @@
+// Settings view "Benachrichtigungen": push on this device, and per kind push
+// and the list under the bell.
 import { createElement } from '../../../utils/dom.js';
 import { NotificationsApi } from '../../../api/notifications.api.js';
 import { appStore } from '../../../store/app.store.js';
@@ -26,8 +28,7 @@ function columnHead(icon, text) {
   return head;
 }
 
-// "Benachrichtigungen": push on this device, and per kind push and the list
-// under the bell. `onStatus` gets "Push an"/"Push aus" for the row in the hub.
+// `onStatus` gets "Push an"/"Push aus" for the row in the hub.
 export function createNotificationsView({ onStatus = () => {} } = {}) {
   const element = createElement('div', { className: 'settings-view' });
   let prefs = null;

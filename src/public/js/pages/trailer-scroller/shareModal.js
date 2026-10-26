@@ -1,3 +1,5 @@
+// Trailer scroller share dialog (copy link or native share).
+
 import { createElement } from '../../utils/dom.js';
 import { appStore } from '../../store/app.store.js';
 import { openModal } from '../../utils/modal.js';

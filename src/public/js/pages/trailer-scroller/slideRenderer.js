@@ -1,3 +1,5 @@
+// Trailer scroller rendering: slides, feed states, nav chrome and player status.
+
 import { createElement } from '../../utils/dom.js';
 import { createScrollerIcon } from './context.js';
 import { createMetaIcon } from '../../components/metaIcons.js';

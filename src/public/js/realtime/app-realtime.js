@@ -1,3 +1,5 @@
+// Runs the app socket while signed in and routes its messages to the stores;
+// on logout clears everything user-specific.
 import { authStore } from '../store/auth.store.js';
 import { createAppSocket } from './app.socket.js';
 import { watchPartyInvitationStore } from '../store/watch-party-invitations.store.js';

@@ -1,3 +1,5 @@
+// Login page: the password form with lockout countdown, and on a TV the
+// phone-code pairing first; also the desktop/TV view toggle.
 import { createElement } from '../utils/dom.js';
 import { authStore } from '../store/auth.store.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
@@ -338,8 +340,7 @@ export function createViewToggle({ win = window, doc = document } = {}) {
       const params = new URLSearchParams(win.location.search);
       params.delete('tv');
       const search = params.toString();
-      // The address without ?tv=, then a real reload: an address that only
-      // differs in nothing but the hash would not load the page anew.
+      // replaceState drops ?tv= without loading anything, so reload explicitly.
       win.history.replaceState(win.history.state, '', `${win.location.pathname}${search ? `?${search}` : ''}${win.location.hash}`);
       win.location.reload();
     }

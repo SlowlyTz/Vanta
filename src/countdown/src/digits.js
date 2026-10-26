@@ -1,3 +1,6 @@
+// Digit glyphs for the countdown: each digit drawn in the app's typeface and
+// sampled into a particle target set.
+
 import { samplePixels, sortByAngle } from '../../shared/particles/pixels.js';
 
 const GLYPH_HEIGHT = 420;

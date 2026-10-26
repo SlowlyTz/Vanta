@@ -1,3 +1,5 @@
+// Quality profiles: labels, sort order and the controller behind the menu.
+
 export function formatBitrate(bitrate) {
   if (!bitrate) return '';
   if (bitrate >= 1_000_000) return `${(bitrate / 1_000_000).toFixed(0)} Mbit/s`;

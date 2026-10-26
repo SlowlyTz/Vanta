@@ -1,3 +1,5 @@
+// Trailer scroller: paged feed loading, relative navigation and the watchlist toggle.
+
 import { MediaApi } from '../../api/media.api.js';
 import { appStore } from '../../store/app.store.js';
 import { mergeTrailerPage } from '../trailer-scroller.state.js';

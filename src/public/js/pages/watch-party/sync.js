@@ -1,3 +1,5 @@
+// Watch party sync: timeline acceptance, owner controls, drift status reports and the leader heartbeat.
+
 import { appStore } from '../../store/app.store.js';
 import { createElement } from '../../utils/dom.js';
 import { OWNER_SYNC_INTERVAL_MS, AUTO_SYNC_NOTIFICATION_COOLDOWN_MS } from './helpers.js';

@@ -1,13 +1,12 @@
+// Disk cache of resized WebP renditions of Jellyfin images, with LRU eviction and pre-warming.
 import fs from 'fs';
 import fsp from 'fs/promises';
 import { dirname, join, resolve } from 'path';
-import { fileURLToPath } from 'url';
 import env from '../../config/env.js';
 import { ImagesService } from '../jellyfin/images.service.js';
+import { httpError } from '../../utils/httpError.js';
+import { IMAGE_CACHE_DIR, REPO_ROOT } from '../../config/paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = dirname(dirname(dirname(dirname(__dirname))));
-const DEFAULT_DIR = join(REPO_ROOT, 'cache', 'images');
 
 // Every request is snapped up to one of these widths so a handful of files per
 // image serve all card sizes. Backdrops are the only wide type; everything else
@@ -38,10 +37,8 @@ const toNumber = (value) => {
   return Number.isFinite(number) && number > 0 ? number : null;
 };
 
-// Maps the proxy's query (width/height/maxWidth/maxHeight) onto a step width.
-// A height-only request is converted with the type's usual aspect ratio; no
-// size at all means the largest step, which is what the untouched original
-// came closest to before.
+// Maps the proxy's query (width/height/maxWidth/maxHeight) onto a step width. A height-only
+// request uses the type's usual aspect ratio; no size at all means the largest step.
 export function resolveWidth(type, query = {}) {
   const steps = stepsFor(type);
   let wanted = toNumber(query.width) ?? toNumber(query.maxWidth);
@@ -61,9 +58,7 @@ export function buildKey({ itemId, type, tag, width }) {
 
 const assertSafe = (value, name) => {
   if (!SAFE_SEGMENT.test(String(value ?? ''))) {
-    const error = new Error(`Ungültiger Wert für ${name}`);
-    error.status = 400;
-    throw error;
+    throw httpError(400, `Ungültiger Wert für ${name}`);
   }
 };
 
@@ -75,10 +70,9 @@ async function loadSharpModule() {
 const defaultFetchOriginal = (itemId, type, tag, token) =>
   ImagesService.fetchImageStream(itemId, token, type, { tag });
 
-// Disk cache of resized WebP renditions. Misses fetch the original from
-// Jellyfin, resize it once and write it atomically; hits are plain files.
+// Misses fetch the original from Jellyfin, resize it once and write it atomically; hits are plain files.
 export function createImageCache({
-  dir = env.IMAGE_CACHE_DIR ? resolve(REPO_ROOT, env.IMAGE_CACHE_DIR) : DEFAULT_DIR,
+  dir = env.IMAGE_CACHE_DIR ? resolve(REPO_ROOT, env.IMAGE_CACHE_DIR) : IMAGE_CACHE_DIR,
   loadSharp = loadSharpModule,
   fetchOriginal = defaultFetchOriginal,
   log = console,
@@ -142,10 +136,10 @@ export function createImageCache({
       sharp = await loadSharp();
     } catch (error) {
       sharp = null;
-      log.warn?.(`[Bilder] sharp konnte nicht geladen werden, Bilder werden ohne Cache durchgereicht: ${error.message}`);
+      log.warn?.(`[Images] sharp could not be loaded, images are passed through uncached: ${error.message}`);
       return;
     }
-    await scan().catch(error => log.warn?.(`[Bilder] Cache konnte nicht gelesen werden: ${error.message}`));
+    await scan().catch(error => log.warn?.(`[Images] could not read the cache: ${error.message}`));
   })();
 
   const markUsed = (key, filePath, size) => {
@@ -177,9 +171,7 @@ export function createImageCache({
     const expiresAt = negative.get(key);
     if (expiresAt === undefined) return;
     if (expiresAt > now()) {
-      const error = new Error('Bild zuletzt nicht gefunden');
-      error.status = 404;
-      throw error;
+      throw httpError(404, 'Bild zuletzt nicht gefunden');
     }
     negative.delete(key);
   };
@@ -196,15 +188,11 @@ export function createImageCache({
     const declared = Number(response.headers?.get?.('content-length'));
     if (Number.isFinite(declared) && declared > maxOriginalBytes) {
       response.body?.cancel?.().catch?.(() => {});
-      const error = new Error(`Original zu groß (${declared} Bytes)`);
-      error.status = 413;
-      throw error;
+      throw httpError(413, `Original zu groß (${declared} Bytes)`);
     }
     const original = Buffer.from(await response.arrayBuffer());
     if (original.length > maxOriginalBytes) {
-      const error = new Error(`Original zu groß (${original.length} Bytes)`);
-      error.status = 413;
-      throw error;
+      throw httpError(413, `Original zu groß (${original.length} Bytes)`);
     }
     const tmpPath = `${filePath}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
 
@@ -300,7 +288,7 @@ export function createImageCache({
 
     if (stats.posters || stats.backdrops) {
       const seconds = (stats.durationMs / 1000).toFixed(1);
-      log.info?.(`[Bilder] Vorgeladen: ${stats.posters} Poster, ${stats.backdrops} Backdrops (${seconds} s)`);
+      log.info?.(`[Images] warmed: ${stats.posters} posters, ${stats.backdrops} backdrops (${seconds} s)`);
     }
     return stats;
   };

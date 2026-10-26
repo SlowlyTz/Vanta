@@ -1,9 +1,8 @@
+// Admin menu (#/admin): one card per area. The cards navigate to their own
+// route, so they are plain buttons rather than tabs.
 import { createElement } from '../../utils/dom.js';
 import { createChevronIcon } from '../../components/navbar/icons.js';
 
-// Menü der Admin-Verwaltung (#/admin): eine Karte je Bereich. Die Karten
-// navigieren auf eine eigene Route und sind deshalb echte Buttons — keine Tabs:
-// nichts wird hier ein- oder ausgeblendet, das Menü verschwindet mit dem Klick.
 export function createAdminMenu({ tools = [], onSelect } = {}) {
   const badges = new Map();
 

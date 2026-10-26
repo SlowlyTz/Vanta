@@ -1,6 +1,4 @@
-/* ---------------------------------
-   CONFIRM DIALOG
---------------------------------- */
+/* Confirm dialog. */
 .confirm-dialog-overlay {
   position: fixed;
   top: 0;

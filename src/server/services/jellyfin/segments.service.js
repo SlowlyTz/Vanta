@@ -1,3 +1,5 @@
+// Skippable segments (intro, outro, recap, preview) of an item, from Jellyfin media
+// segments, the Intro Skipper plugin or chapter names, cached per user and item.
 import { jellyfinJson } from './client.js';
 import { setBounded } from '../../utils/boundedMap.js';
 

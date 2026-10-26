@@ -1,7 +1,8 @@
+// Sticky bar at the bottom of the watch party lobby: one line of context and the
+// one action that matters now (start for the host, Ready for everyone).
+
 import { createElement } from '../../../utils/dom.js';
 
-// Sticky bar at the bottom of the lobby: one line of context and the one
-// action that matters right now (start for the host, Ready for everyone).
 export function createActionBar(ctx) {
   const title = createElement('strong', { className: 'watch-party-action-title' });
   const hint = createElement('span', { className: 'watch-party-start-hint' });

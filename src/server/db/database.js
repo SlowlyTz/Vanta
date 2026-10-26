@@ -1,12 +1,13 @@
+// The main sql.js database (db/requests.db): schema, column migrations and
+// debounced writes to disk.
 import initSqlJs from 'sql.js';
 import { migratePushSubscriptionsTable, migrateRequestsTable, migrateTmdbMediaKey, requestsTable, tmdbMediaTable } from './migrations.js';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import fs from 'fs';
 import { writeFileAtomicSync } from '../utils/atomicWrite.js';
+import { DB_DIR } from '../config/paths.js';
+import { createStatementFactory } from './sqlite.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
 
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
@@ -51,51 +52,7 @@ const persist = () => {
   persistTimer.unref?.();
 };
 
-const normalizeParams = (params) => {
-  if (params.length === 1 && Array.isArray(params[0])) return params[0];
-  return params;
-};
-
-const getLastInsertRowid = () => {
-  const result = sqlite.exec('SELECT last_insert_rowid() AS id');
-  return result[0]?.values?.[0]?.[0] || 0;
-};
-
-const createStatement = (sql) => ({
-  run(...params) {
-    sqlite.run(sql, normalizeParams(params));
-    const result = {
-      changes: sqlite.getRowsModified(),
-      lastInsertRowid: getLastInsertRowid()
-    };
-    persist();
-    return result;
-  },
-
-  get(...params) {
-    const rows = this.all(...params);
-    return rows[0];
-  },
-
-  all(...params) {
-    const statement = sqlite.prepare(sql);
-    const values = normalizeParams(params);
-
-    try {
-      if (values.length > 0) {
-        statement.bind(values);
-      }
-
-      const rows = [];
-      while (statement.step()) {
-        rows.push(statement.getAsObject());
-      }
-      return rows;
-    } finally {
-      statement.free();
-    }
-  }
-});
+const createStatement = createStatementFactory(sqlite, { onWrite: persist, withRowId: true });
 
 const db = {
   exec(sql) {

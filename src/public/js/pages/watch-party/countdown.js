@@ -1,3 +1,5 @@
+// Watch party countdown overlay (3D scene with digit fallback) and the synced playback start.
+
 import { COUNTDOWN_MODULE_URL, countdownMetaParts, formatPosition } from './helpers.js';
 import { prefersReducedMotion } from '../../utils/motion.js';
 

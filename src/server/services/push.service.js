@@ -1,7 +1,10 @@
+// Web Push: VAPID keys, the subscriptions of each user's devices and
+// delivery to them.
 import webpush from 'web-push';
 import env from '../config/env.js';
 import db from '../db/database.js';
 import { AppSettingsService } from './app-settings.service.js';
+import { httpError } from '../utils/httpError.js';
 
 const KEYS_SETTING = 'vapid_keys';
 const MAX_FAILURES = 5;
@@ -89,10 +92,9 @@ async function inBatches(items, size, run) {
   }
 }
 
-// Web Push to the devices a user subscribed with. A subscription the push
-// service no longer knows (404/410), or that it refused five times in a row,
-// is dropped. Each subscription belongs to the session (public id) that made
-// it, so signing that session out ends its pushes too.
+// A subscription the push service no longer knows (404/410), or that it
+// refused five times in a row, is dropped. Each belongs to the session
+// (public id) that made it, so signing that session out ends its pushes too.
 export function createPushService({ sender = webpush, now = () => Date.now(), log = console, keys = null } = {}) {
   let vapid = keys;
   const ensureKeys = () => {
@@ -105,7 +107,7 @@ export function createPushService({ sender = webpush, now = () => Date.now(), lo
 
     subscribe(userId, subscription, userAgent = '', sessionId = null) {
       if (!isValidSubscription(subscription)) {
-        throw Object.assign(new Error('Ungültiges Push-Abo'), { status: 400 });
+        throw httpError(400, 'Ungültiges Push-Abo');
       }
       if (!statements.ownsEndpoint.get(subscription.endpoint, userId)) {
         const excess = statements.countForUser.get(userId).n - MAX_SUBSCRIPTIONS_PER_USER + 1;
@@ -176,7 +178,7 @@ export function createPushService({ sender = webpush, now = () => Date.now(), lo
           try { host = new URL(subscription.endpoint).hostname; } catch { /* stored ones are valid */ }
           errors.push({ status: error.statusCode || null, host });
           if (isGone(error.statusCode)) {
-            log.warn?.(`[Push] Abo bei ${host} nicht mehr gültig (${error.statusCode}), entfernt`);
+            log.warn?.(`[Push] subscription at ${host} no longer valid (${error.statusCode}), removed`);
             statements.deleteById.run(subscription.id);
             return;
           }
@@ -184,7 +186,7 @@ export function createPushService({ sender = webpush, now = () => Date.now(), lo
             statements.failure.run(subscription.id);
             if ((statements.failures.get(subscription.id)?.failure_count || 0) >= MAX_FAILURES) statements.deleteById.run(subscription.id);
           }
-          log.warn?.(`[Push] Zustellung an ${host} fehlgeschlagen (${error.statusCode || error.message}${error.body ? `: ${String(error.body).slice(0, 200)}` : ''})`);
+          log.warn?.(`[Push] delivery to ${host} failed (${error.statusCode || error.message}${error.body ? `: ${String(error.body).slice(0, 200)}` : ''})`);
         }
       });
       return { sent, failed, errors };

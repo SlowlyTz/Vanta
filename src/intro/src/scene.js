@@ -1,3 +1,6 @@
+// three.js scene of the opening: particles form the V, then the word, and the
+// camera dives through the logo.
+
 import {
   AdditiveBlending,
   BufferAttribute,

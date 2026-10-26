@@ -1,3 +1,5 @@
+// The signed-in user's settings that follow them to every device (see
+// shared/preferences.js). Loaded on login, changed optimistically.
 import { PreferencesApi } from '../api/preferences.api.js';
 import { DEFAULT_PREFERENCES, sanitizePreferences, withDefaults } from '../shared/preferences.js';
 import { Store } from './store.js';
@@ -22,8 +24,6 @@ const writeCache = (values) => {
   }
 };
 
-// The signed-in user's settings that follow them to every device (see
-// shared/preferences.js). Loaded on login, changed optimistically.
 class PreferencesStore extends Store {
   constructor() {
     super();

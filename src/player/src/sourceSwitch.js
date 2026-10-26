@@ -1,3 +1,6 @@
+// Loads a playback source (direct or HLS) into the player, restores position
+// and play state, and rolls back to the previous source when a switch fails.
+
 import { once } from './promiseHelpers.js';
 import { createSourceSwitchState, createStateAccessors } from './sourceSwitch/state.js';
 import { applyPlaybackState, syncPlayingState } from './sourceSwitch/loadingStatus.js';

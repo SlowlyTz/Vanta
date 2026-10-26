@@ -1,38 +1,10 @@
+// Watch party invitations by exact username, kept in memory for 15 minutes.
 import crypto from 'crypto';
 import { WatchPartyService, MAX_PARTY_MEMBERS } from './watch-party.service.js';
 import { KnownUsersService } from './known-users.service.js';
+import { badRequest, conflict, forbidden, gone, notFound } from '../utils/httpError.js';
 
 const INVITATION_TTL_MS = 15 * 60 * 1000;
-
-function notFound(message) {
-  const error = new Error(message);
-  error.status = 404;
-  return error;
-}
-
-function forbidden(message) {
-  const error = new Error(message);
-  error.status = 403;
-  return error;
-}
-
-function badRequest(message) {
-  const error = new Error(message);
-  error.status = 400;
-  return error;
-}
-
-function conflict(message) {
-  const error = new Error(message);
-  error.status = 409;
-  return error;
-}
-
-function gone(message) {
-  const error = new Error(message);
-  error.status = 410;
-  return error;
-}
 
 export class WatchPartyInvitationService {
   static invitations = new Map();

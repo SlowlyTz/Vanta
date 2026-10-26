@@ -1,3 +1,5 @@
+// Posters for titles outside the library (requests): TMDB image URLs and an
+// initials placeholder.
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
 export function getTmdbImageUrl(path, size = 'w500') {

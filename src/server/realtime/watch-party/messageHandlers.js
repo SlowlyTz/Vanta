@@ -1,15 +1,9 @@
+// Watch-party hub methods: handling client messages (player state, playback and
+// admin controls, leader sync).
 import { WatchPartyService, isPartyAdmin } from '../../services/watch-party.service.js';
-import { ownerError, isPlaybackControlAllowed, createNotification } from './notifications.js';
-import {
-  getEffectivePosition,
-  getSyncLeaderUserId,
-  resolveAnchorTime,
-  sanitizeSeekStep,
-  serializeTimeline,
-  setTimeline,
-  SYNC_CORRECTION_THRESHOLD_MS,
-  SYNC_STABLE_MIN_MS
-} from '../../services/watch-party/helpers.js';
+import { isPlaybackControlAllowed, createNotification } from './notifications.js';
+import { getEffectivePosition, getSyncLeaderUserId, resolveAnchorTime, sanitizeSeekStep, serializeTimeline, setTimeline, SYNC_CORRECTION_THRESHOLD_MS, SYNC_STABLE_MIN_MS } from '../../services/watch-party/timeline.js';
+import { forbidden } from '../../utils/httpError.js';
 
 export const messageHandlerMethods = {
   handleMessage({ partyId, user, message, ws }) {
@@ -29,7 +23,7 @@ export const messageHandlerMethods = {
         case 'PLAYER_STATUS': {
           const party = WatchPartyService.setPlaybackStatus({ partyId, userId, state: message.state, driftMs: message.driftMs });
           this.broadcastParty(partyId, { type: 'PRESENCE', members: WatchPartyService.serializePresence(party) });
-          this.trackBuffering?.({ partyId, userId, state: message.state, bufferedMs: message.bufferedMs });
+          this.trackBuffering({ partyId, userId, state: message.state, bufferedMs: message.bufferedMs });
           return;
         }
 
@@ -189,17 +183,17 @@ export const messageHandlerMethods = {
   handleOwnerControl({ partyId, userId, message }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
     if (!isPartyAdmin(party, userId)) {
-      throw ownerError('Nur Admins der Watch Party steuern die Wiedergabe');
+      throw forbidden('Nur Admins der Watch Party steuern die Wiedergabe');
     }
 
     if (!isPlaybackControlAllowed(party)) {
       if (message.type === 'OWNER_SYNC') return;
-      throw ownerError('Die Watch Party wurde noch nicht gestartet');
+      throw forbidden('Die Watch Party wurde noch nicht gestartet');
     }
 
     // A hand on play or pause ends a wait for a buffering member.
     if (party.waiting && (message.type === 'OWNER_PLAY' || message.type === 'OWNER_PAUSE')) {
-      this.stopWaiting?.(partyId);
+      this.stopWaiting(partyId);
     }
 
     const now = Date.now();

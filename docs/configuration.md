@@ -4,7 +4,7 @@
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `JELLYFIN_BASE_URL` | – (required) | Jellyfin address as the server reaches it |
+| `JELLYFIN_BASE_URL` | – (required) | Jellyfin address as the server reaches it: an origin, without a path prefix |
 | `JELLYFIN_API_KEY` | – (required) | Used by the catalogue sync, which runs without a user session |
 | `TMDB_API_KEY` | – (required) | Requests, metadata, „Jetzt im Kino“ |
 | `SESSION_SECRET` | placeholder | Must be set in production, or the server does not start |
@@ -32,7 +32,7 @@ Kept in `db/`, changed by admins in the app:
 | Admin → Benutzer | Library access, FSK age limit and the unrated block (written to Jellyfin), password, ban, delete, concurrent streams (default 1) |
 | Admin dashboard | Message to all users as a notification |
 
-Per user, synced to every device (`user_preferences`): default quality, audio/subtitle language, autoplay, intro skip, „Schaust du noch?“ time, opening scene, reduced motion, screensaver. Per device (`localStorage`): TV mode (`vanta.tvMode`), player volume and subtitle style, push fallback (`vanta.push.local`).
+Per user, synced to every device (`user_preferences`): default quality, audio/subtitle language, autoplay, intro skip, „Schaust du noch?“ time, opening scene, reduced motion, screensaver. Per device (`localStorage`): TV mode (`vanta.tvMode`, `vanta.tvMode.suggested`), a cache of the preferences read before login (`vanta.preferences`), the profile tab (`vanta.profile.tab`), recent searches (`vanta.search.recent`), when the opening scene last played (`vanta.intro.lastPlayedAt`), player volume and subtitle style, push fallback (`vanta.push.local`). Per tab (`sessionStorage`): route and scroll state, the player hand-over (`vanta.player.carry`).
 
 ## Runtime data
 
@@ -44,7 +44,7 @@ Everything below is git-ignored. Back up `db/` before updates.
 | `db/catalog.db` | Mirror of all movies and series with genres, studios, people; rebuilt by a sync if lost |
 | `db/sessions.db` | Login sessions |
 | `db/banned.json` | Rejected TMDB titles |
-| `db/user/banned.json` | Banned users (re-read within a second when edited) |
+| `db/user/banned.json` | Banned users (re-read within a second when edited by hand) |
 | `db/user/settings.json` | Per-user stream limits |
 | `cache/images/` | WebP renditions; safe to delete |
 | `backups/` | `db/` copies made before each update |
@@ -53,4 +53,4 @@ Jellyfin stays the source of truth for accounts, passwords, libraries, admin rig
 
 ## Playback quality
 
-`auto`/`direct` pass the file through when the client can play it. Fixed profiles cap the transcode: 1080p 8 Mbit/s, 720p 4, 480p 2, 360p 1 (`src/server/services/playback/qualityProfiles.js`).
+Every stream goes out as HLS, except to a Samsung or LG TV recognised for sure: those get the file directly where they can play it (HEVC, AC3, MKV) and fall back to HLS in the player otherwise. `direct` is refused where HLS is forced. Fixed steps cap the transcode: 1080p 8 Mbit/s, 720p 4, 480p 2, 360p 1 (`src/server/services/playback/qualityProfiles.js`, the one source for the menu and the caps).

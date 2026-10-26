@@ -1,3 +1,6 @@
+// UI state of the player (booting, playing, idle, buffering ...) as a data
+// attribute on the root; playback without input turns idle after a moment.
+
 const IDLE_TIMEOUT_MS = 3_500;
 
 const VALID_STATES = new Set([

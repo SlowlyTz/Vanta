@@ -1,6 +1,4 @@
-/* ---------------------------------
-   PUBLISHERS PAGE
-   --------------------------------- */
+/* Publishers page: featured cards, search and the grid of all publishers. */
 .publishers-featured-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

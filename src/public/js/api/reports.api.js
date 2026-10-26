@@ -1,3 +1,4 @@
+// Problem report endpoints for users and admins.
 import { request } from './client.js';
 
 export const ReportsApi = {

@@ -1,3 +1,5 @@
+// Watch party dialog: the "Weiterschauen" choice for still-live parties the user
+// was in (as owner or guest), next to "Neue Watch Party starten".
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { WatchPartyApi } from '../../../api/watch-party.api.js';
@@ -28,9 +30,7 @@ export function recentPartyMeta(party) {
   ].filter(Boolean).join(' · ');
 }
 
-// Parties the user was in (as owner or guest) that still live: the dialog
-// opens on "Weiterschauen" for each of them or "Neue Watch Party starten".
-// A party is gone once nobody has been in it for a while (server side).
+// The server drops a party once nobody has been in it for a while.
 export function bindRecentParties(ctx) {
   ctx.liveParties = [];
 

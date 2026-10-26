@@ -1,4 +1,4 @@
-
+// DOM helpers: element creation and TV-aware focusing of text fields.
 
 export function createElement(tag, props = {}, ...children) {
   const element = document.createElement(tag);

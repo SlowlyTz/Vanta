@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import libraryRoutes, { parseSearchFilters } from '../../../../src/server/routes/media/library.routes.js';
 
-vi.mock('../../../../src/server/services/jellyfin/library.service.js', () => ({
+vi.mock('../../../../src/server/services/browse/library.service.js', () => ({
   LibraryService: {
     getLibrary: vi.fn(),
     getLibraryByPublisher: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('../../../../src/server/services/user-data.service.js', () => ({
   UserDataService: { forItems: vi.fn(), forget: vi.fn() }
 }));
 
-vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
+vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })),
   ItemsService: {}
 }));
 
@@ -26,11 +26,11 @@ vi.mock('../../../../src/server/services/jellyfin/playback-api.service.js', () =
   }
 }));
 
-vi.mock('../../../../src/server/services/home-sections.service.js', () => ({
+vi.mock('../../../../src/server/services/browse/home-sections.service.js', () => ({
   HomeSectionsService: {}
 }));
 
-import { LibraryService } from '../../../../src/server/services/jellyfin/library.service.js';
+import { LibraryService } from '../../../../src/server/services/browse/library.service.js';
 import { PlaybackApiService } from '../../../../src/server/services/jellyfin/playback-api.service.js';
 import { UserDataService } from '../../../../src/server/services/user-data.service.js';
 

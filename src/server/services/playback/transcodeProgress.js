@@ -1,3 +1,4 @@
+// How far Jellyfin's transcoder for a browser has got, read from its per-device session.
 import { jellyfinJson, deviceIdForToken, SHARED_DEVICE_ID } from '../jellyfin/client.js';
 import { ItemsService } from '../jellyfin/items.service.js';
 import { setBounded } from '../../utils/boundedMap.js';
@@ -26,10 +27,9 @@ async function itemTiming(userId, token, itemId, now) {
   return value;
 }
 
-// How far Jellyfin's transcoder for this browser has got: Jellyfin reports
-// the completion (percent of the runtime) and the encoding frame rate per
-// device while ffmpeg runs. Nothing is reported while the source is still
-// being opened, and nothing can be told apart on the old shared device id.
+// Jellyfin reports completion (percent of runtime) and encoding frame rate per
+// device while ffmpeg runs: nothing while the source is still being opened,
+// and nothing that can be told apart on the shared device id.
 export async function getTranscodeProgress({ userId, token, itemId, now = Date.now() }) {
   const deviceId = deviceIdForToken(token);
   if (deviceId === SHARED_DEVICE_ID) return { available: false, reason: 'shared-device' };

@@ -1,16 +1,11 @@
+// Updates this checkout from origin/main (fetch, back up db/, fast-forward,
+// install, build, verify); a failure rolls back to the old commit and rebuilds
+// it. Run by `npm run update` and by server.js on production starts (AUTO_UPDATE).
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-
-// Updates this checkout from origin/main: fetch, back up db/, fast-forward,
-// install when the dependencies changed, build, verify. A failed build or
-// check puts the old commit back and builds it again, so the server always
-// starts on something that works.
-//
-//   npm run update     update now, do not start the server
-//   server.js          runs it on every start in production (AUTO_UPDATE)
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTE = 'origin';
@@ -46,7 +41,7 @@ function backupDatabases({ cwd, backupDir, label, log }) {
   // Only the newest few stay.
   const old = fs.readdirSync(dir).filter(name => name.startsWith('db-')).sort().slice(0, -KEEP_BACKUPS);
   old.forEach(name => fs.rmSync(path.join(dir, name), { recursive: true, force: true }));
-  log(`Datenbanken gesichert: ${path.relative(cwd, target) || target}`);
+  log(`databases backed up: ${path.relative(cwd, target) || target}`);
   return target;
 }
 
@@ -65,16 +60,16 @@ export function runUpdate({
   try {
     git('rev-parse', '--is-inside-work-tree');
   } catch {
-    return { status: 'skipped', reason: 'kein Git-Checkout' };
+    return { status: 'skipped', reason: 'not a git checkout' };
   }
   const branch = git('rev-parse', '--abbrev-ref', 'HEAD');
-  if (branch !== BRANCH) return { status: 'skipped', reason: `Branch ${branch} statt ${BRANCH}` };
-  if (git('status', '--porcelain', '--untracked-files=no')) return { status: 'skipped', reason: 'lokale Änderungen an versionierten Dateien' };
+  if (branch !== BRANCH) return { status: 'skipped', reason: `on branch ${branch}, not ${BRANCH}` };
+  if (git('status', '--porcelain', '--untracked-files=no')) return { status: 'skipped', reason: 'local changes to tracked files' };
 
   try {
     git('fetch', '--quiet', REMOTE, BRANCH);
   } catch (error) {
-    return { status: 'skipped', reason: `${REMOTE} nicht erreichbar (${String(error.message).split('\n')[0]})` };
+    return { status: 'skipped', reason: `${REMOTE} not reachable (${String(error.message).split('\n')[0]})` };
   }
   const from = git('rev-parse', 'HEAD');
   const to = git('rev-parse', `${REMOTE}/${BRANCH}`);
@@ -82,7 +77,7 @@ export function runUpdate({
   try {
     git('merge-base', '--is-ancestor', 'HEAD', `${REMOTE}/${BRANCH}`);
   } catch {
-    return { status: 'skipped', reason: `lokale Commits, die nicht auf ${REMOTE}/${BRANCH} sind` };
+    return { status: 'skipped', reason: `local commits that are not on ${REMOTE}/${BRANCH}` };
   }
 
   // Nothing has changed in the checkout yet: anything failing here (a file
@@ -92,22 +87,22 @@ export function runUpdate({
   try {
     const changed = git('diff', '--name-only', from, to).split('\n').filter(Boolean);
     dependenciesChanged = changed.some(file => file === 'package.json' || file === 'package-lock.json');
-    log(`${from.slice(0, 7)} → ${to.slice(0, 7)}: ${changed.length} Datei(en) geändert`);
+    log(`${from.slice(0, 7)} → ${to.slice(0, 7)}: ${changed.length} file(s) changed`);
 
     backupDatabases({ cwd, backupDir, label: from.slice(0, 7), log });
     git('merge', '--ff-only', '--quiet', `${REMOTE}/${BRANCH}`);
   } catch (error) {
-    return { status: 'skipped', from, to, reason: `Update nicht übernommen (${String(error.message).split('\n')[0]})` };
+    return { status: 'skipped', from, to, reason: `update not applied (${String(error.message).split('\n')[0]})` };
   }
 
   const buildAndVerify = () => {
     if (dependenciesChanged) {
-      log('Abhängigkeiten geändert: npm ci');
+      log('dependencies changed: npm ci');
       exec(steps.install);
     }
-    log('Baue …');
+    log('building …');
     exec(steps.build);
-    log('Prüfe .env, Build und Syntax …');
+    log('checking .env, build and syntax …');
     steps.verify.forEach(exec);
   };
 
@@ -115,17 +110,17 @@ export function runUpdate({
     buildAndVerify();
   } catch (error) {
     const reason = String(error.message).split('\n')[0];
-    log(`Fehlgeschlagen (${reason}), zurück auf ${from.slice(0, 7)}`);
+    log(`failed (${reason}), back to ${from.slice(0, 7)}`);
     try {
       git('reset', '--hard', '--quiet', from);
       buildAndVerify();
     } catch (rollbackError) {
-      log(`Auch der alte Stand ließ sich nicht bauen: ${String(rollbackError.message).split('\n')[0]}`);
+      log(`the previous version did not build either: ${String(rollbackError.message).split('\n')[0]}`);
     }
     return { status: 'failed', from, to, reason };
   }
 
-  log(`Aktualisiert auf ${to.slice(0, 7)}`);
+  log(`updated to ${to.slice(0, 7)}`);
   return { status: 'updated', from, to };
 }
 
@@ -145,14 +140,14 @@ export async function updateOnStart({ env = process.env } = {}) {
   } catch (error) {
     result = { status: 'skipped', reason: String(error?.message || error).split('\n')[0] };
   }
-  if (result.status === 'skipped') console.log(`[Update] übersprungen: ${result.reason}`);
+  if (result.status === 'skipped') console.log(`[Update] skipped: ${result.reason}`);
   if (result.status !== 'updated') return;
 
   if (env.pm_id !== undefined) {
-    console.log('[Update] Neustart durch pm2 …');
+    console.log('[Update] restart by pm2 …');
     process.exit(0);
   }
-  console.log('[Update] Starte neu …');
+  console.log('[Update] restarting …');
   const child = spawn(process.execPath, process.argv.slice(1), { stdio: 'inherit', env: { ...env, VANTA_UPDATED: '1' } });
   for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => child.kill(signal));
   child.on('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
@@ -165,10 +160,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   dotenv.config({ path: path.join(ROOT, '.env'), quiet: true });
   const result = runUpdate();
   const messages = {
-    'up-to-date': 'Schon aktuell.',
-    updated: 'Fertig. Ein laufender Server übernimmt das Update erst nach einem Neustart (pm2 restart server).',
-    skipped: `Übersprungen: ${result.reason}`,
-    failed: `Fehlgeschlagen: ${result.reason}. Der alte Stand ist wieder gebaut.`
+    'up-to-date': 'Already up to date.',
+    updated: 'Done. A running server takes the update on its next restart (pm2 restart server).',
+    skipped: `Skipped: ${result.reason}`,
+    failed: `Failed: ${result.reason}. The previous version is built again.`
   };
   console.log(`[Update] ${messages[result.status]}`);
   process.exit(result.status === 'failed' ? 1 : 0);

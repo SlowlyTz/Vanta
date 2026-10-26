@@ -1,4 +1,4 @@
-/* Bibliothekszugriff: der Schalter "alle", darunter die Liste je Art. */
+/* Library access: the "alle" switch, then one list per library type. */
 .admin-library-field {
   display: grid;
   gap: 12px;

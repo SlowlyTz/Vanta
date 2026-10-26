@@ -1,4 +1,6 @@
+// Text subtitle tracks of a media source the browser can show; bitmap formats are skipped.
 import { getFirstValue, getMediaStreams } from './mediaMetadata.js';
+import { toProxyUrl } from './pathUtils.js';
 
 const BITMAP_SUBTITLE_CODECS = new Set([
   'dvbsub',
@@ -36,21 +38,19 @@ export const isSupportedSubtitleStream = (stream) => {
     && Boolean(getSubtitleType(stream));
 };
 
-export const subtitleMethods = {
-  buildSubtitleTracks(source) {
-    return getMediaStreams(source, 'subtitle')
-      .filter(isSupportedSubtitleStream)
-      .map(stream => ({
-        id: String(stream.Index),
-        index: Number(stream.Index),
-        label: stream.DisplayTitle || stream.Title || stream.Language || `Untertitel ${stream.Index}`,
-        language: stream.Language || '',
-        codec: getFirstValue(stream.Codec) || null,
-        type: getSubtitleType(stream),
-        isForced: Boolean(stream.IsForced),
-        isDefault: Boolean(stream.IsDefault),
-        url: this.toProxyUrl(stream.DeliveryUrl)
-      }))
-      .filter(track => Number.isInteger(track.index) && track.type && track.url);
-  }
-};
+export function buildSubtitleTracks(source) {
+  return getMediaStreams(source, 'subtitle')
+    .filter(isSupportedSubtitleStream)
+    .map(stream => ({
+      id: String(stream.Index),
+      index: Number(stream.Index),
+      label: stream.DisplayTitle || stream.Title || stream.Language || `Untertitel ${stream.Index}`,
+      language: stream.Language || '',
+      codec: getFirstValue(stream.Codec) || null,
+      type: getSubtitleType(stream),
+      isForced: Boolean(stream.IsForced),
+      isDefault: Boolean(stream.IsDefault),
+      url: toProxyUrl(stream.DeliveryUrl)
+    }))
+    .filter(track => Number.isInteger(track.index) && track.type && track.url);
+}

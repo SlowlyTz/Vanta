@@ -1,11 +1,11 @@
+// The TV's way in: a code (and a QR code) to confirm on a phone that is
+// signed in. Asks every two seconds; a new code when the old one ran out.
 import { createElement } from '../../utils/dom.js';
 import { AuthApi } from '../../api/auth.api.js';
 import { authStore } from '../../store/auth.store.js';
 
 const POLL_MS = 2000;
 
-// The TV's way in: a code (and a QR code) to confirm on a phone that is
-// signed in. Asks every two seconds; a new code when the old one ran out.
 export function createTvPairing({ onUsePassword, scope }) {
   const codeEl = createElement('strong', { className: 'tv-pairing-code' }, '······');
   const qrEl = createElement('div', { className: 'tv-pairing-qr', 'aria-hidden': 'true' });

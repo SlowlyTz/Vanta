@@ -1,3 +1,5 @@
+// One media request in the admin list, with approve/reject while it is
+// pending and a status chip in the "Alle" tab (showStatus).
 import { createElement } from '../../../utils/dom.js';
 import { RequestsApi } from '../../../api/requests.api.js';
 import { STATUS_MAP, getTmdbImageUrl, getScopeLabel, getRequestScope } from '../../../pages/requests/helpers.js';
@@ -23,10 +25,6 @@ function formatRequestDate(value) {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Eine Zeile in der Admin-Anfragenliste: Poster-Thumbnail, Titel, Nutzer, Typ,
-// Umfang der Anfrage (komplette Serie / Staffel / Folge) und Anfragedatum.
-// Im "Alle"-Tab (showStatus) kommt zusätzlich ein Status-Badge dazu;
-// Genehmigen/Ablehnen gibt es nur, solange die Anfrage noch offen ist.
 export function createAdminRequestItem(request, { onChange, onNotify, showStatus = false } = {}) {
   const posterUrl = getTmdbImageUrl(request.poster_path, 'w154');
   const poster = posterUrl
@@ -62,7 +60,6 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
     meta
   );
 
-  // Im "Alle"-Tab steht der Status als zweiter Chip neben dem Umfang.
   if (showStatus) {
     const statusInfo = STATUS_MAP[request.status] || { label: request.status, cls: 'unknown' };
     meta.appendChild(
@@ -97,8 +94,8 @@ export function createAdminRequestItem(request, { onChange, onNotify, showStatus
       }
     }, actionIcon('approve'), createElement('span', {}, 'Genehmigen'));
 
-    // Nur eine abgelehnte Gesamtanfrage sperrt den Titel; eine einzelne Staffel
-    // oder Folge kann danach erneut angefragt werden (requests.service.js).
+    // Only rejecting a whole-title request bans the title; a single season or
+    // episode can be requested again afterwards (requests.service.js).
     const bansTitle = getRequestScope(request) === 'all';
     const rejectHint = bansTitle
       ? 'Anfrage ablehnen — der Titel wandert danach auf die Sperrliste und kann nicht erneut angefragt werden'

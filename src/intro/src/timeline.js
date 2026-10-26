@@ -1,5 +1,6 @@
-// Seconds. The V forms first, then slides left while the word writes itself,
-// a short hold, and the camera dives through the lettering as the cover fades.
+// Timing of the opening scene, in seconds. The V forms first, then slides left
+// while the word writes itself, a short hold, and the camera dives through the
+// lettering as the cover fades.
 export const TIMELINE = {
   form: [0, 1.3],
   slide: [1.4, 2.2],

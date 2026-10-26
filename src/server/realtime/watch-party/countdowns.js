@@ -1,3 +1,4 @@
+// Watch-party hub methods: the start countdown timer and the seek notification throttle.
 import { WatchPartyService } from '../../services/watch-party.service.js';
 
 const SEEK_NOTIFICATION_THROTTLE_MS = 800;

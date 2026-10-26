@@ -1,3 +1,4 @@
+// Trailer scroller page: wires the trailer-scroller modules onto one shared context.
 import { createTrailerScrollerContext } from './trailer-scroller/context.js';
 import { bindHashState } from './trailer-scroller/hashState.js';
 import { bindShareModal } from './trailer-scroller/shareModal.js';

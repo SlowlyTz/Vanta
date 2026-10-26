@@ -1,3 +1,4 @@
+// Watch-party hub methods: the open sockets per party and user, and sending to them.
 export const connectionRegistryMethods = {
   registerConnection(partyId, userId, ws) {
     if (!this.connectionsByParty.has(partyId)) this.connectionsByParty.set(partyId, new Map());

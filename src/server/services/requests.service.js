@@ -1,14 +1,14 @@
+// Media requests: scope-aware duplicate checks, admin decisions and the
+// list of titles rejected for good.
 import db from '../db/database.js';
 import { TmdbService } from './tmdb.service.js';
 import { JellyfinCrossCheck } from './jellyfin-crosscheck.service.js';
 import { normalizeScopeSelection, toScopeInteger } from './request-scope.js';
-import fs from 'fs';
-import { writeFileAtomicSync } from '../utils/atomicWrite.js';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
+import { httpError } from '../utils/httpError.js';
+import { DB_DIR } from '../config/paths.js';
+import { createJsonStore } from '../utils/jsonStore.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
 const BANNED_FILE = join(DB_DIR, 'banned.json');
 
 const createRequest = db.prepare(`
@@ -32,36 +32,18 @@ const getBlockingRequests = db.prepare(`
 
 const emptyBannedList = () => ({ movies: [], series: [] });
 
-// The search route asks for the banned state twice per hit, up to 40 hits per keystroke.
-// Re-reading and re-parsing the file that often is pure waste; the cache is dropped again
-// whenever the file is written, and nothing outside this module writes it.
-let bannedListCache = null;
-
-const readBannedList = () => {
-  if (bannedListCache) return bannedListCache;
-
-  if (!fs.existsSync(BANNED_FILE)) return emptyBannedList();
-
-  try {
-    const parsed = JSON.parse(fs.readFileSync(BANNED_FILE, 'utf8'));
-    bannedListCache = {
-      movies: Array.isArray(parsed.movies) ? parsed.movies : [],
-      series: Array.isArray(parsed.series) ? parsed.series : []
-    };
-  } catch (error) {
-    // Never cache a failure: the cache is only dropped on a write, so one
-    // unreadable read would keep the list empty for the rest of the process.
-    console.warn('[Banned Requests] Could not read banned.json:', error.message);
-    return emptyBannedList();
-  }
-
-  return bannedListCache;
-};
-
-const writeBannedList = (list) => {
-  writeFileAtomicSync(BANNED_FILE, `${JSON.stringify(list, null, 2)}\n`, { encoding: 'utf8' });
-  bannedListCache = null;
-};
+// Titles an admin rejected for good (db/banned.json). The search asks for
+// them twice per hit, so the list stays in memory.
+const bannedTitles = createJsonStore(BANNED_FILE, {
+  empty: emptyBannedList,
+  parse: parsed => ({
+    movies: Array.isArray(parsed.movies) ? parsed.movies : [],
+    series: Array.isArray(parsed.series) ? parsed.series : []
+  }),
+  label: 'banned.json'
+});
+const readBannedList = () => bannedTitles.read();
+const writeBannedList = (list) => bannedTitles.write(list);
 
 const getBannedBucket = (tmdbType) => tmdbType === 'tv' ? 'series' : 'movies';
 
@@ -106,9 +88,7 @@ class RequestsService {
     });
 
     if (scopeError) {
-      const error = new Error(scopeError);
-      error.status = 400;
-      throw error;
+      throw httpError(400, scopeError);
     }
 
     const details = tmdbType === 'tv'
@@ -116,27 +96,21 @@ class RequestsService {
       : await TmdbService.getMovieDetails(tmdbId);
 
     if (!details || !details.id) {
-      const error = new Error('Medium konnte nicht in der Datenbank gefunden werden');
-      error.status = 502;
-      throw error;
+      throw httpError(502, 'Medium konnte nicht in der Datenbank gefunden werden');
     }
 
     if (this.isBanned(tmdbId, tmdbType)) {
-      const error = new Error('Dieses Medium wurde abgelehnt und kann nicht erneut angefragt werden');
-      error.status = 409;
-      throw error;
+      throw httpError(409, 'Dieses Medium wurde abgelehnt und kann nicht erneut angefragt werden');
     }
 
     const exists = this.exists(tmdbId, tmdbType, { scope, seasonNumber, episodeNumber });
     if (exists) {
-      const error = new Error('Diese Anfrage existiert bereits');
-      error.status = 409;
-      throw error;
+      throw httpError(409, 'Diese Anfrage existiert bereits');
     }
 
     const now = Date.now();
-    // Unchanged meaning: the TMDB season metadata of the whole series, never the
-    // user's selection — that lives in request_scope/season_number/episode_number.
+    // The TMDB season metadata of the whole series, never the user's
+    // selection; that lives in request_scope/season_number/episode_number.
     const seasonsJson = tmdbType === 'tv'
       ? JSON.stringify(details.seasons?.filter(s => s.season_number >= 0) || [])
       : '[]';
@@ -160,14 +134,13 @@ class RequestsService {
 
     const request = normalizeRequest({ id: result.lastInsertRowid, ...getRequestById.get(result.lastInsertRowid) });
 
-    // `details` sind die bereits geladenen TMDB-Daten (Jahr, Overview, ...), die nicht in der
-    // requests-Tabelle liegen. An den Aufrufer durchgereicht, statt sie später erneut zu laden
-    // (siehe discord-webhook.service.js, wird von requests.routes.js dafür genutzt).
+    // The TMDB details (year, overview) are not in the requests table; handed
+    // back so requests.routes.js can pass them to the Discord webhook.
     return { request, media: details };
   }
 
-  // Scope-aware duplicate check. Without a selection it answers the old question:
-  // is the whole title already requested?
+  // Scope-aware duplicate check; without a selection: is the whole title
+  // already requested?
   static exists(tmdbId, tmdbType, selection = {}) {
     const scope = selection.scope || 'all';
     const seasonNumber = toScopeInteger(selection.seasonNumber);
@@ -221,9 +194,7 @@ class RequestsService {
   static approve(id) {
     const request = this.getById(id);
     if (!request) {
-      const error = new Error('Anfrage nicht gefunden');
-      error.status = 404;
-      throw error;
+      throw httpError(404, 'Anfrage nicht gefunden');
     }
     if (request.status === 'approved') return request;
 
@@ -234,9 +205,7 @@ class RequestsService {
   static reject(id) {
     const request = this.getById(id);
     if (!request) {
-      const error = new Error('Anfrage nicht gefunden');
-      error.status = 404;
-      throw error;
+      throw httpError(404, 'Anfrage nicht gefunden');
     }
     if (request.status === 'rejected') return request;
 

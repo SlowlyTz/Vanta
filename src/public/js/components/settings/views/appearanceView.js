@@ -1,3 +1,5 @@
+// Settings view "Darstellung": TV mode of this device, screensaver, less motion
+// and the opening animation.
 import { createElement } from '../../../utils/dom.js';
 import { preferencesStore } from '../../../store/preferences.store.js';
 import { appStore } from '../../../store/app.store.js';
@@ -17,9 +19,7 @@ export const appearanceStatus = (prefs, tvChoice = getTvChoice()) => {
 // A phone has no use for a screensaver (its button is hidden there too).
 const isPhone = () => window.matchMedia?.('(pointer: coarse) and (max-width: 768px)').matches === true;
 
-// "Darstellung": the TV mode of this device, the screensaver, less motion
-// and the opening animation, in one list. Further rows come from `extraRows`.
-export function createAppearanceView({ onStatus = () => {}, extraRows = () => [] } = {}) {
+export function createAppearanceView({ onStatus = () => {} } = {}) {
   const element = createElement('div', { className: 'settings-view' });
 
   const save = (patch) => {
@@ -70,7 +70,6 @@ export function createAppearanceView({ onStatus = () => {}, extraRows = () => []
       after.element.hidden = true;
     }
     element.replaceChildren(
-      ...extraRows(),
       settingsCard(null,
         tvRow.element,
         screensaver.element,

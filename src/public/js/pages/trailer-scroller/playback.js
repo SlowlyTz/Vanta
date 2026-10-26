@@ -1,3 +1,5 @@
+// Trailer scroller: activating a slide, scrolling to it and syncing its YouTube player.
+
 import { setActiveIndex, getVisibleRange, shouldLoadMore } from '../trailer-scroller.state.js';
 
 // Only the trailer in view has a player. Neighbours kept warm as their own
@@ -58,7 +60,7 @@ export function bindPlayback(ctx) {
       if (ctx.state.trailers[i]) visibleIds.add(ctx.getContainerId(i));
     }
 
-    // Tearing down first means a failing creation below can no longer leave stale players alive.
+    // Tear down first so a failing creation below cannot leave stale players alive.
     for (const [containerId] of ctx.playerManager.players) {
       if (!visibleIds.has(containerId)) {
         ctx.playerManager.destroy(containerId);
@@ -75,8 +77,7 @@ export function bindPlayback(ctx) {
     await ensurePlayer(activeIndex, runId);
     if (ctx.isDestroyed || runId !== ctx.syncPlayersRunId) return;
 
-    // Neighbours are warmed up without awaiting them. A neighbour that never reports back used
-    // to stall this loop and starve the active slide of its player.
+    // Neighbours are not awaited: one that never reports back must not starve the active slide.
     for (let i = start; i < end; i++) {
       if (i === activeIndex) continue;
       ensurePlayer(i, runId).catch(error => {

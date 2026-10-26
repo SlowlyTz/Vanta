@@ -1,15 +1,10 @@
-import { getTopModal } from '../utils/modal.js';
-import { isTypingTarget, normalizeKey } from './keys.js';
-import { prefersReducedMotion } from '../utils/motion.js';
-
 // Spatial navigation for TV remotes: the arrow keys move the focus to the
-// nearest element in that direction. Rows ([data-tv-row]) keep left/right
-// inside themselves, columns ([data-tv-column]) hold up/down; both remember
-// their last focus, so one lands where one left them. Groups
-// ([data-tv-group], the sidebar and the content) remember theirs too. An
-// open dialog keeps the focus inside it. The focus of each page is
-// remembered and comes back with "Zurück"; a page opened anew starts at
-// its top.
+// nearest element that way. Rows, columns and groups remember their last
+// focus, and each page's focus comes back with "Zurück".
+import { directionalScore } from '../shared/focusGeometry.js';
+import { getTopModal } from '../utils/modal.js';
+import { isTypingTarget, normalizeKey } from '../shared/remoteKeys.js';
+import { prefersReducedMotion } from '../utils/motion.js';
 
 const FOCUSABLE = 'a[href], button, input, select, textarea, [data-tv-focusable], [tabindex="0"]';
 const FOCUS_CLASS = 'tv-focus';
@@ -40,26 +35,6 @@ export function isFocusable(element) {
 export const focusKeyOf = element => element?.dataset?.tvKey || element?.dataset?.itemId || element?.id
   || element?.closest?.('[data-item-id]')?.dataset.itemId || null;
 
-// How far `to` lies from `from` in the direction; Infinity when not that way.
-// Measured from the edges, the offset across counts double, and overlapping
-// on the cross axis wins over sitting diagonally.
-export function directionalScore(from, to, direction) {
-  let along;
-  let crossGap;
-  if (direction === 'left' || direction === 'right') {
-    along = direction === 'right' ? to.left - from.right : from.left - to.right;
-    crossGap = Math.max(0, Math.max(from.top, to.top) - Math.min(from.bottom, to.bottom));
-    if (along < -Math.min(from.width, to.width) / 2) return Infinity;
-  } else {
-    along = direction === 'down' ? to.top - from.bottom : from.top - to.bottom;
-    crossGap = Math.max(0, Math.max(from.left, to.left) - Math.min(from.right, to.right));
-    if (along < -Math.min(from.height, to.height) / 2) return Infinity;
-  }
-  const fromCenter = direction === 'left' || direction === 'right' ? (from.top + from.bottom) / 2 : (from.left + from.right) / 2;
-  const toCenter = direction === 'left' || direction === 'right' ? (to.top + to.bottom) / 2 : (to.left + to.right) / 2;
-  const overlapBonus = crossGap === 0 ? 0 : 1000;
-  return Math.max(0, along) + 2 * crossGap + overlapBonus + Math.abs(fromCenter - toCenter) * 0.1;
-}
 
 // The nearest ancestor that scrolls sideways (a row of cards), if any.
 function horizontalScroller(element) {
@@ -308,11 +283,10 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
     return false;
   }
 
-  // Puts the focus on the page: where it was, else its start. While the
-  // remembered element may still be loading (`waitForKey`), and while the
-  // content has nothing to focus, it does nothing and says so (the caller
-  // tries again). `fallback` lets an empty page hand the focus to the sidebar;
-  // a `fresh` page starts at its top whatever was focused there before.
+  // Puts the focus on the page: where it was, else its start. Returns false
+  // while the remembered element may still load (`waitForKey`) or nothing is
+  // focusable, so the caller retries. `fallback` lets an empty page hand the
+  // focus to the sidebar; a `fresh` page starts at its top.
   function restore(hash = doc.defaultView?.location.hash || '', { waitForKey = false, fallback = false, fresh = false } = {}) {
     const key = fresh ? null : routeMap()[visitOf(hash)];
     const content = doc.getElementById('main-content');
@@ -354,7 +328,6 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
   };
 }
 
-// Wires the engine to the keyboard and the router.
 // Whether left/right still has room inside a text field. Fields without a
 // readable caret (number, email) and textareas keep the keys.
 function caretCanMove(field, direction) {
@@ -371,6 +344,7 @@ function caretCanMove(field, direction) {
   return direction === 'left' ? end > 0 : start < String(field.value || '').length;
 }
 
+// Wires the engine to the keyboard and the router.
 export function bindFocusEngine(engine, { win = window, openKeyboard = null, openActions = null } = {}) {
   // One step per frame: a held arrow key repeats faster than a TV can lay out.
   let stepPending = false;

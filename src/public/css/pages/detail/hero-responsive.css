@@ -1,3 +1,4 @@
+/* Detail page hero on smaller screens. */
 @media (max-width: 992px) {
   .detail-page {
     --detail-hero-height: 0px;

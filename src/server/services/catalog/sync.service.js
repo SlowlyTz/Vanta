@@ -1,8 +1,9 @@
+// Syncs the Jellyfin catalogue into the local mirror database and reports what changed.
+import { normalizeKey as normalizeText } from '../../utils/text.js';
+
 // Below this share of the current catalogue a full sync refuses to delete: a
 // half-answered or empty Jellyfin response must never wipe the mirror.
 const MIN_RETAIN_RATIO = 0.5;
-
-export const normalizeText = (value) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 // Two lines per run: what changed, and what the library holds now. Shared by
 // the server log and the `npm run refresh` command.
@@ -50,9 +51,8 @@ const withoutPeople = (item) => {
 const changeKey = (data, peopleIds) => `${data}|${peopleIds}`;
 const peopleKeyOf = (item) => peopleOf(item).map(person => person.Id).sort().join(',');
 
-// Fields the mirror started to read later. A stored title without one gets
-// it filled in quietly instead of counting as changed, so the first run
-// after an update does not report (and notify about) the whole library.
+// Fields added to the mirror after titles were stored: a title missing one is filled in quietly
+// instead of counting as changed, so the next run does not notify about the whole library.
 const BACKFILLED_FIELDS = ['DateLastMediaAdded'];
 
 const withoutFields = (item, fields) => {
@@ -94,10 +94,8 @@ const toRow = (item, syncedAt) => ({
 
 const ROW_COLUMNS = Object.keys(toRow({ Id: '', Type: 'Movie', Name: '' }, 0));
 
-// `afterRun` receives the record and the items a successful run added or
-// updated (all of them as `items`, and split into `added` and `updated`),
-// how many titles the catalogue held before and when the previous successful
-// run started; it runs detached so a slow hook never delays the sync.
+// `afterRun` gets the record, the changed items (`items`, split into `added`/`updated`),
+// `previousCount` and `previousSuccessAt`; it runs detached so a slow hook never delays the sync.
 export function createCatalogSync({ db, source, now = Date.now, log = console, afterRun = null }) {
   const statements = {
     existing: db.prepare('SELECT id, data FROM catalog_items'),
@@ -241,7 +239,7 @@ export function createCatalogSync({ db, source, now = Date.now, log = console, a
     if (!afterRun) return;
     Promise.resolve()
       .then(() => afterRun({ record, ...details }))
-      .catch(error => log.warn?.(`[CatalogSync] afterRun fehlgeschlagen: ${error.message}`));
+      .catch(error => log.warn?.(`[CatalogSync] afterRun failed: ${error.message}`));
   };
 
   // An update run takes over a running one (a full run covers it). A full
@@ -266,7 +264,7 @@ export function createCatalogSync({ db, source, now = Date.now, log = console, a
         if (Number.isFinite(snapshot.episodeCount)) writeMeta('library', { episodes: snapshot.episodeCount });
         Object.assign(record, stats, { total: statements.countItems.get().count, library: libraryCounts() });
 
-        if (stats.removalSkipped) log.warn(`[CatalogSync] Löschung übersprungen: ${stats.removalSkipped}`);
+        if (stats.removalSkipped) log.warn(`[CatalogSync] removal skipped: ${stats.removalSkipped}`);
       } catch (error) {
         record.error = error.message || String(error);
         log.error(`[CatalogSync] ${type} run failed:`, error.message);

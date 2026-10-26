@@ -1,6 +1,4 @@
-/* ---------------------------------
-   DETAIL PAGE
---------------------------------- */
+/* Detail page hero: backdrop, poster, title, facts and actions. */
 .detail-page {
   --detail-hero-height: clamp(600px, 76vh, 700px);
   position: relative;

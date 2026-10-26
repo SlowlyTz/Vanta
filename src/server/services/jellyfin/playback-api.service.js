@@ -1,6 +1,9 @@
+// Jellyfin playback API: PlaybackInfo, stream fetches for the proxy, encoding stop,
+// playback reports and played state.
 import { AUTH_HEADER_NAME, JELLYFIN_BASE_URL, deviceIdForToken, getAuthHeader, jellyfinFetch, jellyfinJson } from './client.js';
 import { buildBrowserDeviceProfile } from './fields.js';
 import { detectTv } from '../../../public/js/shared/tvDetect.js';
+import { httpError } from '../../utils/httpError.js';
 
 export const PLAYBACK_HEADER_TIMEOUT_MS = 45 * 1000;
 
@@ -75,9 +78,7 @@ export class PlaybackApiService {
       return await fetch(url, { method: 'GET', headers, signal: controller.signal });
     } catch (error) {
       if (!timedOut) throw error;
-      const timeoutError = new Error(`Jellyfin did not answer ${url.pathname} within ${headerTimeoutMs} ms`);
-      timeoutError.status = 504;
-      throw timeoutError;
+      throw httpError(504, `Jellyfin did not answer ${url.pathname} within ${headerTimeoutMs} ms`);
     } finally {
       clearTimeout(timer);
     }
@@ -103,9 +104,7 @@ export class PlaybackApiService {
     }[event];
 
     if (!endpoint) {
-      const error = new Error(`Unsupported playback report event: ${event}`);
-      error.status = 400;
-      throw error;
+      throw httpError(400, 'Unbekannte Wiedergabe-Meldung');
     }
 
     return jellyfinFetch(endpoint, {

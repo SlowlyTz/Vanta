@@ -1,7 +1,7 @@
-import { episodeHeadingCode } from '../shared/episodeCode.js';
-
 // Title and subtitle for the player's top bar: a series episode shows the
 // series as the title and "S1 · F3 · Episode name" below it.
+import { episodeHeadingCode } from '../shared/episodeCode.js';
+
 export function playerHeading(item) {
   if (!item) return { title: '', subtitle: '' };
   if (item.Type === 'Episode' && item.SeriesName) {

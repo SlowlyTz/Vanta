@@ -1,6 +1,4 @@
-/* ---------------------------------
-   4. STATUS BADGES
-   --------------------------------- */
+/* Request status badges. */
 .request-status {
   padding: 3px 10px;
   border-radius: var(--radius-sm);

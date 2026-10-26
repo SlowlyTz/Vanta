@@ -1,7 +1,5 @@
-// Jellyfin's parental control, applied to the catalogue mirror the way
-// Jellyfin applies it to its own queries: a title above the account's age
-// limit is hidden, and so is an unrated one of a kind the account blocks
-// unrated titles of (BlockUnratedItems, apart from any age limit).
+// Jellyfin's parental control for the catalogue mirror: titles above the account's age limit
+// are hidden, and so are unrated titles of a type listed in BlockUnratedItems.
 
 // FSK age from a rating as Jellyfin stores it ("FSK-12", "DE-16", "12"),
 // with the usual US ratings mapped; null when unknown.

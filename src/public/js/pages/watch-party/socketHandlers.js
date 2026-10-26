@@ -1,3 +1,5 @@
+// Watch party join and WebSocket message handling; moves the page into the party's phase.
+
 import { WatchPartyApi } from '../../api/watch-party.api.js';
 import { createWatchPartySocket } from '../../realtime/watch-party.socket.js';
 import { appStore } from '../../store/app.store.js';

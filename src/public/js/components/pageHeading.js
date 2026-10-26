@@ -1,3 +1,4 @@
+// Page title with a decorative rule and an optional subtitle.
 import { createElement } from '../utils/dom.js';
 
 export function PageHeading({ title, subtitle = null }) {

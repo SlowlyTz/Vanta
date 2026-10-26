@@ -1,11 +1,5 @@
-// Brute-force brake for the login. Failed attempts are counted per IP and
-// username together (so nobody can lock a real user out from elsewhere) and,
-// more generously, per IP alone (so one address cannot try many usernames).
-// Every third failure locks the key: 1 minute, then twice as long each time,
-// up to 24 hours. A day without failures after the last lock, or a
-// successful login, starts over.
-// Locked attempts never reach Jellyfin, which keeps its own per-user lockout
-// from tripping.
+// Brute-force brake for the login. Locked attempts never reach Jellyfin, so
+// its own per-user lockout does not trip.
 const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 
@@ -18,6 +12,9 @@ export const LOGIN_THROTTLE_DEFAULTS = {
   maxEntries: 10000
 };
 
+// Failures count per IP and username (nobody locks a real user out from
+// elsewhere) and, more generously, per IP alone. Each lock doubles, 1 minute
+// up to 24 hours; a quiet day after the last lock or a success starts over.
 export function createLoginThrottle({ now = () => Date.now(), ...options } = {}) {
   const config = { ...LOGIN_THROTTLE_DEFAULTS, ...options };
   const entries = new Map(); // key -> { failures, locks, lockedUntil, lastFailureAt }

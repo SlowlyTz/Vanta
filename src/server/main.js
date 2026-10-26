@@ -1,3 +1,4 @@
+// Server process: HTTP server, WebSockets, background jobs and shutdown.
 import http from 'http';
 import app from './app.js';
 import env from './config/env.js';
@@ -11,6 +12,8 @@ import { createShutdown } from './shutdown.js';
 import { rejectUnknownUpgrades } from './realtime/hardening.js';
 import { NotificationTriggers } from './services/notification-triggers.js';
 import { KnownUsersService } from './services/known-users.service.js';
+import { startWatchPartyCleanup } from './services/watch-party.service.js';
+import { watchPartySocketHub } from './realtime/watch-party.socket.js';
 
 const PORT = env.PORT || 3000;
 const server = http.createServer(app);
@@ -41,10 +44,13 @@ getCatalog()
   })
   .catch(error => console.error('[Catalog] could not start the catalogue sync:', error.message));
 
+// Parties nobody is in any more end; the hub drops their timers and sockets.
+const partyCleanup = startWatchPartyCleanup({ onRemoved: partyId => watchPartySocketHub.forgetParty(partyId) });
+
 const shutdown = createShutdown({
   server,
   socketServers: [appSockets, watchPartySockets],
-  stopJobs: [() => catalogScheduler?.stop()],
+  stopJobs: [() => catalogScheduler?.stop(), () => clearInterval(partyCleanup)],
   flushes: [flushDatabase, () => sessionStore.close()]
 });
 process.on('SIGINT', () => shutdown('SIGINT'));

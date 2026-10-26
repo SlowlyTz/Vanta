@@ -96,7 +96,7 @@ describe('update script', () => {
   it('leaves a checkout alone that is not plain main', () => {
     pushCommit({ 'app.txt': 'v2' });
     write(server, 'app.txt', 'edited here');
-    expect(update()).toMatchObject({ status: 'skipped', reason: expect.stringContaining('lokale Änderungen') });
+    expect(update()).toMatchObject({ status: 'skipped', reason: expect.stringContaining('local changes') });
     git(server, 'checkout', '-q', '--', 'app.txt');
 
     git(server, 'checkout', '-q', '-b', 'feature');
@@ -111,7 +111,7 @@ describe('update script', () => {
 
     const result = update();
 
-    expect(result).toMatchObject({ status: 'skipped', reason: expect.stringContaining('Update nicht übernommen') });
+    expect(result).toMatchObject({ status: 'skipped', reason: expect.stringContaining('update not applied') });
     expect(git(server, 'rev-parse', 'HEAD')).toBe(before);
     expect(fs.readFileSync(path.join(server, 'new.txt'), 'utf8')).toBe('made here');
     expect(trace()).toEqual([]);

@@ -1,3 +1,5 @@
+// Watch-party member colour and status for the settings flyout.
+
 import { playbackStateLabel } from '../../public/js/shared/partyStatus.js';
 
 export { memberHue } from '../../public/js/shared/members.js';

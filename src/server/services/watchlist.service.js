@@ -1,6 +1,8 @@
+// "Meine Liste": a user's saved movies and series (watchlist table).
 import db from '../db/database.js';
 import { jellyfinJson } from './jellyfin/client.js';
 import { COMMON_ITEM_FIELDS } from './jellyfin/fields.js';
+import { httpError } from '../utils/httpError.js';
 
 const LISTABLE_TYPES = new Set(['Movie', 'Series']);
 export const MAX_ENTRIES = 500;
@@ -17,7 +19,6 @@ const countRows = db.prepare('SELECT COUNT(*) AS n FROM watchlist WHERE user_id 
 const deleteRow = db.prepare('DELETE FROM watchlist WHERE user_id = ? AND item_id = ?');
 const deleteAllRows = db.prepare('DELETE FROM watchlist WHERE user_id = ?');
 
-const fail = (status, message) => Object.assign(new Error(message), { status });
 
 // A film comes off the list once it was watched to the end after it was
 // added (a film added for a rewatch stays until then). Series stay until the
@@ -28,9 +29,8 @@ export function isFinishedSinceAdded(item, addedAt) {
   return Number.isFinite(lastPlayed) && lastPlayed > addedAt;
 }
 
-// "Meine Liste" of a user. The items come from Jellyfin with the user's own
-// token, so their progress is current; anything Jellyfin no longer shows the
-// user (deleted, or out of their libraries) comes off the list.
+// Items come from Jellyfin with the user's own token, so progress is current;
+// anything Jellyfin no longer shows the user comes off the list.
 export function createWatchlistService({ fetchJson = jellyfinJson, now = () => Date.now() } = {}) {
   return {
     ids(userId) {
@@ -69,13 +69,13 @@ export function createWatchlistService({ fetchJson = jellyfinJson, now = () => D
       try {
         item = await fetchJson(`/Users/${userId}/Items/${itemId}`, { token });
       } catch (error) {
-        if (error.status === 404 || error.status === 400) throw fail(404, 'Titel nicht gefunden');
+        if (error.status === 404 || error.status === 400) throw httpError(404, 'Titel nicht gefunden');
         throw error;
       }
-      if (!LISTABLE_TYPES.has(item?.Type)) throw fail(400, 'Nur Filme und Serien passen auf die Liste');
+      if (!LISTABLE_TYPES.has(item?.Type)) throw httpError(400, 'Nur Filme und Serien passen auf die Liste');
       // Already on it: nothing to add, even on a full list.
       if (hasRow.get(userId, item.Id)) return { id: item.Id, type: item.Type };
-      if (countRows.get(userId).n >= MAX_ENTRIES) throw fail(409, 'Deine Liste ist voll');
+      if (countRows.get(userId).n >= MAX_ENTRIES) throw httpError(409, 'Deine Liste ist voll');
       insertRow.run(userId, item.Id, item.Type, now());
       return { id: item.Id, type: item.Type };
     },

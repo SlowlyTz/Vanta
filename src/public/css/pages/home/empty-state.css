@@ -1,6 +1,4 @@
-/* ---------------------------------
-   HOME SECTION LOADING STATE
-   --------------------------------- */
+/* Loading state of a home page section. */
 .media-section-loading {
   overflow: visible;
 }

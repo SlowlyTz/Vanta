@@ -1,3 +1,7 @@
+// Production build of the web app: bundles the stylesheets linked from
+// index.html (in that order) and the ES modules behind app.js into hashed
+// files under dist/, split at the dynamic route imports.
+
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -11,11 +15,9 @@ const pageStyleBundles = fs.readdirSync(path.join(appRoot, 'css/bundles'))
   .filter(file => file.endsWith('.css'))
   .map(file => file.replace(/\.css$/, ''));
 
-// Production build of the web app: bundles the stylesheets linked from
-// index.html (in that order) and the ES modules behind app.js into hashed
-// files under dist/, split at the dynamic route imports. The player and the
-// opening scene have their own configs (src/player, src/intro) and keep their
-// fixed /vendor paths, which the app loads by string at runtime.
+// The player (src/player/vite.config.js) and the intro and countdown scenes
+// (src/scenes.vite.config.js) have their own builds and keep their fixed
+// /vendor paths, which the app loads by string at runtime.
 export default defineConfig({
   root: appRoot,
   publicDir: false,

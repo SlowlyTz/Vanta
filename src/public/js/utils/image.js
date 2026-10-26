@@ -1,3 +1,5 @@
+// Image URLs for media items and people: sized renditions, srcsets and SVG
+// placeholders.
 import { MediaApi } from '../api/media.api.js';
 
 const POSTER_WIDTH = 400;
@@ -30,7 +32,7 @@ const imageUrl = (id, imageType, width, tag = null) => {
 function resolveImageSource(item, type) {
   const source = (id, imageType, wide, tag = null) => ({ id, imageType, wide, tag });
 
-  // 1. Direct tag checks
+  // Direct tags first.
   if (type === 'Primary') {
     if (item.Type === 'Episode' && item.SeriesPrimaryImageTag && item.SeriesId) {
       return source(item.SeriesId, 'Primary', false, item.SeriesPrimaryImageTag);
@@ -59,35 +61,30 @@ function resolveImageSource(item, type) {
     if (item.ParentBackdropImageTags && item.ParentBackdropImageTags.length > 0 && item.ParentBackdropItemId) {
       return source(item.ParentBackdropItemId, 'Backdrop', true, item.ParentBackdropImageTags[0]);
     }
-    // Try Series Backdrop if it is an episode/season
     if (item.SeriesId) {
       return source(item.SeriesId, 'Backdrop', true);
     }
   }
 
-  // Check generic types
   if (item.ImageTags && item.ImageTags[type]) {
     return source(item.Id, type, type === 'Backdrop', getTag(item, type));
   }
 
-  // 2. Generic fallbacks (e.g. Episode without poster gets Series poster or Episode backdrop)
+  // Fallbacks without a tag: the series or parent poster, or for a wide card
+  // the item's own Primary or its parent's backdrop.
   if (type === 'Primary') {
-    // Try Series Primary
     if (item.SeriesId) {
       return source(item.SeriesId, 'Primary', false, item.SeriesPrimaryImageTag);
     }
-    // Try Parent ID
     if (item.ParentId) {
       return source(item.ParentId, 'Primary', false);
     }
   }
 
   if (type === 'Backdrop') {
-    // Try Primary
     if (item.ImageTags && item.ImageTags.Primary) {
       return source(item.Id, 'Primary', true, getTag(item, 'Primary'));
     }
-    // Try Parent Backdrop
     if (item.ParentBackdropItemId) {
       return source(item.ParentBackdropItemId, 'Backdrop', true, item.ParentBackdropImageTags?.[0]);
     }
@@ -101,7 +98,7 @@ export function getItemImageUrl(item, type = 'Primary') {
 
   const source = resolveImageSource(item, type);
   if (!source) {
-    // 3. SVG dynamic placeholder
+    // No image anywhere: an SVG placeholder with the title.
     return createPlaceholderSvg(item.Name || 'Medien', type);
   }
 

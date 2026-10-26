@@ -1,3 +1,4 @@
+/* Trailer scroller: title, meta chips, overview and player status of a slide. */
 .trailer-info {
   display: flex;
   min-width: 0;

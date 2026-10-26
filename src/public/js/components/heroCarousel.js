@@ -1,3 +1,4 @@
+// The rotating recommendation banner at the top of the home page.
 import { createElement } from '../utils/dom.js';
 import { createMetaIcon } from './metaIcons.js';
 import { getItemImageUrl, getBackdropUrlFor, cssUrl } from '../utils/image.js';
@@ -9,8 +10,6 @@ const SLIDE_INTERVAL = 8000;
 
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
-
-
 
 function getHeroLogoUrl(item) {
   if (!item?.ImageTags?.Logo) return null;
@@ -25,12 +24,9 @@ function createMetaPill({ className, icon, text }) {
   );
 }
 
-// The rotating banner on the home page. It moves on every eight seconds, but
-// never while the pointer is over it, while focus is inside it, while the tab
-// is hidden, after the pause button, or at all when the system asks for
-// reduced motion. Slides that are not shown are inert, so neither Tab nor a
-// screen reader lands on their buttons, and a backdrop is only loaded once its
-// slide is next.
+// Advances every SLIDE_INTERVAL, but not while hovered, focused, hidden, paused
+// or under reduced motion. Hidden slides are inert so Tab and screen readers skip
+// them, and a backdrop loads only once its slide is next.
 export function HeroCarousel({ items = [], pageScope = null }) {
   if (!items || items.length === 0) return null;
 
@@ -248,9 +244,8 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     document.removeEventListener('visibilitychange', onVisibilityChange);
   }
 
-  // TV: the hero stands still, the remote turns it. Right on its last
-  // button shows the next title (after the last one the first again); left
-  // always leads to the sidebar. A counter says where in the row one is.
+  // TV: the hero stands still and the remote turns it. Right on the last button
+  // shows the next title (wrapping around); left is left to the focus engine.
   if (document.documentElement.classList.contains('tv-mode') && slidesData.length > 1) {
     container.addEventListener('keydown', (event) => {
       const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;

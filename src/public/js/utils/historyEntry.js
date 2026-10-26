@@ -1,3 +1,5 @@
+// In-app link handling around the browser history.
+
 // An overlay that answers the browser's Back (a phone's settings area, the
 // navigation drawer) pushes a history entry of its own. A link out of it
 // must take that entry away first: following the link at once and going back

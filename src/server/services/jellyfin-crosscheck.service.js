@@ -1,5 +1,8 @@
-import { LibraryService } from './jellyfin/library.service.js';
+// Whether a TMDB title is already in the user's Jellyfin library, down to the
+// seasons and episodes of a series.
+import { LibraryService } from './browse/library.service.js';
 import { ItemsService } from './jellyfin/items.service.js';
+import { normalizeKey as normalizeTitle } from '../utils/text.js';
 
 const JELLYFIN_TYPE_BY_TMDB_TYPE = { movie: 'Movie', tv: 'Series' };
 // Regional premiere dates routinely differ from TMDB's release date by a year.
@@ -7,7 +10,7 @@ const YEAR_TOLERANCE = 1;
 
 const noMatch = () => ({ exists: false, jellyfinItems: [], jellyfinItemId: null });
 
-const normalizeTitle = (title) => String(title ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+
 
 const getYear = (value) => {
   const year = String(value ?? '').slice(0, 4);
@@ -76,8 +79,8 @@ class JellyfinCrossCheck {
 
     try {
       const jellyfinType = getJellyfinType(tmdbMedia, tmdbType);
-      // Without a type a movie and a series of the same name are indistinguishable,
-      // which is the bug this filter exists to prevent — so fail closed.
+      // Without a type a movie and a series of the same name are
+      // indistinguishable, so fail closed.
       if (!jellyfinType) return noMatch();
 
       const items = await LibraryService.search(userId, token, title);
@@ -126,7 +129,7 @@ class JellyfinCrossCheck {
         const available = [...(episodesBySeason.get(seasonNumber) || [])].sort((a, b) => a - b);
         const total = Number(tmdbS.episode_count) || 0;
         // Without an episode list (older Jellyfin, a failed call) a present
-        // season counts as complete, as before.
+        // season counts as complete.
         const complete = exists && (jellyfinEpisodes?.length ? total > 0 && available.length >= total : true);
 
         return {

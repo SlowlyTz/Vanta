@@ -1,3 +1,4 @@
+// Static files with their Cache-Control rules, and response compression.
 import express from 'express';
 import path from 'path';
 import compression from 'compression';

@@ -1,3 +1,4 @@
+// Security headers: helmet with the CSP from config/csp.js, plus Permissions-Policy.
 import helmet from 'helmet';
 import cspDirectives from '../config/csp.js';
 

@@ -1,3 +1,4 @@
+/* Imports of the watch-party page stylesheets, in cascade order. */
 @import './watch-party-countdown.css';
 @import './watch-party/layout.css';
 @import './watch-party/lobby.css';

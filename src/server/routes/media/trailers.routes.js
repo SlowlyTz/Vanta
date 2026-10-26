@@ -1,5 +1,6 @@
+// The trailer feed and setting or clearing an item as favourite.
 import express from 'express';
-import { TrailersService } from '../../services/jellyfin/trailers.service.js';
+import { TrailersService } from '../../services/browse/trailers.service.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 import { validateIdParam } from '../../utils/ids.js';

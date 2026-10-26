@@ -1,3 +1,6 @@
+// For the media context menu: the episode "Weiterschauen" starts for a
+// series, and taking a title out of "Weiter schauen" (with undo). Both
+// change what the cards show, so the progress cache starts over.
 import express from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
@@ -8,9 +11,6 @@ import { UserDataService } from '../../services/user-data.service.js';
 // An undo names the series or film it puts back; both must be item ids.
 const isValidUndo = (undo) => [undo?.seriesId, undo?.itemId].every(id => id === undefined || id === null || isValidId(String(id)));
 
-// For the media context menu: the episode "Weiterschauen" starts for a
-// series, and taking a title out of "Weiter schauen" (with undo). Both
-// change what the cards show, so the progress cache starts over.
 export function createResumeRouter({ service = ResumeService, userData = UserDataService } = {}) {
   const router = express.Router();
   router.param('id', validateIdParam);

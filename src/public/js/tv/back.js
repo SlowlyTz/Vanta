@@ -1,6 +1,7 @@
+// The remote's Back key in TV mode, and leaving the app.
 import { getTopModal } from '../utils/modal.js';
 import { confirmDialog } from '../components/confirmDialog.js';
-import { normalizeKey } from './keys.js';
+import { normalizeKey } from '../shared/remoteKeys.js';
 
 // Leaves VANTA the way the TV knows: Samsung's runtime ends the app, webOS
 // hands Back to the system. A plain browser tab cannot be closed by a page,
@@ -72,11 +73,9 @@ export function createBackHandler({
   };
 }
 
-// Back last: a dialog or the player's flyouts that handle the key themselves
-// stop it first (preventDefault and stopPropagation). webOS would otherwise
-// leave the app on its Back key. Inside the player, vidstack's controls call
-// preventDefault on every key without handling Back, so there a prevented key
-// that still arrives here is Back for the app.
+// Back runs last: dialogs and player flyouts that handle the key stop it
+// first, else webOS would leave the app. Inside the player vidstack prevents
+// every key without handling Back, so a prevented Back there is still ours.
 export function bindBackKey(back, win = window) {
   const onKeydown = event => {
     if (normalizeKey(event) !== 'back') return;

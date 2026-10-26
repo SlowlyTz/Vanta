@@ -1,3 +1,5 @@
+// Settings area of the admin page (#/admin/settings): a list whose entries
+// each open their page as a layer sliding in from the right.
 import { createElement } from '../../utils/dom.js';
 import { createSettingsGearIcon, createChevronIcon, createIcon } from '../../components/navbar/icons.js';
 import { createAdminDiscordPage } from './adminDiscordPage.js';
@@ -19,15 +21,12 @@ export const ADMIN_SETTINGS_TOOL = {
   icon: () => createSettingsGearIcon()
 };
 
-// Die Unterseiten der Einstellungen, in Listenreihenfolge.
+// The settings sub-pages, in list order.
 const PAGES = [
   { id: 'discord', title: 'Discord-Webhook', hint: 'Nachricht bei neuen Medienanfragen', icon: 'discord', create: createAdminDiscordPage },
   { id: 'catalog', title: 'Katalog', hint: 'Abgleich mit Jellyfin und Zeitplan', icon: 'catalog', create: createAdminCatalogPage }
 ];
 
-// Einstellungen-Bereich der Admin-Seite (#/admin/settings), aufgebaut wie die
-// Einstellungen am Handy: eine Liste, jeder Eintrag öffnet seine Seite als
-// Ebene, die von rechts hereinfährt und mit "Zurück" wieder hinaus.
 export function createAdminSettingsPanel() {
   let openLayer = null;
   let openPage = null;

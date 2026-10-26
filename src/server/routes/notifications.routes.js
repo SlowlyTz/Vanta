@@ -1,3 +1,4 @@
+// Notifications: menu counts, the bell feed, preferences and web push.
 import express from 'express';
 import { requireAuth, isFreshAdmin } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';

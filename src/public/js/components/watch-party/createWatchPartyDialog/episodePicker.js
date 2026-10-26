@@ -1,3 +1,4 @@
+// Watch party dialog: season tabs and episode list for a picked series, and the Back button.
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { formatEpisodeCode } from './context.js';

@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  createItemSnapshot,
-  getEffectivePosition,
-  getSyncLeaderUserId,
-  resolveAnchorTime,
-  serializeTimeline,
-  setTimeline
-} from '../../../../src/server/services/watch-party/helpers.js';
+import { getEffectivePosition, getSyncLeaderUserId, resolveAnchorTime, serializeTimeline, setTimeline } from '../../../../src/server/services/watch-party/timeline.js';
+import { createItemSnapshot } from '../../../../src/server/services/watch-party/itemSnapshot.js';
 
 describe('Watch-Party-Zeitleiste', () => {
   it('erhöht seq bei jeder Änderung und setzt Status und Anker', () => {

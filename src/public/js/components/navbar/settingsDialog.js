@@ -1,3 +1,5 @@
+// The settings dialog: a hub of areas (account, notifications, playback, look,
+// devices, admin) with a page each.
 import { createElement } from '../../utils/dom.js';
 import { bindSheetSwipe } from '../../utils/sheetSwipe.js';
 import {
@@ -35,12 +37,10 @@ function hubRow({ label, icon, onClick, status = null }) {
   return { element: button, setStatus: text => { statusEl.textContent = text || ''; } };
 }
 
-// The settings: a hub of areas (account, notifications, playback, look,
-// devices, admin) with a page each. A bottom sheet on phones, where an area
-// slides in over the hub; a dialog with the hub on the left and the open
-// area on the right on wide screens. On a TV a full screen of the areas that
-// make sense there (playback, look, the account), always side by side.
-export function createSettingsDialog({ onLogout, onChangePassword, extensions = {}, returnFocus = null }) {
+// Phones: a bottom sheet where an area slides in over the hub. Wide screens:
+// hub and open area side by side. TV: full screen, side by side, only the areas
+// that make sense there.
+export function createSettingsDialog({ onLogout, onChangePassword, returnFocus = null }) {
   const tv = document.documentElement.classList.contains('tv-mode');
   const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
   const { form: passwordForm, setStatus: setPasswordStatus } = createPasswordForm(onChangePassword);
@@ -75,8 +75,8 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   const views = {
     notifications: { title: 'Benachrichtigungen', view: createNotificationsView({ onStatus: text => rows.notifications.setStatus(text) }) },
     playback: { title: 'Wiedergabe', view: createPlaybackView({ onStatus: text => rows.playback.setStatus(text) }) },
-    appearance: { title: 'Darstellung', view: createAppearanceView({ onStatus: text => rows.appearance.setStatus(text), extraRows: extensions.appearanceRows }) },
-    devices: { title: 'Geräte', view: createDevicesView({ onStatus: text => rows.devices.setStatus(text), extraCards: extensions.deviceCards }) },
+    appearance: { title: 'Darstellung', view: createAppearanceView({ onStatus: text => rows.appearance.setStatus(text) }) },
+    devices: { title: 'Geräte', view: createDevicesView({ onStatus: text => rows.devices.setStatus(text) }) },
     password: { title: 'Passwort ändern', view: { element: passwordForm, refresh: () => {} } }
   };
 
@@ -341,9 +341,8 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   window.addEventListener('popstate', onPopState);
 
   // A link out of an area ("Code eingeben" → #/connect): the area's history
-  // entry goes first, then the page changes. Following the link at once and
-  // closing the dialog would go back from the new page again. Capture phase:
-  // before a link's own handler closes the dialog.
+  // entry goes first, else closing would go back from the new page again.
+  // Capture phase: before a link's own handler closes the dialog.
   settingsDialog.addEventListener('click', event => {
     const target = inAppLinkOf(event);
     if (!target) return;
@@ -360,9 +359,8 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
     if (settingsOpen) setSettingsView(isSplit() ? settingsView : 'root');
   });
 
-  // Focus, Escape, the backdrop click, the scroll lock and closing when the
-  // page is left all come from openModal; the backdrop stays in the DOM and
-  // is only shown and hidden.
+  // Focus, Escape, the scroll lock and closing when the page is left come from
+  // openModal; the backdrop stays in the DOM and is only shown and hidden.
   const setSettingsOpen = (open) => {
     if (settingsOpen === open) return;
 

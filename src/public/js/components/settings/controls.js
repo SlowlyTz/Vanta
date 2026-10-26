@@ -1,3 +1,4 @@
+// Building blocks of the settings views: switches, segmented and dropdown choices, cards and notes.
 import { createElement } from '../../utils/dom.js';
 
 let controlCounter = 0;
@@ -88,8 +89,7 @@ export function segmentedRow({ label, description = null, options, value, onChan
   return { element, set };
 }
 
-// The nearest ancestor that scrolls (the settings panel): the menu opens
-// upwards when there is no room for it below inside it.
+// The nearest ancestor that scrolls (the settings panel).
 function scrollParent(element) {
   for (let node = element.parentElement; node; node = node.parentElement) {
     const { overflowY } = window.getComputedStyle(node);
@@ -100,10 +100,8 @@ function scrollParent(element) {
 
 const CLOSE_MS = 160;
 
-// One choice out of many, as a dropdown: the label on the left, a box with
-// the current value on the right; the menu floats over the page with its own
-// open and close animation. Not a native <select>: its list cannot be
-// styled or animated, and TV browsers show it as a system overlay.
+// One choice out of many, as an animated dropdown. Not a native <select>: its
+// list cannot be styled or animated, and TV browsers show it as a system overlay.
 export function choiceRow({ label, description = null, options, value, onChange }) {
   let current = value;
   let open = false;

@@ -1,3 +1,4 @@
+// Watch party dialog: binds the parts in createWatchPartyDialog/ onto one shared context.
 import { createDialogContext } from './createWatchPartyDialog/context.js';
 import { bindSearch } from './createWatchPartyDialog/search.js';
 import { bindEpisodePicker } from './createWatchPartyDialog/episodePicker.js';

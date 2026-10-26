@@ -1,3 +1,4 @@
+// Password change form of the settings dialog; `onChangePassword` does the actual save.
 import { createElement } from '../../utils/dom.js';
 
 export function createPasswordForm(onChangePassword) {

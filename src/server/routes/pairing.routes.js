@@ -1,3 +1,4 @@
+// TV pairing by code: "Mit dem Handy anmelden" (TV) and "Fernseher verbinden" (phone).
 import express from 'express';
 import QRCode from 'qrcode';
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -18,7 +19,6 @@ export const pairingThrottle = createLoginThrottle();
 
 const ipOf = req => req.ip || req.socket?.remoteAddress || 'unknown';
 
-// "Mit dem Handy anmelden" (TV) and "Fernseher verbinden" (phone).
 // The page a phone opens from the QR code on the TV.
 export const connectUrl = (req, code) => `${req.protocol}://${req.get('host')}/#/connect?code=${encodeURIComponent(code)}`;
 

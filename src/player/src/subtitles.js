@@ -1,3 +1,6 @@
+// Subtitle tracks: labels, sort order, the remembered language and the
+// controller that switches between them.
+
 const OFF_ID = 'off';
 export const NO_SUBTITLES_LABEL = 'Keine Untertitel verfügbar';
 

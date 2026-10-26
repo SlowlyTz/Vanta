@@ -1,3 +1,5 @@
+// Keyboard, mouse wheel and click shortcuts of the player.
+
 import { seekTo } from '../seek.js';
 
 export const VOLUME_STEP = 0.05;

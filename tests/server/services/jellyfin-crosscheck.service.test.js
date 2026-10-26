@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../../src/server/services/jellyfin/library.service.js', () => ({
+vi.mock('../../../src/server/services/browse/library.service.js', () => ({
   LibraryService: {
     search: vi.fn()
   }
 }));
 
-vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({
+vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })),
   ItemsService: {
     getSeasons: vi.fn(),
     getEpisodes: vi.fn()
   }
 }));
 
-import { LibraryService } from '../../../src/server/services/jellyfin/library.service.js';
+import { LibraryService } from '../../../src/server/services/browse/library.service.js';
 import { ItemsService } from '../../../src/server/services/jellyfin/items.service.js';
 import { JellyfinCrossCheck } from '../../../src/server/services/jellyfin-crosscheck.service.js';
 

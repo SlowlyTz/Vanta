@@ -1,6 +1,4 @@
-/* ---------------------------------
-   SEARCH PAGE
-   --------------------------------- */
+/* Search page: the search field, filters, recent searches and results. */
 .search-container {
   display: flex;
   flex-direction: column;

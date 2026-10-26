@@ -1,3 +1,5 @@
+// Progress, "gesehen" and the next episode for the cards on screen:
+// GET /api/media/userdata?ids=a,b,c → { a: { played, progress, next, seriesProgress } }.
 import express from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
@@ -5,8 +7,6 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { UserDataService } from '../../services/user-data.service.js';
 import { ID_PATTERN } from '../../utils/ids.js';
 
-// Progress, "gesehen" and the next episode for the cards on screen:
-// GET /api/media/userdata?ids=a,b,c → { a: { played, progress, next, seriesProgress } }.
 export function createUserDataRouter({ service = UserDataService } = {}) {
   const router = express.Router();
 

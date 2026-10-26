@@ -1,6 +1,5 @@
-/* ---------------------------------
-   ACTOR DETAILS MODAL
---------------------------------- */
+/* Actor details modal (avatar, biography, known-for titles), plus the detail
+   page's season tabs, episode grid and similar titles. */
 .actor-modal-overlay {
   position: fixed;
   top: 0;

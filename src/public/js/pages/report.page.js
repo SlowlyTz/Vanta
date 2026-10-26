@@ -1,3 +1,5 @@
+// Report page: report a problem with a title in three steps (title, scope for
+// a series, problem); "Meine Meldungen" lists earlier reports with the admins' answer.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { ReportsApi } from '../api/reports.api.js';
@@ -17,9 +19,6 @@ const itemFromHash = () => {
   return new URLSearchParams(query).get('item');
 };
 
-// "Meldung": report a problem with a title in the library. Three steps on one
-// page — the title, what exactly (series only), what is wrong — then send.
-// "Meine Meldungen" lists earlier reports with the admins' answer.
 export default function ReportPage({ view = 'new' } = {}, pageScope) {
   const routeScope = resolvePageScope(pageScope);
   const { signal } = routeScope;

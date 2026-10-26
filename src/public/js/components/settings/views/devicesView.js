@@ -1,3 +1,4 @@
+// Settings view "Geräte": where the account is signed in; other devices can be signed out.
 import { createElement } from '../../../utils/dom.js';
 import { SessionsApi } from '../../../api/sessions.api.js';
 import { appStore } from '../../../store/app.store.js';
@@ -21,9 +22,7 @@ export function orderSessions(sessions) {
   return { current, others };
 }
 
-// "Geräte": where the account is signed in; other devices can be signed out.
-// `extraCards` adds e.g. "Fernseher verbinden".
-export function createDevicesView({ onStatus = () => {}, extraCards = () => [] } = {}) {
+export function createDevicesView({ onStatus = () => {} } = {}) {
   const element = createElement('div', { className: 'settings-view' });
   let sessions = null;
 
@@ -113,7 +112,6 @@ export function createDevicesView({ onStatus = () => {}, extraCards = () => [] }
           createElement('a', { className: 'settings-inline-button', href: '#/connect' }, 'Code eingeben')
         )
       ),
-      ...extraCards(),
       settingsCard('Angemeldete Geräte', ...(sessions === null ? [settingsNote('Wird geladen …')] : rows), endOthers)
     );
   };

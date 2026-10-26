@@ -1,3 +1,5 @@
+// Users area of the admin page: the filterable user list, with each user's
+// detail view opening as a modal.
 import { createElement } from '../../../utils/dom.js';
 import { createUsersManagementIcon } from '../../navbar/icons.js';
 import { AdminUsersApi } from '../../../api/admin-users.api.js';
@@ -9,10 +11,8 @@ import { createAdminUserDetailView } from './adminUserDetailView.js';
 import { EmptyState } from '../../emptyState.js';
 import { openAdminModal } from '../adminModal.js';
 
-// Baut eine Signatur aus allen in der Zeile sichtbaren Feldern. renderList()
-// vergleicht sie mit der zuletzt gerenderten, um bei unverändertem Ergebnis
-// (z.B. derselbe Suchbegriff erneut) das komplette Neuaufbauen der Liste zu
-// überspringen, statt bei jedem Tastendruck `innerHTML = ''` zu machen.
+// Signature of all fields visible in a row; renderList() skips the rebuild
+// when it matches the last rendered one (e.g. the same search term again).
 function buildListSignature(list) {
   return list
     .map(u => `${u.id}|${u.name}|${u.isAdmin}|${u.isBanned}|${u.isDisabled}|${u.activeStreams}|${u.maxConcurrentStreams}`)
@@ -88,21 +88,16 @@ export function createAdminUsersTool() {
     });
   };
 
-  // Der Filterbegriff kommt von der Suchleiste des Bereichs (adminHeader.js),
-  // die Eingaben bereits selbst entprellt. setFilter muss
-  // deshalb nicht erneut entprellen — nur das Ergebnis diffen (renderList).
+  // The search bar (adminHeader.js) already debounces, so this only diffs the
+  // result (renderList).
   const setFilter = (term = '') => {
     searchTerm = term || '';
     renderList();
   };
 
-  // Die Detailansicht öffnet als Modal über der Seite; die Liste bleibt
-  // dahinter stehen. Schließt der Nutzer das Modal, wird neu geladen, damit
-  // dort geänderte Namen, Badges und Stream-Limits sofort stimmen.
-  //
-  // Nach dem Speichern ersetzt load({ keepSelectedUserId }) das Modal durch
-  // eines mit frischen Daten. Dieses Ersetzen darf das Neuladen NICHT erneut
-  // auslösen — sonst schaukelt sich close -> load -> showDetail -> close auf.
+  // Closing the modal reloads the list so changed names, badges and limits show.
+  // After a save, load({ keepSelectedUserId }) replaces the modal with fresh
+  // data; that replacement must not reload again (close -> load -> showDetail loop).
   const showDetail = (user) => {
     if (openDetailModal) {
       replacingDetail = true;
@@ -159,8 +154,7 @@ export function createAdminUsersTool() {
       if (updatedSelectedUser) {
         showDetail(updatedSelectedUser);
       } else if (keepSelectedUserId && openDetailModal) {
-        // Der offene Nutzer existiert nicht mehr (z.B. gerade gelöscht) —
-        // das Modal muss weg, sonst steht dort ein toter Datensatz.
+        // The open user is gone (e.g. just deleted): close the stale modal.
         replacingDetail = true;
         openDetailModal.close();
         replacingDetail = false;
@@ -177,7 +171,7 @@ export function createAdminUsersTool() {
   };
 
   // Stops a reload that is still in flight from putting the detail view back on
-  // document.body after the page is gone. The page closes the overlays.
+  // document.body after the page is gone.
   const destroy = () => {
     destroyed = true;
     openDetailModal?.close();

@@ -1,3 +1,5 @@
+// Per-route page state and the return-from-detail marker, kept in
+// sessionStorage so going back can restore the page.
 const STATE_PREFIX = 'vantaRouteState:';
 const RETURN_MARKER_KEY = 'vantaReturnMarker';
 

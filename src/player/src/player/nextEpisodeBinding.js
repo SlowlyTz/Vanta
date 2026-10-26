@@ -1,3 +1,5 @@
+// Hooks the next-episode prompt into the player and the watch party.
+
 import {
   findNextEpisode,
   shouldShowNextEpisodePrompt,
@@ -5,7 +7,7 @@ import {
   nextEpisodeSkipAt,
   canStartNextEpisode,
   createNextEpisodeGate
-} from '../nextEpisode.js';
+} from '../../../public/js/shared/nextEpisode.js';
 import { createNextEpisodePrompt } from '../nextEpisodePrompt.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 import { findOutro } from '../segments.js';

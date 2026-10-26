@@ -1,8 +1,5 @@
-/* ---------------------------------
-   ADMIN · MODALS (Nutzer-Detail, Sperren, Löschen)
-   Dasselbe Glas wie der Einstellungen-Dialog; am Handy ein Sheet von unten.
-   Liegt unter den Toasts (components/toast.css), aber über der Navigation.
-   --------------------------------- */
+/* Admin modals (user detail, block, delete): settings-dialog glass, a bottom
+   sheet on phones. Below the toasts (components/toast.css), above the nav. */
 .admin-user-dialog-overlay {
   position: fixed;
   top: 0;
@@ -48,8 +45,7 @@
   outline: none;
 }
 
-/* Die Detailansicht liegt eine Ebene unter den Rückfragen, die aus ihr
-   heraus geöffnet werden. */
+/* The detail view sits one layer below the confirmations opened from it. */
 .admin-user-dialog-overlay.admin-user-dialog-detail {
   z-index: 4900;
 }

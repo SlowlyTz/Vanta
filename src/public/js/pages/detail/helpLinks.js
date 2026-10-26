@@ -1,3 +1,5 @@
+// Quiet links below a title's facts: report a problem with it and, for a
+// series, request seasons or episodes that are still missing.
 import { createElement } from '../../utils/dom.js';
 
 const FLAG_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4h11l-2 4 2 4H5"></path></svg>';
@@ -10,8 +12,6 @@ function link(href, icon, label, className) {
   return element;
 }
 
-// Quiet links below a title's facts: report a problem with it and, for a
-// series, request seasons or episodes that are still missing.
 export function buildHelpLinks(item) {
   if (item?.Type !== 'Movie' && item?.Type !== 'Series') return null;
 

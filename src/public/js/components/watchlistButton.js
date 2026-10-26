@@ -1,3 +1,5 @@
+// Button that adds or removes a title from "Meine Liste" and follows the list
+// when it changes elsewhere (a context menu, another card).
 import { createElement } from '../utils/dom.js';
 import { appStore } from '../store/app.store.js';
 import { watchlistStore } from '../store/watchlist.store.js';
@@ -7,9 +9,7 @@ export const BOOKMARK_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fi
 const PLUS_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
 const CHECK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
-// Adds or removes a title from "Meine Liste" and follows the list when it
-// changes elsewhere (a context menu, another card). `scope` ends the
-// subscription with the page.
+// `scope` ends the store subscription with the page.
 export function createWatchlistButton(item, { scope = null } = {}) {
   if (item?.Type !== 'Movie' && item?.Type !== 'Series') return null;
 

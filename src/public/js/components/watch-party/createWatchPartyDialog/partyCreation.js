@@ -1,3 +1,4 @@
+// Watch party dialog: confirming a picked title and creating the party.
 import { createElement } from '../../../utils/dom.js';
 import { WatchPartyApi } from '../../../api/watch-party.api.js';
 import { appStore } from '../../../store/app.store.js';

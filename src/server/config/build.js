@@ -1,3 +1,4 @@
+// The client build id (content hash) and the page style bundles injected into served HTML.
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';

@@ -1,3 +1,5 @@
+// Profile page: watch stats, then the user's lists as tabs. The tab lives in the
+// address (#/profile?tab=…) and is remembered; #/watchlist and #/favorites are aliases.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { WatchlistApi } from '../api/watchlist.api.js';
@@ -11,13 +13,6 @@ import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { getBackdropUrlFor } from '../utils/image.js';
 import { genreLabel } from '../shared/genreLabels.js';
-
-// The profile: a head with what one has watched, then one's lists as tabs
-// right under it (Weiter schauen, Meine Liste, Favoriten, Verlauf), the
-// chosen one whole as a grid. The tab is in the address
-// (#/profile?tab=watchlist), so Back and reloading keep it; the last one
-// chosen opens next time. #/watchlist and #/favorites are old addresses of
-// two of the tabs.
 
 const LIMIT = 24;
 const TAB_KEY = 'vanta.profile.tab';

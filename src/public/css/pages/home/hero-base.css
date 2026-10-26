@@ -1,6 +1,4 @@
-/* ---------------------------------
-   HOME PAGE (DASHBOARD)
---------------------------------- */
+/* Home page: the hero slideshow and the content rows beneath it. */
 :root {
   /* How far the first content-section row bleeds up into the hero (see
      `.home-hero + .content-section` below). */

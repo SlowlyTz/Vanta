@@ -1,3 +1,5 @@
+// Refreshes the catalogue mirror from Jellyfin: through the running server if one
+// answers, otherwise in this process (see services/catalog/refresh-cli.js).
 import env from '../src/server/config/env.js';
 import { openCatalogDb } from '../src/server/db/catalog.js';
 import { createJellyfinCatalogSource } from '../src/server/services/catalog/jellyfin-source.js';
@@ -26,6 +28,6 @@ try {
 
   process.exit(record.error ? 1 : 0);
 } catch (error) {
-  console.error(`[Catalog] Aktualisierung fehlgeschlagen: ${error.message}`);
+  console.error(`[Catalog] refresh failed: ${error.message}`);
   process.exit(1);
 }

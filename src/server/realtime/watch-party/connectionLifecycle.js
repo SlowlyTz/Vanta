@@ -1,3 +1,4 @@
+// Watch-party hub methods: a member's socket connecting and closing.
 import { WatchPartyService } from '../../services/watch-party.service.js';
 import { createNotification } from './notifications.js';
 
@@ -31,7 +32,7 @@ export const connectionLifecycleMethods = {
 
     this.sendTo(ws, {
       type: 'PARTY_STATE',
-      party: WatchPartyService.serializeParty(party, user.userId)
+      party: WatchPartyService.serializeParty(party)
     });
 
     if (!wasConnected) {

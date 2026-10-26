@@ -1,3 +1,5 @@
+// Per-user card data (progress, watched, next episode) for titles from the
+// shared catalogue, fetched from Jellyfin in bundles.
 import { jellyfinJson } from './jellyfin/client.js';
 
 const TTL_MS = 60 * 1000;

@@ -1,7 +1,7 @@
-/* Icon-Box, wie sie von createChatIcon()/createUsersManagementIcon() aus
-   navbar/icons.js gestempelt wird. Ehemals Teil des Kachel-Grids im
-   Einstellungen-Dialog; die Admin-Verwaltung ist inzwischen eine eigene
-   Seite (#/admin), die Icon-Box wird dort auf den Menükarten verwendet. */
+/* Admin tool icon box and the hidden admin option. */
+
+/* Icon box stamped by createChatIcon()/createUsersManagementIcon() in
+   navbar/icons.js, used on the admin menu cards. */
 .admin-tool-card-icon {
   flex: 0 0 auto;
   width: 36px;
@@ -12,7 +12,6 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-/* Admin option hidden state */
 .admin-option-container[hidden] {
   display: none;
 }

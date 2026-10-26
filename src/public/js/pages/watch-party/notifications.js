@@ -1,3 +1,5 @@
+// Watch party toast-style notification stack (actor avatar, icon, auto-dismiss).
+
 import { createElement } from '../../utils/dom.js';
 import { notificationIcon } from './helpers.js';
 import { memberHue, memberInitial } from '../../shared/members.js';

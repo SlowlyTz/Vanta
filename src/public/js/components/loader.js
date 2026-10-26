@@ -1,3 +1,4 @@
+// Spinner with a status label for loading sections, plus the aria-busy toggle.
 import { createElement } from '../utils/dom.js';
 
 export function createSectionLoader({ label = 'Lädt…', compact = false, className = '' } = {}) {

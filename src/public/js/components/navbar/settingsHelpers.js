@@ -1,3 +1,4 @@
+// Shared row for the settings dialog menus: icon, label and a chevron.
 import { createElement } from '../../utils/dom.js';
 import { createChevronIcon } from './icons.js';
 

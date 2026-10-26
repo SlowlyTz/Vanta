@@ -15,7 +15,6 @@ export function makeParty(overrides = {}) {
       { userId: 'owner-1', username: 'Alice', role: 'owner', ready: true, connected: true },
       { userId: 'viewer-1', username: 'Bob', role: 'viewer', ready: false, connected: true }
     ],
-    currentUserRole: null,
     ...overrides
   };
 }

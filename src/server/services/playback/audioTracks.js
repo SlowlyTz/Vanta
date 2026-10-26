@@ -1,3 +1,4 @@
+// Audio tracks of a media source as the player lists them, and picking one by language.
 import { getMediaStreams } from './mediaMetadata.js';
 
 const LANGUAGE_NAMES = {

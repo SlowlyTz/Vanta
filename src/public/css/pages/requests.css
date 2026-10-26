@@ -1,3 +1,4 @@
+/* Imports of the requests page styles, in cascade order. */
 @import './requests/status-badges.css';
 @import './requests/admin.css';
 @import './requests/pages.css';

@@ -1,3 +1,5 @@
+// Watch party lobby hero: backdrop, logo (or title), what is about to play and from where.
+
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { countdownMetaParts, formatPosition } from '../helpers.js';
@@ -9,8 +11,6 @@ export function episodeLabel(snapshot) {
   return episodeHeadingCode(snapshot?.seasonNumber, snapshot?.episodeNumber);
 }
 
-// The big picture of the lobby: backdrop, logo (or title), what exactly is
-// about to play and from where.
 export function createLobbyHero() {
   const backdrop = createElement('div', { className: 'watch-party-backdrop', 'aria-hidden': 'true' });
   const logo = createElement('img', { className: 'watch-party-hero-logo', alt: '', hidden: true, decoding: 'async' });

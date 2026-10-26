@@ -1,6 +1,4 @@
-/* ---------------------------------
-   ADMIN HEADER — Suchleiste eines Bereichs
-   --------------------------------- */
+/* Admin header: the search bar of an admin section. */
 .admin-header-bar {
   display: flex;
   align-items: center;
@@ -46,7 +44,7 @@
   color: var(--text-muted);
 }
 
-/* Eigener Leeren-Button ersetzt die nativen Suchfeld-Controls */
+/* Custom clear button replaces the native search field controls */
 .admin-header-search-input::-webkit-search-cancel-button,
 .admin-header-search-input::-webkit-search-decoration {
   appearance: none;

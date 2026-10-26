@@ -1,3 +1,5 @@
+// Detail view of one user in the admin user management: account, access, age
+// rating and stream fields saved together, plus ban and delete.
 import { createElement } from '../../../utils/dom.js';
 import { AdminUsersApi } from '../../../api/admin-users.api.js';
 import { openBanDialog, openDeleteDialog } from './adminUserDialogs.js';
@@ -75,7 +77,6 @@ export function createAdminUserDetailView(user, {
     )
   );
 
-  // Sperren und Löschen am Ende, abgesetzt als eigene Gruppe.
   const dangerRow = (title, hint, button) => createElement('div', { className: 'admin-user-danger-row' },
     createElement('span', { className: 'admin-user-danger-text' },
       createElement('strong', {}, title),

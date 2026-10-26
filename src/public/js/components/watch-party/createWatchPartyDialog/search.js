@@ -1,3 +1,4 @@
+// Watch party dialog: the media picker with suggestions and search results.
 import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { WatchPartyApi } from '../../../api/watch-party.api.js';

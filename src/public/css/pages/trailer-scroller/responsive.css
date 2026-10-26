@@ -1,3 +1,4 @@
+/* Trailer scroller on smaller screens and phones. */
 @media (max-width: 1080px) {
   .trailer-card {
     grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);

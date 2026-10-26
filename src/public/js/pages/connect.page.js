@@ -1,3 +1,5 @@
+// Connect page on the phone: confirms a TV sign-in by the code the TV shows
+// (typed in, or carried over by the TV's QR code link).
 import { createElement } from '../utils/dom.js';
 import { AuthApi } from '../api/auth.api.js';
 import { authStore } from '../store/auth.store.js';
@@ -13,8 +15,6 @@ export function formatCreated(timestamp, now = Date.now()) {
   return `um ${new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp))} Uhr`;
 }
 
-// "Fernseher verbinden" on the phone: the code the TV shows (or the QR code
-// leads here with it), which device waits, and the confirmation.
 export default function ConnectPage() {
   const initial = new URLSearchParams(window.location.hash.split('?')[1] || '').get('code') || '';
   const user = authStore.getState().user;

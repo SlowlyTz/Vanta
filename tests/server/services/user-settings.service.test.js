@@ -19,7 +19,7 @@ describe('UserSettingsService', () => {
 
   it('defaults maxConcurrentStreams to 1 when no settings.json exists', () => {
     expect(DEFAULT_MAX_CONCURRENT_STREAMS).toBe(1);
-    expect(service.getMaxConcurrentStreams('user-1')).toBe(1);
+    expect(service.getSettings('user-1').maxConcurrentStreams).toBe(1);
     expect(service.getSettings('user-1')).toEqual({ maxConcurrentStreams: 1 });
   });
 
@@ -38,12 +38,12 @@ describe('UserSettingsService', () => {
     expect(entry.updatedBy).toEqual({ userId: 'admin-1', username: 'admin' });
     expect(entry.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
-    expect(service.getMaxConcurrentStreams('user-1')).toBe(3);
+    expect(service.getSettings('user-1').maxConcurrentStreams).toBe(3);
   });
 
   it('allows 0 to mean no streaming permitted', () => {
     service.setMaxConcurrentStreams('user-1', 0);
-    expect(service.getMaxConcurrentStreams('user-1')).toBe(0);
+    expect(service.getSettings('user-1').maxConcurrentStreams).toBe(0);
   });
 
   it('rejects negative, non-integer or out-of-range values', () => {
@@ -54,19 +54,19 @@ describe('UserSettingsService', () => {
   });
 
   it('rejects writes without a userId', () => {
-    expect(() => service.setMaxConcurrentStreams(null, 1)).toThrow(/userId/i);
+    expect(() => service.setMaxConcurrentStreams(null, 1)).toThrow(/Kein Nutzer/);
   });
 
   it('does not affect settings for other users', () => {
     service.setMaxConcurrentStreams('user-1', 5);
-    expect(service.getMaxConcurrentStreams('user-2')).toBe(DEFAULT_MAX_CONCURRENT_STREAMS);
+    expect(service.getSettings('user-2').maxConcurrentStreams).toBe(DEFAULT_MAX_CONCURRENT_STREAMS);
   });
 
   it('falls back to the default instead of crashing on a corrupted settings.json', () => {
     fs.mkdirSync(dbDir, { recursive: true });
     fs.writeFileSync(join(dbDir, 'settings.json'), '{ not valid json', 'utf8');
 
-    expect(service.getMaxConcurrentStreams('user-1')).toBe(DEFAULT_MAX_CONCURRENT_STREAMS);
+    expect(service.getSettings('user-1').maxConcurrentStreams).toBe(DEFAULT_MAX_CONCURRENT_STREAMS);
   });
 
   it('falls back to the default when a stored value is invalid', () => {
@@ -77,6 +77,6 @@ describe('UserSettingsService', () => {
       'utf8'
     );
 
-    expect(service.getMaxConcurrentStreams('user-1')).toBe(DEFAULT_MAX_CONCURRENT_STREAMS);
+    expect(service.getSettings('user-1').maxConcurrentStreams).toBe(DEFAULT_MAX_CONCURRENT_STREAMS);
   });
 });

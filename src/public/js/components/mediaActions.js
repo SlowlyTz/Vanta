@@ -1,3 +1,6 @@
+// Context menu of a media card or the hero (long press, right click, menu key).
+// It opens at once from what the card shows and fills in its states once the
+// title's current data (progress, list) has arrived.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
@@ -8,12 +11,6 @@ import { bindContextAction } from '../utils/longPress.js';
 import { confirmDialog } from './confirmDialog.js';
 import { PLAYED_CHANGED_EVENT } from './playedToggle.js';
 import { copyText } from '../utils/clipboard.js';
-
-// Long press (touch), right click (mouse) or the menu key on a media card or
-// the hero opens a menu of further actions: continue watching, "Meine
-// Liste", out of "Weiter schauen", share, details, played and watch party.
-// The menu opens at once from what the card shows and fills in its states
-// once the title's current data (progress, list) has arrived.
 
 export const MEDIA_ACTION_TARGETS = '.media-card[data-item-id], [data-media-actions][data-item-id]';
 export const OPEN_WATCH_PARTY_EVENT = 'vanta:open-watch-party';

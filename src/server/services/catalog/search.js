@@ -1,10 +1,8 @@
+// Typo-tolerant search over the catalogue mirror ("Brekaing Bad" finds "Breaking Bad"). A library's
+// few hundred titles fit in memory, so every search scores all of them without an index.
 import { ageRating, withinAgeLimit } from './age-limit.js';
 
 export { ageRating };
-
-// Search over the catalogue mirror that forgives typos: "Brekaing Bad" finds
-// "Breaking Bad". The few hundred titles of a VANTA library fit in memory,
-// so every search scores all of them; no index extension is needed.
 
 // Lower case, accents and umlauts reduced to their letter (ä → a), ß → ss,
 // punctuation to spaces.

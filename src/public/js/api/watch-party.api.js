@@ -1,3 +1,4 @@
+// Watch party endpoints: creating, joining, ending, and invitations.
 import { request } from './client.js';
 
 export const WatchPartyApi = {

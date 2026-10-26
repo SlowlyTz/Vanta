@@ -1,3 +1,4 @@
+// The signed-in user's app preferences (/api/preferences).
 import express from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';

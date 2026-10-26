@@ -1,3 +1,4 @@
+/* Imports of the settings dialog, in cascade order. */
 @import './settings-dialog/icons-and-modal.css';
 @import './settings-dialog/header.css';
 @import './settings-dialog/panel-options.css';

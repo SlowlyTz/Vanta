@@ -1,3 +1,4 @@
+// Item images: cached WebP renditions, or Jellyfin's image passed through.
 import express from 'express';
 import { pipeline } from 'stream/promises';
 import { ImagesService } from '../../services/jellyfin/images.service.js';
@@ -32,8 +33,7 @@ const sendPlaceholder = (res, type, fallback) => {
 const matchesEtag = (header, etag) =>
   typeof header === 'string' && header.split(',').some(value => value.trim().replace(/^W\//, '') === etag);
 
-// Without sharp the route behaves like the old proxy: Jellyfin resizes, the
-// response is streamed through untouched.
+// Without sharp Jellyfin resizes and the response is streamed through untouched.
 const proxyThrough = async (req, res, { id, accessToken, type, query }) => {
   const imageResponse = await ImagesService.fetchImageStream(id, accessToken, type, query);
   res.setHeader('Content-Type', imageResponse.headers.get('content-type') || 'image/jpeg');

@@ -1,20 +1,6 @@
-// Service worker for the installed app. VANTA only runs against a live
-// server, so pages and API answers always go to the network. On top of the
-// offline page (a navigation without network gets /offline.html instead of
-// the browser's error page) it keeps two small caches that make a restart
-// faster:
-//
-// - the hashed build files under /assets/ (index-…js, page-admin-…css …):
-//   a hash names one exact content, so they are served from the cache first.
-//   When a page load reports a new build (X-Vanta-Build), the old files go.
-// - posters and backdrops with an image tag (/api/media/image/…&tag=…):
-//   answered from the cache at once and refreshed in the background
-//   (stale-while-revalidate). Logging out empties this cache
-//   (js/utils/service-worker.js).
-//
-// Both are capped, so the installed app stays at a few tens of MB. The
-// player, the scenes and everything else under /vendor/ are left to the
-// browser's own HTTP cache.
+// Service worker: pages and API answers always go to the network, a navigation
+// without network gets /offline.html, and two small capped caches speed up a restart.
+// Everything under /vendor/ (player, scenes) is left to the browser's HTTP cache.
 (function (self) {
   var OFFLINE_CACHE = 'vanta-offline-v2';
   var ASSET_CACHE = 'vanta-assets-v1';
@@ -78,6 +64,7 @@
       .catch(function () { /* quota or private mode: just not cached */ });
   }
 
+  // Hashed build files: a hash names one exact content, so the cache answers first.
   function cacheFirst(event) {
     var request = event.request;
     return caches.match(request, { cacheName: ASSET_CACHE }).then(function (cached) {
@@ -89,6 +76,8 @@
     });
   }
 
+  // Tagged posters and backdrops: answered from the cache, refreshed in the background.
+  // Logging out empties this cache (js/utils/service-worker.js).
   function staleWhileRevalidate(event) {
     var request = event.request;
     return caches.match(request, { cacheName: IMAGE_CACHE }).then(function (cached) {

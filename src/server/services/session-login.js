@@ -1,3 +1,5 @@
+// Turns a Jellyfin sign-in into a VANTA session: fresh session id, token
+// device, "Angemeldet bleiben" and the hand-over of the push subscription.
 import { AuthService } from './jellyfin/auth.service.js';
 import { forgetTokenDevice, registerTokenDevice } from './jellyfin/client.js';
 import { KnownUsersService } from './known-users.service.js';
@@ -33,8 +35,8 @@ async function handOverPush(previous, req, loadPush) {
   }
 }
 
-// Turns a Jellyfin sign-in (password or Quick Connect) into a VANTA session.
-// Answers what the client learns about the user.
+// For password and Quick Connect sign-ins alike. Answers what the client
+// learns about the user.
 export async function startUserSession(req, data, deviceId, {
   rememberMe = false,
   // Loaded on demand: the push service brings the database with it.

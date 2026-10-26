@@ -1,13 +1,11 @@
+// The bell's feed and the dot counts (own requests and reports decided since last
+// seen; for admins, open work). Refreshed on start, on socket notices, on tab return and every minute.
 import { NotificationsApi } from '../api/notifications.api.js';
 import { Store } from './store.js';
 
 const REFRESH_MS = 60_000;
 const EMPTY = { mine: { requests: 0, reports: 0 }, admin: null };
 
-// Counts behind the dots in the menu, the settings dialog and the admin area:
-// the user's own requests and reports decided since they last looked, and for
-// admins what still waits for a decision. Refreshed on start, when the app
-// socket says something changed, when the tab comes back, and once a minute.
 class NotificationsStore extends Store {
   constructor() {
     super();

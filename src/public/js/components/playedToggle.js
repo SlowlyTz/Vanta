@@ -1,3 +1,4 @@
+// Played/unplayed check button as Jellyfin offers it, asked with a yes/no dialog first.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
@@ -27,12 +28,9 @@ const questionFor = (item, next) => {
   };
 };
 
-// The same check Jellyfin offers: marks an item played or unplayed after a
-// yes/no question, and back again: a watched item offers "Als ungesehen
-// markieren". Optimistic like the favourite heart, reverted when the request
-// fails. `compact` is the smaller variant that sits on episode cards. A change
-// made elsewhere (the series above an episode, the context menu) reaches it
-// through PLAYED_CHANGED_EVENT.
+// Optimistic, reverted when the request fails. `compact` is the variant on
+// episode cards. Changes made elsewhere (the series above an episode, the
+// context menu) arrive through PLAYED_CHANGED_EVENT.
 export function createPlayedToggle(item, { compact = false, withLabel = false, onChange = null, confirm = confirmDialog } = {}) {
   let played = item?.UserData?.Played === true;
   let pending = false;

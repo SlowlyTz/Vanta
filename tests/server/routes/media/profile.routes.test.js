@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import profileRoutes from '../../../../src/server/routes/media/profile.routes.js';
 
-vi.mock('../../../../src/server/services/jellyfin/profile.service.js', () => ({
+vi.mock('../../../../src/server/services/browse/profile.service.js', () => ({
   ProfileService: {
     getContinueWatching: vi.fn(),
     getHistory: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock('../../../../src/server/services/jellyfin/profile.service.js', () => ({
   }
 }));
 
-import { ProfileService } from '../../../../src/server/services/jellyfin/profile.service.js';
+import { ProfileService } from '../../../../src/server/services/browse/profile.service.js';
 
 function createApp() {
   const app = express();

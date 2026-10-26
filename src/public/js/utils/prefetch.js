@@ -1,8 +1,6 @@
-// Warms the detail route before a media card is opened: the page chunk is
-// imported and the detail data is fetched while the pointer still rests on
-// the card, so the click lands on an already loaded page. Everything here is
-// invisible; the detail page only consults the cache and otherwise behaves
-// exactly as without it.
+// Warms the detail route while the pointer rests on a media card: the page
+// chunk is imported and the detail data fetched. The detail page only
+// consults the cache, so it otherwise behaves exactly as without it.
 
 const HOVER_DELAY_MS = 80;
 const THROTTLE_MS = 150;

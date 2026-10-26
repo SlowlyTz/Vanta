@@ -1,3 +1,5 @@
+// "Katalog" settings page: mirror contents, last and next sync runs, the
+// schedule, and buttons to start a run.
 import { createElement } from '../../utils/dom.js';
 import { AdminSettingsApi } from '../../api/admin-settings.api.js';
 
@@ -35,10 +37,7 @@ const group = (title, ...children) => createElement('section', { className: 'adm
 
 const formatCount = value => (Number.isFinite(value) ? new Intl.NumberFormat('de-DE').format(value) : '–');
 
-// Unterseite "Katalog" der Admin-Einstellungen: was der Spiegel enthält, was
-// der Abgleich zuletzt getan hat und wann er wieder läuft, der Zeitplan und
-// die Läufe zum Anstoßen. activate() lädt bei jedem Öffnen frisch,
-// deactivate() beendet das Nachfragen während eines Laufs.
+// activate() reloads on every open; deactivate() stops polling a running sync.
 export function createAdminCatalogPage() {
   let busy = false;
   let pollTimer = null;

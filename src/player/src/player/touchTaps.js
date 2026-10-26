@@ -1,3 +1,5 @@
+// Tap and click gestures on the video picture.
+
 import { createClickRecognizer } from './shortcuts.js';
 
 // Gestures on the picture. Touch, like the common streaming apps: a double

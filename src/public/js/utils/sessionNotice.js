@@ -1,3 +1,4 @@
+// Ends a session the server closed and keeps the notice the login page shows.
 import { clearUserCaches } from './service-worker.js';
 import { unsubscribeBrowserPush } from './pushSubscription.js';
 

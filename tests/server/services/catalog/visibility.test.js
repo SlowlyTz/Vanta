@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getVisibleLibraryIds, clearVisibilityCache } from '../../../../src/server/services/catalog/visibility.js';
+import { getCatalogAccess, clearVisibilityCache } from '../../../../src/server/services/catalog/visibility.js';
 
-describe('getVisibleLibraryIds', () => {
+// Which libraries a user may see: null for all of them, otherwise their ids.
+const getVisibleLibraryIds = async (...args) => (await getCatalogAccess(...args)).libraryIds;
+
+describe('getCatalogAccess: libraries', () => {
   beforeEach(() => clearVisibilityCache());
 
   it('reads the enabled libraries from the user\'s own access policy', async () => {

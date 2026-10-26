@@ -1,3 +1,4 @@
+// On-screen keyboard for typing with the TV remote, inline or as a modal over any text field.
 import { createElement } from '../../utils/dom.js';
 import { openModal } from '../../utils/modal.js';
 
@@ -15,9 +16,8 @@ const SHIFTED = [
   ['Y', 'X', 'C', 'V', 'B', 'N', 'M', ';', ':', ',', "'"]
 ];
 
-// Typing with the remote: a grid of keys the focus engine moves through.
 // Every key changes `input` and fires its `input` event, so the page reacts
-// as to typing. A keyboard on the TV keeps working alongside.
+// as to typing. A physical keyboard keeps working alongside.
 export function createOnScreenKeyboard({ input, onDone = null, shift: allowShift = true }) {
   let shifted = false;
   const rows = createElement('div', { className: 'osk-rows' });

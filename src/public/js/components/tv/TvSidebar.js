@@ -1,11 +1,9 @@
+// TV mode navigation: an icon-only column on the left that shows its labels
+// while the focus is in it. The admin area is not part of the TV interface.
 import { createElement } from '../../utils/dom.js';
 import { createNavIcon, createTopbarIcon, createSettingsGearIcon } from '../navbar/icons.js';
 import { isNavLinkActive } from '../navbar/activeNav.js';
 
-// The navigation of TV mode: a column on the left with icons only, which
-// opens with its labels as soon as the focus is in it (left from the content
-// edge). A group for the focus engine. The admin area is not part of the TV
-// interface.
 export const TV_SIDEBAR_ENTRIES = [
   { key: 'search', label: 'Suche', href: '#/search', icon: () => createTopbarIcon('search') },
   { key: 'home', label: 'Startseite', href: '#/home', icon: () => createNavIcon('home') },
@@ -66,8 +64,7 @@ export function TvSidebar({ onOpenSettings, onOpenWatchParty, onOpenScreensaver 
       }
     },
     isOpen: () => element.contains(document.activeElement),
-    // Back from the sidebar: into the content again, where one left it (the
-    // focus engine knows).
+    // Back into the content where the focus left it (the focus engine remembers).
     close() {
       window.dispatchEvent(new CustomEvent('vanta:tv-focus-content'));
     }

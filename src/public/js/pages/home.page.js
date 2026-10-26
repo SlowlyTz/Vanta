@@ -1,3 +1,5 @@
+// Home page: hero, "Weiter schauen", "Meine Liste" and the server's section
+// rows, restored from saved state on the way back, plus the idle screensaver.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { WatchlistApi } from '../api/watchlist.api.js';

@@ -1,3 +1,4 @@
+// Jellyfin item field lists and the device profiles sent with PlaybackInfo.
 export const COMMON_ITEM_FIELDS = [
   'PrimaryImageAspectRatio',
   'BasicSyncInfo',
@@ -42,11 +43,9 @@ export const TRAILER_ITEM_FIELDS = [
   'OriginalTitle'
 ].join(',');
 
-// H.264 the browser decodes itself: Jellyfin copies such a video stream into
-// the HLS segments instead of re-encoding it. Anything outside these limits
-// (10-bit, HDR, interlaced, level > 5.2) is still transcoded. A quality
-// profile's height cap applies to both, so a copy only happens when the
-// source already fits.
+// H.264 the browser decodes itself, so Jellyfin copies it into the HLS segments
+// instead of re-encoding (10-bit, HDR, interlaced, level > 5.2 still transcode).
+// A quality profile's height cap applies too: a copy needs a source that fits.
 function buildH264CodecProfile(maxHeight) {
   const conditions = [
     { Condition: 'NotEquals', Property: 'IsAnamorphic', Value: 'true', IsRequired: false },

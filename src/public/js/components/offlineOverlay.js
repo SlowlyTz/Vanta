@@ -1,3 +1,5 @@
+// Full-screen "no connection" notice while the browser is offline or requests
+// fail at the network level. Shown with a delay so a brief hiccup does not flash it.
 import { createElement } from '../utils/dom.js';
 
 const SHOW_DELAY_MS = 1500;
@@ -5,10 +7,6 @@ const NETWORK_ERROR_EVENT = 'vanta:network-error';
 
 const WIFI_OFF_ICON = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20"></path><path d="M8.5 16.5a5 5 0 0 1 7 0"></path><path d="M5 12.5a10 10 0 0 1 5.2-2.7"></path><path d="M14.5 9.5A10 10 0 0 1 19 12.5"></path><path d="M1.5 8.5A15 15 0 0 1 7 5.6"></path><path d="M11.5 4.5a15 15 0 0 1 11 4"></path><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"></circle></svg>`;
 
-// Full-screen "no connection" notice. Shown when the browser reports it is
-// offline or a request fails at the network level, hidden again as soon as the
-// connection is back. The show is delayed a little so a brief hiccup during
-// playback does not flash the overlay.
 export function mountOfflineOverlay({ fetchImpl = (...args) => window.fetch(...args) } = {}) {
   let showTimer = null;
   let checking = false;

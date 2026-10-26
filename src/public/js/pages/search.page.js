@@ -1,3 +1,5 @@
+// Search page: titles and people with filters, state kept in the hash; on a TV
+// split into keyboard and results zones.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { MediaCard } from '../components/mediaCard.js';

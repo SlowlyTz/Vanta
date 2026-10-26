@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import trailerRoutes from '../../../../src/server/routes/media/trailers.routes.js';
 
-vi.mock('../../../../src/server/services/jellyfin/library.service.js', () => ({
+vi.mock('../../../../src/server/services/browse/library.service.js', () => ({
   LibraryService: {
     getAllMoviesAndSeries: vi.fn()
   }
@@ -14,9 +14,9 @@ vi.mock('../../../../src/server/services/jellyfin/client.js', () => ({
   registerTokenDevice: vi.fn()
 }));
 
-import { LibraryService } from '../../../../src/server/services/jellyfin/library.service.js';
+import { LibraryService } from '../../../../src/server/services/browse/library.service.js';
 import { jellyfinJson } from '../../../../src/server/services/jellyfin/client.js';
-import { TrailersService } from '../../../../src/server/services/jellyfin/trailers.service.js';
+import { TrailersService } from '../../../../src/server/services/browse/trailers.service.js';
 
 function createBaseItem(overrides = {}) {
   return {

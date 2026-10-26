@@ -1,3 +1,4 @@
+// Environment settings from .env; throws at startup when a required value is missing.
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -45,6 +46,8 @@ export default {
   COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
   TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY),
   TMDB_API_KEY,
+  TMDB_REGION: process.env.TMDB_REGION || 'DE',
+  TMDB_REQUEST_TIMEOUT_MS: Number(process.env.TMDB_REQUEST_TIMEOUT_MS) > 0 ? Number(process.env.TMDB_REQUEST_TIMEOUT_MS) : 2500,
   // Optional: where resized poster/backdrop renditions are stored (default cache/images).
   IMAGE_CACHE_DIR: process.env.IMAGE_CACHE_DIR || '',
   // Optional: upper limit of that directory in MB (default 2048); the least

@@ -1,5 +1,6 @@
+// Admin user management: Jellyfin accounts, bans, library access, age and stream limits.
 import express from 'express';
-import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware.js';
+import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { JellyfinAdminUsersService } from '../../services/jellyfin/admin-users.service.js';
 import { UserBanService } from '../../services/user-ban.service.js';
@@ -7,15 +8,7 @@ import { revokeUserAccess, accountDeletedPayload } from '../../services/session-
 import { UserSettingsService } from '../../services/user-settings.service.js';
 import { streamSessionService } from '../../services/stream-session.service.js';
 import { getActiveCatalogReader } from '../../services/catalog/reader.js';
-import { clearVisibilityCache } from '../../services/catalog/visibility.js';
-import { UserDirectory } from '../../services/user-directory.service.js';
-import { getImageAccess } from '../../services/images/image-access.js';
-
-// The FSK ages an account can be limited to (Jellyfin's rating score for an
-// FSK rating is the age); null is no limit.
-export const AGE_LIMITS = [0, 6, 12, 16, 18];
-// "Titel ohne Altersfreigabe sperren" covers what VANTA shows.
-const UNRATED_KINDS = ['Movie', 'Series'];
+import { AGE_LIMITS, ageLimitOfPolicy, ageLimitPolicyPatch, invalidateUserAccess } from '../../services/user-access.service.js';
 
 const router = express.Router();
 
@@ -32,7 +25,7 @@ function normalizeUser(jellyfinUser) {
     isDisabled: Boolean(policy.IsDisabled),
     isBanned: ban !== null,
     banReason: ban?.reason || null,
-    maxConcurrentStreams: UserSettingsService.getMaxConcurrentStreams(jellyfinUser.Id),
+    maxConcurrentStreams: UserSettingsService.getSettings(jellyfinUser.Id).maxConcurrentStreams,
     activeStreams: streamSessionService.getActiveCount(jellyfinUser.Id),
     enableAllFolders: Boolean(policy.EnableAllFolders),
     enabledFolders: Array.isArray(policy.EnabledFolders) ? policy.EnabledFolders : [],
@@ -40,27 +33,15 @@ function normalizeUser(jellyfinUser) {
   };
 }
 
-function ageLimitOfPolicy(policy) {
-  const blocked = Array.isArray(policy.BlockUnratedItems) ? policy.BlockUnratedItems : [];
-  return {
-    maxAge: Number.isFinite(policy.MaxParentalRating) ? policy.MaxParentalRating : null,
-    blockUnrated: UNRATED_KINDS.some(kind => blocked.includes(kind))
-  };
-}
-
-// VANTA's caches of an account's access, dropped after a change so it shows at once.
-function invalidateUserAccess(userId) {
-  clearVisibilityCache(userId);
-  UserDirectory.invalidate();
-  getImageAccess().clear();
-}
-
 function isSelf(req, userId) {
   return req.session.userId === userId;
 }
 
-function respondWithJellyfinError(res, error, fallbackMessage) {
+// The admin's own token refused ends the session; Jellyfin's answer for the
+// account in question (404, 400) is passed on.
+function respondWithJellyfinError(req, res, error, fallbackMessage) {
   console.error('[Admin Users]', error.message);
+  if (isUpstreamUnauthorized(error)) return destroyInvalidSession(req, res);
   const status = Number.isInteger(error.status) ? error.status : 502;
   return res.status(status).json({ error: fallbackMessage });
 }
@@ -103,7 +84,7 @@ router.patch('/:userId', asyncHandler(async (req, res) => {
     const user = await JellyfinAdminUsersService.updateUserName(userId, req.session.accessToken, name);
     return res.json({ id: user.Id, name: user.Name });
   } catch (error) {
-    return respondWithJellyfinError(res, error, 'Nutzer konnte nicht umbenannt werden');
+    return respondWithJellyfinError(req, res, error, 'Nutzer konnte nicht umbenannt werden');
   }
 }));
 
@@ -119,7 +100,7 @@ router.post('/:userId/password', asyncHandler(async (req, res) => {
     await JellyfinAdminUsersService.setPassword(userId, req.session.accessToken, newPassword);
     return res.json({ success: true });
   } catch (error) {
-    return respondWithJellyfinError(res, error, 'Passwort konnte nicht geändert werden');
+    return respondWithJellyfinError(req, res, error, 'Passwort konnte nicht geändert werden');
   }
 }));
 
@@ -137,7 +118,7 @@ router.delete('/:userId', asyncHandler(async (req, res) => {
     await revokeUserAccess(userId, null, { payload: accountDeletedPayload() });
     return res.json({ success: true });
   } catch (error) {
-    return respondWithJellyfinError(res, error, 'Nutzer konnte nicht gelöscht werden');
+    return respondWithJellyfinError(req, res, error, 'Nutzer konnte nicht gelöscht werden');
   }
 }));
 
@@ -194,7 +175,7 @@ router.patch('/:userId/libraries', asyncHandler(async (req, res) => {
       enabledFolders: Array.isArray(policy.EnabledFolders) ? policy.EnabledFolders : []
     });
   } catch (error) {
-    return respondWithJellyfinError(res, error, 'Bibliothekszugriff konnte nicht aktualisiert werden');
+    return respondWithJellyfinError(req, res, error, 'Bibliothekszugriff konnte nicht aktualisiert werden');
   }
 }));
 
@@ -215,16 +196,11 @@ router.patch('/:userId/age-limit', asyncHandler(async (req, res) => {
 
   try {
     const current = await JellyfinAdminUsersService.getUser(userId, req.session.accessToken);
-    const otherKinds = (current?.Policy?.BlockUnratedItems || []).filter(kind => !UNRATED_KINDS.includes(kind));
-    const policy = await JellyfinAdminUsersService.updatePolicy(userId, req.session.accessToken, {
-      MaxParentalRating: maxAge,
-      MaxParentalSubRating: null,
-      BlockUnratedItems: blockUnrated ? [...otherKinds, ...UNRATED_KINDS] : otherKinds
-    });
+    const policy = await JellyfinAdminUsersService.updatePolicy(userId, req.session.accessToken, ageLimitPolicyPatch(current?.Policy, { maxAge, blockUnrated }));
     invalidateUserAccess(userId);
     return res.json(ageLimitOfPolicy(policy));
   } catch (error) {
-    return respondWithJellyfinError(res, error, 'Altersfreigabe konnte nicht gespeichert werden');
+    return respondWithJellyfinError(req, res, error, 'Altersfreigabe konnte nicht gespeichert werden');
   }
 }));
 

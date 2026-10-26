@@ -1,6 +1,4 @@
-/* ---------------------------------
-   LIBRARY PAGE
-   --------------------------------- */
+/* Library page: the media grid with infinite scroll. */
 
 .library-page {
   width: 100%;
@@ -113,9 +111,7 @@
   }
 }
 
-/* ---------------------------------
-   INFINITE SCROLL
-   --------------------------------- */
+/* Infinite scroll */
 .library-sentinel {
   height: 1px;
 }

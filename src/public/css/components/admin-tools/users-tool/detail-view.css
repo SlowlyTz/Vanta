@@ -1,8 +1,5 @@
-/* ---------------------------------
-   ADMIN · NUTZER — Detailansicht im Modal
-   Kopf mit Avatar, darunter Gruppen (Konto, Zugriff, Streams, Gefahrenzone)
-   im Stil des Einstellungen-Dialogs; Speichern bleibt unten stehen.
-   --------------------------------- */
+/* Admin user detail in the modal: avatar header, then groups (account, access,
+   streams, danger zone) like the settings dialog. */
 .admin-user-detail-view {
   display: flex;
   flex-direction: column;
@@ -155,7 +152,7 @@
   margin: 0;
 }
 
-/* Gefahrenzone */
+/* Danger zone */
 .admin-user-danger-zone .admin-user-card {
   gap: 0;
   padding: 4px 14px;
@@ -225,7 +222,7 @@
   cursor: not-allowed;
 }
 
-/* Speichern: bleibt am unteren Rand der scrollenden Ansicht sichtbar. */
+/* Save stays visible at the bottom of the scrolling view. */
 .admin-user-save-all-row {
   position: sticky;
   bottom: -24px;
@@ -241,7 +238,7 @@
   border-radius: 14px;
 }
 
-/* Erscheint nur bei ungespeicherten Änderungen und bleibt unten sichtbar. */
+/* Only shown with unsaved changes; stays visible at the bottom. */
 .admin-user-save-bar {
   position: sticky;
   bottom: 12px;

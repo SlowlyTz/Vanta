@@ -1,3 +1,5 @@
+// The user's reports with their state; handled ones since the last visit
+// carry a "Neu" mark.
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { getProblemLabel, getReportScopeLabel, REPORT_STATUS_LABELS } from '../../shared/reports.js';
@@ -6,8 +8,6 @@ const STATUS_CHIP = { open: 'ui-chip-warning', resolved: 'ui-chip-success', dism
 
 const formatDate = value => new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-// The user's reports with their state; handled ones since the last visit
-// carry a "Neu" mark.
 export function renderMyReports(container, reports, { previousSeenAt = 0 } = {}) {
   container.innerHTML = '';
   if (!reports.length) {

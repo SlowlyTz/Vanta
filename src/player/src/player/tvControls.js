@@ -1,6 +1,8 @@
+// Remote control of the player on a TV: spooling, focus moves and prompts.
+
 import { formatClock } from '../../../public/js/shared/time.js';
-import { normalizeKey } from '../../../public/js/tv/keys.js';
-import { directionalScore } from '../../../public/js/tv/focusEngine.js';
+import { normalizeKey } from '../../../public/js/shared/remoteKeys.js';
+import { directionalScore } from '../../../public/js/shared/focusGeometry.js';
 
 // Hold a direction: every press jumps 10 s, after a second of holding 30 s,
 // after three seconds 60 s. Measured in time, not in key repeats: remotes

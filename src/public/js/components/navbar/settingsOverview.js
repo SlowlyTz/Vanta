@@ -1,6 +1,6 @@
+// Account header of the settings dialog: an avatar with the initial, the name and the role.
 import { createElement } from '../../utils/dom.js';
 
-// The account header: an avatar with the initial, the name and the role.
 export function createSettingsProfile(usernameElement) {
   const avatar = createElement('span', { className: 'settings-profile-avatar', 'aria-hidden': 'true' }, '?');
   const role = createElement('span', { className: 'settings-profile-role' }, 'Mitglied');

@@ -1,3 +1,4 @@
+/* Imports of the home page stylesheets, in cascade order. */
 @import './home/hero-base.css';
 @import './home/hero-responsive.css';
 @import './home/empty-state.css';

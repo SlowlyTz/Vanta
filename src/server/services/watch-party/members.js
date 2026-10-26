@@ -1,5 +1,7 @@
+// Watch party member methods: ready room, ready and playback state, roles, kicks, bans, presence.
 import { notFound, forbidden, badRequest, conflict } from './errors.js';
-import { assertOwner, assertPartyAdmin, assertPartyMember, PLAYBACK_STATES, READY_ROOM_STATUS, SWITCHING_STATUS } from './helpers.js';
+import { assertOwner, assertPartyAdmin, assertPartyMember } from './permissions.js';
+import { PLAYBACK_STATES, READY_ROOM_STATUS, SWITCHING_STATUS } from './constants.js';
 
 export const memberMethods = {
   openReadyRoom({ partyId, ownerUserId }) {
@@ -57,7 +59,7 @@ export const memberMethods = {
     }
 
     party.members.delete(targetUserId);
-    return this.serializeParty(party, actorUserId);
+    return this.serializeParty(party);
   },
 
   promoteMember({ partyId, actorUserId, targetUserId }) {
@@ -70,13 +72,13 @@ export const memberMethods = {
 
     const target = assertPartyMember(party, targetUserId);
     if (target.role === 'owner' || target.role === 'admin') {
-      return this.serializeParty(party, actorUserId);
+      return this.serializeParty(party);
     }
 
     target.role = 'admin';
     target.lastSeenAt = Date.now();
 
-    return this.serializeParty(party, actorUserId);
+    return this.serializeParty(party);
   },
 
   // Only the host takes admin rights away again.
@@ -86,12 +88,12 @@ export const memberMethods = {
 
     const target = assertPartyMember(party, targetUserId);
     if (target.role === 'owner') throw badRequest('Der Gastgeber bleibt Admin.');
-    if (target.role !== 'admin') return this.serializeParty(party, actorUserId);
+    if (target.role !== 'admin') return this.serializeParty(party);
 
     target.role = 'viewer';
     target.lastSeenAt = Date.now();
 
-    return this.serializeParty(party, actorUserId);
+    return this.serializeParty(party);
   },
 
   banMember({ partyId, actorUserId, targetUserId }) {
@@ -116,7 +118,7 @@ export const memberMethods = {
     this.forgetRecentParty(targetUserId, partyId);
 
     return {
-      party: this.serializeParty(party, actorUserId),
+      party: this.serializeParty(party),
       bannedUser: {
         userId: target.userId,
         username: target.username

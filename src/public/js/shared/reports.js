@@ -11,7 +11,6 @@ export const REPORT_PROBLEMS = [
 
 export const REPORT_PROBLEM_KEYS = REPORT_PROBLEMS.map(problem => problem.key);
 export const REPORT_SCOPES = ['all', 'season', 'episode'];
-export const REPORT_STATUSES = ['open', 'resolved', 'dismissed'];
 export const REPORT_MESSAGE_MAX = 1000;
 
 export const REPORT_STATUS_LABELS = {

@@ -1,3 +1,5 @@
+/* Platform and viewport adjustments: iOS, touch, phone sizes, reduced motion. */
+
 /* Platform-specific hiding */
 .vanta-player-root.is-ios .vanta-player-mute-button,
 .vanta-player-root.is-ios .vanta-player-volume-slider {

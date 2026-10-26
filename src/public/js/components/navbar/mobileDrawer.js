@@ -1,9 +1,11 @@
+// Mobile navigation drawer: grouped links with lazily loaded genre and publisher
+// submenus, and a user card pinned to the bottom.
 import { createElement } from '../../utils/dom.js';
 import { NAV_LINKS } from './navLinks.js';
 import { createNavIcon, createCloseIcon, createChevronIcon } from './icons.js';
 import { isNavLinkActive } from './activeNav.js';
 import { MediaApi } from '../../api/media.api.js';
-import { getFeaturedPublishersFromStudios } from '../../constants/featuredPublishers.js';
+import { getFeaturedPublishersFromStudios } from '../../shared/featuredPublishers.js';
 import { genreLabel } from '../../shared/genreLabels.js';
 
 const ACCORDION_KEYS = new Set(['movies', 'series', 'publishers']);

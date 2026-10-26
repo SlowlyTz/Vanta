@@ -1,7 +1,9 @@
+// Profile page data: watch stats and the paged continue-watching, history and
+// favourites lists.
 import express from 'express';
-import { ProfileService } from '../../services/jellyfin/profile.service.js';
-import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../../middleware/auth.middleware.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { ProfileService } from '../../services/browse/profile.service.js';
+import { requireAuth } from '../../middleware/auth.middleware.js';
+import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 
 const router = express.Router();
 
@@ -12,41 +14,22 @@ function parsePagination(query) {
 }
 
 function buildProfileHandler(loadPage, errorLabel) {
-  return asyncHandler(async (req, res) => {
-    const { userId, accessToken } = req.session;
+  return jellyfinRoute(errorLabel, 'Liste konnte nicht geladen werden', async (req, res) => {
     const { page, limit } = parsePagination(req.query);
-
-    try {
-      const result = await loadPage(userId, accessToken, { page, limit });
-      return res.json({
-        items: result.items,
-        page,
-        limit,
-        totalItems: result.totalItems,
-        totalPages: Math.ceil(result.totalItems / limit)
-      });
-    } catch (error) {
-      console.error(`[${errorLabel}]`, error.message);
-      if (isUpstreamUnauthorized(error)) {
-        return destroyInvalidSession(req, res);
-      }
-      return res.status(500).json({ error: 'Liste konnte nicht geladen werden' });
-    }
+    const result = await loadPage(req.session.userId, req.session.accessToken, { page, limit });
+    res.json({
+      items: result.items,
+      page,
+      limit,
+      totalItems: result.totalItems,
+      totalPages: Math.ceil(result.totalItems / limit)
+    });
   });
 }
 
 // What one has watched: counts, time and favourite genres for the profile.
-router.get('/stats', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  try {
-    return res.json(await ProfileService.getStats(userId, accessToken));
-  } catch (error) {
-    console.error('[Profile Stats Error]', error.message);
-    if (isUpstreamUnauthorized(error)) {
-      return destroyInvalidSession(req, res);
-    }
-    return res.status(500).json({ error: 'Statistik konnte nicht geladen werden' });
-  }
+router.get('/stats', requireAuth, jellyfinRoute('Profile Stats Error', 'Statistik konnte nicht geladen werden', async (req, res) => {
+  res.json(await ProfileService.getStats(req.session.userId, req.session.accessToken));
 }));
 
 router.get('/continue-watching', requireAuth, buildProfileHandler(

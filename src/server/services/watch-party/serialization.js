@@ -1,4 +1,5 @@
-import { serializeTimeline, getSyncLeaderUserId } from './helpers.js';
+// Shapes a party and its members' presence for clients.
+import { serializeTimeline, getSyncLeaderUserId } from './timeline.js';
 
 export function serializePresence(party) {
   return [...party.members.values()].map(member => ({
@@ -9,7 +10,7 @@ export function serializePresence(party) {
   }));
 }
 
-export function serializeParty(party, currentUserId = null) {
+export function serializeParty(party) {
   const members = [...party.members.values()].map(member => ({
     userId: member.userId,
     username: member.username,
@@ -48,7 +49,6 @@ export function serializeParty(party, currentUserId = null) {
         }
       : null,
     syncLeaderUserId: getSyncLeaderUserId(party),
-    members,
-    currentUserRole: currentUserId ? (party.members.get(currentUserId)?.role || null) : null
+    members
   };
 }

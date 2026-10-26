@@ -1,3 +1,4 @@
+// Admin control of the catalogue sync: status, schedule and manual runs.
 import express from 'express';
 import { requireAuth, requireFreshAdmin } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';

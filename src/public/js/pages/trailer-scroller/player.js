@@ -1,10 +1,11 @@
+// Loads the YouTube IFrame API and manages one YouTube player per slide container.
+
 const YOUTUBE_IFRAME_API_URL = 'https://www.youtube.com/iframe_api';
 const YOUTUBE_IFRAME_ALLOW = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
 const YOUTUBE_REFERRER_POLICY = 'strict-origin-when-cross-origin';
 
 // YouTube reports neither onReady nor onError when an embed dies silently. Without an upper
-// bound the returned promise would never settle and every later caller would await the same
-// dead promise, which used to freeze the whole feed until a page reload.
+// bound the promise would never settle and every later caller would await it, freezing the feed.
 export const PLAYER_READY_TIMEOUT_MS = 12000;
 
 let apiLoadPromise = null;
@@ -128,9 +129,8 @@ export class YouTubePlayerManager {
     const runningAttempt = this.pending.get(containerId);
     if (runningAttempt) return runningAttempt.promise;
 
-    // The attempt has to be registered synchronously. Registering it after the first await let
-    // two overlapping sync runs build two iframes with the same id; the detached one never
-    // reported back.
+    // Registered synchronously: otherwise two overlapping sync runs build two iframes with the
+    // same id, and the detached one never reports back.
     const attempt = { settled: false, timer: null, player: null, resolve: null, promise: null };
     attempt.promise = new Promise((resolve) => {
       attempt.resolve = resolve;

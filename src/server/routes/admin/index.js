@@ -1,3 +1,4 @@
+// Admin API (/api/admin): users, settings, catalogue sync and the dashboard.
 import express from 'express';
 import usersRoutes from './users.routes.js';
 import settingsRoutes from './settings.routes.js';

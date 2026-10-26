@@ -1,13 +1,13 @@
-// DOM-free: shared by the web app and the server.
+// Per-user settings that follow a user to every device; DOM-free, shared by the
+// web app and the server.
 
-// Per-user settings that follow a user to every device (stored server-side in
-// requests.db, table user_preferences). Every key lists its default and the
-// values it may take; anything else is dropped when it is saved.
+// Stored server-side in requests.db (table user_preferences). Every key lists its
+// default and the values it may take; anything else is dropped when it is saved.
 export const PREFERENCE_SPEC = Object.freeze({
   // "Schaust du noch?" after this many hours of playback without input; 0 = off.
   stillWatchingHours: { default: 4, values: [0, 2, 3, 4, 6] },
-  // Screensaver on the home page after this many idle minutes.
   screensaverEnabled: { default: true, type: 'boolean' },
+  // Screensaver on the home page after this many idle minutes.
   screensaverMinutes: { default: 10, values: [5, 10, 20, 30] },
   autoplayNextEpisode: { default: true, type: 'boolean' },
   autoSkipIntro: { default: false, type: 'boolean' },

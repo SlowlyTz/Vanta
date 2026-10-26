@@ -1,3 +1,4 @@
+// Opens and wires the catalogue mirror (database, sync, scheduler, reader) once per process.
 import { openCatalogDb } from '../../db/catalog.js';
 import { createJellyfinCatalogSource } from './jellyfin-source.js';
 import { createCatalogSync } from './sync.service.js';
@@ -9,9 +10,8 @@ import env from '../../config/env.js';
 
 let instance = null;
 
-// Wires the catalogue once per process. Opening the database is async (sql.js
-// loads its wasm), so everything that needs the catalogue awaits this; the
-// promise is shared, so callers during startup get the same instance.
+// Opening the database is async (sql.js loads its wasm); the promise is shared,
+// so callers during startup get the same instance.
 export function getCatalog() {
   if (!instance) {
     instance = createCatalog();
@@ -28,10 +28,8 @@ async function createCatalog() {
   const sync = createCatalogSync({
     db,
     source: createJellyfinCatalogSource(),
-    // Pre-renders the card sizes with the server key. The whole catalogue is
-    // passed, not only the changed titles: files that already exist cost one
-    // stat each, and a cache that was emptied or never filled gets warmed on
-    // the next run instead of on the first visitor.
+    // Pre-renders the card images for the whole catalogue, not only changed titles: existing
+    // files cost one stat each, and an emptied cache is warmed here instead of by the first visitor.
     afterRun: async (details) => {
       // Loaded on demand: the notifications bring requests.db with them.
       const [{ NotificationTriggers }, { Housekeeping }] = await Promise.all([

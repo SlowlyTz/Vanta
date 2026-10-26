@@ -1,5 +1,8 @@
+// Concurrent-stream limit per user: tracks the play sessions a user holds
+// and refuses new ones beyond their limit.
 import { UserSettingsService } from './user-settings.service.js';
 import { deviceLabel } from '../../public/js/shared/deviceLabel.js';
+import { httpError } from '../utils/httpError.js';
 
 const DEFAULT_MAX_STREAMS = 1;
 const RESERVED_TTL_MS = 60_000;
@@ -40,9 +43,7 @@ export class StreamSessionService {
   admitStreamRequest(session) {
     if (this.touch(session.userId, session.playSessionId)) return [];
     if (this.hasEnded(session.playSessionId)) {
-      const error = new Error('Diese Wiedergabe wurde beendet.');
-      error.status = 403;
-      throw error;
+      throw httpError(403, 'Diese Wiedergabe wurde beendet.');
     }
     return this.resume(session);
   }
@@ -75,18 +76,13 @@ export class StreamSessionService {
     return this.sessionsByUser.get(userId)?.size || 0;
   }
 
-  // `replacesPlaySessionId`: the session this one takes over (the player
-  // switching audio track or quality); it is released first, so a running
-  // stream is not counted twice. A device plays one stream at a time: a new
-  // session from the same login (`deviceId`) replaces that device's older
-  // ones, also for another title, so a player left before it started does
-  // not block the next one. Returns the replaced playSessionIds; their
-  // encodings are dead weight on Jellyfin.
+  // `replacesPlaySessionId` (audio or quality switch) is released first, and a
+  // new session from the same `deviceId` replaces that device's older ones, so
+  // nothing is counted twice. Returns the replaced ids; the caller stops their
+  // encodings.
   reserve({ userId, username, itemId, playSessionId, replacesPlaySessionId = null, deviceId = null, userAgent = '' }) {
     if (!playSessionId) {
-      const error = new Error('Wiedergabe-Sitzung konnte nicht erfasst werden');
-      error.status = 500;
-      throw error;
+      throw httpError(500, 'Wiedergabe-Sitzung konnte nicht erfasst werden');
     }
 
     this.cleanupUser(userId);
@@ -150,12 +146,7 @@ export class StreamSessionService {
         ? `Auf deinem Konto läuft schon ein Stream (${where}). Beende ihn dort oder versuche es in einer Minute noch einmal.`
         : `Auf deinem Konto laufen schon ${running.length} Streams (zuletzt ${where}). Beende einen davon oder versuche es in einer Minute noch einmal.`;
     }
-    const error = new Error(message);
-    error.status = 429;
-    error.code = 'STREAM_LIMIT_REACHED';
-    error.limit = limit;
-    error.activeStreams = sessions.size;
-    return error;
+    return httpError(429, message, { code: 'STREAM_LIMIT_REACHED', limit, activeStreams: sessions.size });
   }
 
   // A quality switch issues a new playSessionId for the same item before the

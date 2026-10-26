@@ -1,4 +1,5 @@
-import { normalizeText } from './sync.service.js';
+// Read side of the catalogue mirror, plus the registry of the active reader.
+import { normalizeKey as normalizeText } from '../../utils/text.js';
 import { normalizeForSearch, ageRating, rankEntries, rankPeople } from './search.js';
 import { withinAgeLimit } from './age-limit.js';
 
@@ -18,11 +19,8 @@ const parseTypes = (type) => {
   return types.every(part => MIRRORED_TYPES.has(part)) ? types : null;
 };
 
-// Read side of the catalogue mirror. Every method takes the caller's visible
-// library ids and age limit (see age-limit.js), so per-user access is applied
-// to the mirror the same way Jellyfin applies it to its own queries. Results
-// are the stored Jellyfin items, so the frontend receives exactly what it did
-// before.
+// Every method takes the caller's visible library ids and age limit (see age-limit.js), so
+// per-user access matches Jellyfin's own queries. Results are the stored Jellyfin items.
 export function createCatalogReader(db) {
   const count = db.prepare('SELECT COUNT(*) AS count FROM catalog_items');
 
@@ -246,13 +244,6 @@ export function createCatalogReader(db) {
         JOIN catalog_items i ON i.id = s.item_id ${where}
         GROUP BY s.studio_normalized ORDER BY s.studio COLLATE NOCASE
       `).all(...params).map(row => ({ Name: row.Name, Id: row.Id, ItemCount: row.count }));
-    },
-
-    // The library a movie or series sits in: undefined when the catalogue
-    // does not know the id (episodes, seasons, people), null without one.
-    libraryOf: (itemId) => {
-      const rows = db.prepare('SELECT library_id FROM catalog_items WHERE id = ?').all(String(itemId));
-      return rows.length === 0 ? undefined : (rows[0].library_id ?? null);
     },
 
     // What access to a movie or series depends on; undefined when the

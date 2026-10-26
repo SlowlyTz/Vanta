@@ -1,14 +1,11 @@
+// Per-viewer progress on media cards: cards that scroll into view fetch it in
+// batches (GET /api/media/userdata) and show a progress bar, the "gesehen"
+// check and a series' next episode. Answers are kept a minute.
 import { MediaApi } from '../api/media.api.js';
 import { createElement } from './dom.js';
 import { createPlayedBadge } from '../components/playedBadge.js';
 import { PLAYED_CHANGED_EVENT } from '../components/playedToggle.js';
 import { getCurrentPageScope } from './pageScope.js';
-
-// The catalogue a card comes from is shared by all users, so it knows
-// nothing of the viewer's progress. Cards that scroll into view ask for it in
-// bundles (GET /api/media/userdata) and then show a progress bar, the
-// "gesehen" check and, on a started series, the next episode. Answers are
-// kept a minute; leaving the player starts over.
 
 const TTL_MS = 60 * 1000;
 const BATCH_SIZE = 100;

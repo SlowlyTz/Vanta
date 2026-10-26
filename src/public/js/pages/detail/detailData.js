@@ -1,3 +1,4 @@
+// Loads the detail page's data, using a prefetched bundle when there is one.
 import { MediaApi } from '../../api/media.api.js';
 import { normalizeJellyfinItem } from '../../utils/normalize.js';
 import { takePrefetchedDetail } from '../../utils/prefetch.js';

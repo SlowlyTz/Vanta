@@ -1,3 +1,5 @@
+// Turns a Jellyfin item into the flat, display-ready shape the detail view
+// renders.
 import { formatTicksToDuration, formatYear } from './format.js';
 import { getItemImageUrl } from './image.js';
 import { formatEpisodeCode } from '../shared/episodeCode.js';

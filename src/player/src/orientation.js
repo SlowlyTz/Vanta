@@ -1,3 +1,5 @@
+// Phone detection and the landscape lock for fullscreen on phones.
+
 export function isSmartphone() {
   const ua = navigator.userAgent || '';
   const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);

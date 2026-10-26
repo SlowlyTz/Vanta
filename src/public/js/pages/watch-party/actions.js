@@ -1,3 +1,5 @@
+// Watch party actions: kick, open the ready room, end the party, copy the invite link.
+
 import { WatchPartyApi } from '../../api/watch-party.api.js';
 import { appStore } from '../../store/app.store.js';
 import { copyText } from '../../utils/clipboard.js';

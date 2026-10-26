@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
+vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })),
   ItemsService: {
     getItemDetails: vi.fn(),
     getSeasons: vi.fn(),
@@ -8,7 +8,7 @@ vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
   }
 }));
 
-vi.mock('../../../../src/server/services/jellyfin/library.service.js', () => ({
+vi.mock('../../../../src/server/services/browse/library.service.js', () => ({
   LibraryService: {
     getMovies: vi.fn(),
     getSeries: vi.fn()
@@ -30,7 +30,6 @@ describe('WatchPartyService · Membership', () => {
     const party = await createTestParty();
 
     expect(party.ownerUserId).toBe('owner-1');
-    expect(party.currentUserRole).toBe('owner');
     expect(party.status).toBe('lobby');
     expect(party.members).toHaveLength(1);
     expect(party.members[0]).toMatchObject({ userId: 'owner-1', role: 'owner', preloadState: 'waiting' });

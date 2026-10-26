@@ -1,9 +1,8 @@
-import { createElement } from '../utils/dom.js';
-import { createSectionLoader } from './loader.js';
-
 // Placeholder blocks in the exact footprint of the hero and the carousels, so
 // the home page keeps its layout while data arrives. Each skeleton carries a
 // visually hidden section loader for the status text screen readers get.
+import { createElement } from '../utils/dom.js';
+import { createSectionLoader } from './loader.js';
 
 const bar = (className) => createElement('span', { className: `skeleton-bar ${className}`.trim() });
 

@@ -1,3 +1,5 @@
+// Source switch: shared state and its accessors.
+
 export const HLS_FRAGMENT_TIMEOUT_MS = 90_000;
 
 export function createSourceSwitchState({

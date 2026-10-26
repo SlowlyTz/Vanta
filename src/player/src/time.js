@@ -1,3 +1,5 @@
+// Jellyfin ticks and position clamping.
+
 export const TICKS_PER_SECOND = 10_000_000;
 
 export function toTicks(seconds) {

@@ -1,3 +1,6 @@
+// Liveness and readiness for monitoring (and a quick look after a deploy).
+// Open without a session like /api/version; it names no users or data. The
+// Jellyfin ping is shared for a few seconds so polling cannot flood Jellyfin.
 import express from 'express';
 import { getActiveCatalogReader } from '../services/catalog/reader.js';
 import { jellyfinRawFetch } from '../services/jellyfin/client.js';
@@ -5,9 +8,6 @@ import { APP_VERSION } from '../../public/js/shared/version.js';
 
 const JELLYFIN_CHECK_TTL_MS = 10 * 1000;
 
-// Liveness and readiness for monitoring (and a quick look after a deploy).
-// Open without a session like /api/version; it names no users or data. The
-// Jellyfin ping is shared for a few seconds so polling cannot flood Jellyfin.
 export function createHealthRouter({
   ping = () => jellyfinRawFetch('/System/Ping', { timeoutMs: 3000 }),
   getReader = getActiveCatalogReader,

@@ -1,3 +1,4 @@
+// Helpers for Jellyfin media sources: stream lookup, codec metadata, query param cleanup.
 export const SENSITIVE_QUERY_PARAMS = ['api_key', 'access_token', 'x-emby-token', 'X-Emby-Token', 'ApiKey'];
 export const PLAYBACK_SUBTITLE_QUERY_PARAMS = [
   'SubtitleStreamIndex',

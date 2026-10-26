@@ -1,3 +1,5 @@
+// Stacked full-screen layers of the admin area that slide in from the right,
+// phone style, with a back button.
 import { createElement } from '../../utils/dom.js';
 import { createBackIcon } from '../../components/navbar/icons.js';
 import { SLIDE_MS as LAYER_SLIDE_MS } from '../../utils/motion.js';
@@ -17,11 +19,8 @@ const syncScrollLock = () => {
   document.documentElement.classList.toggle('admin-layer-open', stack.length > 0);
 };
 
-// A page of the admin area, pushed like on a phone: it slides in from the
-// right over everything, with "‹ Zurück" in the top left, and slides back out
-// the same way. `onBack` replaces the plain close (the areas navigate back,
-// and the navigation closes the layer); `animate: false` opens it in place
-// (a deep link or a reload).
+// `onBack` replaces the plain close (areas navigate back and the navigation
+// closes the layer); `animate: false` opens it in place (deep link, reload).
 export function openAdminLayer({
   title,
   subtitle = '',

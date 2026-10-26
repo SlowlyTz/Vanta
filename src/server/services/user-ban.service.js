@@ -1,10 +1,9 @@
-import fs from 'fs';
-import { writeFileAtomicSync } from '../utils/atomicWrite.js';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+// Banned VANTA accounts (db/user/banned.json) and what a banned user is told.
+import { createJsonStore } from '../utils/jsonStore.js';
+import { join } from 'path';
+import { httpError } from '../utils/httpError.js';
+import { USER_DB_DIR } from '../config/paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_USER_DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db', 'user');
 
 const emptyBannedList = () => ({ users: [] });
 
@@ -19,46 +18,17 @@ export const bannedPayload = (ban) => ({
 });
 
 // Every authenticated request asks whether its user is banned, so the list is
-// kept in memory. The file is looked at again at most once per `recheckMs`
-// and only re-read when it changed, so an edit by hand still takes effect
-// within a second; the service's own writes update the copy directly.
-export function createUserBanService({ dbDir = DEFAULT_USER_DB_DIR, recheckMs = 1000, now = () => Date.now() } = {}) {
-  const bannedFile = join(dbDir, 'banned.json');
-  let cached = null; // { list, mtimeMs, checkedAt }
-
-  function loadFromDisk() {
-    let stat = null;
-    try {
-      stat = fs.statSync(bannedFile);
-    } catch {
-      return { list: emptyBannedList(), mtimeMs: null };
-    }
-    if (cached && cached.mtimeMs === stat.mtimeMs) return { list: cached.list, mtimeMs: stat.mtimeMs };
-
-    try {
-      const parsed = JSON.parse(fs.readFileSync(bannedFile, 'utf8'));
-      return { list: { users: Array.isArray(parsed.users) ? parsed.users : [] }, mtimeMs: stat.mtimeMs };
-    } catch (error) {
-      console.warn('[UserBanService] Could not read banned.json:', error.message);
-      // Not cached: the next look reads again instead of keeping an empty list.
-      return { list: emptyBannedList(), mtimeMs: null };
-    }
-  }
-
-  function readBannedList() {
-    const time = now();
-    if (cached && time - cached.checkedAt < recheckMs) return cached.list;
-    const { list, mtimeMs } = loadFromDisk();
-    cached = mtimeMs === null ? null : { list, mtimeMs, checkedAt: time };
-    return list;
-  }
-
-  function writeBannedList(list) {
-    writeFileAtomicSync(bannedFile, `${JSON.stringify(list, null, 2)}\n`, { encoding: 'utf8' });
-    let mtimeMs = null;
-    try { mtimeMs = fs.statSync(bannedFile).mtimeMs; } catch { /* re-read next time */ }
-    cached = mtimeMs === null ? null : { list, mtimeMs, checkedAt: now() };
-  }
+// kept in memory and the file looked at again at most once per `recheckMs`.
+export function createUserBanService({ dbDir = USER_DB_DIR, recheckMs = 1000, now = () => Date.now() } = {}) {
+  const store = createJsonStore(join(dbDir, 'banned.json'), {
+    empty: emptyBannedList,
+    parse: parsed => ({ users: Array.isArray(parsed.users) ? parsed.users : [] }),
+    recheckMs,
+    now,
+    label: 'banned.json'
+  });
+  const readBannedList = () => store.read();
+  const writeBannedList = list => store.write(list);
 
   return {
     getAll() {
@@ -76,16 +46,12 @@ export function createUserBanService({ dbDir = DEFAULT_USER_DB_DIR, recheckMs = 
 
     ban(userId, username, reason, bannedBy = null) {
       if (!userId) {
-        const error = new Error('userId is required');
-        error.status = 400;
-        throw error;
+        throw httpError(400, 'Kein Nutzer angegeben');
       }
 
       const trimmedReason = String(reason || '').trim();
       if (!trimmedReason) {
-        const error = new Error('Ein Sperrgrund ist erforderlich');
-        error.status = 400;
-        throw error;
+        throw httpError(400, 'Ein Sperrgrund ist erforderlich');
       }
 
       const list = readBannedList();

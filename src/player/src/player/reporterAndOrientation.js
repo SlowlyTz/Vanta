@@ -1,3 +1,6 @@
+// Playback reporting, the loading cover, the buffering spinner and the error
+// display, set up on the player context.
+
 import { createInlineLoadingWatch } from './inlineLoading.js';
 import { createJellyfinReporter } from '../jellyfinReporter.js';
 import { isSmartphone } from '../orientation.js';
@@ -58,8 +61,7 @@ export function bindReporterAndOrientation(context) {
   };
   context.disposers.push(() => window.clearTimeout(noticeTimer));
 
-  // A failed start or stream: the cover comes back and says why (it used to
-  // show "Stream wird geladen …" for good, hiding the error).
+  // A failed start or stream: the cover comes back and says why.
   context.showError = (errorOrMessage) => {
     context.sourceSwitch.clearSeekTimer();
     context.inlineLoading.end();

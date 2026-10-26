@@ -1,3 +1,5 @@
+// Inline SVG icons for the watch party lobby.
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const PATHS = {

@@ -1,3 +1,4 @@
+// Carousel of cast members; each card opens that actor.
 import { createElement } from '../utils/dom.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../utils/image.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';

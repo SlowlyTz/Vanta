@@ -1,3 +1,6 @@
+/* Dialogs over the video ("Schaust du noch?", sleep timer warning) and the
+   TV focus and seek preview. */
+
 /* "Schaust du noch?" and the sleep timer warning: small panels over the paused video. */
 .vanta-still-watching {
   position: absolute;

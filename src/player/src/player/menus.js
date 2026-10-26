@@ -1,3 +1,6 @@
+// Settings flyout content: quality, audio, subtitles, episodes, party and
+// sleep timer, and what a choice does to the running stream.
+
 import { createQualityController } from '../quality.js';
 import { createSubtitleController } from '../subtitles.js';
 import { createAudioController } from '../audio.js';

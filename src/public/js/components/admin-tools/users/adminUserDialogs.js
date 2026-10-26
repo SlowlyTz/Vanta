@@ -1,3 +1,4 @@
+// Ban and delete confirmation dialogs of the admin user management.
 import { createElement } from '../../../utils/dom.js';
 import { openAdminModal } from '../adminModal.js';
 

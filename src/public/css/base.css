@@ -1,5 +1,8 @@
+/* Theme tokens and app-wide base rules: reset, focus, scrollbars, reduced
+   motion and touch hit areas. */
+
 :root {
-  /* Abyss tokens — source of truth for the theme */
+  /* Theme tokens */
   --abyss-accent: 245, 245, 247;
   --abyss-glass-tint: 42, 42, 42;
   --abyss-radius: 12px;
@@ -8,7 +11,7 @@
   --abyss-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --abyss-ease-snappy: cubic-bezier(0.4, 0.0, 0.2, 1);
 
-  /* HSL Color System - Apple TV Style Dark Cinematic */
+  /* Colours */
   --bg-primary: hsl(240, 10%, 4%);
   --bg-secondary: hsl(240, 10%, 8%);
   --bg-tertiary: hsl(240, 10%, 12%);
@@ -31,8 +34,7 @@
   --spacing-xl: 2.5rem;
   --spacing-xxl: 4rem;
 
-  /* Typography — Outfit stays (no license/deployment risk vs. Abyss's Google Sans import);
-     used consistently across app and player, tuned toward Abyss's calm, low-tracking feel. */
+  /* Typography: Outfit (fonts.css) in the app and the player. */
   --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Borders and Blurs */
@@ -148,7 +150,7 @@ body.modal-open {
   overflow-x: clip;
 }
 
-/* Custom premium scrollbar */
+/* Scrollbar */
 * {
   scrollbar-color: rgba(var(--abyss-accent), 0.5) transparent;
 }

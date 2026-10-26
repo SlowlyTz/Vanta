@@ -1,6 +1,4 @@
-/* ---------------------------------
-   HOME SECTION MOTION
-   --------------------------------- */
+/* Fade-in of the home page sections. */
 @keyframes home-section-fade-up {
   from {
     opacity: 0;

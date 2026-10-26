@@ -1,3 +1,6 @@
+// Entry of the opening scene: samples the logo and plays the particle intro
+// over the app.
+
 import { isLowPower, pixelRatio } from '../../shared/particles/device.js';
 import { readPixels } from '../../shared/particles/pixels.js';
 import { sampleLogo } from './sample-logo.js';

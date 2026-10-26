@@ -1,3 +1,5 @@
+// Build of the particle scenes (intro and countdown) into public/vendor/scenes.
+
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';

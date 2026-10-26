@@ -1,3 +1,4 @@
+// Auth endpoints: login, logout, current user, password and TV pairing by phone.
 import { request } from './client.js';
 
 export const AuthApi = {

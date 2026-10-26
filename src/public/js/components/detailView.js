@@ -1,3 +1,4 @@
+// Layout of the item detail page: hero with poster, facts and actions, then cast, seasons and similar titles.
 import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 import { createExpandableText } from './expandableText.js';

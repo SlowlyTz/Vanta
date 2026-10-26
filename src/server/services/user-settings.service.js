@@ -1,10 +1,10 @@
-import fs from 'fs';
-import { writeFileAtomicSync } from '../utils/atomicWrite.js';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+// Per-user limits set by an admin (concurrent streams), kept in
+// db/user/settings.json.
+import { createJsonStore } from '../utils/jsonStore.js';
+import { join } from 'path';
+import { httpError } from '../utils/httpError.js';
+import { USER_DB_DIR } from '../config/paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_USER_DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db', 'user');
 
 export const DEFAULT_MAX_CONCURRENT_STREAMS = 1;
 const MAX_ALLOWED_STREAMS = 20;
@@ -15,24 +15,16 @@ function isValidStreamLimit(value) {
   return Number.isInteger(value) && value >= 0 && value <= MAX_ALLOWED_STREAMS;
 }
 
-export function createUserSettingsService({ dbDir = DEFAULT_USER_DB_DIR } = {}) {
+export function createUserSettingsService({ dbDir = USER_DB_DIR } = {}) {
   const settingsFile = join(dbDir, 'settings.json');
 
-  function readSettings() {
-    if (!fs.existsSync(settingsFile)) return emptySettings();
-
-    try {
-      const parsed = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
-      return { users: parsed.users && typeof parsed.users === 'object' ? parsed.users : {} };
-    } catch (error) {
-      console.warn('[UserSettingsService] Could not read settings.json:', error.message);
-      return emptySettings();
-    }
-  }
-
-  function writeSettings(settings) {
-    writeFileAtomicSync(settingsFile, `${JSON.stringify(settings, null, 2)}\n`, { encoding: 'utf8' });
-  }
+  const store = createJsonStore(settingsFile, {
+    empty: emptySettings,
+    parse: parsed => ({ users: parsed.users && typeof parsed.users === 'object' ? parsed.users : {} }),
+    label: 'settings.json'
+  });
+  const readSettings = () => store.read();
+  const writeSettings = settings => store.write(settings);
 
   return {
     getSettings(userId) {
@@ -45,22 +37,14 @@ export function createUserSettingsService({ dbDir = DEFAULT_USER_DB_DIR } = {}) 
       };
     },
 
-    getMaxConcurrentStreams(userId) {
-      return this.getSettings(userId).maxConcurrentStreams;
-    },
-
     setMaxConcurrentStreams(userId, value, updatedBy = null) {
       if (!userId) {
-        const error = new Error('userId is required');
-        error.status = 400;
-        throw error;
+        throw httpError(400, 'Kein Nutzer angegeben');
       }
 
       const numericValue = Number(value);
       if (!isValidStreamLimit(numericValue)) {
-        const error = new Error(`maxConcurrentStreams must be an integer between 0 and ${MAX_ALLOWED_STREAMS}`);
-        error.status = 400;
-        throw error;
+        throw httpError(400, `Das Stream-Limit muss eine ganze Zahl von 0 bis ${MAX_ALLOWED_STREAMS} sein`);
       }
 
       const settings = readSettings();

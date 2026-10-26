@@ -1,11 +1,11 @@
+// Hands viewing-session state from one player page to the next (an episode
+// switch replaces the page): the "Schaust du noch?" count, the sleep timer and
+// where playback was started from. Anything else starts anew.
 const KEY = 'vanta.player.carry';
 // Only a switch that happens right now carries anything; a value left behind
 // by a tab that was closed mid-switch is stale.
 const MAX_AGE_MS = 60 * 1000;
 
-// Hands what belongs to a viewing session from one player page to the next
-// (an episode switch replaces the page): the "Schaust du noch?" count, the
-// sleep timer and where playback was started from. Anything else starts anew.
 export function createPlayerCarry({ storage = globalThis.sessionStorage, now = () => Date.now() } = {}) {
   return {
     give(state) {

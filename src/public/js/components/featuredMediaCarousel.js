@@ -1,3 +1,4 @@
+// Carousel of large portrait media cards for featured rows.
 import { createElement } from '../utils/dom.js';
 import { MediaCard } from './mediaCard.js';
 import { HorizontalCarousel } from './horizontalCarousel.js';

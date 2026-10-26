@@ -1,3 +1,4 @@
+/* Imports of the trailer scroller stylesheets, in cascade order. */
 @import "./trailer-scroller/header.css";
 @import "./trailer-scroller/slide-card.css";
 @import "./trailer-scroller/info-panel.css";

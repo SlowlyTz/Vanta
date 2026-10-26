@@ -1,7 +1,6 @@
-import { NotificationsApi } from '../api/notifications.api.js';
-
 // Push on this device: whether it can work here, and switching it on and
 // off. The permission is only ever asked after a click (enablePush).
+import { NotificationsApi } from '../api/notifications.api.js';
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches === true || navigator.standalone === true;

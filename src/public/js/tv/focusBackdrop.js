@@ -1,10 +1,10 @@
+// TV home and lists: the backdrop of the focused card fades in behind the
+// page, a moment after the focus settled (not on every step through a row).
+// A page opts in with [data-tv-backdrop] on its root.
 import { getBackdropUrlFor, cssUrl } from '../utils/image.js';
 
 const DELAY_MS = 300;
 
-// TV home and lists: the backdrop of the focused card fades in behind the
-// page, a moment after the focus settled (not on every step through a row).
-// A page opts in with [data-tv-backdrop] on its root.
 export function bindFocusBackdrop({ doc = document, win = window } = {}) {
   const layer = doc.createElement('div');
   layer.className = 'tv-focus-backdrop';

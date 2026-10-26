@@ -1,6 +1,4 @@
-/* ---------------------------------
-   ADMIN MENU — eine Karte je Bereich (#/admin)
-   --------------------------------- */
+/* Admin menu (#/admin): one card per section. */
 .admin-menu-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -121,7 +119,7 @@
   transform: translateX(2px);
 }
 
-/* Umschalter (Offen / Alle) im Stil eines Segmented Controls */
+/* Open / All toggle in segmented-control style */
 .admin-segmented {
   display: inline-flex;
   gap: 2px;

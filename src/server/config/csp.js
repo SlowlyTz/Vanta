@@ -1,3 +1,4 @@
+// Content-Security-Policy directives for helmet (YouTube trailers, TMDB images).
 export default {
   defaultSrc: ["'self'"],
   scriptSrc: ["'self'", 'https://www.youtube.com', 'https://s.ytimg.com'],

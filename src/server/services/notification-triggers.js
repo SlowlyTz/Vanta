@@ -1,3 +1,5 @@
+// What causes a notification. Each trigger runs after the action itself
+// succeeded and never fails it.
 import db from '../db/database.js';
 import env from '../config/env.js';
 import { jellyfinJson } from './jellyfin/client.js';
@@ -8,9 +10,6 @@ import { APP_VERSION } from '../../public/js/shared/version.js';
 import { formatEpisodeCode } from '../../public/js/shared/episodeCode.js';
 import { withinAgeLimit } from './catalog/age-limit.js';
 import { appEvents, NOTIFICATIONS_CHANGED } from './events.js';
-
-// What causes a notification. Each trigger runs after the action itself
-// succeeded and never fails it.
 
 const openRequestsFor = db.prepare(`
   SELECT id, user_id, title FROM requests

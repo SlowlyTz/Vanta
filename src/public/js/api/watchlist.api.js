@@ -1,3 +1,4 @@
+// "Meine Liste" endpoints.
 import { request } from './client.js';
 
 export const WatchlistApi = {

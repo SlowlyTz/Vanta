@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ ItemsService: {} }));
+vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })), ItemsService: {} }));
 
 describe('startWatchPartyCleanup', () => {
   it('clears out dead parties and stale invitations on every tick', async () => {

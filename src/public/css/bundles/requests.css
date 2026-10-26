@@ -1,3 +1,4 @@
-/* Requests, request details and problem reports; the admin area uses them too. */
+/* Imports of requests, request details and problem reports, in cascade order;
+   the admin area uses them too. */
 @import '../pages/report.css';
 @import '../pages/requests.css';

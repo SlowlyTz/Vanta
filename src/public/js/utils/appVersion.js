@@ -1,8 +1,6 @@
-// The build this page was served with (the server writes it into index.html
-// in production) against the build the server runs now. Every source that
-// learns the server's build (the API header, the app socket, /api/version)
-// reports it here; a difference means a deploy happened since this page
-// loaded, and the update overlay asks for a reload.
+// Compares the build this page was served with against the one the server
+// runs now. Every source that learns the server's build reports it here; a
+// difference means a deploy happened and the update overlay asks for a reload.
 export const SERVER_BUILD_EVENT = 'vanta:server-build';
 export const BUILD_HEADER = 'X-Vanta-Build';
 

@@ -1,7 +1,6 @@
-// Fails when the built scripts use syntax that TV browsers from about 2020
-// (Chromium 68: webOS 5, Tizen 5.5) cannot parse, call a method they lack
-// that polyfills.js does not fill in, or when the built stylesheets use CSS
-// they drop. Run after `npm run build`.
+// Fails when the build uses what TV browsers from about 2020 (Chromium 68:
+// webOS 5, Tizen 5.5) cannot handle: newer syntax, methods polyfills.js does
+// not fill in, or CSS they drop. Run after `npm run build`.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

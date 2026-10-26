@@ -1,8 +1,5 @@
-/* ---------------------------------
-   SKELETONS
-   Loading placeholders that take the footprint of the real hero and
-   carousels (sizes mirror media-card.css, carousel.css, home/hero-base.css).
---------------------------------- */
+/* Loading placeholders in the footprint of the real hero and carousels
+   (sizes mirror media-card.css, carousel.css, home/hero-base.css). */
 .skeleton-bar,
 .skeleton-card-image,
 .skeleton-hero-backdrop {

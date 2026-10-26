@@ -1,3 +1,4 @@
+// Helpers for streaming Jellyfin responses (playback, images) to the client.
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 

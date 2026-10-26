@@ -3,7 +3,7 @@ import { createMemoryDb } from '../helpers/memoryDb.js';
 
 const memory = await createMemoryDb();
 vi.mock('../../../src/server/db/database.js', () => ({ default: memory }));
-vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({
+vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })),
   ItemsService: { getItemDetails: vi.fn(), getSeasons: vi.fn(), getEpisodes: vi.fn() }
 }));
 

@@ -1,3 +1,5 @@
+// Play/pause and ten-second seek buttons, with the seek bubble.
+
 import { seekBy, seekTo } from '../seek.js';
 
 // Presses closer together than this add up in one bubble ("−30 s").

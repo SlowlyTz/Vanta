@@ -1,4 +1,4 @@
-/* Buttons */
+/* Primary and secondary buttons. */
 .btn-primary, .btn-secondary {
   display: inline-flex;
   align-items: center;

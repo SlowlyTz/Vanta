@@ -1,17 +1,14 @@
+// What is served: with NODE_ENV=production dist/ (`npm run build`) first, src/public
+// only for what the build lacks (/vendor, /assets, /js/intro-gate.js); otherwise
+// src/public as it is, so `npm run dev` needs no build step.
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import env from './env.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { DIST_DIR, PUBLIC_DIR } from './paths.js';
 
-export const PUBLIC_DIR = path.resolve(__dirname, '../../public');
-export const DIST_DIR = path.resolve(__dirname, '../../../dist');
+export { DIST_DIR, PUBLIC_DIR };
 
-// Serving rule: with NODE_ENV=production the Vite build in dist/ (from
-// `npm run build`) is served first and src/public only fills in what the build
-// does not contain (/vendor, /assets, /js/intro-gate.js). Any other NODE_ENV
-// serves src/public as it is, so `npm run dev` needs no build step.
 export const SERVE_DIST = env.NODE_ENV === 'production';
 
 if (SERVE_DIST && !fs.existsSync(path.join(DIST_DIR, 'index.html'))) {

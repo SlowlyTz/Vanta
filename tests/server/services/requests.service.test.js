@@ -19,7 +19,8 @@ const INITIAL_BANNED = JSON.stringify({
 });
 
 const fsState = vi.hoisted(() => ({
-  banned: JSON.stringify({ movies: [{ name: 'Alien', releaseYear: '1979', tmdbId: 348 }], series: [] })
+  banned: JSON.stringify({ movies: [{ name: 'Alien', releaseYear: '1979', tmdbId: 348 }], series: [] }),
+  version: 1
 }));
 
 vi.mock('fs', () => {
@@ -27,6 +28,10 @@ vi.mock('fs', () => {
   return {
     default: {
       existsSync: vi.fn((path) => (isBannedFile(path) ? fsState.banned !== null : true)),
+      statSync: vi.fn(() => {
+        if (fsState.banned === null) throw new Error('ENOENT');
+        return { mtimeMs: fsState.version, size: fsState.banned.length };
+      }),
       readFileSync: vi.fn(() => fsState.banned),
       mkdirSync: vi.fn()
     }
@@ -34,7 +39,7 @@ vi.mock('fs', () => {
 });
 
 vi.mock('../../../src/server/utils/atomicWrite.js', () => ({
-  writeFileAtomicSync: vi.fn((path, data) => { fsState.banned = data; })
+  writeFileAtomicSync: vi.fn((path, data) => { fsState.banned = data; fsState.version += 1; })
 }));
 
 // Reads the status predicate out of the statement instead of restating it, so a

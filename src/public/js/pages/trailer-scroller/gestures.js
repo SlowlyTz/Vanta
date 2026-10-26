@@ -1,3 +1,5 @@
+// Trailer scroller: keyboard/remote navigation, intersection tracking and window listeners.
+
 import { getTopModal } from '../../utils/modal.js';
 
 // On a TV the remote's up/down always change the trailer (the focus sits on

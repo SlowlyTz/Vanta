@@ -1,5 +1,14 @@
+// Jellyfin item lookups: user item queries, details, similar titles, seasons, episodes.
 import { jellyfinJson } from './client.js';
 import { COMMON_ITEM_FIELDS, DETAIL_ITEM_FIELDS } from './fields.js';
+
+// A user's items with the fields every card needs, narrowed by `params`.
+export function queryUserItems(userId, token, params = {}) {
+  return jellyfinJson(`/Users/${userId}/Items`, {
+    token,
+    query: { Fields: COMMON_ITEM_FIELDS, ...params }
+  });
+}
 
 export class ItemsService {
   static async getItemDetails(userId, token, itemId) {

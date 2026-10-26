@@ -9,7 +9,7 @@
 | `npm run scenes:build` | Opening scene and party countdown (one shared three.js chunk) → `src/public/vendor/scenes/` |
 | `npm run build` | Player, scenes and the app into `dist/` |
 | `npm test` | Vitest: `tests/server`, `tests/public`, `tests/player`, … mirror `src/` |
-| `npm run check:legacy` | After a build: every built script must parse in Chromium 68 |
+| `npm run check:legacy` | After a build: built scripts (app, player, scenes) parse in Chromium 68, and the built CSS has nothing Chromium 68 drops |
 | `npm run test:e2e` | Headless Chromium against a running server (below) |
 | `npm run refresh [-- --full]` | Catalogue sync now |
 | `npm run update` | Pull, build and check `origin/main` without starting the server ([setup](setup.md#deploying-an-update)) |
@@ -27,16 +27,18 @@ Drives the TV interface with arrow keys only (1920, 1280, 960 px): focus start, 
 ## Conventions
 
 - Plain ES modules, no framework, no TypeScript. Pages are `pages/*.page.js` returning an element; components are functions returning elements (`utils/dom.js` `createElement`).
-- Client code must run on Chromium 68: no flex `gap` in TV styles (use margins or grid), no `toggleAttribute`; missing APIs go into `polyfills.js`.
+- Everything that renders on a TV must work in Chromium 68: no `inset` (write top/right/bottom/left), `min()`/`max()`/`clamp()` only after a plain fallback value (custom properties get theirs in `@supports not (width: max(1px, 1px))`), flex `gap` only with a margin fallback, no `:focus-visible`/`:is()`/`:has()` in a selector list with other selectors; missing JS APIs go into `polyfills.js`. `check:legacy` enforces most of it.
 - Code shared by app, player and server goes into `src/public/js/shared/` and stays DOM-free.
-- New API routes need `requireAuth` (a test enforces it).
-- UI text is German, code and comments English.
+- New API routes need `requireAuth` (a test enforces it). Routes stay thin: rules go into `services/`, errors with a status come from `utils/httpError.js`, Jellyfin failures go through `utils/jellyfinRoute.js`.
+- UI text and API error messages are German; code, comments and logs English. Every module starts with a 1–2 line comment saying what it is for.
+- Layers stack by the z-index scale in `css/base.css` (`--z-navbar` … `--z-offline`).
+- Tests and builds run with at most half the CPU: `systemd-run --user --scope -q -p CPUQuota=$(( $(nproc) * 50 ))% -- npm test -- --maxWorkers=4`.
 
 ## Debugging
 
 - `?tv=1` / `?tv=0`: TV mode on/off for this device.
 - `?wpSkew=3000`, `localStorage['vanta.debug.sync']='1'`: watch party sync (see [features](features.md#watch-party)).
-- Player errors are logged as `[VANTA Player]` in the console.
+- Player errors are logged as `[VANTA Player]` in the console; the viewer only ever sees German messages (`player/src/playbackErrors.js`).
 - After `npm run build` restart the server, or it keeps naming the old stylesheet files.
 
 ## Operations

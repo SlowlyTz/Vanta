@@ -1,3 +1,5 @@
+// Detail page of a film or series: play actions, favourite, watchlist, cast,
+// seasons and similar titles.
 import { createElement } from '../utils/dom.js';
 import { createPlayedToggle } from '../components/playedToggle.js';
 import { appStore } from '../store/app.store.js';

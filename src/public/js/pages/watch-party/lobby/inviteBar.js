@@ -1,10 +1,11 @@
+// Share row under the watch party roster: the party link, copy with a short
+// confirmation, and (for the host) inviting a user by name.
+
 import { createElement } from '../../../utils/dom.js';
 import { icon } from './icons.js';
 
 const COPIED_FEEDBACK_MS = 2_000;
 
-// Share row under the roster: the party link, copy with a short confirmation,
-// and (for the host) inviting a user by name.
 export function createInviteBar(ctx) {
   const input = createElement('input', {
     className: 'watch-party-invite-input',

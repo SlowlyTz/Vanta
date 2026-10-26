@@ -1,3 +1,4 @@
+/* Trailer scroller: the track of slides and the video card of each. */
 .trailer-scroller-track {
   position: relative;
   z-index: 1;

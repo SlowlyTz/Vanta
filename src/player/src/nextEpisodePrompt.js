@@ -1,6 +1,8 @@
+// The next-episode overlay near the end of an episode, with its countdown.
+
 import { formatEpisodeCode } from './episodes.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './player/markup.js';
-import { normalizeKey } from '../../public/js/tv/keys.js';
+import { normalizeKey } from '../../public/js/shared/remoteKeys.js';
 
 const DEFAULT_COUNTDOWN_MS = 10_000;
 

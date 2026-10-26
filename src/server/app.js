@@ -1,3 +1,4 @@
+// The Express app: middleware stack and routes; main.js serves it over HTTP.
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -32,7 +33,6 @@ const app = express();
 // X-Forwarded-Proto, so COOKIE_SECURE=true works behind TLS termination.
 app.set('trust proxy', env.TRUST_PROXY ?? false);
 
-// Security Headers
 app.use(securityHeaders);
 app.use(permissionsPolicy);
 
@@ -48,21 +48,18 @@ if (BUILD_ID) {
 // Gzip/brotli for text responses (JS, CSS, HTML, JSON); media proxies are excluded
 app.use(compressResponses);
 
-// Logging middleware
 app.use(morgan(logFormat(env.NODE_ENV)));
 
-// Parse request bodies and cookies
+// Every API takes JSON; form posts from other sites are not parsed at all.
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
-// Setup HTTP-only session cookies (shared with the watch-party WebSocket upgrade)
+// HTTP-only session cookies; the WebSocket upgrades run the same middleware.
 app.use(sessionMiddleware);
 
 // Serve static assets: dist/ first in production, src/public otherwise (see config/static.js)
 app.use(staticAssets);
 
-// API and UI Routes
 app.use('/api/auth/pairing', pairingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
@@ -84,7 +81,6 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Nicht gefunden' }))
 
 app.use('/', pageRoutes);
 
-// Error Middleware
 app.use(errorHandler);
 
 export default app;

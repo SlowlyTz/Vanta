@@ -1,7 +1,6 @@
-// Swipe down to close a bottom sheet, like on a phone. The sheet follows the
-// finger while its content is scrolled to the top; far or fast enough and it
-// slides out and closes, otherwise it springs back. Only active where the
-// dialog is shown as a sheet (the phone layout).
+// Swipe down to close a bottom sheet (phone layout only). The sheet follows
+// the finger while its content is at the top; far or fast enough and it
+// closes, otherwise it springs back.
 const SHEET_QUERY = '(max-width: 600px)';
 const DISMISS_FRACTION = 0.25;
 const DISMISS_MAX_PX = 140;

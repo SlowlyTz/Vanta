@@ -1,3 +1,6 @@
+// Builds the player context every bind* module works on: markup, vidstack
+// player, UI state, watch-party rights and the page's callbacks.
+
 import { isIOSLike, isPictureInPictureSupported, enforceInlineVideoPlayback } from '../platform.js';
 import { createPlayerUi } from '../ui/playerUi.js';
 import { applyWatchPartyPermissions } from '../watchParty.js';

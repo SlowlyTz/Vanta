@@ -1,3 +1,5 @@
+// Shared watch party constants, formatting helpers and notification icons.
+
 import { formatClock } from '../../shared/time.js';
 import { formatTicksToDuration } from '../../utils/format.js';
 

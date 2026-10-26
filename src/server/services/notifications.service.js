@@ -1,4 +1,7 @@
+// The dots in the menu: decided requests and handled reports since a user
+// last looked, and for admins what still waits for a decision.
 import db from '../db/database.js';
+import { httpError } from '../utils/httpError.js';
 
 const KINDS = ['requests', 'reports'];
 
@@ -12,8 +15,8 @@ const countOpenReports = db.prepare("SELECT COUNT(*) AS n FROM reports WHERE sta
 const countDecidedRequests = db.prepare("SELECT COUNT(*) AS n FROM requests WHERE user_id = ? AND status != 'pending' AND updated_at > ?");
 const countHandledReports = db.prepare("SELECT COUNT(*) AS n FROM reports WHERE user_id = ? AND status != 'open' AND updated_at > ?");
 
-// The first look starts the clock, so decisions from before this feature do
-// not all light up at once.
+// The first look starts the clock, so older decisions do not all light up
+// at once.
 const seenAt = (userId, kind) => {
   const row = getSeen.get(userId, kind);
   if (row) return row.seen_at;
@@ -23,9 +26,6 @@ const seenAt = (userId, kind) => {
 };
 
 export class NotificationsService {
-  // What lights up the dots in the menu: for everyone their own requests and
-  // reports that were decided since they last looked; for admins also what is
-  // still waiting for a decision.
   static getSummary(userId, { isAdmin = false } = {}) {
     const summary = {
       mine: {
@@ -46,7 +46,7 @@ export class NotificationsService {
   // Returns the previous seen time, so the page can mark what is new.
   static markSeen(userId, kind) {
     if (!KINDS.includes(kind)) {
-      throw Object.assign(new Error('Unbekannte Art'), { status: 400 });
+      throw httpError(400, 'Unbekannte Art');
     }
     const previous = seenAt(userId, kind);
     setSeen.run(userId, kind, Date.now());

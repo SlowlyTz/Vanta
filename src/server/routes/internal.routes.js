@@ -1,3 +1,4 @@
+// Endpoints for local tooling (`npm run refresh`) to talk to the running server.
 import express from 'express';
 import crypto from 'crypto';
 import env from '../config/env.js';
@@ -14,11 +15,9 @@ const sameKey = (given, expected) => {
   return a.length === b.length && b.length > 0 && crypto.timingSafeEqual(a, b);
 };
 
-// Local tooling (`npm run refresh`) talks to the running server through here.
 // Instead of a session: the call must come straight from this machine (the
-// socket, not req.ip, and nothing a proxy forwarded, since a proxy on the same
-// host connects from loopback too) and carry the server's own Jellyfin key,
-// which only the same .env can supply.
+// socket, not req.ip; nothing forwarded, since a same-host proxy connects from
+// loopback too) and carry the server's Jellyfin key, which only the .env has.
 const requireLocalKey = (req, res, next) => {
   const address = req.socket?.remoteAddress || '';
   if (!LOOPBACK.has(address) || req.get('x-forwarded-for') !== undefined) {

@@ -1,3 +1,4 @@
+// Horizontally scrolling row with a title, optional "Alle anzeigen" link and arrow buttons.
 import { createElement } from '../utils/dom.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 

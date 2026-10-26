@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
+vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })),
   ItemsService: {
     getItemDetails: vi.fn(),
     getSeasons: vi.fn(),
@@ -8,7 +8,7 @@ vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({
   }
 }));
 
-vi.mock('../../../../src/server/services/jellyfin/library.service.js', () => ({
+vi.mock('../../../../src/server/services/browse/library.service.js', () => ({
   LibraryService: {
     getMovies: vi.fn(),
     getSeries: vi.fn()
@@ -16,7 +16,7 @@ vi.mock('../../../../src/server/services/jellyfin/library.service.js', () => ({
 }));
 
 import { ItemsService } from '../../../../src/server/services/jellyfin/items.service.js';
-import { LibraryService } from '../../../../src/server/services/jellyfin/library.service.js';
+import { LibraryService } from '../../../../src/server/services/browse/library.service.js';
 import { WatchPartyService } from '../../../../src/server/services/watch-party.service.js';
 import { movieItem, createTestParty } from './helpers.js';
 

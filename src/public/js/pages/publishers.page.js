@@ -1,13 +1,16 @@
+// Publishers page: logo cards for the featured publishers and a searchable
+// list of the other studios.
 import { createElement } from '../utils/dom.js';
 import { MediaApi } from '../api/media.api.js';
 import { appStore } from '../store/app.store.js';
 import { createSectionLoader, setSectionBusy } from '../components/loader.js';
-import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../constants/featuredPublishers.js';
+import { getFeaturedPublishersFromStudios, matchFeaturedPublisher } from '../shared/featuredPublishers.js';
 
-const MIN_STUDIO_TITLES = 3;
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
+
+const MIN_STUDIO_TITLES = 3;
 
 export default function PublishersPage(params, pageScope) {
   const { signal } = resolvePageScope(pageScope);

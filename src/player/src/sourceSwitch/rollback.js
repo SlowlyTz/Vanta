@@ -1,3 +1,5 @@
+// Source switch: tries a new source and falls back to the previous one.
+
 export function createSwitchTo(state) {
   return async function switchTo(playback, options = {}) {
     const previousPlayback = state.currentPlayback;

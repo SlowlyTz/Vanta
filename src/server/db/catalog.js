@@ -1,11 +1,12 @@
+// The catalogue mirror (db/catalog.db): Jellyfin movies and series in sql.js for
+// filtering, sorting and search without asking Jellyfin.
 import initSqlJs from 'sql.js';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import fs from 'fs';
 import { writeFileAtomicSync } from '../utils/atomicWrite.js';
+import { DB_DIR } from '../config/paths.js';
+import { createStatementFactory } from './sqlite.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
 const DB_FILE = join(DB_DIR, 'catalog.db');
 
 // One row per movie or series. The columns exist for filtering and sorting; the
@@ -79,41 +80,13 @@ const SCHEMA = `
   );
 `;
 
-const normalizeParams = (params) => {
-  if (params.length === 1 && Array.isArray(params[0])) return params[0];
-  return params;
-};
-
 // Unlike database.js, statements here never persist on their own: a sync writes
 // thousands of rows and must flush to disk exactly once, at the end.
 export function createCatalogDb({ SQL, file = null, bytes = null }) {
   const sqlite = bytes ? new SQL.Database(bytes) : new SQL.Database();
   sqlite.exec(SCHEMA);
 
-  const prepare = (sql) => ({
-    run(...params) {
-      sqlite.run(sql, normalizeParams(params));
-      return { changes: sqlite.getRowsModified() };
-    },
-
-    get(...params) {
-      return this.all(...params)[0];
-    },
-
-    all(...params) {
-      const statement = sqlite.prepare(sql);
-      const values = normalizeParams(params);
-
-      try {
-        if (values.length > 0) statement.bind(values);
-        const rows = [];
-        while (statement.step()) rows.push(statement.getAsObject());
-        return rows;
-      } finally {
-        statement.free();
-      }
-    }
-  });
+  const prepare = createStatementFactory(sqlite);
 
   const persist = () => {
     if (!file) return;

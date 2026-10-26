@@ -1,9 +1,8 @@
+// Atomic file writes: the file is either the old or the new version, never half
+// of one; a crash or full disk mid-write only loses the (per-call) temp file.
 import fs from 'fs';
 import { dirname } from 'path';
 
-// Writes `data` so the file is either the old or the new version, never half
-// of one: a crash or a full disk mid-write only ever loses the temp file. The
-// temp name is unique per call, so two writers never share one.
 export function writeFileAtomicSync(file, data, { encoding } = {}) {
   const dir = dirname(file);
   fs.mkdirSync(dir, { recursive: true });

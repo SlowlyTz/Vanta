@@ -1,11 +1,11 @@
+// Watch-party hub methods: switching to the next episode. Every client loads it
+// paused at 0:00 and reports ready; once all connected members are (or after
+// MAX_SWITCH_WAIT_MS), everyone starts together slightly in the future.
 import { WatchPartyService, isPartyAdmin } from '../../services/watch-party.service.js';
-import { setTimeline, SWITCHING_STATUS } from '../../services/watch-party/helpers.js';
-import { createNotification, ownerError } from './notifications.js';
-
-// Moving the party to the next episode: every client loads the new episode
-// paused at 0:00 and reports ready on its own (no click, no countdown); once
-// all connected members are ready, or after a time limit, everyone starts
-// together at a moment slightly in the future.
+import { setTimeline } from '../../services/watch-party/timeline.js';
+import { SWITCHING_STATUS } from '../../services/watch-party/constants.js';
+import { createNotification } from './notifications.js';
+import { forbidden } from '../../utils/httpError.js';
 
 export { SWITCHING_STATUS };
 export const EPISODE_START_LEAD_MS = 1_000;
@@ -32,7 +32,7 @@ export const episodeSwitchMethods = {
         accessToken: user.accessToken,
         itemId
       });
-      this.stopWaiting?.(partyId);
+      this.stopWaiting(partyId);
       this.scheduleEpisodeStart(partyId);
 
       this.broadcastParty(partyId, {
@@ -78,7 +78,7 @@ export const episodeSwitchMethods = {
   // stays closed for this episode, also for members who join later.
   handleNextEpisodeCancel({ partyId, user }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
-    if (!isPartyAdmin(party, user.userId)) throw ownerError('Nur Admins können die nächste Folge abbrechen.');
+    if (!isPartyAdmin(party, user.userId)) throw forbidden('Nur Admins können die nächste Folge abbrechen.');
     if (party.nextEpisodeCancelledFor === party.playableItemId) return;
     party.nextEpisodeCancelledFor = party.playableItemId;
 

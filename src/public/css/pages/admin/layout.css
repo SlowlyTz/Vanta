@@ -1,9 +1,5 @@
-/* ---------------------------------
-   ADMIN PAGE — Seitengerüst
-   #/admin zeigt das Menü, #/admin/<bereich> genau einen Bereich. Alles steht
-   in einer mittigen Spalte; die Flächen nutzen dasselbe Glas wie Navigation
-   und Einstellungen-Dialog. Gemeinsame Werte als Variablen:
-   --------------------------------- */
+/* Admin page frame: #/admin shows the menu, #/admin/<section> one section,
+   both in a centered column. Shared values as variables: */
 .admin-page,
 .admin-layer {
   --admin-surface: rgba(255, 255, 255, 0.04);
@@ -43,7 +39,7 @@
   gap: 20px;
 }
 
-/* Seitenkopf: Zurück-Chip, Titel, Unterzeile — linksbündig. */
+/* Page header: back chip, title, subtitle, left-aligned. */
 .admin-page-heading {
   display: flex;
   flex-direction: column;
@@ -69,12 +65,8 @@
   line-height: 1.45;
 }
 
-/* ---------------------------------
-   ADMIN LAYER (adminLayer.js)
-   Ein Bereich oder eine Einstellungsseite als Ebene über der ganzen App,
-   Navigation eingeschlossen: fährt von rechts herein und genauso wieder
-   hinaus. Leiste und Inhalt stehen in derselben mittigen Spalte.
-   --------------------------------- */
+/* Admin layer (adminLayer.js): a section or settings page as a layer over the
+   whole app, nav included, sliding in and out from the right. */
 html.admin-layer-open,
 html.admin-layer-open body {
   overflow: hidden;
@@ -250,7 +242,7 @@ html.admin-layer-open body {
   min-width: 0;
 }
 
-/* Leere Listen und Ladefehler in allen Bereichen */
+/* Empty lists and load errors in all sections */
 .admin-page .search-empty-state {
   padding: 36px 16px;
   border-radius: var(--admin-radius);

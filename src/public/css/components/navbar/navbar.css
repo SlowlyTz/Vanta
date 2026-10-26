@@ -1,3 +1,4 @@
+/* The fixed top navbar: tabs, action buttons and the menu button. */
 :root {
   /* Fixed-navbar bottom edge (top offset + height) plus breathing room.
      Pages that render prominent content behind the transparent spotlight

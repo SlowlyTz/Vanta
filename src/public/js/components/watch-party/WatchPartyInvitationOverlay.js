@@ -1,3 +1,4 @@
+// Stack of pending watch party invitations with accept and decline buttons.
 import { createElement } from '../../utils/dom.js';
 import { watchPartyInvitationStore } from '../../store/watch-party-invitations.store.js';
 import { WatchPartyApi } from '../../api/watch-party.api.js';

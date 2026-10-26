@@ -1,3 +1,6 @@
+// Creates the source switch on the player context and sets up inline
+// fullscreen on phones.
+
 import { exitPictureInPicture, enterInlineFullscreen } from '../platform.js';
 import { createSourceSwitch } from '../sourceSwitch.js';
 

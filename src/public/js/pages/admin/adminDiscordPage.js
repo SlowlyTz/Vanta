@@ -1,3 +1,5 @@
+// "Discord-Webhook" settings page: on/off switch and status, a new URL with
+// test/save, and removal.
 import { createElement } from '../../utils/dom.js';
 import { AdminSettingsApi } from '../../api/admin-settings.api.js';
 
@@ -8,10 +10,8 @@ const group = (title, ...children) => createElement('section', { className: 'adm
   createElement('div', { className: 'admin-settings-card' }, ...children)
 );
 
-// Unterseite "Discord-Webhook" der Admin-Einstellungen: Schalter und Status,
-// neue URL mit Testen/Speichern, Entfernen. Der Status wird erst geholt, wenn
-// die Seite geöffnet wird (activate): der Endpunkt hängt hinter
-// requireFreshAdmin, das bei jedem Request Jellyfin befragt.
+// The status is only fetched on activate(): the endpoint sits behind
+// requireFreshAdmin, which asks Jellyfin on every request.
 export function createAdminDiscordPage() {
   let busy = false;
   let currentEnabled = false;

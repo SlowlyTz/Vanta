@@ -1,6 +1,7 @@
+// Everything the admin dashboard shows, in one answer: server and Jellyfin
+// status, streams, open work, catalogue, storage and recent activity.
 import fs from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import env from '../config/env.js';
 import db from '../db/database.js';
 import { jellyfinJson, jellyfinRawFetch } from './jellyfin/client.js';
@@ -10,9 +11,8 @@ import { getImageCache } from './images/image-cache.js';
 import { WatchPartyService } from './watch-party.service.js';
 import { UserBanService } from './user-ban.service.js';
 import { loginThrottle } from './login-throttle.service.js';
+import { DB_DIR } from '../config/paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
 const DB_FILES = ['requests.db', 'catalog.db', 'sessions.db'];
 
 const recentRequests = db.prepare("SELECT id, title, username, status, created_at, updated_at FROM requests ORDER BY created_at DESC LIMIT 6");
@@ -50,8 +50,8 @@ export function describeStream(session) {
   };
 }
 
-// Everything the admin dashboard shows, in one answer. A part that cannot be
-// read (Jellyfin down) comes back empty instead of failing the rest.
+// A part that cannot be read (Jellyfin down) comes back empty instead of
+// failing the rest.
 export function createAdminDashboard({
   fetchJson = jellyfinJson,
   ping = () => jellyfinRawFetch('/System/Ping', { timeoutMs: 3000 }),

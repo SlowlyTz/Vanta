@@ -1,3 +1,5 @@
+// Cleanup after every catalogue run: old notifications, rows of deleted
+// Jellyfin accounts and push subscriptions of ended sessions.
 import db from '../db/database.js';
 import { UserDirectory } from './user-directory.service.js';
 import { NotifyService } from './notify.service.js';
@@ -7,10 +9,7 @@ import { PushService } from './push.service.js';
 // Jellyfin account exists.
 export const PER_USER_TABLES = ['user_preferences', 'watchlist', 'resume_hidden', 'push_subscriptions', 'notification_preferences', 'notifications', 'notification_seen'];
 
-// Runs after every catalogue run: old notifications go, rows of Jellyfin
-// accounts that were deleted go, and so do push subscriptions of sessions
-// that ended (expired or replaced by another login). Each step on its own;
-// none of them fails the others.
+// Each step runs on its own; none of them fails the others.
 export function createHousekeeping({
   database = db,
   directory = UserDirectory,

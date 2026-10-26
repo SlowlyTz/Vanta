@@ -1,3 +1,5 @@
+// Requests area of the admin page: media requests and problem reports.
+// "Offen" groups them (reports first), "Alle" mixes them by date with status.
 import { createElement } from '../../../utils/dom.js';
 import { createChatIcon } from '../../navbar/icons.js';
 import { RequestsApi } from '../../../api/requests.api.js';
@@ -22,10 +24,6 @@ export const ADMIN_REQUESTS_TOOL = {
   icon: () => createChatIcon()
 };
 
-// Anfragen-Bereich der Admin-Seite: Medienanfragen und Problemmeldungen.
-// "Offen" zeigt beides in zwei Gruppen (Meldungen zuerst), "Alle" mischt sie
-// nach Datum, mit Status je Karte. Jede Karte trägt ihre Art ("Problem" rot,
-// "Anfrage" violett), damit man sie nicht verwechselt.
 export function createAdminRequestsTool() {
   let activeTab = 'open';
   let loadedRequests = [];

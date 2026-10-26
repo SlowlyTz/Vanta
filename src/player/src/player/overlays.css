@@ -1,3 +1,5 @@
+/* Overlays over the video: loading cover, spinners, start errors and notices. */
+
 /* Way out while the cover is up (the controls' Zurück lies beneath it). */
 .vanta-player-loading-back {
   position: absolute;

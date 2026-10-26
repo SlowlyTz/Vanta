@@ -1,9 +1,8 @@
-// DOM-free: shared by the web app and the server (the playback profile).
+// Which TV platform a user agent belongs to; DOM-free, shared by the web app and
+// the server (the playback profile).
 
-// Which TV platform a user agent belongs to. Only patterns that a phone, a
-// tablet or a desktop browser never carry count as sure; everything else is
-// left to the heuristic on the client (see utils/tvMode.js).
-// intro-gate.js repeats TV_PATTERN for the first paint; keep them in step.
+// Only patterns that a phone, a tablet or a desktop browser never carry count as
+// sure; everything else is left to the client heuristic (see utils/tvMode.js).
 const PLATFORMS = [
   { platform: 'tizen', test: ua => /Tizen/i.test(ua) && /SMART-TV|\bTV\b/i.test(ua) },
   { platform: 'webos', test: ua => /Web0S|webOS/i.test(ua) && /\bTV\b|SmartTV|NetCast/i.test(ua) },
@@ -13,6 +12,7 @@ const PLATFORMS = [
   { platform: 'other', test: ua => /HbbTV|SMART-TV|SmartTV/i.test(ua) }
 ];
 
+// intro-gate.js repeats this for the first paint; keep them in step.
 export const TV_PATTERN = /SMART-TV|SmartTV|HbbTV|Web0S|webOS.*TV|Tizen.*TV|\bAFT[A-Z]|CrKey|GoogleTV|BRAVIA|Android.*\bTV\b|AndroidTV/i;
 
 export function detectTv(userAgent = '') {

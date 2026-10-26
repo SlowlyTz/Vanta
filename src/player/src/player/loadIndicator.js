@@ -1,3 +1,5 @@
+// Loading percentage and time left, on the loading cover and the spinner.
+
 import { createFirstByteHistory, createLoadProgressTracker, DEFAULT_SEGMENT_SECONDS, formatLoadProgress } from '../loadProgress.js';
 
 const TICK_MS = 250;

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { bindFocusEngine, createFocusEngine, directionalScore } from '../../../src/public/js/tv/focusEngine.js';
+import { bindFocusEngine, createFocusEngine } from '../../../src/public/js/tv/focusEngine.js';
+import { directionalScore } from '../../../src/public/js/shared/focusGeometry.js';
 import { openModal, closeAllModals } from '../../../src/public/js/utils/modal.js';
 
 // Lays elements out by data-rect="left,top,width,height".

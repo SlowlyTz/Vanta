@@ -1,3 +1,6 @@
+// Entry of the watch-party particle countdown: prepares the digits ahead of
+// time and mounts the WebGL scene, timed by the server clock.
+
 import { isLowPower, pixelRatio } from '../../shared/particles/device.js';
 import { buildDigitTargets, ensureFont } from './digits.js';
 import { createCountdownScene } from './scene.js';

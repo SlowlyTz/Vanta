@@ -1,3 +1,4 @@
+/* The navigation drawer: panel, header, entries and user card. */
 :root {
   /* How far the app slides right while the drawer is open. */
   --drawer-push: clamp(40px, 4vw, 72px);

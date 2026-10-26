@@ -1,6 +1,4 @@
-/* ---------------------------------
-   ADMIN PAGE — Responsive
-   --------------------------------- */
+/* Admin page responsive adjustments. */
 @media (max-width: 640px) {
   .admin-page-layout {
     gap: 16px;

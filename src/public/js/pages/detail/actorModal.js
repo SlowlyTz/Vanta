@@ -1,3 +1,5 @@
+// Actor dialog on the detail page: the person's details and their other titles
+// in the library.
 import { createElement } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../../utils/image.js';

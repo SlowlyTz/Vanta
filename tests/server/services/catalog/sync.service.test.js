@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import initSqlJs from 'sql.js';
 import { createCatalogDb } from '../../../../src/server/db/catalog.js';
-import { createCatalogSync, normalizeText } from '../../../../src/server/services/catalog/sync.service.js';
+import { createCatalogSync } from '../../../../src/server/services/catalog/sync.service.js';
+import { normalizeKey as normalizeText } from '../../../../src/server/utils/text.js';
 
 const SQL = await initSqlJs();
 
@@ -353,7 +354,7 @@ describe('CatalogSync', () => {
 
       expect(record.error).toBeNull();
       expect(sync.isRunning()).toBe(false);
-      expect(log.warn).toHaveBeenCalledWith('[CatalogSync] afterRun fehlgeschlagen: Cache kaputt');
+      expect(log.warn).toHaveBeenCalledWith('[CatalogSync] afterRun failed: Cache kaputt');
     });
   });
 });

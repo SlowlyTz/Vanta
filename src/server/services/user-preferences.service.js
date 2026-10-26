@@ -1,3 +1,5 @@
+// A user's app settings (user_preferences), always complete: defaults fill
+// in what was never set.
 import db from '../db/database.js';
 import { sanitizePreferences, withDefaults } from '../../public/js/shared/preferences.js';
 
@@ -17,7 +19,6 @@ const readStored = (userId) => {
   }
 };
 
-// A user's settings, always complete (defaults for what was never set).
 export class UserPreferencesService {
   static get(userId) {
     return withDefaults(readStored(userId));

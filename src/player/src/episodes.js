@@ -1,3 +1,5 @@
+// Episode lookups in the series data the player gets from the page.
+
 export { formatEpisodeCode } from '../../public/js/shared/episodeCode.js';
 
 export function findEpisode(context, episodeId) {

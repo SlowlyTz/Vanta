@@ -248,7 +248,7 @@ describe('createImageCache', () => {
     await cache.ready;
     expect(cache.isAvailable()).toBe(false);
     expect(log.warn).toHaveBeenCalledTimes(1);
-    expect(log.warn.mock.calls[0][0]).toMatch(/\[Bilder\] sharp konnte nicht geladen werden.*libvips fehlt/);
+    expect(log.warn.mock.calls[0][0]).toMatch(/\[Images\] sharp could not be loaded.*libvips fehlt/);
 
     await expect(cache.getImage({ itemId: 'x', type: 'Primary', width: 400, token: 'tok' })).rejects.toThrow(/sharp/);
     expect(await cache.warm([{ Id: 'x', ImageTags: { Primary: 'p' } }], { token: 'tok' })).toBeNull();
@@ -277,7 +277,7 @@ describe('createImageCache', () => {
       expect(fs.existsSync(join(dir, 'm1', 'Backdrop-b1-1280.webp'))).toBe(true);
       expect(fs.existsSync(join(dir, 'm3', 'Backdrop-b3-1280.webp'))).toBe(true);
       expect(log.info).toHaveBeenCalledTimes(1);
-      expect(log.info.mock.calls[0][0]).toMatch(/^\[Bilder\] Vorgeladen: 2 Poster, 2 Backdrops \(\d+\.\d s\)$/);
+      expect(log.info.mock.calls[0][0]).toMatch(/^\[Images\] warmed: 2 posters, 2 backdrops \(\d+\.\d s\)$/);
     });
 
     it('counts failures instead of throwing and stays quiet when nothing was rendered', async () => {

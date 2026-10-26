@@ -1,3 +1,6 @@
+/* Watch-party playback: autoplay prompt, notifications, waiting for a
+   buffering member and the sync diagnostics. */
+
 .watch-party-autoplay-overlay {
   position: fixed;
   top: 0;

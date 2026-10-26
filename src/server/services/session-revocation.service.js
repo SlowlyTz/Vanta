@@ -1,3 +1,5 @@
+// Cuts a banned or deleted user off everywhere at once: sessions, Jellyfin
+// tokens, sockets and push subscriptions.
 import { sessionStore } from '../config/session.js';
 import { AuthService } from './jellyfin/auth.service.js';
 import { forgetTokenDevice } from './jellyfin/client.js';
@@ -9,10 +11,8 @@ import { bannedPayload } from './user-ban.service.js';
 export const ACCOUNT_DELETED_MESSAGE = 'Dein Konto wurde gelöscht.';
 export const accountDeletedPayload = () => ({ error: ACCOUNT_DELETED_MESSAGE, code: 'ACCOUNT_DELETED', reason: null });
 
-// Cuts a user off everywhere at once: every session in the store, the
-// Jellyfin tokens behind them, open app sockets (which carry the reason to the
-// client) and watch-party connections. Nothing here may stop the ban itself.
-// `payload`: what the client shows (a ban by default, or accountDeletedPayload).
+// Open app sockets carry `payload` to the client (a ban by default, or
+// accountDeletedPayload). Nothing here may stop the ban itself.
 export async function revokeUserAccess(userId, ban, {
   payload = bannedPayload(ban),
   store = sessionStore,

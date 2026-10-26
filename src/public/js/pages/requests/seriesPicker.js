@@ -1,3 +1,5 @@
+// Series request picker: the whole series, some seasons or single episodes,
+// checked against what the library and open requests already cover.
 import { createElement } from '../../utils/dom.js';
 import { RequestsApi } from '../../api/requests.api.js';
 import { appStore } from '../../store/app.store.js';
@@ -40,8 +42,6 @@ export function seasonState(season, cover) {
   return { key: 'missing', label: 'Fehlt', chip: 'ui-chip-muted', selectable: true };
 }
 
-// Picks what to request of a series: the whole series, some seasons, or
-// single episodes, against what the library and open requests already cover.
 // A sticky bar at the bottom says what will be requested and sends it.
 export function createSeriesPicker({ tmdbId, seasons = [], coverage = null, seriesExists = false, banned = false } = {}) {
   const cover = coverage || buildRequestCoverage([]);

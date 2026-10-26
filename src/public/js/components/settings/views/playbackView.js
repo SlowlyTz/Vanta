@@ -1,3 +1,4 @@
+// Settings view "Wiedergabe": what every player starts with, on all devices of the user.
 import { createElement } from '../../../utils/dom.js';
 import { preferencesStore } from '../../../store/preferences.store.js';
 import { appStore } from '../../../store/app.store.js';
@@ -22,7 +23,6 @@ const STILL_WATCHING = [
 
 export const playbackStatus = (prefs) => (prefs.autoplayNextEpisode ? 'Autoplay an' : 'Autoplay aus');
 
-// "Wiedergabe": what every player starts with, on all devices of the user.
 export function createPlaybackView({ onStatus = () => {} } = {}) {
   const element = createElement('div', { className: 'settings-view' });
 

@@ -1,3 +1,4 @@
+/* Trailer scroller: page frame, header and navigation hints. */
 html.trailer-scroller-active,
 body.trailer-scroller-active {
   width: 100%;

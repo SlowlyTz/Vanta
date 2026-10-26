@@ -1,10 +1,10 @@
-import { findOutro } from './segments.js';
-
 // Sleep timer: closes the player after a set playback time, or at the end of
 // the film / episode (when its credits begin, or at the end of the file
 // without detected credits). Only playback time counts, a pause holds the
 // timer. One minute before, a notice counts down and offers to cancel. It is
 // not offered in a watch party.
+
+import { findOutro } from './segments.js';
 
 export const SLEEP_WARNING_MS = 60 * 1000;
 const TICK_MS = 1_000;

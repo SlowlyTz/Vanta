@@ -1,3 +1,6 @@
+// Media event wiring: hls.js setup, the HLS fallback for a failing direct
+// source, the UI state on play, pause, seek and buffering, and the back button.
+
 import { isHLSProvider } from 'vidstack';
 import { exitPictureInPicture } from '../platform.js';
 import { HLS_FRAGMENT_TIMEOUT_MS, HLS_WORKER_PATH } from './markup.js';

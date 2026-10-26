@@ -1,3 +1,5 @@
+// Admin page (#/admin): the dashboard menu, with each area opening as a layer
+// on top. The role check here is UX only; the server enforces requireFreshAdmin.
 import { createElement } from '../utils/dom.js';
 import { AuthApi } from '../api/auth.api.js';
 import { notificationsStore } from '../store/notifications.store.js';
@@ -11,13 +13,11 @@ import { createAdminHeader } from './admin/adminHeader.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { openAdminLayer } from './admin/adminLayer.js';
 
-// Beschriftung der Suchleiste je Bereich. Bereiche ohne setFilter (Anfragen,
-// Einstellungen) bekommen gar keine Leiste und stehen deshalb nicht hier.
+// Search bar labels per area. Areas without setFilter get no bar at all.
 const SECTION_SEARCH = {
   users: { placeholder: 'Nutzer durchsuchen…', label: 'Nutzer durchsuchen' }
 };
 
-// Kompakter, linksbündiger Seitenkopf des Menüs.
 function createAdminHeading({ title, subtitle = '' }) {
   return createElement('header', { className: 'admin-page-heading' },
     createElement('h1', { className: 'admin-page-title' }, title),
@@ -28,15 +28,8 @@ function createAdminHeading({ title, subtitle = '' }) {
 const SECTION_HASH = /^#\/admin\/([\w-]+)$/;
 const isAdminHash = hash => hash === '#/admin' || SECTION_HASH.test(hash);
 
-// Seiteneinstieg der Admin-Verwaltung. Unten liegt immer das Menü; ein Bereich
-// (#/admin/requests|users|settings) fährt als Ebene von rechts darüber und mit
-// "Zurück" wieder hinaus — wie die Unterseiten der Einstellungen. Die Seite
-// übernimmt Wechsel zwischen #/admin und #/admin/<id> selbst
-// (handleHashChange, siehe router.js), damit auch die Zurück-Taste des
-// Browsers die Ebene animiert schließt. Der Router kennt keine Rollenprüfung
-// (nur requiresAuth), also prüft die Seite selbst, ob der Nutzer Admin ist.
-// Der eigentliche Schutz sitzt serverseitig in requireFreshAdmin — dieser
-// Check ist reine UX.
+// The page handles #/admin <-> #/admin/<id> itself (handleHashChange, see
+// router.js) so the browser back button also closes the layer animated.
 export default function AdminPage({ section = null } = {}, pageScope) {
   const container = createElement('div', { className: 'admin-page page-container content-section' });
 
@@ -56,9 +49,8 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     if (!torndown) dashboard?.resume();
   };
 
-  // Alles, was diese Seite außerhalb ihres Containers hinterlässt — die Ebene
-  // eines Bereichs, das Nutzer-Detailmodal samt Escape-Handler — muss weg,
-  // sobald der Router die Admin-Verwaltung verlässt.
+  // Removes everything the page leaves outside its container (area layer, user
+  // detail modal) once the router leaves the admin page.
   function teardown() {
     if (torndown) return;
     torndown = true;
@@ -138,7 +130,7 @@ export default function AdminPage({ section = null } = {}, pageScope) {
   };
 
   function buildMenuView(tools) {
-    // The dashboard: status, the tools (the former menu) and activity.
+    // The dashboard: status, the tools and activity.
     const menu = createAdminDashboard({
       tools,
       scope,
@@ -146,8 +138,8 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     });
     dashboard = menu;
 
-    // Offene Anfragen und Meldungen zusammen; die Zahl kommt aus dem
-    // Benachrichtigungs-Store und bleibt live, das Menü steht sofort.
+    // Open requests and reports combined, kept live by the notifications store;
+    // the menu renders without waiting for it.
     const unsubscribe = notificationsStore.subscribe(({ adminTotal }) => menu.setBadge('requests', adminTotal));
     unsubscribers.push(unsubscribe);
     notificationsStore.refresh();
@@ -161,10 +153,9 @@ export default function AdminPage({ section = null } = {}, pageScope) {
     );
   }
 
-  // Der Router füllt den authStore, bevor er die Seite baut — der Rollenwert
-  // liegt also normalerweise schon vor. Das wird bewusst synchron ausgewertet:
-  // ein Spinner pro Wechsel zwischen Menü und Bereich wäre bei jedem Klick zu
-  // sehen. Nur wenn der Wert fehlt, wird er nachgeladen.
+  // The router fills authStore before building the page, so the role is
+  // usually known; checking it synchronously avoids a spinner on every switch.
+  // Only a missing value is fetched.
   const cachedUser = authStore.getState().user;
 
   if (typeof cachedUser?.isAdmin === 'boolean') {

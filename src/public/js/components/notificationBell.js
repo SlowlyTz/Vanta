@@ -1,3 +1,5 @@
+// The navbar bell: unread count, and on a click the latest notifications in a
+// dropdown (a bottom sheet on phones). A click on one marks it read and opens its page.
 import { createElement } from '../utils/dom.js';
 import { notificationsStore } from '../store/notifications.store.js';
 import { openModal } from '../utils/modal.js';
@@ -33,8 +35,6 @@ export function formatAge(timestamp, now = Date.now()) {
   return new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short' }).format(new Date(timestamp));
 }
 
-// The bell in the navbar: the number of unread notifications, and on a click
-// the last 50 of them. A click on one marks it read and opens its page.
 export function createNotificationBell() {
   const count = createElement('span', { className: 'notification-bell-count', 'aria-hidden': 'true' });
   const button = createElement('button', {

@@ -1,13 +1,13 @@
+// express-session store on a sql.js database (db/sessions.db), written to disk a
+// moment after each change so sessions survive restarts and deploys.
 import session from 'express-session';
 import initSqlJs from 'sql.js';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { writeFileAtomicSync } from '../utils/atomicWrite.js';
+import { DB_DIR } from '../config/paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_DIR = join(dirname(dirname(dirname(__dirname))), 'db');
 const DEFAULT_FILE = join(DB_DIR, 'sessions.db');
 
 const PERSIST_DELAY_MS = 1000;
@@ -41,9 +41,7 @@ const expiresOf = (sess, now) => {
   return now + SESSION_COOKIE_TTL_MS;
 };
 
-// express-session store on a sql.js database, written to disk a moment after
-// each change so sessions survive restarts and deploys. `SQL` and `file` are
-// injectable for tests; `file: null` keeps everything in memory.
+// `SQL` and `file` are injectable for tests; `file: null` keeps everything in memory.
 export class SqliteSessionStore extends session.Store {
   constructor({ SQL, file = DEFAULT_FILE, now = () => Date.now() } = {}) {
     super();

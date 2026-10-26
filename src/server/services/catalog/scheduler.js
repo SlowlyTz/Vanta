@@ -1,3 +1,4 @@
+// Timers for the catalogue sync: a repeating update run and a daily full run with retries.
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * 60 * 1000;
 // A full run that could not happen (an update was running) or failed is
@@ -14,8 +15,7 @@ export const msUntilNextTime = (time, from = new Date()) => {
   return next.getTime() - from.getTime();
 };
 
-// Two timers: a repeating update run and a daily full run. Both are re-armed
-// from the stored settings whenever `reload()` is called, so an admin change
+// Both timers are re-armed from the stored settings on `reload()`, so an admin change
 // takes effect without a restart.
 export function createCatalogScheduler({
   sync,

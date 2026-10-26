@@ -1,3 +1,5 @@
+// Auth guards for routes: a valid session, a fresh Jellyfin admin check, and
+// ending invalid or banned sessions.
 import { registerTokenDevice } from '../services/jellyfin/client.js';
 import { AuthService } from '../services/jellyfin/auth.service.js';
 import { UserBanService, bannedPayload } from '../services/user-ban.service.js';

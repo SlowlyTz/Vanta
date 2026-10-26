@@ -1,8 +1,8 @@
-import { createElement } from '../utils/dom.js';
-
 // The box shown where a list or page has nothing to show (EmptyState) or
 // could not load (ErrorState, announced to screen readers, with a button to
 // try again or go elsewhere).
+import { createElement } from '../utils/dom.js';
+
 export function EmptyState({ title = null, message = null, action = null, className = '', style = undefined } = {}) {
   return createElement('div', { className: `search-empty-state${className ? ` ${className}` : ''}`, style },
     title ? createElement('h3', {}, title) : null,

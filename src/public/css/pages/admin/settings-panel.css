@@ -1,8 +1,5 @@
-/* ---------------------------------
-   ADMIN · EINSTELLUNGEN
-   Eine Liste wie in den Einstellungen am Handy; jeder Eintrag öffnet seine
-   Seite als Ebene, die von rechts hereinfährt (adminLayer.js).
-   --------------------------------- */
+/* Admin settings: a list like the phone settings; each entry opens its page
+   as a layer sliding in from the right (adminLayer.js). */
 .admin-settings-list {
   display: flex;
   flex-direction: column;
@@ -389,7 +386,7 @@
   color: #ff7b7b;
 }
 
-/* Katalog: Zahlen-Kacheln und Laufinformationen */
+/* Catalog: stat tiles and run info */
 .admin-catalog-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -1,7 +1,5 @@
-// Keeps the local player on the server timeline. Runs continuously instead of
-// only when a heartbeat arrives: small drift is closed by nudging the playback
-// rate (inaudible within a few percent), large drift by one seek that aims a
-// little ahead to cover the time the seek itself takes.
+// Keeps the local player on the server timeline, ticking continuously: small drift is closed
+// by nudging the playback rate, large drift by one seek aimed ahead by the measured seek latency.
 
 export const DRIFT_TICK_MS = 500;
 export const DRIFT_DEADBAND_MS = 120;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({ ItemsService: { getItemDetails: vi.fn() } }));
+vi.mock('../../../src/server/services/jellyfin/items.service.js', () => ({ queryUserItems: vi.fn(async () => ({ Items: [] })), ItemsService: { getItemDetails: vi.fn() } }));
 vi.mock('../../../src/server/services/jellyfin/client.js', async importOriginal => {
   const actual = await importOriginal();
   return { ...actual, jellyfinJson: vi.fn() };

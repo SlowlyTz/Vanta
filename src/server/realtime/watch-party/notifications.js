@@ -1,11 +1,6 @@
+// Watch-party notification messages (German UI text) and the playback-control check.
 import crypto from 'crypto';
 import { formatClock } from '../../../public/js/shared/time.js';
-
-export function ownerError(message) {
-  const error = new Error(message);
-  error.status = 403;
-  return error;
-}
 
 export function isPlaybackControlAllowed(party) {
   return party.status === 'playing' || party.status === 'paused';

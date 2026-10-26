@@ -1,8 +1,10 @@
+// TMDB client: search, details, trailers and lists, cached in memory and in
+// the tmdb_media table.
 import env from '../config/env.js';
 import db from '../db/database.js';
 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_REQUEST_TIMEOUT_MS = Number(process.env.TMDB_REQUEST_TIMEOUT_MS || 2500);
+const TMDB_REQUEST_TIMEOUT_MS = env.TMDB_REQUEST_TIMEOUT_MS;
 
 const cacheMovie = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, release_date, media_type, score, vote_count, cached_at) VALUES (?, 'movie', ?, ?, ?, ?, ?, 'movie', ?, ?, ?)`);
 const cacheTv = db.prepare(`INSERT OR REPLACE INTO tmdb_media (tmdb_id, tmdb_type, title, overview, poster_path, backdrop_path, first_air_date, media_type, score, vote_count, cached_at) VALUES (?, 'tv', ?, ?, ?, ?, ?, 'tv', ?, ?, ?)`);
@@ -37,8 +39,8 @@ function getMemoryCache(key, ttlMs) {
 }
 
 function setMemoryCache(key, data) {
-  // Entries are only evicted on an expired read, so bound the map: detail objects
-  // are far larger than the trailer stubs this cache originally held.
+  // Entries are only evicted on an expired read, so bound the map: detail
+  // objects are large.
   if (!memoryCache.has(key) && memoryCache.size >= MEMORY_CACHE_MAX_ENTRIES) {
     memoryCache.delete(memoryCache.keys().next().value);
   }
@@ -160,7 +162,6 @@ class TmdbService {
       ...(tv.results || []).map((m) => ({ ...m, media_type: 'tv' })),
     ];
 
-    // Cache all results
     const now = Date.now();
     for (const item of results) {
       if (item.media_type === 'movie') {
@@ -176,9 +177,8 @@ class TmdbService {
     };
   }
 
-  // Like the series: not served from the tmdb_media row, which holds neither
-  // genres, runtime nor cast (a search writes it for every result, so the
-  // detail page of a searched film lost all three).
+  // Not served from the tmdb_media row: a search writes it for every result,
+  // and it holds neither genres, runtime nor cast.
   static async getMovieDetails(movieId) {
     const cacheKey = `tmdb_movie_details_${movieId}`;
     const cached = getMemoryCache(cacheKey, DETAIL_CACHE_TTL);

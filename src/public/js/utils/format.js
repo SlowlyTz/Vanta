@@ -1,3 +1,5 @@
+// Display formatting for run times, playback positions and years.
+
 // A run time as the German UI writes it: "2 Std. 37 Min." or "24 Min.".
 export function formatTicksToDuration(ticks) {
   if (!ticks) return '';

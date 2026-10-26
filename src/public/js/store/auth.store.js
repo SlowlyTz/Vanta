@@ -1,3 +1,4 @@
+// The signed-in user: login, logout, session check and password change.
 import { unsubscribeBrowserPush } from '../utils/pushSubscription.js';
 import { AuthApi } from '../api/auth.api.js';
 import { Store } from './store.js';

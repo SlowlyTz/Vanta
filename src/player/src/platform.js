@@ -1,3 +1,6 @@
+// Browser differences: iOS detection, inline playback and fullscreen,
+// picture-in-picture and the prefixed Fullscreen API.
+
 export function isIOSLike() {
   const userAgent = navigator.userAgent || '';
   const platform = navigator.platform || '';

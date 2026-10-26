@@ -1,3 +1,4 @@
+/* Detail page below the hero on tablets and phones. */
 @media (max-width: 768px) {
   .detail-content {
     padding: var(--spotlight-navbar-clearance) var(--spacing-md) 16px;

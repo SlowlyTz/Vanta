@@ -1,3 +1,4 @@
+// Admin user management endpoints: accounts, bans, library access and limits.
 import { request } from './client.js';
 
 export const AdminUsersApi = {

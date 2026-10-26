@@ -1,3 +1,4 @@
+// Reads movies and series of every Jellyfin library with the server API key for the catalogue sync.
 import env from '../../config/env.js';
 import { jellyfinJson } from '../jellyfin/client.js';
 import { COMMON_ITEM_FIELDS } from '../jellyfin/fields.js';
@@ -38,9 +39,7 @@ const trimItem = (item) => {
   return trimmed;
 };
 
-// Reads the whole catalogue with the server API key, library by library, so
-// every item knows which library it belongs to. That is what per-user library
-// access is later filtered on.
+// Library by library, so every item carries the library id that per-user access is filtered on.
 export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fetchJson = jellyfinJson, pageSize = PAGE_SIZE, log = console } = {}) {
   // Pages of the whole library are big; a sync may wait longer than a page view.
   const request = (path, query = {}) => fetchJson(path, { token: apiKey, query, timeoutMs: 60 * 1000 });
@@ -76,7 +75,7 @@ export function createJellyfinCatalogSource({ apiKey = env.JELLYFIN_API_KEY, fet
       // the mirror and must not fail the whole sync.
       const kept = batch.filter(item => MIRRORED_TYPES.has(item.Type));
       if (kept.length < batch.length) {
-        log.warn?.(`[CatalogSync] ${batch.length - kept.length} Einträge anderen Typs in Bibliothek ${libraryId} übersprungen`);
+        log.warn?.(`[CatalogSync] skipped ${batch.length - kept.length} entries of another type in library ${libraryId}`);
       }
       items.push(...kept.map(item => ({ ...trimItem(item), LibraryId: libraryId })));
 

@@ -1,3 +1,4 @@
+/* Imports of the detail page stylesheets, in cascade order. */
 @import './detail/hero.css';
 @import './detail/favorite-heart.css';
 @import './detail/trailer-modal.css';
