@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import http from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import {
-  isAllowedOrigin, limitMessageRate, rejectUnknownUpgrades, startHeartbeat, WS_MAX_PAYLOAD
+  isAllowedOrigin, limitMessageRate, rejectUnknownUpgrades, startHeartbeat, upgradePathname, WS_MAX_PAYLOAD
 } from '../../../src/server/realtime/hardening.js';
 
 const fakeWs = () => Object.assign(new EventEmitter(), { close: vi.fn(), ping: vi.fn(), terminate: vi.fn() });
@@ -25,6 +25,14 @@ describe('isAllowedOrigin', () => {
 
   it('accepts the host a proxy forwarded', () => {
     expect(isAllowedOrigin(req('https://app.usevanta.de', '10.0.3.58:3000', { 'x-forwarded-host': 'app.usevanta.de' }))).toBe(true);
+  });
+});
+
+describe('upgradePathname', () => {
+  it('returns the path and survives malformed targets', () => {
+    expect(upgradePathname({ url: '/ws/app?x=1' })).toBe('/ws/app');
+    expect(upgradePathname({ url: '//[' })).toBe('');
+    expect(upgradePathname({ url: 'http://[' })).toBe('');
   });
 });
 

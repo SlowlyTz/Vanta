@@ -7,6 +7,7 @@ import { AppSettingsService } from './app-settings.service.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
 import { formatEpisodeCode } from '../../public/js/shared/episodeCode.js';
 import { withinAgeLimit } from './catalog/age-limit.js';
+import { appEvents, NOTIFICATIONS_CHANGED } from './events.js';
 
 // What causes a notification. Each trigger runs after the action itself
 // succeeded and never fails it.
@@ -61,6 +62,7 @@ export function createNotificationTriggers({
   apiKey = env.JELLYFIN_API_KEY,
   settings = AppSettingsService,
   now = () => Date.now(),
+  events = appEvents,
   log = console
 } = {}) {
   const safely = (label, run) => Promise.resolve().then(run).catch(error => log.warn?.(`[Notify] ${label}: ${error.message}`));
@@ -168,6 +170,7 @@ export function createNotificationTriggers({
           if (!tmdbId) continue;
           const requests = openRequestsFor.all(Number(tmdbId), item.Type === 'Series' ? 'tv' : 'movie');
           for (const request of requests) markImported.run(now(), request.id);
+          if (requests.length) events.emit(NOTIFICATIONS_CHANGED);
           const owners = [...new Set(requests.map(request => request.user_id).filter(Boolean).map(String))]
             .filter(userId => usersById.has(userId) && visibleTo(usersById.get(userId), item));
           if (!owners.length) continue;

@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
 import { UserBanService } from '../services/user-ban.service.js';
-import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat } from './hardening.js';
+import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat, upgradePathname } from './hardening.js';
 import { registerTokenDevice } from '../services/jellyfin/client.js';
 import { startWatchPartyCleanup } from '../services/watch-party.service.js';
 import { connectionRegistryMethods } from './watch-party/connectionRegistry.js';
@@ -23,8 +23,7 @@ export class WatchPartySocketHub {
 
   attach(server) {
     server.on('upgrade', (req, socket, head) => {
-      const url = new URL(req.url, 'http://localhost');
-      if (!url.pathname.startsWith('/ws/watch-party/')) return;
+      if (!upgradePathname(req).startsWith('/ws/watch-party/')) return;
       if (!isAllowedOrigin(req)) {
         rejectUpgrade(socket, 403, 'Forbidden');
         return;
@@ -48,8 +47,7 @@ export class WatchPartySocketHub {
 
     this.wss.on('connection', (ws, req) => {
       limitMessageRate(ws);
-      const url = new URL(req.url, 'http://localhost');
-      const partyId = url.pathname.split('/').pop();
+      const partyId = upgradePathname(req).split('/').pop();
       registerTokenDevice(req.session.accessToken, req.session.deviceId);
       const user = {
         userId: req.session.userId,
@@ -60,9 +58,29 @@ export class WatchPartySocketHub {
       this.handleConnection({ ws, partyId, user });
     });
 
-    startWatchPartyCleanup();
+    startWatchPartyCleanup({ onRemoved: partyId => this.forgetParty(partyId) });
 
     return this.wss;
+  }
+
+  // A party that is gone: its timers stop and any socket still open closes.
+  forgetParty(partyId) {
+    clearTimeout(this.countdownTimers.get(partyId));
+    this.countdownTimers.delete(partyId);
+    clearTimeout(this.episodeStartTimers.get(partyId));
+    this.episodeStartTimers.delete(partyId);
+    this.pendingEpisodeChanges.delete(partyId);
+    this.lastSeekNotificationAt.delete(partyId);
+    for (const timers of [this.bufferingTimers, this.waitDropoutTimers]) {
+      for (const [key, timer] of timers) {
+        if (!key.startsWith(`${partyId}:`)) continue;
+        clearTimeout(timer);
+        timers.delete(key);
+      }
+    }
+    const members = this.connectionsByParty.get(partyId);
+    this.connectionsByParty.delete(partyId);
+    members?.forEach(sockets => sockets.forEach(ws => ws.close(1000, 'Party ended')));
   }
 }
 

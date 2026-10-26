@@ -1,60 +1,30 @@
+// Person pages: details and titles, by Jellyfin id or by name.
 import express from 'express';
 import { PeopleService } from '../../services/jellyfin/people.service.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
-import { asyncHandler } from '../../utils/asyncHandler.js';
+import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
+import { validateIdParam } from '../../utils/ids.js';
 
 const router = express.Router();
 
-router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  const { id } = req.params;
+router.param('id', validateIdParam);
 
-  try {
-    const person = await PeopleService.getPersonDetails(userId, accessToken, id);
-    return res.json(person);
-  } catch (error) {
-    console.error(`[Media Person Error] ID ${id}:`, error.message);
-    return res.status(500).json({ error: 'Person konnte nicht geladen werden' });
-  }
-}));
+const PERSON_NOT_FOUND = { notFoundMessage: 'Person nicht gefunden' };
 
-router.get('/:id/items', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  const { id } = req.params;
+router.get('/:id', requireAuth, jellyfinRoute('Media Person Error', 'Person konnte nicht geladen werden', async (req, res) => {
+  res.json(await PeopleService.getPersonDetails(req.session.userId, req.session.accessToken, req.params.id));
+}, PERSON_NOT_FOUND));
 
-  try {
-    const items = await PeopleService.getPersonItems(userId, accessToken, id);
-    return res.json(items);
-  } catch (error) {
-    console.error(`[Media Person Items Error] ID ${id}:`, error.message);
-    return res.status(500).json({ error: 'Titel der Person konnten nicht geladen werden' });
-  }
-}));
+router.get('/:id/items', requireAuth, jellyfinRoute('Media Person Items Error', 'Titel der Person konnten nicht geladen werden', async (req, res) => {
+  res.json(await PeopleService.getPersonItems(req.session.userId, req.session.accessToken, req.params.id));
+}, PERSON_NOT_FOUND));
 
-router.get('/by-name/:name', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  const { name } = req.params;
+router.get('/by-name/:name', requireAuth, jellyfinRoute('Media Person By Name Error', 'Person konnte nicht geladen werden', async (req, res) => {
+  res.json(await PeopleService.getPersonDetailsByName(req.session.userId, req.session.accessToken, req.params.name));
+}, PERSON_NOT_FOUND));
 
-  try {
-    const person = await PeopleService.getPersonDetailsByName(userId, accessToken, name);
-    return res.json(person);
-  } catch (error) {
-    console.error(`[Media Person By Name Error] ${name}:`, error.message);
-    return res.status(500).json({ error: 'Person nicht gefunden' });
-  }
-}));
-
-router.get('/by-name/:name/items', requireAuth, asyncHandler(async (req, res) => {
-  const { userId, accessToken } = req.session;
-  const { name } = req.params;
-
-  try {
-    const items = await PeopleService.getPersonItemsByName(userId, accessToken, name);
-    return res.json(items);
-  } catch (error) {
-    console.error(`[Media Person Items By Name Error] ${name}:`, error.message);
-    return res.status(500).json({ error: 'Titel der Person konnten nicht geladen werden' });
-  }
-}));
+router.get('/by-name/:name/items', requireAuth, jellyfinRoute('Media Person Items By Name Error', 'Titel der Person konnten nicht geladen werden', async (req, res) => {
+  res.json(await PeopleService.getPersonItemsByName(req.session.userId, req.session.accessToken, req.params.name));
+}, PERSON_NOT_FOUND));
 
 export default router;

@@ -10,8 +10,11 @@ import { pickAudioStreamIndex } from '../../services/playback/audioTracks.js';
 import { getTranscodeProgress } from '../../services/playback/transcodeProgress.js';
 import { isTvDirectPlatform } from '../../services/jellyfin/fields.js';
 import { detectTv } from '../../../public/js/shared/tvDetect.js';
+import { validateIdParam } from '../../utils/ids.js';
 
 const router = express.Router();
+
+router.param('id', validateIdParam);
 // 'cancel': the player was left before playback started. Jellyfin never
 // heard of the session, so it gets no report (a stop would overwrite the
 // resume position); only the slot and the encoding are freed.
@@ -69,6 +72,27 @@ router.get('/proxy', requireAuth, asyncHandler(async (req, res) => {
 
   try {
     const normalizedPath = PlaybackService.normalizeJellyfinPath(targetPath);
+    const stream = PlaybackService.streamSessionOf(normalizedPath);
+    if (!stream) return res.status(403).json({ error: 'Dieses Ziel wird nicht ausgeliefert' });
+    if (stream.playSessionId) {
+      try {
+        const replaced = streamSessionService.admitStreamRequest({
+          userId: req.session.userId,
+          username: req.session.username,
+          itemId: stream.itemId,
+          playSessionId: stream.playSessionId,
+          deviceId: req.session.deviceId || req.sessionID || null,
+          userAgent: req.headers['user-agent'] || ''
+        });
+        stopEncodings(accessToken, replaced.filter(sessionId => sessionId !== stream.playSessionId));
+      } catch (error) {
+        if (error.code === 'STREAM_LIMIT_REACHED') {
+          return res.status(429).json({ error: error.message, code: error.code, limit: error.limit, activeStreams: error.activeStreams });
+        }
+        if (error.status === 403) return res.status(403).json({ error: error.message });
+        throw error;
+      }
+    }
     const upstreamResponse = await PlaybackApiService.fetchPlaybackResource(normalizedPath, accessToken, rangeHeader, {
       signal: upstreamAbortSignal(res)
     });
@@ -119,14 +143,14 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
     }
     // The slot is free even when Jellyfin does not take the report.
     if (event === 'stopped' || event === 'ended') streamSessionService.release(userId, report.PlaySessionId);
-    await PlaybackApiService.reportPlayback(accessToken, event, report);
 
     if (event === 'start' || event === 'progress') {
       const known = event === 'start'
         ? streamSessionService.markStarted(userId, report.PlaySessionId)
         : streamSessionService.touch(userId, report.PlaySessionId);
       // An open player is a stream until it is closed: one the server lost
-      // track of counts again, or ends here when the limit is full.
+      // track of counts again, or ends here when the limit is full (before
+      // Jellyfin hears of it).
       if (!known) {
         try {
           const replaced = streamSessionService.resume({
@@ -145,6 +169,8 @@ router.post('/report/:event', requireAuth, asyncHandler(async (req, res) => {
         }
       }
     }
+
+    await PlaybackApiService.reportPlayback(accessToken, event, report);
 
     if (event === 'ended') {
       await PlaybackApiService.markPlayed(userId, accessToken, report.ItemId);

@@ -10,10 +10,17 @@ import env from '../../config/env.js';
 let instance = null;
 
 // Wires the catalogue once per process. Opening the database is async (sql.js
-// loads its wasm), so everything that needs the catalogue awaits this.
-export async function getCatalog() {
-  if (instance) return instance;
+// loads its wasm), so everything that needs the catalogue awaits this; the
+// promise is shared, so callers during startup get the same instance.
+export function getCatalog() {
+  if (!instance) {
+    instance = createCatalog();
+    instance.catch(() => { instance = null; });
+  }
+  return instance;
+}
 
+async function createCatalog() {
   const db = await openCatalogDb();
   const settings = createCatalogSettings();
   const images = getImageCache();
@@ -39,6 +46,5 @@ export async function getCatalog() {
   const scheduler = createCatalogScheduler({ sync, settings });
   setActiveCatalogReader(reader);
 
-  instance = { db, sync, settings, scheduler, reader };
-  return instance;
+  return { db, sync, settings, scheduler, reader };
 }

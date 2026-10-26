@@ -8,12 +8,43 @@ const RESERVED_TTL_MS = 60_000;
 // after 90 s without a word.
 const ACTIVE_TTL_MS = 90_000;
 const QUALITY_SWITCH_WINDOW_MS = 10_000;
+// Replaced sessions (quality switch, a newer stream on the same device) stay
+// known this long, so the old player's late segment requests are refused
+// instead of counting it again. A stopped one may resume (pageshow, replay).
+const ENDED_TTL_MS = 10 * 60_000;
 
 export class StreamSessionService {
   constructor({ getUserSettings, now = () => Date.now() } = {}) {
     this.getUserSettings = getUserSettings;
     this.now = now;
     this.sessionsByUser = new Map();
+    this.endedAt = new Map(); // playSessionId -> time it was replaced
+  }
+
+  markEnded(playSessionId) {
+    const now = this.now();
+    for (const [id, time] of this.endedAt) {
+      if (now - time > ENDED_TTL_MS) this.endedAt.delete(id);
+    }
+    this.endedAt.set(playSessionId, now);
+  }
+
+  hasEnded(playSessionId) {
+    const time = this.endedAt.get(playSessionId);
+    return time !== undefined && this.now() - time <= ENDED_TTL_MS;
+  }
+
+  // Every proxied stream request names its play session: a held one is kept
+  // alive, a replaced one is refused (403), an unknown one (stopped, expired,
+  // server restarted) is counted again within the limit.
+  admitStreamRequest(session) {
+    if (this.touch(session.userId, session.playSessionId)) return [];
+    if (this.hasEnded(session.playSessionId)) {
+      const error = new Error('Diese Wiedergabe wurde beendet.');
+      error.status = 403;
+      throw error;
+    }
+    return this.resume(session);
   }
 
   getLimit(userId) {
@@ -65,6 +96,7 @@ export class StreamSessionService {
     const replaced = [];
     const drop = id => {
       if (id === playSessionId || !sessions.delete(id)) return;
+      this.markEnded(id);
       replaced.push(id);
     };
     if (replacesPlaySessionId) drop(replacesPlaySessionId);

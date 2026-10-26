@@ -59,7 +59,7 @@ export class SqliteSessionStore extends session.Store {
       return this;
     });
     // Expired sessions leave the store (and the file) every quarter hour.
-    this.cleanupTimer = setInterval(() => { if (this.cleanup() > 0) this.persist(); }, CLEANUP_INTERVAL_MS);
+    this.cleanupTimer = setInterval(() => { if (this.cleanup() > 0) this.persistSafely(); }, CLEANUP_INTERVAL_MS);
     this.cleanupTimer.unref?.();
   }
 
@@ -115,9 +115,19 @@ export class SqliteSessionStore extends session.Store {
     if (!this.file || this.persistTimer) return;
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
-      this.persist();
+      this.persistSafely();
     }, PERSIST_DELAY_MS);
     this.persistTimer.unref?.();
+  }
+
+  // From a timer a failed write (disk full) must not crash the process; the
+  // next change tries again.
+  persistSafely() {
+    try {
+      this.persist();
+    } catch (error) {
+      console.error('[Sessions] could not write the session store:', error.message);
+    }
   }
 
   persist() {

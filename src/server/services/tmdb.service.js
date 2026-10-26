@@ -106,7 +106,12 @@ const fetchTmdbJson = async (path, params = {}) => {
 
   if (!response.ok) {
     const message = data.status_message || data.errors?.join(', ') || response.statusText;
-    throw new Error(`TMDB request failed: ${message}`);
+    // A 404 reaches the user (unknown title); anything else is TMDB's problem.
+    const error = response.status === 404
+      ? new Error('Titel bei TMDB nicht gefunden')
+      : new Error(`TMDB request failed: ${message}`);
+    error.status = response.status === 404 ? 404 : 502;
+    throw error;
   }
 
   return data;
@@ -128,8 +133,9 @@ async function getYouTubeTrailer(tmdbType, tmdbId) {
       const enVideos = await fetchTmdbJson(path, { language: 'en-US' });
       trailer = findTmdbYouTubeTrailer(enVideos.results || []);
     }
-  } catch (error) {
-    trailer = null;
+  } catch {
+    // TMDB slow or down: no trailer this time, asked again next time.
+    return null;
   }
 
   setMemoryCache(cacheKey, { trailer });
@@ -214,8 +220,7 @@ class TmdbService {
     }
   }
 
-  // Deliberately not served from the tmdb_media row: it holds neither seasons nor cast, and its
-  // primary key has no type discriminator, so a movie cached under the same id would answer here.
+  // Deliberately not served from the tmdb_media row: it holds neither seasons nor cast.
   static async getTvDetails(tvId) {
     const cacheKey = `tmdb_tv_details_${tvId}`;
     const cached = getMemoryCache(cacheKey, DETAIL_CACHE_TTL);

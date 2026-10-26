@@ -2,9 +2,13 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../../src/server/config/env.js', () => ({ default: { JELLYFIN_BASE_URL: 'http://jellyfin.test' } }));
 vi.mock('../../../src/server/services/known-users.service.js', () => ({ KnownUsersService: { remember: vi.fn() } }));
+vi.mock('../../../src/server/services/jellyfin/auth.service.js', () => ({
+  AuthService: { isAdministrator: () => false, logout: vi.fn(async () => {}) }
+}));
 
 const { startUserSession } = await import('../../../src/server/services/session-login.js');
 const { publicSessionId } = await import('../../../src/server/db/session-store.js');
+const { AuthService } = await import('../../../src/server/services/jellyfin/auth.service.js');
 
 const login = (userId) => ({ AccessToken: `tok-${userId}`, User: { Id: userId, Name: userId, Policy: {} } });
 
@@ -42,5 +46,11 @@ describe('startUserSession', () => {
     const loadPush = vi.fn();
     await startUserSession(requestWith({}), login('u1'), 'device', { loadPush });
     expect(loadPush).not.toHaveBeenCalled();
+  });
+
+  it('ends the Jellyfin session of a login it replaces', async () => {
+    AuthService.logout.mockClear();
+    await startUserSession(requestWith({ userId: 'u1', accessToken: 'tok-old' }), login('u2'), 'device');
+    expect(AuthService.logout).toHaveBeenCalledWith('tok-old');
   });
 });

@@ -15,6 +15,7 @@ const fill = (userId) => {
   memory.prepare("INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at) VALUES (?, ?, 'p', 'a', 1)").run(userId, `https://fcm.googleapis.com/fcm/send/${userId}`);
   memory.prepare("INSERT INTO notification_preferences (user_id, kind, push, in_app) VALUES (?, '*', 1, 1)").run(userId);
   memory.prepare("INSERT INTO notifications (user_id, kind, title, body, created_at) VALUES (?, 'announcement', 't', 'b', 1)").run(userId);
+  memory.prepare("INSERT INTO notification_seen (user_id, kind, seen_at) VALUES (?, 'requests', 1)").run(userId);
 };
 
 const count = (table, userId) => memory.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE user_id = ?`).get(userId).n;

@@ -359,7 +359,7 @@ describe('RequestsService.reject', () => {
 
   it('throws 404 for an unknown request', async () => {
     dbState.requestById = undefined;
-    await expect(RequestsService.reject(999)).rejects.toMatchObject({ status: 404 });
+    expect(() => RequestsService.reject(999)).toThrow(expect.objectContaining({ status: 404 }));
   });
 
   it('writes nothing when the request already has that status', async () => {

@@ -6,8 +6,11 @@ import { getImageAccess } from '../../services/images/image-access.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { pipeReadable, getSvgPlaceholder } from './proxyHelpers.js';
+import { validateIdParam } from '../../utils/ids.js';
 
 const router = express.Router();
+
+router.param('id', validateIdParam);
 
 // private: which images a user may see depends on their libraries, so no
 // shared cache in between may hand one user's answer to another.
@@ -15,6 +18,7 @@ const IMMUTABLE = 'private, max-age=31536000, immutable';
 const SHORT = 'private, max-age=3600';
 
 const PERSON_PLACEHOLDER = '/assets/person-placeholder.webp';
+const IMAGE_TYPES = new Set(['Primary', 'Backdrop', 'Logo', 'Thumb', 'Banner']);
 
 // `fallback=person` asks for the neutral portrait instead of the generic
 // "Bild nicht verfügbar" graphic when the upstream image cannot be served.
@@ -42,6 +46,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { type = 'Primary', tag, width, height, maxWidth, maxHeight, quality, fallback } = req.query;
   const cache = getImageCache();
+  if (!IMAGE_TYPES.has(type)) return res.status(400).json({ error: 'Unbekannter Bildtyp' });
 
   try {
     // Cached renditions are shared by everyone; only users with access to the

@@ -21,6 +21,29 @@ export const pathMethods = {
     return `${url.pathname}${url.search}`;
   },
 
+  // Which play session a proxied path belongs to; null for subtitle files,
+  // undefined when the path may not be proxied at all (only /Videos/).
+  streamSessionOf(path) {
+    const url = new URL(path, 'http://jellyfin');
+    const segments = url.pathname.split('/');
+    if (segments[1]?.toLowerCase() !== 'videos' || !segments[2]) return undefined;
+    if (segments.some(segment => segment.toLowerCase() === 'subtitles')) return { itemId: segments[2], playSessionId: null };
+    for (const [key, value] of url.searchParams) {
+      if (key.toLowerCase() === 'playsessionid' && value) return { itemId: segments[2], playSessionId: value };
+    }
+    return undefined;
+  },
+
+  // The proxy only serves streams of a tracked session, so the stream URL
+  // carries its session even where Jellyfin leaves it out (static files).
+  withPlaySessionId(path, playSessionId) {
+    if (!playSessionId) return path;
+    const url = new URL(path, 'http://jellyfin');
+    if ([...url.searchParams.keys()].some(key => key.toLowerCase() === 'playsessionid')) return path;
+    url.searchParams.set('PlaySessionId', playSessionId);
+    return `${url.pathname}${url.search}`;
+  },
+
   toProxyUrl(pathOrUrl) {
     const path = this.normalizeJellyfinPath(pathOrUrl);
     return `/api/media/playback/proxy?path=${encodeURIComponent(path)}`;

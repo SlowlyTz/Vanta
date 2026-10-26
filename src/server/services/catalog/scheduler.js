@@ -70,12 +70,21 @@ export function createCatalogScheduler({
     return attemptFull();
   };
 
+  // `generation` changes on every re-arm and stop, so a daily run that is
+  // still going when the settings change does not arm a second timer.
+  let generation = 0;
   const armFull = (time) => {
+    const armedFor = generation;
     const delay = msUntilNextTime(time, now());
     nextFullAt = now().getTime() + delay;
     fullTimer = timers.setTimeout(async () => {
-      await requestFull();
-      armFull(settings.read().fullSyncTime);
+      try {
+        await requestFull();
+      } catch (error) {
+        log.warn('[CatalogScheduler] daily full run failed:', error.message);
+      } finally {
+        if (started && armedFor === generation) armFull(settings.read().fullSyncTime);
+      }
     }, delay);
   };
 
@@ -90,6 +99,7 @@ export function createCatalogScheduler({
 
   const arm = () => {
     clear();
+    generation += 1;
     const { updateIntervalMinutes, fullSyncTime } = settings.read();
     armUpdate(updateIntervalMinutes);
     armFull(fullSyncTime);
@@ -110,6 +120,7 @@ export function createCatalogScheduler({
 
   const stop = () => {
     clear();
+    generation += 1;
     if (retryTimer) timers.clearTimeout(retryTimer);
     retryTimer = null;
     attempts = 0;

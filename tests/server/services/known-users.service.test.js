@@ -25,6 +25,7 @@ describe('KnownUsersService', () => {
     const entry = KnownUsersService.findByExactUsername('AliceNew');
     expect(entry.userId).toBe('user-1');
     expect(KnownUsersService.usersById.size).toBe(1);
+    expect(KnownUsersService.findByExactUsername('Alice')).toBeNull();
   });
 
   it('findByExactUsername matched case-insensitive nach trim', () => {

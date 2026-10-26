@@ -20,9 +20,9 @@ export async function getCatalogAccess(userId, token, { fetchJson = jellyfinJson
   try {
     user = await fetchJson(`/Users/${userId}`, { token });
   } catch (error) {
-    // A stale answer beats no answer: the catalogue can still be served while
-    // Jellyfin is unreachable, just with the last known access.
-    if (cached) return cached.access;
+    // A stale answer beats no answer while Jellyfin is unreachable; a refused
+    // token (401/403) ends the session instead.
+    if (cached && error?.status !== 401 && error?.status !== 403) return cached.access;
     throw error;
   }
 

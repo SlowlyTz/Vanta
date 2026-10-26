@@ -35,10 +35,9 @@ describe('createCatalogDb', () => {
     expect(fs.existsSync(file)).toBe(false);
   });
 
-  it('persists once after a successful transaction', () => {
+  it('commits a transaction and leaves writing the file to persist()', () => {
     const file = tempFile();
     const db = createCatalogDb({ SQL, file });
-    const write = vi.spyOn(fs, 'writeFileSync');
 
     db.transaction(() => {
       const insert = db.prepare('INSERT INTO catalog_meta (key, value) VALUES (?, ?)');
@@ -46,9 +45,9 @@ describe('createCatalogDb', () => {
       insert.run('b', '2');
     });
 
-    expect(write).toHaveBeenCalledTimes(1);
+    expect(fs.existsSync(file)).toBe(false);
+    db.persist();
     expect(fs.existsSync(file)).toBe(true);
-    write.mockRestore();
   });
 
   it('rolls back and does not persist when the transaction throws', () => {
@@ -68,6 +67,7 @@ describe('createCatalogDb', () => {
     const file = tempFile();
     const db = createCatalogDb({ SQL, file });
     db.transaction(() => db.prepare('INSERT INTO catalog_meta (key, value) VALUES (?, ?)').run('a', '1'));
+    db.persist();
 
     const reopened = await openCatalogDb(file);
     expect(reopened.prepare('SELECT value FROM catalog_meta WHERE key = ?').get('a').value).toBe('1');

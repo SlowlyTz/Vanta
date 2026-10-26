@@ -6,6 +6,7 @@ vi.mock('../../../src/server/db/database.js', () => ({ default: memory }));
 vi.mock('../../../src/server/config/env.js', () => ({ default: { JELLYFIN_BASE_URL: 'http://jellyfin.test', JELLYFIN_API_KEY: 'key' } }));
 vi.mock('../../../src/server/realtime/app.socket.js', () => ({ appSocketHub: { sendToUser: vi.fn() } }));
 
+const { appEvents, NOTIFICATIONS_CHANGED } = await import('../../../src/server/services/events.js');
 const { createNotificationTriggers, bundleTitles } = await import('../../../src/server/services/notification-triggers.js');
 const { APP_VERSION } = await import('../../../src/public/js/shared/version.js');
 
@@ -101,6 +102,8 @@ describe('notification triggers', () => {
     memory.prepare("INSERT INTO requests (status, user_id, updated_at) VALUES ('approved', 'u1', 0)").run();
     memory.exec("ALTER TABLE requests ADD COLUMN tmdb_id INTEGER; ALTER TABLE requests ADD COLUMN tmdb_type TEXT; ALTER TABLE requests ADD COLUMN title TEXT;");
     memory.exec("UPDATE requests SET tmdb_id = 438631, tmdb_type = 'movie', title = 'Dune'");
+    const changed = vi.fn();
+    appEvents.on(NOTIFICATIONS_CHANGED, changed);
     try {
       const { notify, triggers } = setup();
       await triggers.catalogRun({
@@ -109,12 +112,14 @@ describe('notification triggers', () => {
         added: [{ Id: 'm1', Type: 'Movie', Name: 'Dune', LibraryId: 'lib-a', ProviderIds: { Tmdb: '438631' } }]
       });
       expect(memory.prepare('SELECT status FROM requests').get().status).toBe('imported');
+      expect(changed).toHaveBeenCalled();
       expect(notify.notify).toHaveBeenCalledWith(expect.objectContaining({ userIds: ['u1'], kind: 'request_available', url: '/#/item/m1' }));
       // New content: only to users who can see the library, and not again
       // to the requester who just heard it is available.
       const newContent = notify.notify.mock.calls.filter(([options]) => options.kind === 'new_content').map(([options]) => options.userIds[0]);
       expect(newContent).toEqual(['a1']);
     } finally {
+      appEvents.off(NOTIFICATIONS_CHANGED, changed);
       memory.exec('DROP TABLE requests; CREATE TABLE requests (id INTEGER PRIMARY KEY AUTOINCREMENT, status TEXT NOT NULL, user_id TEXT, updated_at INTEGER NOT NULL);');
     }
   });

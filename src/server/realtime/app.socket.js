@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { sessionMiddleware } from '../config/session.js';
 import { UserBanService } from '../services/user-ban.service.js';
-import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat } from './hardening.js';
+import { WS_MAX_PAYLOAD, isAllowedOrigin, limitMessageRate, rejectUpgrade, startHeartbeat, upgradePathname } from './hardening.js';
 import { BUILD_ID } from '../config/build.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
 import { publicSessionId } from '../db/session-store.js';
@@ -17,8 +17,7 @@ export class AppSocketHub {
 
   attach(server) {
     server.on('upgrade', (req, socket, head) => {
-      const url = new URL(req.url, 'http://localhost');
-      if (url.pathname !== '/ws/app') return;
+      if (upgradePathname(req) !== '/ws/app') return;
       if (!isAllowedOrigin(req)) {
         rejectUpgrade(socket, 403, 'Forbidden');
         return;

@@ -2,8 +2,11 @@ import express from 'express';
 import { SegmentsService } from '../../services/jellyfin/segments.service.js';
 import { requireAuth, isUpstreamUnauthorized, destroyInvalidSession } from '../../middleware/auth.middleware.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
+import { validateIdParam } from '../../utils/ids.js';
 
 const router = express.Router();
+
+router.param('id', validateIdParam);
 
 // Intro, recap, credits and preview ranges of an item, for "skip intro" and
 // the next-episode prompt. An empty list when the item has none.

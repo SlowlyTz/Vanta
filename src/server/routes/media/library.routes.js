@@ -7,7 +7,7 @@ import { destroyInvalidSession, isUpstreamUnauthorized, requireAuth } from '../.
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { UserDataService } from '../../services/user-data.service.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
-import { requireValidId } from '../../utils/ids.js';
+import { validateIdParam } from '../../utils/ids.js';
 
 // A list restored after a detail visit asks for everything it showed at once:
 // up to 20 batches of 36 cards.
@@ -20,6 +20,8 @@ const UNWATCHED_POOL = 200;
 const USER_DATA_BATCH = 100;
 
 const router = express.Router();
+
+router.param('id', validateIdParam);
 
 router.get('/home', requireAuth, jellyfinRoute('Media Home Error', 'Startseite konnte nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
@@ -153,8 +155,8 @@ const setPlayed = (played) => jellyfinRoute('Media Played Error', played ? 'Konn
   return res.json({ played, userData });
 });
 
-router.post('/item/:id/played', requireAuth, requireValidId, setPlayed(true));
-router.delete('/item/:id/played', requireAuth, requireValidId, setPlayed(false));
+router.post('/item/:id/played', requireAuth, setPlayed(true));
+router.delete('/item/:id/played', requireAuth, setPlayed(false));
 
 router.get('/genres', requireAuth, jellyfinRoute('Media Genres Error', 'Genres konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;

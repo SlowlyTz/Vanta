@@ -120,19 +120,19 @@ export function createCatalogDb({ SQL, file = null, bytes = null }) {
     writeFileAtomicSync(file, Buffer.from(sqlite.export()));
   };
 
-  // Runs `fn` inside one SQLite transaction and persists only on success, so a
-  // failure halfway through a sync leaves the previous catalogue untouched.
+  // Runs `fn` inside one SQLite transaction, so a failure halfway through a
+  // sync leaves the previous catalogue untouched. The caller persists.
   const transaction = (fn) => {
     sqlite.exec('BEGIN');
+    let result;
     try {
-      const result = fn();
-      sqlite.exec('COMMIT');
-      persist();
-      return result;
+      result = fn();
     } catch (error) {
       sqlite.exec('ROLLBACK');
       throw error;
     }
+    sqlite.exec('COMMIT');
+    return result;
   };
 
   return {

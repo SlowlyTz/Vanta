@@ -41,4 +41,14 @@ describe('getVisibleLibraryIds', () => {
     fetchJson.mockRejectedValue(new Error('down'));
     expect(await getVisibleLibraryIds('u1', 't', { fetchJson, now: () => time })).toEqual(['lib-a']);
   });
+
+  it('passes a refused token on instead of the cached answer', async () => {
+    let time = 0;
+    const fetchJson = vi.fn(async () => ({ Policy: { EnableAllFolders: true } }));
+    await getVisibleLibraryIds('u1', 't', { fetchJson, now: () => time });
+
+    time += 60 * 60 * 1000;
+    fetchJson.mockRejectedValue(Object.assign(new Error('unauthorized'), { status: 401 }));
+    await expect(getVisibleLibraryIds('u1', 't', { fetchJson, now: () => time })).rejects.toMatchObject({ status: 401 });
+  });
 });

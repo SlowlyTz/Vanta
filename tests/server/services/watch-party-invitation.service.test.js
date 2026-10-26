@@ -48,7 +48,27 @@ describe('WatchPartyInvitationService', () => {
     });
   });
 
+  describe('resolveInviteeForParty', () => {
+    it('answers the owner only', () => {
+      WatchPartyService.getPartyOrThrow.mockReturnValue(makeParty());
+      KnownUsersService.findByExactUsername.mockReturnValue({ userId: 'viewer-1', username: 'Bob' });
+
+      expect(WatchPartyInvitationService.resolveInviteeForParty({ partyId: 'party-1', inviterUserId: 'owner-1', username: 'bob' }))
+        .toEqual({ userId: 'viewer-1', username: 'Bob' });
+      expect(() => WatchPartyInvitationService.resolveInviteeForParty({ partyId: 'party-1', inviterUserId: 'viewer-2', username: 'bob' }))
+        .toThrow(expect.objectContaining({ status: 403 }));
+    });
+  });
+
   describe('createInvitation', () => {
+    it('refuses a user banned from the party', () => {
+      WatchPartyService.getPartyOrThrow.mockReturnValue(makeParty({ bannedUserIds: new Set(['viewer-1']) }));
+      KnownUsersService.findByExactUsername.mockReturnValue({ userId: 'viewer-1', username: 'Bob' });
+
+      expect(() => WatchPartyInvitationService.createInvitation({ partyId: 'party-1', inviterUserId: 'owner-1', invitedUsername: 'bob' }))
+        .toThrow(expect.objectContaining({ status: 403 }));
+    });
+
     it('erstellt eine pending Einladung für einen exakt gefundenen Nutzer', () => {
       WatchPartyService.getPartyOrThrow.mockReturnValue(makeParty());
       KnownUsersService.findByExactUsername.mockReturnValue({ userId: 'viewer-1', username: 'Bob' });

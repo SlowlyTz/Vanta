@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
-import { isValidId, requireValidId } from '../../utils/ids.js';
+import { isValidId, validateIdParam } from '../../utils/ids.js';
 import { ResumeService } from '../../services/resume.service.js';
 import { UserDataService } from '../../services/user-data.service.js';
 
@@ -13,12 +13,13 @@ const isValidUndo = (undo) => [undo?.seriesId, undo?.itemId].every(id => id === 
 // change what the cards show, so the progress cache starts over.
 export function createResumeRouter({ service = ResumeService, userData = UserDataService } = {}) {
   const router = express.Router();
+  router.param('id', validateIdParam);
 
-  router.get('/item/:id/next-up', requireAuth, requireValidId, jellyfinRoute('Next Up Error', 'Nächste Folge konnte nicht ermittelt werden', async (req, res) => {
+  router.get('/item/:id/next-up', requireAuth, jellyfinRoute('Next Up Error', 'Nächste Folge konnte nicht ermittelt werden', async (req, res) => {
     res.json({ episode: await service.nextUp(req.session.userId, req.session.accessToken, req.params.id) });
   }));
 
-  router.delete('/resume/:id', requireAuth, requireValidId, jellyfinRoute('Resume Remove Error', 'Konnte nicht aus „Weiter schauen“ entfernt werden', async (req, res) => {
+  router.delete('/resume/:id', requireAuth, jellyfinRoute('Resume Remove Error', 'Konnte nicht aus „Weiter schauen“ entfernt werden', async (req, res) => {
     const undo = await service.remove(req.session.userId, req.session.accessToken, req.params.id);
     userData.forget(req.session.userId);
     res.json({ undo });

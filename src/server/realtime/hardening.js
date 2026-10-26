@@ -33,16 +33,22 @@ export function rejectUpgrade(socket, status, text) {
   socket.destroy();
 }
 
+// Node hands malformed request targets (e.g. `//[`) to upgrade listeners;
+// parsing them must not throw, or one request takes the server down.
+export function upgradePathname(req) {
+  try {
+    return new URL(req.url, 'http://localhost').pathname;
+  } catch {
+    return '';
+  }
+}
+
 // The handlers for /ws/app and /ws/watch-party/ each ignore other paths; this
 // last listener closes anything neither of them takes instead of leaving the
 // connection hanging.
 export function rejectUnknownUpgrades(server, isKnownPath) {
   server.on('upgrade', (req, socket) => {
-    let pathname = '';
-    try {
-      pathname = new URL(req.url, 'http://localhost').pathname;
-    } catch { /* malformed: rejected below */ }
-    if (!isKnownPath(pathname)) rejectUpgrade(socket, 404, 'Not Found');
+    if (!isKnownPath(upgradePathname(req))) rejectUpgrade(socket, 404, 'Not Found');
   });
 }
 

@@ -202,6 +202,18 @@ describe('CatalogSync', () => {
       expect(record.error).toBeTruthy();
       expect(rows(db, 'SELECT id FROM catalog_items').map(r => r.id)).toEqual(['m1']);
     });
+
+    it('records a failed save and still runs again afterwards', async () => {
+      const { db, sync } = setup([movie('m1')]);
+      db.persist = vi.fn(() => { throw new Error('disk full'); });
+
+      const record = await sync.runUpdate();
+      expect(record.error).toMatch(/disk full/);
+      expect(sync.isRunning()).toBe(false);
+
+      db.persist = vi.fn();
+      expect((await sync.runUpdate()).error).toBeNull();
+    });
   });
 
   describe('concurrency and status', () => {

@@ -150,8 +150,12 @@ export function clearYouTubeAvailabilityCache() {
   availabilityCache.clear();
 }
 
-const SESSION_FEED_KEY = 'trailerFeed';
 const CATALOG_TTL_MS = 10 * 60 * 1000;
+// A feed is one random order of a user's trailers, kept in memory (not in the
+// session, which is written to disk on every save) while it is scrolled.
+const feeds = new Map();
+const FEED_TTL_MS = 6 * 60 * 60 * 1000;
+const FEEDS_MAX = 1000;
 
 // Keyed by userId, holding the in-flight promise so parallel requests share one Jellyfin
 // roundtrip. The shuffle happens per feed, not per catalog fetch, so caching here does not make
@@ -197,30 +201,33 @@ export class TrailersService {
     return promise;
   }
 
-  static async getTrailerFeed(req, userId, token, feedId) {
+  static async getTrailerFeed(userId, token, feedId) {
     const catalog = await this.getCatalog(userId, token);
-    const existingFeed = req.session?.[SESSION_FEED_KEY];
+    const existing = feedId ? feeds.get(feedId) : null;
 
-    if (feedId && existingFeed?.id === feedId && Array.isArray(existingFeed.order)) {
-      return { catalog, feed: existingFeed };
+    if (existing && existing.userId === userId && Date.now() - existing.at < FEED_TTL_MS) {
+      return { catalog, feed: existing };
     }
 
-    // No feed id, or one this session does not know: a full page load asked for a brand new
-    // random order.
+    // No feed id, or one that is unknown or gone: a full page load asked for
+    // a brand new random order.
     const feed = {
       id: randomUUID(),
+      userId,
+      at: Date.now(),
       order: shuffleArray(catalog.list).map((trailer) => trailer.id)
     };
-
-    if (req.session) {
-      req.session[SESSION_FEED_KEY] = feed;
-    }
-
+    setBounded(feeds, feed.id, feed, { max: FEEDS_MAX, isExpired: entry => Date.now() - entry.at >= FEED_TTL_MS });
     return { catalog, feed };
   }
 
-  static async getTrailerPage(req, userId, token, { feedId = null, cursor = null, limit = null, target = null } = {}) {
-    const { catalog, feed } = await this.getTrailerFeed(req, userId, token, feedId);
+  // The id order of a feed (tests and debugging).
+  static feedOrder(feedId) {
+    return feeds.get(feedId)?.order || null;
+  }
+
+  static async getTrailerPage(userId, token, { feedId = null, cursor = null, limit = null, target = null } = {}) {
+    const { catalog, feed } = await this.getTrailerFeed(userId, token, feedId);
     const { order } = feed;
 
     const clampedLimit = Math.max(1, Math.min(20, parseInt(limit, 10) || 8));

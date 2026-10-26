@@ -9,3 +9,9 @@ export const requireValidId = (req, res, next) => {
   if (!isValidId(req.params.id)) return res.status(400).json({ error: 'Ungültige ID' });
   return next();
 };
+
+// The same check as `router.param('id', validateIdParam)`, for every route of a router.
+export const validateIdParam = (req, res, next, id) => {
+  if (!isValidId(id)) return res.status(400).json({ error: 'Ungültige ID' });
+  return next();
+};

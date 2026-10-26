@@ -127,7 +127,7 @@ class RequestsService {
       throw error;
     }
 
-    const exists = await this.exists(tmdbId, tmdbType, { scope, seasonNumber, episodeNumber });
+    const exists = this.exists(tmdbId, tmdbType, { scope, seasonNumber, episodeNumber });
     if (exists) {
       const error = new Error('Diese Anfrage existiert bereits');
       error.status = 409;
@@ -168,7 +168,7 @@ class RequestsService {
 
   // Scope-aware duplicate check. Without a selection it answers the old question:
   // is the whole title already requested?
-  static async exists(tmdbId, tmdbType, selection = {}) {
+  static exists(tmdbId, tmdbType, selection = {}) {
     const scope = selection.scope || 'all';
     const seasonNumber = toScopeInteger(selection.seasonNumber);
     const episodeNumber = toScopeInteger(selection.episodeNumber);
@@ -179,13 +179,13 @@ class RequestsService {
 
   // Is the whole title asked for (not just one of its seasons or episodes)?
   // A title with an open season request can still get further requests.
-  static async isWholeTitleRequested(tmdbId, tmdbType) {
+  static isWholeTitleRequested(tmdbId, tmdbType) {
     return getBlockingRequests.all(tmdbId, tmdbType).some(row => (row.request_scope || 'all') === 'all');
   }
 
   // Every open scope for a title, across all users — the client cannot derive
   // this from its own requests, but the duplicate rule is evaluated globally.
-  static async getOpenScopes(tmdbId, tmdbType) {
+  static getOpenScopes(tmdbId, tmdbType) {
     return getBlockingRequests.all(tmdbId, tmdbType).map(row => ({
       request_scope: row.request_scope || 'all',
       season_number: toScopeInteger(row.season_number),
@@ -193,33 +193,33 @@ class RequestsService {
     }));
   }
 
-  static async getById(id) {
+  static getById(id) {
     return normalizeRequest(getRequestById.get(id));
   }
 
-  static async getByUser(userId) {
+  static getByUser(userId) {
     const requests = getUserRequests.all(userId);
     return requests.map(normalizeRequest);
   }
 
-  static async getAll() {
+  static getAll() {
     const requests = getAllRequests.all();
     return requests.map(normalizeRequest);
   }
 
-  static async getOpen() {
+  static getOpen() {
     const requests = getOpenRequests.all();
     return requests.map(normalizeRequest);
   }
 
-  static async updateStatus(id, status) {
+  static updateStatus(id, status) {
     updateRequestStatus.run(status, Date.now(), id);
   }
 
   // A decision that is already the request's status changes nothing: no
   // new updated_at (which lights the requester's menu dot) and no write.
-  static async approve(id) {
-    const request = await this.getById(id);
+  static approve(id) {
+    const request = this.getById(id);
     if (!request) {
       const error = new Error('Anfrage nicht gefunden');
       error.status = 404;
@@ -227,12 +227,12 @@ class RequestsService {
     }
     if (request.status === 'approved') return request;
 
-    await this.updateStatus(id, 'approved');
+    this.updateStatus(id, 'approved');
     return this.getById(id);
   }
 
-  static async reject(id) {
-    const request = await this.getById(id);
+  static reject(id) {
+    const request = this.getById(id);
     if (!request) {
       const error = new Error('Anfrage nicht gefunden');
       error.status = 404;
@@ -240,7 +240,7 @@ class RequestsService {
     }
     if (request.status === 'rejected') return request;
 
-    await this.updateStatus(id, 'rejected');
+    this.updateStatus(id, 'rejected');
 
     // Only a rejected whole title is banned for good. A rejected season or episode
     // may be asked for again, so it must never reach banned.json.

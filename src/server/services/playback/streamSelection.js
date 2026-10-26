@@ -93,9 +93,9 @@ export const streamSelectionMethods = {
     requestedAudioStreamIndex = null,
     itemId = null
   }) {
-    const normalizedPath = this.normalizeJellyfinPath(targetPath, {
+    const normalizedPath = this.withPlaySessionId(this.normalizeJellyfinPath(targetPath, {
       stripPlaybackSubtitles: true
-    });
+    }), playSessionId);
     const metadata = getSourceMetadata(source);
     const resolvedPlayMethod = playMethod || (isTranscoded ? 'Transcode' : 'DirectPlay');
     const audioStreamIndex = Number.isInteger(requestedAudioStreamIndex)

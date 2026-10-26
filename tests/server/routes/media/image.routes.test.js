@@ -76,6 +76,12 @@ describe('GET /image/:id', () => {
     expect(cache.getImage).not.toHaveBeenCalled();
   });
 
+  it('rejects ids that are not item ids and unknown image types', async () => {
+    expect((await request(createApp()).get('/image/..%2F..%2FSystem%2FInfo')).status).toBe(400);
+    expect((await request(createApp()).get('/image/abc?type=..%2Fx')).status).toBe(400);
+    expect(access.canSee).not.toHaveBeenCalled();
+  });
+
   it('rejects requests without a session', async () => {
     const res = await request(createApp({})).get('/image/abc');
     expect(res.status).toBe(401);

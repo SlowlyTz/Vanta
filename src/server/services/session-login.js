@@ -1,5 +1,5 @@
 import { AuthService } from './jellyfin/auth.service.js';
-import { registerTokenDevice } from './jellyfin/client.js';
+import { forgetTokenDevice, registerTokenDevice } from './jellyfin/client.js';
 import { KnownUsersService } from './known-users.service.js';
 import { publicSessionId } from '../db/session-store.js';
 
@@ -41,8 +41,14 @@ export async function startUserSession(req, data, deviceId, {
   loadPush = () => import('./push.service.js').then(module => module.PushService)
 } = {}) {
   const isAdmin = AuthService.isAdministrator(data.User);
-  const previous = { userId: req.session?.userId, pushEndpoint: req.session?.pushEndpoint };
+  const previous = { userId: req.session?.userId, pushEndpoint: req.session?.pushEndpoint, accessToken: req.session?.accessToken };
   await regenerateSession(req);
+  // A login over an older one in this browser ends that one at Jellyfin too.
+  if (previous.accessToken && previous.accessToken !== data.AccessToken) {
+    AuthService.logout(previous.accessToken)
+      .catch(error => console.warn('[Login] previous Jellyfin session not ended:', error.message))
+      .finally(() => forgetTokenDevice(previous.accessToken));
+  }
   req.session.accessToken = data.AccessToken;
   req.session.deviceId = deviceId;
   registerTokenDevice(data.AccessToken, deviceId);

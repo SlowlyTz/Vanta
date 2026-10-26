@@ -182,7 +182,7 @@ describe('Requests Routes', () => {
 
       expect(res.status).toBe(201);
       expect(RequestsService.create).toHaveBeenCalledWith(
-        'user-1', 'alice', 70523, 'tv', undefined,
+        'user-1', 'alice', 70523, 'tv', '',
         { scope: 'all', seasonNumber: null, episodeNumber: null }
       );
       expect(TmdbService.getTvDetails).not.toHaveBeenCalled();
@@ -193,7 +193,7 @@ describe('Requests Routes', () => {
 
       expect(res.status).toBe(201);
       expect(RequestsService.create).toHaveBeenCalledWith(
-        'user-1', 'alice', 70523, 'tv', undefined,
+        'user-1', 'alice', 70523, 'tv', '',
         { scope: 'season', seasonNumber: 2, episodeNumber: null }
       );
     });
@@ -203,10 +203,17 @@ describe('Requests Routes', () => {
 
       expect(res.status).toBe(201);
       expect(RequestsService.create).toHaveBeenCalledWith(
-        'user-1', 'alice', 70523, 'tv', undefined,
+        'user-1', 'alice', 70523, 'tv', '',
         { scope: 'episode', seasonNumber: 2, episodeNumber: 2 }
       );
       expect(TmdbService.getSeasonDetails).toHaveBeenCalledWith(70523, 2);
+    });
+
+    it('caps the note and ignores one that is not text', async () => {
+      await post({ note: `  ${'x'.repeat(600)}  ` });
+      expect(RequestsService.create.mock.calls[0][4]).toHaveLength(500);
+      await post({ note: { evil: true } });
+      expect(RequestsService.create.mock.calls[1][4]).toBe('');
     });
 
     it('rejects an unknown scope', async () => {

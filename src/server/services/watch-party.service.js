@@ -25,10 +25,11 @@ Object.assign(
 
 let cleanupInterval = null;
 
-export function startWatchPartyCleanup(intervalMs = 60_000) {
+// `onRemoved(partyId)`: the socket hub drops what it kept for the party.
+export function startWatchPartyCleanup({ intervalMs = 60_000, onRemoved = () => {} } = {}) {
   if (cleanupInterval) return cleanupInterval;
   cleanupInterval = setInterval(() => {
-    WatchPartyService.cleanupExpired();
+    WatchPartyService.cleanupExpired().forEach(partyId => onRemoved(partyId));
     // Answered and expired invitations go as well (they piled up before).
     // Loaded here: the invitation service imports this module.
     import('./watch-party-invitation.service.js')

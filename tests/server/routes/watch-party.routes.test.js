@@ -34,7 +34,7 @@ vi.mock('../../../src/server/realtime/watch-party.socket.js', () => ({
 
 vi.mock('../../../src/server/services/watch-party-invitation.service.js', () => ({
   WatchPartyInvitationService: {
-    resolveInviteeByUsername: vi.fn(),
+    resolveInviteeForParty: vi.fn(),
     createInvitation: vi.fn()
   }
 }));
@@ -212,17 +212,17 @@ describe('Watch party routes', () => {
 
   describe('POST /:partyId/invitations/resolve-user', () => {
     it('liefert den gefundenen User', async () => {
-      WatchPartyInvitationService.resolveInviteeByUsername.mockReturnValue({ userId: 'viewer-1', username: 'Bob' });
+      WatchPartyInvitationService.resolveInviteeForParty.mockReturnValue({ userId: 'viewer-1', username: 'Bob' });
 
       const res = await request(createApp()).post('/party-1/invitations/resolve-user').send({ username: 'bob' });
 
       expect(res.status).toBe(200);
       expect(res.body.user).toEqual({ id: 'viewer-1', username: 'Bob' });
-      expect(WatchPartyInvitationService.resolveInviteeByUsername).toHaveBeenCalledWith('bob');
+      expect(WatchPartyInvitationService.resolveInviteeForParty).toHaveBeenCalledWith({ partyId: 'party-1', inviterUserId: expect.any(String), username: 'bob' });
     });
 
     it('liefert null, wenn kein exakter Treffer existiert', async () => {
-      WatchPartyInvitationService.resolveInviteeByUsername.mockReturnValue(null);
+      WatchPartyInvitationService.resolveInviteeForParty.mockReturnValue(null);
 
       const res = await request(createApp()).post('/party-1/invitations/resolve-user').send({ username: 'unknown' });
 

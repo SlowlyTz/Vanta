@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import initSqlJs from 'sql.js';
-import { migrateRequestsTable, migratePushSubscriptionsTable } from '../../../src/server/db/migrations.js';
+import { migrateRequestsTable, migratePushSubscriptionsTable, migrateTmdbMediaKey, requestsTable, tmdbMediaTable } from '../../../src/server/db/migrations.js';
 
 // The 13-column table as it shipped before request scopes existed.
 const LEGACY_SCHEMA = `
@@ -115,5 +115,39 @@ describe('migratePushSubscriptionsTable', () => {
     expect(migratePushSubscriptionsTable(db)).toEqual([]);
     expect(db.exec('SELECT session_id FROM push_subscriptions')[0].values).toEqual([[null]]);
     expect(migratePushSubscriptionsTable(new SQL.Database())).toEqual([]);
+  });
+});
+
+describe('migrateTmdbMediaKey', () => {
+  const OLD_SCHEMA = `
+    CREATE TABLE tmdb_media (tmdb_id INTEGER PRIMARY KEY, tmdb_type TEXT NOT NULL, title TEXT NOT NULL, overview TEXT,
+      poster_path TEXT, backdrop_path TEXT, release_date TEXT, first_air_date TEXT, media_type TEXT NOT NULL,
+      score REAL DEFAULT 0, vote_count INTEGER DEFAULT 0, cached_at INTEGER NOT NULL);
+    ${requestsTable().replace(/\);\s*$/, ', FOREIGN KEY (tmdb_id) REFERENCES tmdb_media(tmdb_id));')}
+  `;
+
+  beforeEach(async () => {
+    SQL = SQL || await initSqlJs();
+    sqlite = new SQL.Database();
+    sqlite.run('PRAGMA foreign_keys = ON');
+  });
+
+  it('keys the cache by id and type, drops the foreign key and keeps all rows', () => {
+    sqlite.exec(OLD_SCHEMA);
+    sqlite.run("INSERT INTO tmdb_media (tmdb_id, tmdb_type, title, media_type, cached_at) VALUES (123, 'movie', 'Film', 'movie', 1)");
+    sqlite.run("INSERT INTO requests (tmdb_id, tmdb_type, title, media_type, created_at, updated_at) VALUES (123, 'movie', 'Film', 'movie', 1, 1)");
+
+    expect(migrateTmdbMediaKey(sqlite)).toBe(true);
+    sqlite.run("INSERT INTO tmdb_media (tmdb_id, tmdb_type, title, media_type, cached_at) VALUES (123, 'tv', 'Serie', 'tv', 2)");
+
+    expect(sqlite.exec('SELECT COUNT(*) FROM tmdb_media')[0].values[0][0]).toBe(2);
+    expect(rows()).toHaveLength(1);
+    expect(sqlite.exec('PRAGMA foreign_key_list(requests)')).toEqual([]);
+    expect(migrateTmdbMediaKey(sqlite)).toBe(false);
+  });
+
+  it('leaves a current database alone', () => {
+    sqlite.exec(tmdbMediaTable() + requestsTable());
+    expect(migrateTmdbMediaKey(sqlite)).toBe(false);
   });
 });

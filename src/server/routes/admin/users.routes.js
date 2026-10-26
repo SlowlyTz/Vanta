@@ -48,6 +48,13 @@ function ageLimitOfPolicy(policy) {
   };
 }
 
+// VANTA's caches of an account's access, dropped after a change so it shows at once.
+function invalidateUserAccess(userId) {
+  clearVisibilityCache(userId);
+  UserDirectory.invalidate();
+  getImageAccess().clear();
+}
+
 function isSelf(req, userId) {
   return req.session.userId === userId;
 }
@@ -180,6 +187,7 @@ router.patch('/:userId/libraries', asyncHandler(async (req, res) => {
       EnableAllFolders: enableAllFolders,
       EnabledFolders: enableAllFolders ? [] : enabledFolders.map(String)
     });
+    invalidateUserAccess(userId);
 
     return res.json({
       enableAllFolders: Boolean(policy.EnableAllFolders),
@@ -213,9 +221,7 @@ router.patch('/:userId/age-limit', asyncHandler(async (req, res) => {
       MaxParentalSubRating: null,
       BlockUnratedItems: blockUnrated ? [...otherKinds, ...UNRATED_KINDS] : otherKinds
     });
-    clearVisibilityCache(userId);
-    UserDirectory.invalidate();
-    getImageAccess().clear();
+    invalidateUserAccess(userId);
     return res.json(ageLimitOfPolicy(policy));
   } catch (error) {
     return respondWithJellyfinError(res, error, 'Altersfreigabe konnte nicht gespeichert werden');

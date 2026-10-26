@@ -265,4 +265,26 @@ describe('StreamSessionService', () => {
         .toThrow(expect.objectContaining({ code: 'STREAM_LIMIT_REACHED' }));
     });
   });
+
+  describe('admitStreamRequest', () => {
+    const request = (playSessionId, extra = {}) => ({ userId: 'u1', itemId: 'item-a', playSessionId, deviceId: 'd1', ...extra });
+
+    it('keeps a held session and counts an unknown one again', () => {
+      const { service } = createService(1);
+      service.reserve(request('p1'));
+      expect(service.admitStreamRequest(request('p1'))).toEqual([]);
+      service.release('u1', 'p1');
+      expect(() => service.admitStreamRequest(request('p1'))).not.toThrow();
+      expect(service.getActiveCount('u1')).toBe(1);
+    });
+
+    it('refuses a replaced session and a stream over the limit', () => {
+      const { service } = createService(1);
+      service.reserve(request('p1'));
+      service.reserve(request('p2', { replacesPlaySessionId: 'p1' }));
+      expect(() => service.admitStreamRequest(request('p1'))).toThrow(expect.objectContaining({ status: 403 }));
+      expect(() => service.admitStreamRequest(request('p3', { deviceId: 'd2', itemId: 'item-b' })))
+        .toThrow(expect.objectContaining({ code: 'STREAM_LIMIT_REACHED' }));
+    });
+  });
 });

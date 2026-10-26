@@ -1,7 +1,8 @@
 import http from 'http';
 import app from './app.js';
 import env from './config/env.js';
-import { attachAppSocketServer } from './realtime/app.socket.js';
+import { attachAppSocketServer, notifyNotificationsChanged } from './realtime/app.socket.js';
+import { appEvents, NOTIFICATIONS_CHANGED } from './services/events.js';
 import { attachWatchPartySocketServer } from './realtime/watch-party.socket.js';
 import { getCatalog } from './services/catalog/index.js';
 import { flushDatabase } from './db/database.js';
@@ -9,11 +10,13 @@ import { sessionStore } from './config/session.js';
 import { createShutdown } from './shutdown.js';
 import { rejectUnknownUpgrades } from './realtime/hardening.js';
 import { NotificationTriggers } from './services/notification-triggers.js';
+import { KnownUsersService } from './services/known-users.service.js';
 
 const PORT = env.PORT || 3000;
 const server = http.createServer(app);
 
 const appSockets = attachAppSocketServer(server);
+appEvents.on(NOTIFICATIONS_CHANGED, notifyNotificationsChanged);
 const watchPartySockets = attachWatchPartySocketServer(server);
 rejectUnknownUpgrades(server, path => path === '/ws/app' || path.startsWith('/ws/watch-party/'));
 
@@ -22,6 +25,11 @@ server.listen(PORT, () => {
   // A new version tells those who asked for it (once per version).
   NotificationTriggers.appStarted();
 });
+
+// Accounts with a stored session stay invitable after a restart.
+sessionStore.ready
+  .then(store => store.liveSessions().forEach(({ sess }) => KnownUsersService.remember({ userId: sess.userId, username: sess.username })))
+  .catch(error => console.warn('[Sessions] known users not restored:', error.message));
 
 // The catalogue mirror fills and refreshes itself in the background; a failure
 // here must never keep the server from serving.
@@ -51,10 +59,8 @@ process.on('unhandledRejection', (reason) => {
 });
 process.on('uncaughtException', (error) => {
   console.error('[Uncaught Exception]', error?.stack || error);
-  try {
-    flushDatabase();
-    sessionStore.close();
-  } finally {
-    process.exit(1);
+  for (const flush of [flushDatabase, () => sessionStore.close()]) {
+    try { flush(); } catch (flushError) { console.error('[Shutdown] flush failed:', flushError?.message); }
   }
+  process.exit(1);
 });

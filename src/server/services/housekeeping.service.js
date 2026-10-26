@@ -5,7 +5,7 @@ import { PushService } from './push.service.js';
 
 // The per-user tables of requests.db that only make sense while the
 // Jellyfin account exists.
-export const PER_USER_TABLES = ['user_preferences', 'watchlist', 'resume_hidden', 'push_subscriptions', 'notification_preferences', 'notifications'];
+export const PER_USER_TABLES = ['user_preferences', 'watchlist', 'resume_hidden', 'push_subscriptions', 'notification_preferences', 'notifications', 'notification_seen'];
 
 // Runs after every catalogue run: old notifications go, rows of Jellyfin
 // accounts that were deleted go, and so do push subscriptions of sessions

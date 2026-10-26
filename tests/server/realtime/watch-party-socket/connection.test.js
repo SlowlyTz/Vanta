@@ -89,4 +89,24 @@ describe('WatchPartySocketHub · Connection', () => {
       party: { id: 'party-1', ownerUserId: 'owner-1', status: 'lobby', positionMs: 0 }
     });
   });
+
+  it('forgets a removed party: timers stop and its sockets close', () => {
+    vi.useFakeTimers();
+    const hub = new WatchPartySocketHub();
+    const ws = createFakeWs();
+    hub.connectionsByParty.set('party-1', new Map([['u1', new Set([ws])]]));
+    const fired = vi.fn();
+    hub.countdownTimers.set('party-1', setTimeout(fired, 1000));
+    hub.bufferingTimers.set('party-1:u1', setTimeout(fired, 1000));
+    hub.pendingEpisodeChanges.set('party-1', 'item-2');
+
+    hub.forgetParty('party-1');
+    vi.advanceTimersByTime(2000);
+
+    expect(fired).not.toHaveBeenCalled();
+    expect(ws.close).toHaveBeenCalledWith(1000, 'Party ended');
+    expect(hub.connectionsByParty.has('party-1')).toBe(false);
+    expect(hub.pendingEpisodeChanges.has('party-1')).toBe(false);
+    vi.useRealTimers();
+  });
 });

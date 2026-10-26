@@ -271,14 +271,19 @@ export function createCatalogSync({ db, source, now = Date.now, log = console, a
         record.error = error.message || String(error);
         log.error(`[CatalogSync] ${type} run failed:`, error.message);
       } finally {
+        current = null;
+        currentType = null;
         record.finishedAt = now();
         record.durationMs = record.finishedAt - startedAt;
         // Runs outside the data transaction on purpose: a failed run must still be recorded.
-        writeMeta('lastRun', record);
-        if (!record.error) writeMeta('lastSuccess', record);
-        db.persist();
-        current = null;
-        currentType = null;
+        try {
+          writeMeta('lastRun', record);
+          if (!record.error) writeMeta('lastSuccess', record);
+          db.persist();
+        } catch (error) {
+          record.error = `Katalog konnte nicht gespeichert werden: ${error.message}`;
+          log.error('[CatalogSync] could not save the catalogue:', error.message);
+        }
         if (!record.error) {
           logSummary(record);
           notifyAfterRun(record, details);

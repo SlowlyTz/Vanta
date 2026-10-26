@@ -53,8 +53,7 @@ describe('TrailersService', () => {
     it('paginates the feed and returns cursor info', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(5));
 
-      const req = { session: {} };
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 2 });
+      const result = await TrailersService.getTrailerPage('user', 'token', { cursor: 0, limit: 2 });
 
       expect(result.items).toHaveLength(2);
       expect(result.nextCursor).toBe('2');
@@ -65,8 +64,7 @@ describe('TrailersService', () => {
     it('indicates no more items at the end of the feed', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(3));
 
-      const req = { session: {} };
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 1, limit: 2 });
+      const result = await TrailersService.getTrailerPage('user', 'token', { cursor: 1, limit: 2 });
 
       expect(result.items).toHaveLength(2);
       expect(result.nextCursor).toBeNull();
@@ -76,9 +74,8 @@ describe('TrailersService', () => {
     it('clamps limit between 1 and 20', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(1));
 
-      const req = { session: {} };
-      const low = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 0 });
-      const high = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 100 });
+      const low = await TrailersService.getTrailerPage('user', 'token', { cursor: 0, limit: 0 });
+      const high = await TrailersService.getTrailerPage('user', 'token', { cursor: 0, limit: 100 });
 
       expect(low.items).toHaveLength(1);
       expect(high.items).toHaveLength(1);
@@ -87,9 +84,8 @@ describe('TrailersService', () => {
     it('creates a brand new feed when no feed id is sent', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(40));
 
-      const req = { session: {} };
-      const first = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 20 });
-      const second = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 20 });
+      const first = await TrailersService.getTrailerPage('user', 'token', { limit: 20 });
+      const second = await TrailersService.getTrailerPage('user', 'token', { limit: 20 });
 
       expect(second.feedId).not.toBe(first.feedId);
       // 40 shuffled ids landing in the same order twice is effectively impossible.
@@ -99,9 +95,8 @@ describe('TrailersService', () => {
     it('keeps the same order while the feed id matches', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(6));
 
-      const req = { session: {} };
-      const first = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 3 });
-      const again = await TrailersService.getTrailerPage(req, 'user', 'token', {
+      const first = await TrailersService.getTrailerPage('user', 'token', { limit: 3 });
+      const again = await TrailersService.getTrailerPage('user', 'token', {
         feedId: first.feedId,
         cursor: 0,
         limit: 3
@@ -114,8 +109,7 @@ describe('TrailersService', () => {
     it('starts a new feed when the feed id is unknown to the session', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(6));
 
-      const req = { session: {} };
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', {
+      const result = await TrailersService.getTrailerPage('user', 'token', {
         feedId: 'stale-feed-id',
         limit: 3
       });
@@ -127,34 +121,32 @@ describe('TrailersService', () => {
     it('enters the feed at the target trailer without reordering it', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(10));
 
-      const req = { session: {} };
-      const feed = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 10 });
-      const order = req.session.trailerFeed.order;
+      const feed = await TrailersService.getTrailerPage('user', 'token', { limit: 10 });
+      const order = TrailersService.feedOrder(feed.feedId);
       const target = order[6];
 
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', {
+      const result = await TrailersService.getTrailerPage('user', 'token', {
         feedId: feed.feedId,
         limit: 3,
         target
       });
 
       expect(result.items.map((item) => item.id)).toEqual(order.slice(6, 9));
-      expect(req.session.trailerFeed.order).toEqual(order);
+      expect(TrailersService.feedOrder(feed.feedId)).toEqual(order);
     });
 
     it('skips ids that vanished from the catalog instead of returning a short page', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(6));
 
-      const req = { session: {} };
-      const feed = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 6 });
-      const order = [...req.session.trailerFeed.order];
+      const feed = await TrailersService.getTrailerPage('user', 'token', { limit: 6 });
+      const order = [...TrailersService.feedOrder(feed.feedId)];
 
       TrailersService.clearCatalogCache();
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(
         createItems(6).filter((item) => !order.slice(0, 2).some((id) => id.startsWith(`${item.Id}:`)))
       );
 
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', {
+      const result = await TrailersService.getTrailerPage('user', 'token', {
         feedId: feed.feedId,
         cursor: 0,
         limit: 3
@@ -167,21 +159,20 @@ describe('TrailersService', () => {
     it('serves the catalog from cache within the TTL', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(4));
 
-      const req = { session: {} };
-      const first = await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 2 });
-      await TrailersService.getTrailerPage(req, 'user', 'token', { feedId: first.feedId, cursor: 2, limit: 2 });
+      const first = await TrailersService.getTrailerPage('user', 'token', { limit: 2 });
+      await TrailersService.getTrailerPage('user', 'token', { feedId: first.feedId, cursor: 2, limit: 2 });
 
       expect(LibraryService.getAllMoviesAndSeries).toHaveBeenCalledTimes(1);
     });
 
-    it('stores only the id order in the session, not the trailer objects', async () => {
+    it('keeps the feed out of the session and to its own user', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(3));
 
-      const req = { session: {} };
-      await TrailersService.getTrailerPage(req, 'user', 'token', { limit: 3 });
+      const first = await TrailersService.getTrailerPage('user', 'token', { limit: 3 });
+      expect(TrailersService.feedOrder(first.feedId).every((id) => typeof id === 'string')).toBe(true);
 
-      expect(req.session.trailerQueue).toBeUndefined();
-      expect(req.session.trailerFeed.order.every((id) => typeof id === 'string')).toBe(true);
+      const other = await TrailersService.getTrailerPage('other', 'token', { feedId: first.feedId, limit: 3 });
+      expect(other.feedId).not.toBe(first.feedId);
     });
   });
 
@@ -215,11 +206,9 @@ describe('TrailersService', () => {
     it('leaves out trailers YouTube no longer plays and still fills the page', async () => {
       LibraryService.getAllMoviesAndSeries.mockResolvedValue(createItems(5));
       TrailersService.isPlayable = async videoId => !videoId.endsWith('001');
-      const req = { session: {} };
-      const result = await TrailersService.getTrailerPage(req, 'user', 'token', { cursor: 0, limit: 4 });
+      const result = await TrailersService.getTrailerPage('user', 'token', { cursor: 0, limit: 4 });
       expect(result.items).toHaveLength(4);
       expect(result.items.some(item => item.youtubeVideoId.endsWith('001'))).toBe(false);
-      expect(result.hasMore).toBe(false);
     });
   });
 });

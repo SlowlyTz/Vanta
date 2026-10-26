@@ -3,6 +3,7 @@ import { WatchPartyService } from '../services/watch-party.service.js';
 import { WatchPartyInvitationService } from '../services/watch-party-invitation.service.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { isValidId } from '../utils/ids.js';
 import { watchPartySocketHub } from '../realtime/watch-party.socket.js';
 import { appSocketHub } from '../realtime/app.socket.js';
 import { NotificationTriggers } from '../services/notification-triggers.js';
@@ -13,8 +14,8 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const { userId, username, accessToken } = req.session;
   const { itemId } = req.body || {};
 
-  if (!itemId) {
-    return res.status(400).json({ error: 'itemId is required' });
+  if (!isValidId(itemId)) {
+    return res.status(400).json({ error: 'Kein gültiger Titel angegeben' });
   }
 
   const party = await WatchPartyService.createParty({
@@ -103,7 +104,11 @@ router.post('/:partyId/end', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 router.post('/:partyId/invitations/resolve-user', requireAuth, asyncHandler(async (req, res) => {
-  const user = WatchPartyInvitationService.resolveInviteeByUsername((req.body || {}).username);
+  const user = WatchPartyInvitationService.resolveInviteeForParty({
+    partyId: req.params.partyId,
+    inviterUserId: req.session.userId,
+    username: (req.body || {}).username
+  });
   return res.json({
     user: user ? { id: user.userId, username: user.username } : null
   });

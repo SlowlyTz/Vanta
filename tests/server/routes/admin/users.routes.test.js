@@ -64,8 +64,8 @@ import { UserBanService } from '../../../../src/server/services/user-ban.service
 import { UserSettingsService } from '../../../../src/server/services/user-settings.service.js';
 import { streamSessionService } from '../../../../src/server/services/stream-session.service.js';
 import { revokeUserAccess } from '../../../../src/server/services/session-revocation.service.js';
-import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
 import { clearVisibilityCache } from '../../../../src/server/services/catalog/visibility.js';
+import { clearAdminCheckCache } from '../../../../src/server/middleware/auth.middleware.js';
 import { UserDirectory } from '../../../../src/server/services/user-directory.service.js';
 
 function createApp({ authenticated = true, session = {} } = {}) {
@@ -312,6 +312,7 @@ describe('Admin Users Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ enableAllFolders: false, enabledFolders: ['lib-1', 'lib-2'] });
+      expect(clearVisibilityCache).toHaveBeenCalledWith('u1');
     });
   });
 

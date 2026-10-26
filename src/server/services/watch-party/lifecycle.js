@@ -113,16 +113,22 @@ export const lifecycleMethods = {
 
   // Over: nobody connected for EMPTY_PARTY_TTL_MS (measured from the last
   // time anyone came or went), or ended by its owner a while ago.
+  // Answers the ids of the parties it removed.
   cleanupExpired(now = Date.now()) {
+    const removed = [];
     for (const [id, party] of this.parties) {
       const members = [...party.members.values()];
       const lastActivity = Math.max(party.createdAt || 0, ...members.map(member => member.lastSeenAt || 0));
       const empty = members.every(member => !member.connected) && (now - lastActivity) >= EMPTY_PARTY_TTL_MS;
       const endedExpired = party.status === 'ended' && party.endedAt && (now - party.endedAt) > ENDED_PARTY_RETENTION_MS;
 
-      if (empty || endedExpired) this.parties.delete(id);
+      if (empty || endedExpired) {
+        this.parties.delete(id);
+        removed.push(id);
+      }
     }
 
     this.pruneRecentParties();
+    return removed;
   }
 };

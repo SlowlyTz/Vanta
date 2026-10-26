@@ -2,14 +2,17 @@ import express from 'express';
 import { TrailersService } from '../../services/jellyfin/trailers.service.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
+import { validateIdParam } from '../../utils/ids.js';
 
 const router = express.Router();
+
+router.param('id', validateIdParam);
 
 router.get('/trailers', requireAuth, jellyfinRoute('Media Trailers Error', 'Trailer konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { feedId, cursor, limit, target } = req.query;
 
-  const result = await TrailersService.getTrailerPage(req, userId, accessToken, {
+  const result = await TrailersService.getTrailerPage(userId, accessToken, {
     feedId: typeof feedId === 'string' ? feedId : null,
     cursor: typeof cursor === 'string' ? cursor : null,
     limit,

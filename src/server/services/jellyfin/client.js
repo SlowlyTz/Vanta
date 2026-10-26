@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import env from '../../config/env.js';
+import { setBounded } from '../../utils/boundedMap.js';
 
 export const JELLYFIN_BASE_URL = env.JELLYFIN_BASE_URL;
 
@@ -8,13 +9,14 @@ export const JELLYFIN_BASE_URL = env.JELLYFIN_BASE_URL;
 // before that keep the shared id.
 export const SHARED_DEVICE_ID = 'vanta-web-client-id';
 const deviceIdsByToken = new Map();
+const MAX_TOKEN_DEVICES = 10_000;
 
 export function createDeviceId() {
   return `vanta-${crypto.randomUUID()}`;
 }
 
 export function registerTokenDevice(token, deviceId) {
-  if (token && deviceId) deviceIdsByToken.set(token, deviceId);
+  if (token && deviceId) setBounded(deviceIdsByToken, token, deviceId, { max: MAX_TOKEN_DEVICES });
 }
 
 export function forgetTokenDevice(token) {

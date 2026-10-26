@@ -1,3 +1,5 @@
+// Accounts seen at login (or in a stored session), so a watch party can
+// invite them by exact username.
 export class KnownUsersService {
   static usersById = new Map();
   static userIdByNormalizedName = new Map();
@@ -17,6 +19,12 @@ export class KnownUsersService {
       lastSeenAt: Date.now()
     };
 
+    // A renamed account is no longer found under its old name.
+    const previous = this.usersById.get(userId);
+    if (previous && previous.normalizedUsername !== normalizedUsername
+      && this.userIdByNormalizedName.get(previous.normalizedUsername) === userId) {
+      this.userIdByNormalizedName.delete(previous.normalizedUsername);
+    }
     this.usersById.set(userId, entry);
     this.userIdByNormalizedName.set(normalizedUsername, userId);
     return entry;

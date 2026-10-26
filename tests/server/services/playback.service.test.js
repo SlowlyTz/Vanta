@@ -248,4 +248,18 @@ describe('PlaybackService', () => {
         .toThrow('Das Wiedergabeziel gehört nicht zum eingestellten Jellyfin-Server.');
     });
   });
+
+  describe('stream paths', () => {
+    it('names the play session of a proxied path', () => {
+      expect(PlaybackService.streamSessionOf('/videos/abc/hls1/main/0.ts?PlaySessionId=p1')).toEqual({ itemId: 'abc', playSessionId: 'p1' });
+      expect(PlaybackService.streamSessionOf('/Videos/abc/abc/Subtitles/2/0/Stream.vtt')).toEqual({ itemId: 'abc', playSessionId: null });
+      expect(PlaybackService.streamSessionOf('/Videos/abc/stream?static=true')).toBeUndefined();
+      expect(PlaybackService.streamSessionOf('/Items/abc/Download?PlaySessionId=p1')).toBeUndefined();
+    });
+
+    it('adds the play session to a stream URL without one', () => {
+      expect(PlaybackService.withPlaySessionId('/Videos/abc/stream?static=true', 'p1')).toBe('/Videos/abc/stream?static=true&PlaySessionId=p1');
+      expect(PlaybackService.withPlaySessionId('/videos/abc/master.m3u8?playSessionId=p0', 'p1')).toBe('/videos/abc/master.m3u8?playSessionId=p0');
+    });
+  });
 });

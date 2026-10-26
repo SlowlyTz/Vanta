@@ -9,6 +9,7 @@ import { NotificationTriggers } from '../services/notification-triggers.js';
 import { normalizeScopeSelection, toScopeInteger } from '../services/request-scope.js';
 
 const router = express.Router();
+const MAX_NOTE_LENGTH = 500;
 
 // Checks the requested season/episode against TMDB, on top of the shape check that
 // normalizeScopeSelection already did. Returns { error } for a 400.
@@ -146,12 +147,12 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   if (tmdbError) return res.status(400).json({ error: tmdbError });
 
   const { userId, username } = req.session;
-  const { request, media } = await RequestsService.create(userId, username, tmdbIdNumber, tmdbType, note, selection);
+  const cleanNote = typeof note === 'string' ? note.trim().slice(0, MAX_NOTE_LENGTH) : '';
+  const { request, media } = await RequestsService.create(userId, username, tmdbIdNumber, tmdbType, cleanNote, selection);
   res.status(201).json(request);
   notifyNotificationsChanged();
 
-  // Fire-and-forget: Der Nutzer wartet nie auf Discord, ein toter Webhook darf die
-  // Anfragefunktion nie blockieren. Nur bei neuen Anfragen, nicht bei Approve/Reject.
+  // Fire and forget: a dead webhook must never block requests. New requests only.
   sendRequestCreated(request, media).catch((error) => {
     console.error('[Discord Webhook] Trigger fehlgeschlagen:', error.message);
   });

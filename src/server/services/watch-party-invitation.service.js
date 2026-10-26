@@ -45,6 +45,13 @@ export class WatchPartyInvitationService {
     return KnownUsersService.findByExactUsername(username);
   }
 
+  // The lookup behind the invite field; only the party's owner may ask.
+  static resolveInviteeForParty({ partyId, inviterUserId, username }) {
+    const party = WatchPartyService.getPartyOrThrow(partyId);
+    if (party.ownerUserId !== inviterUserId) throw forbidden('Nur der Owner kann einladen.');
+    return this.resolveInviteeByUsername(username);
+  }
+
   static findPending({ partyId, invitedUserId }, now = Date.now()) {
     for (const invitation of this.invitations.values()) {
       if (
@@ -68,6 +75,7 @@ export class WatchPartyInvitationService {
     if (!invitee) throw notFound('Nutzer nicht gefunden.');
     if (invitee.userId === inviterUserId) throw badRequest('Du kannst dich nicht selbst einladen.');
     if (party.members.has(invitee.userId)) throw conflict('Dieser Nutzer ist bereits in der Watch Party.');
+    if (party.bannedUserIds?.has(invitee.userId)) throw forbidden('Dieser Nutzer wurde aus der Watch Party entfernt.');
 
     const existing = this.findPending({ partyId, invitedUserId: invitee.userId });
     if (existing) return existing;
