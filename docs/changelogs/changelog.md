@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.2.0: audit
+
+A full audit of server, client, player and the three UIs (phone, desktop, TV), with the fixes it found and a cleaner, documented code base.
+
+### Stability and security
+- A malformed WebSocket address no longer crashes the server, and an uncaught error writes every database before the server exits.
+- The stream proxy only serves streams of play sessions VANTA started, and only Jellyfin's video paths.
+- Every media route checks item ids; images are limited to known types.
+- Library access changes apply at once; a refused Jellyfin session signs the user out on every route.
+- Logging in again ends the previous Jellyfin session; the catalogue sync survives a failed save; the trailer order of a feed no longer fills the session.
+- Watch party invitations by name reach the right person, never someone banned from the party, and a closed party drops its timers and sockets.
+
+### Player
+- Quality and audio switches keep the viewer's position, and only the latest choice plays.
+- A paused start stays alive; a failed start names its reason in German.
+- On TVs the player is larger, holding an arrow spools, and the remote's focus stays put when the settings rebuild.
+
+### TV
+- Works on Chromium 68 (webOS 5, Tizen 5.5): CSS that older TVs drop has fallbacks, and the build checks for it.
+- The focus starts where one expects it (a row's chosen tab or first visible card, the current page in the sidebar).
+- Focus rings, dialogs and text are readable from the sofa; Back closes search filters; trailers play full screen with the remote.
+
+### Phone and desktop
+- A title is confirmed before a watch party is created; the dialog fits phones and TVs.
+- The drawer keeps the keyboard focus inside and returns it after the settings.
+- German genres (linked from the detail page), run times ("2 Std. 37 Min.") and "Gastgeber" in watch parties.
+- Profile stats count series marked watched; the profile tabs and the season list are easier to use.
+- Unknown addresses show „Seite nicht gefunden“; the login shows errors inline; dialogs sit above the navbar.
+
+### Code
+- Server: one helper for HTTP errors, one place for paths and settings, browse services in their own folder, every API error in German, logs in English.
+- Client: stale answers are dropped after navigation or logout, and code shared by app, player and server lives in `js/shared`.
+- Short English module headers throughout and updated docs in `docs/`.
+
+---
+
 ## 1.1.2: settings and profile
 
 ### Settings
