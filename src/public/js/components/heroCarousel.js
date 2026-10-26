@@ -173,6 +173,8 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     currentIndex = index;
     activateSlide(slidesData[currentIndex]);
     loadBackdrop((currentIndex + 1) % slidesData.length);
+    const counter = container.querySelector('.hero-carousel-position');
+    if (counter) counter.textContent = `${currentIndex + 1} / ${slidesData.length}`;
 
     scheduleNext();
   };
@@ -247,8 +249,8 @@ export function HeroCarousel({ items = [], pageScope = null }) {
   }
 
   // TV: the hero stands still, the remote turns it. Right on its last
-  // button shows the next title, left on its first the previous one (from
-  // the first title left still leads to the sidebar).
+  // button shows the next title (after the last one the first again); left
+  // always leads to the sidebar. A counter says where in the row one is.
   if (document.documentElement.classList.contains('tv-mode') && slidesData.length > 1) {
     container.addEventListener('keydown', (event) => {
       const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -256,13 +258,12 @@ export function HeroCarousel({ items = [], pageScope = null }) {
       const controls = [...slidesData[currentIndex].content.querySelectorAll('a[href], button')];
       const position = controls.indexOf(document.activeElement);
       if (position === -1) return;
-      if (step > 0 && position < controls.length - 1) return;
-      if (step < 0 && (position > 0 || currentIndex === 0)) return;
+      if (step < 0 || position < controls.length - 1) return;
       event.preventDefault();
-      goToSlide((currentIndex + step + slidesData.length) % slidesData.length);
-      const next = [...slidesData[currentIndex].content.querySelectorAll('a[href], button')];
-      (step > 0 ? next[0] : next[next.length - 1])?.focus({ preventScroll: true });
+      goToSlide((currentIndex + 1) % slidesData.length);
+      slidesData[currentIndex].content.querySelector('a[href], button')?.focus({ preventScroll: true });
     });
+    container.appendChild(createElement('span', { className: 'hero-carousel-position', 'aria-hidden': 'true' }, `1 / ${slidesData.length}`));
   }
 
   loadBackdrop(0);

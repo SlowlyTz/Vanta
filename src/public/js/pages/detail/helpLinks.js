@@ -4,7 +4,7 @@ const FLAG_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" s
 const PLUS_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>';
 
 function link(href, icon, label, className) {
-  const element = createElement('a', { className: `detail-help-link ${className}`, href });
+  const element = createElement('a', { className: `detail-help-link ${className}`, href, dataset: { tvKey: className } });
   element.innerHTML = icon;
   element.appendChild(createElement('span', {}, label));
   return element;
@@ -23,5 +23,6 @@ export function buildHelpLinks(item) {
     link(`#/report?item=${encodeURIComponent(item.Id)}`, FLAG_ICON, 'Problem melden', 'detail-help-report')
   ].filter(Boolean);
 
-  return createElement('div', { className: 'detail-help-links' }, ...links);
+  // One row for the remote, left to right in the order shown.
+  return createElement('div', { className: 'detail-help-links', 'data-tv-row': '', 'data-tv-remember': '' }, ...links);
 }

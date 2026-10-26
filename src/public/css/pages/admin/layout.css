@@ -23,6 +23,13 @@
   margin: 0 auto;
 }
 
+/* Wide screens: room for the tool cards' text beside their badges. */
+@media (min-width: 1500px) {
+  .admin-page {
+    width: 1200px;
+  }
+}
+
 .admin-page-loading {
   display: flex;
   align-items: center;

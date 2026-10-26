@@ -78,6 +78,11 @@ export async function applyPlaybackState(state, { shouldPlay }) {
       state.autoplayBlocked = true;
       setLoading(false);
       setInlineLoading(false);
+    } else if (error?.name === 'AbortError') {
+      // Paused while the start was pending: the viewer wants it paused.
+      state.intendsToPlay = false;
+      setLoading(false);
+      setInlineLoading(false);
     } else {
       throw error;
     }

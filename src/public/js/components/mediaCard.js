@@ -1,6 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { getItemImageSources } from '../utils/image.js';
-import { formatYear } from '../utils/format.js';
+import { formatTicksToDuration, formatYear } from '../utils/format.js';
 import { markReturnFromDetail } from '../utils/routeState.js';
 import { createPlayedToggle } from './playedToggle.js';
 import { formatEpisodeCode } from '../shared/episodeCode.js';
@@ -18,7 +18,8 @@ watchlistStore.subscribe(({ ids }) => {
   });
 });
 
-export function MediaCard({ item, landscape = false, sourceType = null, playedToggle = false }) {
+// `inSeason`: an episode in its season's list, titled by its own name.
+export function MediaCard({ item, landscape = false, sourceType = null, playedToggle = false, inSeason = false }) {
   if (!item) return null;
 
   const isEpisode = item.Type === 'Episode';
@@ -34,7 +35,10 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   let cardTitle = item.Name;
   let cardSubtitle = '';
 
-  if (isEpisode) {
+  if (isEpisode && inSeason) {
+    cardTitle = item.Name || formatEpisodeCode(item);
+    cardSubtitle = [Number.isFinite(item.IndexNumber) ? `Folge ${item.IndexNumber}` : null, formatTicksToDuration(item.RunTimeTicks)].filter(Boolean).join(' · ');
+  } else if (isEpisode) {
     cardTitle = item.SeriesName || item.Name;
     cardSubtitle = `${formatEpisodeCode(item)} - ${item.Name}`;
   } else if (item.Type === 'Series') {
@@ -131,7 +135,8 @@ export function MediaCard({ item, landscape = false, sourceType = null, playedTo
   // A button cannot sit inside a link: with the played toggle the card is a
   // box holding the link and, over its image, the toggle.
   const card = createElement('div', { className: `${className} has-played-toggle`, dataset: { itemId: item.Id, itemType: item.Type, ...backdrop } },
-    createElement('a', { ...linkAttributes, className: 'media-card-link' }, content),
+    // The TV remembers the focus by this key when one comes back.
+    createElement('a', { ...linkAttributes, className: 'media-card-link', dataset: { tvKey: `card-${item.Id}` } }, content),
     createPlayedToggle(item, {
       compact: true,
       onChange: (played) => {

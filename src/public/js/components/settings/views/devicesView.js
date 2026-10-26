@@ -9,7 +9,7 @@ const formatDate = (timestamp) => (timestamp
   ? new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(timestamp))
   : null);
 
-// Other devices shown before "Alle N anzeigen".
+// Other devices shown before "N weitere anzeigen".
 const VISIBLE_OTHERS = 5;
 
 const lastActivity = session => session.lastSeenAt || session.loginAt || 0;
@@ -77,7 +77,7 @@ export function createDevicesView({ onStatus = () => {}, extraCards = () => [] }
         render();
         element.querySelectorAll('.settings-device-row')[current.length + VISIBLE_OTHERS]?.querySelector('button')?.focus();
       }
-    }, `Alle ${others.length} anzeigen`) : null;
+    }, `${others.length - visibleOthers.length} weitere anzeigen`) : null;
     const endOthers = others.length > 0 ? createElement('div', { className: 'settings-card-actions' }, showMore, createElement('button', {
       type: 'button',
       className: 'settings-inline-button is-danger',

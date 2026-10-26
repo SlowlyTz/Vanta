@@ -10,7 +10,7 @@ describe('Footer', () => {
     expect(footer.tagName).toBe('FOOTER');
     expect(footer.querySelector('.footer-brand').getAttribute('href')).toBe('#/home');
     const hrefs = Array.from(footer.querySelectorAll('.footer-link')).map(link => link.getAttribute('href'));
-    expect(hrefs).toEqual(['#/home', '#/movies', '#/series', '#/publishers', '#/profile', '#/requests/mine', '#/scroller']);
+    expect(hrefs).toEqual(['#/home', '#/movies', '#/series', '#/publishers', '#/profile', '#/scroller', '#/requests', '#/report']);
     expect(footer.querySelector('.footer-title')).toBeNull();
   });
 

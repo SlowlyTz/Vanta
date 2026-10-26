@@ -5,7 +5,8 @@
   margin-top: var(--spacing-xxl);
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   background: var(--bg-primary);
-  color: var(--text-muted);
+  /* --text-secondary: muted grey on black falls below 4.5:1 at this size. */
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -56,7 +57,7 @@
 }
 
 .footer-link {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition: color var(--transition-fast);
 }
 

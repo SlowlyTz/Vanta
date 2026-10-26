@@ -303,3 +303,22 @@
     animation: none;
   }
 }
+
+/* Phones: the unfolded text scrolls in a dark box of its own instead of
+   growing over the playing trailer; the toggle is easy to hit. */
+@media (max-width: 768px) {
+  .trailer-info-overview.is-expanded {
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(5, 5, 7, 0.82);
+    overscroll-behavior: contain;
+  }
+
+  .trailer-overview-toggle {
+    min-height: 32px;
+    align-items: center;
+    padding: 4px 0;
+  }
+}

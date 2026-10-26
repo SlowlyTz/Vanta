@@ -141,7 +141,13 @@
   width: 880px;
   width: min(880px, calc(100vw - 48px));
   height: 720px;
-  height: min(720px, calc(100dvh - 48px));
+  height: min(860px, calc(100vh - 96px));
+  height: min(860px, calc(100dvh - 96px));
+}
+
+/* Abmelden and the version close the list, at its foot when there is room. */
+.settings-dialog.is-split .settings-logout-section {
+  margin-top: auto;
 }
 
 .settings-dialog.is-split .settings-panel-root {

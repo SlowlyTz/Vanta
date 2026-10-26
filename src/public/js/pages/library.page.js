@@ -9,6 +9,7 @@ import { getFeaturedPublisherById } from '../constants/featuredPublishers.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { PageHeading } from '../components/pageHeading.js';
+import { genreLabel } from '../shared/genreLabels.js';
 
 // Batch size per request; a multiple of every grid column count so each
 // batch ends on a full row. The page loads more as the user nears the end.
@@ -46,7 +47,7 @@ export default function LibraryPage(params, pageScope) {
     : studio
       ? studio
       : genre
-        ? (isMixedType ? `${genre}` : `${labelType}: ${genre}`)
+        ? (isMixedType ? genreLabel(genre) : `${labelType}: ${genreLabel(genre)}`)
         : (isMixedType ? 'Alle Titel' : `Alle ${labelType}`);
 
   const bodySlot = createElement('div', { className: 'library-body' });

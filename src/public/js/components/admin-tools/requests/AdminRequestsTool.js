@@ -17,7 +17,7 @@ const TABS = [
 // of them.
 export const ADMIN_REQUESTS_TOOL = {
   id: 'requests',
-  label: 'Anfragen',
+  label: 'Anfragen & Meldungen',
   description: 'Medienanfragen und Problemmeldungen bearbeiten',
   icon: () => createChatIcon()
 };

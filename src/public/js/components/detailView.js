@@ -3,6 +3,7 @@ import { createPosterPlaceholder } from '../utils/poster.js';
 import { createExpandableText } from './expandableText.js';
 import { createMetaIcon, metaIconFor } from './metaIcons.js';
 import { cssUrl } from '../utils/image.js';
+import { genreLabel } from '../shared/genreLabels.js';
 
 // Two lines on phones, a little more room on wide screens.
 const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
@@ -10,8 +11,10 @@ const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ?
 export function DetailView({ item, actions, favoriteButton, watchlistButton = null, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null, helpLinks = null }) {
   const container = createElement('div', { className: 'page-container' });
 
+  // Each genre leads to its list of films or series.
+  const genreType = item.itemType === 'Series' ? 'Series' : 'Movie';
   const genreTags = (item.genres || []).map(genre =>
-    createElement('span', { className: 'genre-tag' }, genre)
+    createElement('a', { className: 'genre-tag', href: `#/genre/${genreType}/${encodeURIComponent(genre)}` }, genreLabel(genre))
   );
 
   const metadataItems = [];
@@ -134,7 +137,8 @@ export function DetailView({ item, actions, favoriteButton, watchlistButton = nu
           genreTags.length > 0 ? createElement('div', { className: 'detail-genres' }, genreTags) : null,
           taglineEl,
           statusContent,
-          actionButtons.length > 0 ? createElement('div', { className: 'detail-actions' }, actionButtons) : null,
+          // A row: right at its end stops instead of dropping into the cast.
+          actionButtons.length > 0 ? createElement('div', { className: 'detail-actions', 'data-tv-row': '', 'data-tv-remember': '' }, actionButtons) : null,
           item.overview
             ? createExpandableText({ text: item.overview, lines: overviewLines(), className: 'detail-overview' })
             : null,

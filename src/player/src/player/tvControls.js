@@ -213,9 +213,17 @@ export function bindTvControls(context, { doc = document } = {}) {
     }
 
     const onControl = doc.activeElement?.matches?.(CONTROLS);
+    // On the big play/pause button over the video left/right spool, also
+    // while paused (the controls stay up then; its neighbours only jump 10 s).
+    if ((name === 'left' || name === 'right') && doc.activeElement?.matches?.('.vanta-player-center-controls .vanta-player-play') && mayControl()) {
+      handled();
+      stepHold(name);
+      return;
+    }
     if (['up', 'down', 'left', 'right'].includes(name)) {
       handled();
       if (!onControl) showControls();
+      // Nothing that way: the focus stays where it is.
       else moveFocus(name);
       return;
     }

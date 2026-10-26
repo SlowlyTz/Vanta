@@ -272,7 +272,8 @@
 .login-hint-trigger:focus-visible {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
-  outline: none;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .login-hint-bubble {
@@ -345,7 +346,10 @@
   .login-hint {
     position: static;
   }
+  /* Below the row: above it, it would cover the password field. */
   .login-hint-bubble {
+    top: calc(100% + 8px);
+    bottom: auto;
     left: 0;
     right: 0;
     width: auto;
@@ -506,7 +510,8 @@
 .login-view-toggle:focus-visible {
   border-color: rgba(255, 255, 255, 0.32);
   background: rgba(30, 30, 38, 0.75);
-  outline: none;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 html.tv-mode .login-view-toggle {
@@ -519,4 +524,17 @@ html.tv-mode .login-view-toggle {
 
 html.tv-mode .login-view-toggle.tv-focus {
   box-shadow: var(--tv-ring);
+}
+
+/* Phones are no TVs: the TV view is offered on big screens only. In TV mode
+   the way back stays. */
+@media (pointer: coarse) and (max-width: 768px) {
+  html:not(.tv-mode) .login-view-toggle {
+    display: none;
+  }
+}
+
+.login-back-to-code {
+  width: 100%;
+  margin-top: 12px;
 }

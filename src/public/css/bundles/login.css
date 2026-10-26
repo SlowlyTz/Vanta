@@ -26,6 +26,23 @@
   text-align: center;
 }
 
+.connect-code-input:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Phones: the button under the field, full width. */
+@media (max-width: 480px) {
+  .connect-form {
+    flex-direction: column;
+  }
+
+  .connect-form .btn-primary {
+    width: 100%;
+  }
+}
+
 .connect-result {
   margin-top: 24px;
   display: grid;
@@ -103,6 +120,20 @@ html.tv-mode .login-page.is-tv-login {
 
 html.tv-mode .is-tv-login .login-panel-inner {
   max-width: 38rem;
+}
+
+/* Small TV resolutions: a smaller logo and tighter gaps, so the code view
+   fits on one screen. */
+@media (max-height: 760px) {
+  html.tv-mode .is-tv-login .login-logo {
+    width: 4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  html.tv-mode .is-tv-login .login-panel {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
 }
 
 /* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */

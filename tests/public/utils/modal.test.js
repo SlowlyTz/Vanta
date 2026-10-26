@@ -45,6 +45,19 @@ describe('openModal', () => {
     expect(isModalOpen()).toBe(false);
   });
 
+  it('returns the focus to the fallback when the opener got hidden meanwhile', () => {
+    const { overlay, dialog } = buildDialog();
+    const fallback = document.createElement('button');
+    document.body.appendChild(fallback);
+    const modal = openModal({ overlay, dialog, returnFocus: () => fallback });
+
+    opener.hidden = true;
+    modal.close();
+    expect(document.activeElement).toBe(fallback);
+    opener.hidden = false;
+    fallback.remove();
+  });
+
   it('keeps Tab inside the dialog in both directions', () => {
     const { overlay, dialog } = buildDialog();
     openModal({ overlay, dialog });

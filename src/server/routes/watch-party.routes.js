@@ -97,7 +97,7 @@ router.post('/:partyId/end', requireAuth, asyncHandler(async (req, res) => {
   watchPartySocketHub.broadcastParty(party.id, {
     type: 'PARTY_ENDED',
     party,
-    message: 'Die Watch Party wurde vom Owner beendet.'
+    message: 'Die Watch Party wurde vom Gastgeber beendet.'
   });
 
   return res.json({ party });

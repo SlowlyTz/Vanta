@@ -65,7 +65,7 @@ export async function preparePlayerInitialPlayback(context) {
             return;
           }
         }
-        if (!context.isDeferredReadyRoom()) context.showError(error.message);
+        if (!context.isDeferredReadyRoom()) context.showError(error);
       }
       if (suppressOwnerEcho) context.endOwnerEchoSuppression();
       throw error;

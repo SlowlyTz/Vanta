@@ -788,6 +788,8 @@
     padding: 6px 0 max(10px, env(safe-area-inset-bottom));
     border-width: 1px 0 0;
     border-radius: 22px 22px 0 0;
+    /* Opaque: the controls bar under it would show through otherwise. */
+    background: rgb(20 20 24);
     transform: translateY(100%);
     transform-origin: center bottom;
   }

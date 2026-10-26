@@ -211,7 +211,7 @@ describe('settingsDialog hub', () => {
       .map(row => [row.querySelector('.settings-option-label').textContent, row.querySelector('.settings-option-status')?.textContent]));
     expect(statuses.Geräte).toBe('2 Geräte');
     expect(statuses.Wiedergabe).toBe('Autoplay an');
-    expect(statuses.Benachrichtigungen).toBe('Aus');
+    expect(statuses.Benachrichtigungen).toBe('Push aus');
   });
 
   it('opens an area as its own page with a back button', async () => {

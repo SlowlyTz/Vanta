@@ -60,7 +60,7 @@ export function bindMenus(context) {
       context.updateMenus(playback);
       onSuccess?.();
     } catch (error) {
-      if (!context.destroyed && run === switchRun && !context.handleFatalPlaybackError(error)) context.showError(error.message);
+      if (!context.destroyed && run === switchRun && !context.handleFatalPlaybackError(error)) context.showError(error);
     }
   };
 

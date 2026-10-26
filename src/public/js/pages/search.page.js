@@ -8,6 +8,8 @@ import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { createActorModal } from './detail/actorModal.js';
 import { recentSearches } from '../utils/recentSearches.js';
 import { createOnScreenKeyboard } from '../components/tv/OnScreenKeyboard.js';
+import { genreLabel } from '../shared/genreLabels.js';
+import { TV_BACK_EVENT } from '../tv/back.js';
 
 const SEARCH_DELAY_MS = 450;
 
@@ -75,7 +77,8 @@ export default function SearchPage(params, pageScope) {
   let searchRunId = 0;
   const actorModal = createActorModal({ currentItemId: null });
 
-  const container = createElement('div', { className: 'page-container content-section search-page' });
+  const container = createElement('div', { className: 'page-container content-section search-page' },
+    createElement('h1', { className: 'visually-hidden' }, 'Suche'));
   const peopleSlot = createElement('div', { className: 'search-people' });
   const resultsGrid = createElement('div', { className: 'grid-container', id: 'search-results' });
   // Tells screen readers how a search went; the grid alone says nothing.
@@ -152,7 +155,9 @@ export default function SearchPage(params, pageScope) {
       resultsGrid.innerHTML = '';
       setSectionBusy(resultsGrid, false);
       resultCount.textContent = '';
-      showStatus('Finde deine Lieblingsinhalte', 'Tippe den Namen eines Films, einer Serie oder einer Person in das Suchfeld ein.');
+      showStatus('Finde deine Lieblingsinhalte', document.documentElement.classList.contains('tv-mode')
+        ? 'Gib den Namen eines Films, einer Serie oder einer Person mit der Tastatur links ein.'
+        : 'Tippe den Namen eines Films, einer Serie oder einer Person in das Suchfeld ein.');
       renderRecent();
       return;
     }
@@ -180,9 +185,9 @@ export default function SearchPage(params, pageScope) {
       }
 
       if (items.length === 0) {
-        showStatus('Keine Ergebnisse gefunden', activeFilterCount(state)
+        showStatus(`Keine Treffer${label}`, activeFilterCount(state)
           ? 'Mit diesen Filtern gibt es keine Treffer. Lockere die Filter oder ändere die Suche.'
-          : `Für „${state.q}“ gibt es keine Treffer.`);
+          : 'Versuch es mit einem anderen Titel oder einem Namen.');
       } else {
         items.forEach(item => {
           const cardEl = MediaCard({ item, landscape: false, sourceType: 'search' });
@@ -251,6 +256,15 @@ export default function SearchPage(params, pageScope) {
       filterButton.setAttribute('aria-expanded', String(!filterPanel.hidden));
     }
   }, 'Filter', filterButtonCount);
+
+  // TV: Back closes an open filter panel before it leaves the page.
+  scope.listen(window, TV_BACK_EVENT, event => {
+    if (filterPanel.hidden) return;
+    event.preventDefault();
+    filterPanel.hidden = true;
+    filterButton.setAttribute('aria-expanded', 'false');
+    filterButton.focus({ preventScroll: true });
+  });
 
   const chipGroup = ({ label, options, isActive, onPick, multiple = false }) => {
     const group = createElement('div', { className: 'search-filter-chips', role: multiple ? 'group' : 'radiogroup', 'aria-label': label });
@@ -327,7 +341,7 @@ export default function SearchPage(params, pageScope) {
       genreChips = chipGroup({
         label: 'Genres',
         multiple: true,
-        options: names.map(name => ({ value: name, label: name })),
+        options: names.map(name => ({ value: name, label: genreLabel(name) })),
         isActive: value => state.genre.includes(value),
         onPick: value => {
           state.genre = state.genre.includes(value) ? state.genre.filter(entry => entry !== value) : [...state.genre, value];

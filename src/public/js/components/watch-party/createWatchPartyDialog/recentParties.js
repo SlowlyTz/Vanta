@@ -89,7 +89,7 @@ export function bindRecentParties(ctx) {
       createElement('button', {
         className: 'watch-party-choice-button',
         type: 'button',
-        onClick: () => (item ? ctx.handleSelect(item) : ctx.showPickMediaView())
+        onClick: () => (item ? ctx.startFor(item) : ctx.showPickMediaView())
       },
         createElement('span', { className: 'watch-party-choice-title' }, 'Neue Watch Party starten'),
         createElement('span', { className: 'watch-party-choice-meta' }, item?.Name || 'Film oder Serie auswählen')

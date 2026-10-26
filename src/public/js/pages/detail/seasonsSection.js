@@ -8,7 +8,7 @@ import { getCurrentPageScope, runInPageScope } from '../../utils/pageScope.js';
 
 export function buildSeasonsSection(item, seasons) {
   const scope = getCurrentPageScope();
-  const episodeGrid = createElement('div', { className: 'episodes-grid' });
+  const episodeGrid = createElement('div', { className: 'episodes-grid', id: 'season-episodes', role: 'tabpanel' });
   const tabs = [];
   // Only the latest tab click may fill the grid.
   let loadRun = 0;
@@ -29,9 +29,11 @@ export function buildSeasonsSection(item, seasons) {
 
   const loadSeasonEpisodes = async (seasonId, tabButton) => {
     const run = ++loadRun;
-    const activeTab = seasonsTabsContainer.querySelector('.season-tab.active');
-    if (activeTab) activeTab.classList.remove('active');
-    tabButton.classList.add('active');
+    tabs.forEach(tab => {
+      const active = tab === tabButton;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+    });
 
     episodeGrid.innerHTML = '';
     setSectionBusy(episodeGrid, true);
@@ -48,7 +50,7 @@ export function buildSeasonsSection(item, seasons) {
         );
       } else {
         runInPageScope(scope, () => episodes.forEach(episode => {
-          const card = MediaCard({ item: episode, landscape: true, playedToggle: true });
+          const card = MediaCard({ item: episode, landscape: true, playedToggle: true, inSeason: true });
           if (card) episodeGrid.appendChild(card);
         }));
       }
@@ -67,6 +69,10 @@ export function buildSeasonsSection(item, seasons) {
   const seasonTabs = seasons.map((season, index) => {
     const tab = createElement('button', {
       className: `season-tab ${index === 0 ? 'active' : ''}`,
+      type: 'button',
+      role: 'tab',
+      'aria-selected': String(index === 0),
+      'aria-controls': 'season-episodes',
       onClick: (e) => {
         loadSeasonEpisodes(season.Id, e.target);
       }
@@ -76,7 +82,7 @@ export function buildSeasonsSection(item, seasons) {
     return tab;
   });
 
-  const seasonsTabsContainer = createElement('div', { className: 'seasons-tabs' }, seasonTabs);
+  const seasonsTabsContainer = createElement('div', { className: 'seasons-tabs', role: 'tablist', 'aria-label': 'Staffeln' }, seasonTabs);
 
   const seasonsSection = createElement('div', { className: 'seasons-section' },
     createElement('h3', { className: 'cast-title' }, 'Staffeln & Folgen'),

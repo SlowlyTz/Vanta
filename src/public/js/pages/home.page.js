@@ -33,6 +33,14 @@ function shuffleArray(arr) {
   return arr;
 }
 
+// The hero is the most prominent spot: titles with a backdrop and a text
+// first, the rest only when there are too few of them.
+const HERO_SIZE = 8;
+export function pickHeroItems(items) {
+  const complete = items.filter(item => item.BackdropImageTags?.length && item.Overview);
+  return shuffleArray(complete.length >= 3 ? complete : items).slice(0, HERO_SIZE);
+}
+
 export default function HomePage(params, pageScope) {
   const scope = resolvePageScope(pageScope);
   const { signal } = scope;
@@ -140,7 +148,7 @@ export default function HomePage(params, pageScope) {
         WatchlistApi.list({ signal }).then(result => result.items || []).catch(() => [])
       ]);
       const data = {
-        hero: shuffleArray([...(raw.movies || []), ...(raw.series || [])]).slice(0, 8),
+        hero: pickHeroItems([...(raw.movies || []), ...(raw.series || [])]),
         resume: raw.resume || [],
         watchlist,
         sections: []

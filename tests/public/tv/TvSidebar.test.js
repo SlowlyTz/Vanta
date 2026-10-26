@@ -6,7 +6,7 @@ describe('TvSidebar', () => {
     const sidebar = TvSidebar({});
     document.body.appendChild(sidebar.element);
     const labels = [...sidebar.element.querySelectorAll('.tv-sidebar-label')].map(el => el.textContent);
-    expect(labels).toEqual(['Suche', 'Home', 'Filme', 'Serien', 'Meine Liste', 'Anfragen', 'Watch Party', 'Profil', 'Bildschirmschoner', 'Einstellungen']);
+    expect(labels).toEqual(['Suche', 'Startseite', 'Filme', 'Serien', 'Meine Liste', 'Anfragen', 'Watch Party', 'Profil', 'Bildschirmschoner', 'Einstellungen']);
     expect(sidebar.element.dataset.tvGroup).toBe('nav');
 
     sidebar.update({ currentHash: '#/movies', user: { isAdmin: false } });

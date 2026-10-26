@@ -113,15 +113,21 @@
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  .episodes-grid .media-card {
+  .episodes-grid .media-card,
+  .episodes-grid .media-card-link {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 12px;
   }
+  .episodes-grid .media-card-link {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
   .episodes-grid .media-card-image-container {
     flex: 0 0 148px;
     width: 148px;
+    aspect-ratio: 16 / 9;
   }
   .episodes-grid .media-card-details {
     flex: 1 1 auto;

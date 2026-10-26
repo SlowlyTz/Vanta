@@ -36,7 +36,7 @@ export function bindEpisodePicker(ctx) {
           className: 'watch-party-episode-button',
           type: 'button',
           disabled: ctx.creating,
-          onClick: () => ctx.createPartyForItem(episode.Id)
+          onClick: () => ctx.showConfirm({ ...episode, SeriesName: episode.SeriesName || ctx.selectedSeries?.Name, SeriesId: episode.SeriesId || ctx.selectedSeries?.Id })
         },
           createElement('span', { className: 'watch-party-episode-index' }, formatEpisodeCode(episode)),
           createElement('span', { className: 'watch-party-episode-title' }, episode.Name || 'Unbenannte Folge')
@@ -96,7 +96,8 @@ export function bindEpisodePicker(ctx) {
   };
 
   ctx.handleBack = () => {
-    if (ctx.currentView === 'pick-episode') ctx.showPickMediaView();
+    if (ctx.currentView === 'confirm') ctx.restoreBeforeConfirm();
+    else if (ctx.currentView === 'pick-episode') ctx.showPickMediaView();
     else if (ctx.currentView === 'pick-media' && ctx.liveParties?.length) ctx.showContinueChoice();
   };
 

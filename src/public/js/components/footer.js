@@ -6,8 +6,9 @@ const FOOTER_LINKS = [
   { label: 'Serien', href: '#/series' },
   { label: 'Publisher', href: '#/publishers' },
   { label: 'Profil', href: '#/profile' },
-  { label: 'Meine Anfragen', href: '#/requests/mine' },
-  { label: 'Trailer-Scroller', href: '#/scroller' }
+  { label: 'Trailer-Scroller', href: '#/scroller' },
+  { label: 'Anfragen', href: '#/requests' },
+  { label: 'Problem melden', href: '#/report' }
 ];
 
 // One slim line: brand, the main routes and the copyright.

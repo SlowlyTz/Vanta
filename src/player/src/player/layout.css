@@ -238,3 +238,30 @@
     margin-left: 6vw,;
   }
 }
+
+/* TV: the controls keep out of the overscan edge, are larger to read from
+   the sofa, and leave out what a TV has no use for. */
+.vanta-player-root.is-tv .vanta-player-controls-layer {
+  padding: 3.5vh 5vw;
+}
+
+.vanta-player-root.is-tv .vanta-player-pip-button,
+.vanta-player-root.is-tv .vanta-player-fullscreen-button {
+  display: none;
+}
+
+.vanta-player-root.is-tv .vanta-player-settings-button,
+.vanta-player-root.is-tv .vanta-player-mute-button {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+.vanta-player-root.is-tv .vanta-player-settings-button svg,
+.vanta-player-root.is-tv .vanta-player-mute-button svg {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+.vanta-player-root.is-tv .vanta-player-time {
+  font-size: 1.15rem;
+}

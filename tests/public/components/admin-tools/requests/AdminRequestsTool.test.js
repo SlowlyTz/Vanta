@@ -195,7 +195,7 @@ describe('AdminRequestsTool', () => {
     const tool = createAdminRequestsTool();
 
     expect(tool.id).toBe('requests');
-    expect(tool.label).toBe('Anfragen');
+    expect(tool.label).toBe('Anfragen & Meldungen');
     expect(tool.description).toBeTruthy();
     // Ein einzelner Knoten würde zwischen Menükarte und Bereichskopf wandern.
     expect(tool.icon()).not.toBe(tool.icon());

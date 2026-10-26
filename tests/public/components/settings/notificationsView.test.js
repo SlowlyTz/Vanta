@@ -23,7 +23,7 @@ describe('notifications view', () => {
     const view = createNotificationsView({ onStatus });
     await view.refresh();
     expect(syncPushSubscription).toHaveBeenCalled();
-    expect(onStatus).toHaveBeenLastCalledWith('An');
+    expect(onStatus).toHaveBeenLastCalledWith('Push an');
     const labels = [...view.element.querySelectorAll('.settings-kind-row:not(.settings-kind-head) input')].map(input => input.getAttribute('aria-label'));
     expect(labels).toEqual(['Mitteilungen: in der App', 'Mitteilungen: Push']);
     // The columns say what each switch is; the old note is gone.

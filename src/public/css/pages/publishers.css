@@ -99,7 +99,7 @@
 
 .publishers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--spacing-md);
   align-items: stretch;
 }
@@ -121,8 +121,11 @@
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   text-align: center;
-  word-break: break-word;
-  hyphens: auto;
+  /* Names break between words only; a single long word may overflow-wrap
+     as a last resort instead of being cut mid-word. */
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
 }
 
 .publisher-button:hover {

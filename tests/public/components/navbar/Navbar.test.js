@@ -51,7 +51,7 @@ describe('Navbar', () => {
     const navbar = Navbar({ onLogout: vi.fn(), onChangePassword: vi.fn() });
 
     const labels = Array.from(navbar.element.querySelectorAll('.navbar-top-tab')).map(el => el.textContent);
-    expect(labels).toEqual(['Home', 'Filme', 'Serien']);
+    expect(labels).toEqual(['Startseite', 'Filme', 'Serien']);
 
     expect(navbar.element.querySelector('.navbar-top-tab[href="#/favorites"]')).toBeFalsy();
   });
@@ -65,8 +65,8 @@ describe('Navbar', () => {
     }));
 
     expect(sections).toEqual([
-      { label: 'Entdecken', entries: ['Home', 'Filme', 'Serien', 'Publisher', 'Scroller'] },
-      { label: 'Mehr', entries: ['Meine Liste', 'Anfragen', 'Meldung'] }
+      { label: 'Entdecken', entries: ['Startseite', 'Filme', 'Serien', 'Publisher', 'Trailer-Scroller'] },
+      { label: 'Mehr', entries: ['Meine Liste', 'Anfragen', 'Problem melden'] }
     ]);
   });
 

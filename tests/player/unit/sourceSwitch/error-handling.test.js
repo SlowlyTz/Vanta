@@ -66,6 +66,23 @@ describe('createSourceSwitch · Error Handling', () => {
     expect(callbacks.setLoading).toHaveBeenLastCalledWith(false);
   });
 
+  it('treats a start paused by the viewer as paused, not as an error', async () => {
+    player.play = () => Promise.reject(Object.assign(new Error('The play() request was interrupted by a call to pause().'), { name: 'AbortError' }));
+
+    const loadPromise = sourceSwitch.loadPlayback({ url: '/video.mp4', delivery: 'http', playSessionId: 'session-1' }, { isBoot: true });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    player.dispatchEvent({ type: 'can-play' });
+    player.duration = 120;
+    player.dispatchEvent({ type: 'duration-change', detail: 120 });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    player.dispatchEvent({ type: 'seeked' });
+
+    await loadPromise;
+    expect(sourceSwitch.isSwitching()).toBe(false);
+    expect(sourceSwitch.getIntendsToPlay()).toBe(false);
+    expect(callbacks.showError).not.toHaveBeenCalled();
+  });
+
   it('gives up on a direct source that never becomes playable, so the HLS fallback takes over', async () => {
     vi.useFakeTimers();
     try {

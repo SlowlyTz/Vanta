@@ -2,6 +2,7 @@ import { createInlineLoadingWatch } from './inlineLoading.js';
 import { createJellyfinReporter } from '../jellyfinReporter.js';
 import { isSmartphone } from '../orientation.js';
 import { createLoadingCover } from './loadingCover.js';
+import { playbackErrorMessage } from '../playbackErrors.js';
 
 export function bindReporterAndOrientation(context) {
   const { player, reportPlayback, itemId, dom } = context;
@@ -59,13 +60,13 @@ export function bindReporterAndOrientation(context) {
 
   // A failed start or stream: the cover comes back and says why (it used to
   // show "Stream wird geladen …" for good, hiding the error).
-  context.showError = (message) => {
+  context.showError = (errorOrMessage) => {
     context.sourceSwitch.clearSeekTimer();
     context.inlineLoading.end();
     context.setInlineLoading(false);
     context.ui.setState('buffering');
     context.setLoading(true, 'Stream wird geladen …');
-    loadingCover.showProblem(message || 'Der Stream konnte nicht geladen werden.', { fatal: true });
+    loadingCover.showProblem(playbackErrorMessage(errorOrMessage), { fatal: true });
   };
 
   return context;

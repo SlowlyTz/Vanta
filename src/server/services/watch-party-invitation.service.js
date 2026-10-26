@@ -48,7 +48,7 @@ export class WatchPartyInvitationService {
   // The lookup behind the invite field; only the party's owner may ask.
   static resolveInviteeForParty({ partyId, inviterUserId, username }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
-    if (party.ownerUserId !== inviterUserId) throw forbidden('Nur der Owner kann einladen.');
+    if (party.ownerUserId !== inviterUserId) throw forbidden('Nur der Gastgeber kann einladen.');
     return this.resolveInviteeByUsername(username);
   }
 
@@ -69,7 +69,7 @@ export class WatchPartyInvitationService {
   static createInvitation({ partyId, inviterUserId, invitedUsername }) {
     const party = WatchPartyService.getPartyOrThrow(partyId);
     if (party.status === 'ended') throw badRequest('Diese Watch Party wurde bereits beendet.');
-    if (party.ownerUserId !== inviterUserId) throw forbidden('Nur der Owner kann einladen.');
+    if (party.ownerUserId !== inviterUserId) throw forbidden('Nur der Gastgeber kann einladen.');
 
     const invitee = this.resolveInviteeByUsername(invitedUsername);
     if (!invitee) throw notFound('Nutzer nicht gefunden.');

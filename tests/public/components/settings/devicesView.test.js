@@ -29,7 +29,7 @@ describe('devices view', () => {
     const view = createDevicesView();
     await view.refresh();
     expect(view.element.querySelectorAll('.settings-device-row')).toHaveLength(6);
-    const more = [...view.element.querySelectorAll('button')].find(button => button.textContent === 'Alle 7 anzeigen');
+    const more = [...view.element.querySelectorAll('button')].find(button => button.textContent === '2 weitere anzeigen');
     more.click();
     expect(view.element.querySelectorAll('.settings-device-row')).toHaveLength(8);
   });

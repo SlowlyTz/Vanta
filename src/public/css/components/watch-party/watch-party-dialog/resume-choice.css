@@ -39,3 +39,63 @@
   color: var(--text-secondary);
   font-size: 0.82rem;
 }
+
+/* The chosen title before the party is created */
+
+.watch-party-confirm {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.watch-party-confirm-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas:
+    "poster text"
+    "actions actions";
+  align-items: center;
+  gap: 16px 18px;
+}
+
+.watch-party-confirm-poster {
+  grid-area: poster;
+  width: 96px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.watch-party-confirm-text {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.watch-party-confirm-text > * + * {
+  margin-top: 6px;
+}
+
+.watch-party-confirm-title {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.watch-party-confirm-meta {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.watch-party-confirm-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.watch-party-confirm-actions > * {
+  margin: 4px 0 0 10px;
+}

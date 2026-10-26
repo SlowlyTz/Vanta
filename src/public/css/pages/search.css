@@ -18,20 +18,30 @@
 
 .search-input-field {
   width: 100%;
-  background: var(--bg-secondary);
+  /* A magnifier on the left, like the request and report search fields. */
+  background: var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 20px center / 22px 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 18px 24px;
+  padding: 18px 24px 18px 56px;
   border-radius: var(--radius-xl);
   font-size: 1.25rem;
   color: var(--text-primary);
   transition: all var(--transition-fast);
-  text-align: center;
+  text-align: left;
   box-shadow: var(--shadow-md);
+}
+
+/* The browser's clear button, in the app's colours instead of its blue. */
+.search-input-field::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e4e4e7' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E") no-repeat center / contain;
+  cursor: pointer;
 }
 
 .search-input-field:focus {
   outline: none;
-  background: var(--bg-tertiary);
+  background-color: var(--bg-tertiary);
   border-color: rgba(var(--abyss-accent), 0.35);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(var(--abyss-accent), 0.08);
   transform: scale(1.02);
@@ -58,7 +68,9 @@
     margin-top: var(--spacing-md);
   }
   .search-input-field {
-    padding: 14px 16px;
+    padding: 14px 16px 14px 46px;
+    background-position: 16px center;
+    background-size: 20px 20px;
     border-radius: 18px;
     font-size: 1rem;
     text-align: left;
@@ -171,7 +183,8 @@
 
 .search-filter-chip:focus-visible {
   background: rgba(255, 255, 255, 0.12);
-  outline: none;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .search-filter-chip.is-active {

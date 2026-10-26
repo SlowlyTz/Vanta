@@ -63,10 +63,34 @@ export function openTrailerModal({ title, videoId }) {
 
   const overlay = createElement('div', { className: 'detail-trailer-backdrop' }, dialog);
 
+  // TV: full screen, and the remote drives the video (OK plays and pauses,
+  // left/right jump 10 s, Back closes).
+  const tv = document.documentElement.classList.contains('tv-mode');
+  if (tv) {
+    dialog.appendChild(createElement('p', { className: 'detail-trailer-hint' }, 'OK: Pause/Wiedergabe · ← →: 10 Sekunden'));
+    dialog.addEventListener('keydown', event => {
+      const player = playerManager.players.get(modalId);
+      if (!player) return;
+      const step = event.key === 'ArrowRight' ? 10 : event.key === 'ArrowLeft' ? -10 : 0;
+      try {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          if (player.getPlayerState?.() === 1) player.pauseVideo();
+          else player.playVideo();
+        } else if (step) {
+          event.preventDefault();
+          player.seekTo(Math.max(0, (player.getCurrentTime?.() || 0) + step), true);
+        }
+      } catch {
+        // The iframe is not ready yet.
+      }
+    });
+  }
+
   const modal = openModal({
     overlay,
     dialog,
-    initialFocus: closeButton,
+    initialFocus: tv ? dialog : closeButton,
     onClose: () => playerManager.destroyAll()
   });
 

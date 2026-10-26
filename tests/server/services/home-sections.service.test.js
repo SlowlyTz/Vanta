@@ -85,14 +85,15 @@ describe('HomeSectionsService._buildGenreSections', () => {
     vi.clearAllMocks();
   });
 
+  // A home row needs at least four titles.
+  const four = (type, genre, year) => Array.from({ length: 4 }, (_, i) => ({ Id: `${type}-${i}`, Name: type, Type: type, Genres: [genre], ProductionYear: year }));
+
   it('links movie-only home genre sections to the movie genre route', async () => {
     LibraryService.getGenres.mockImplementation((userId, token, type) => (
       Promise.resolve(type === 'Movie' ? [{ Name: 'Musik' }] : [])
     ));
 
-    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
-      { Id: 'm1', Name: 'Movie', Type: 'Movie', Genres: ['Musik'], ProductionYear: 2026 }
-    ]);
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', four('Movie', 'Musik', 2026));
 
     expect(sections).toHaveLength(1);
     expect(sections[0]).toMatchObject({
@@ -106,9 +107,7 @@ describe('HomeSectionsService._buildGenreSections', () => {
       Promise.resolve(type === 'Series' ? [{ Name: 'Drama' }] : [])
     ));
 
-    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
-      { Id: 's1', Name: 'Series', Type: 'Series', Genres: ['Drama'], ProductionYear: 2025 }
-    ]);
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', four('Series', 'Drama', 2025));
 
     expect(sections).toHaveLength(1);
     expect(sections[0]).toMatchObject({
@@ -120,16 +119,26 @@ describe('HomeSectionsService._buildGenreSections', () => {
   it('links shared home genre sections to the mixed library route', async () => {
     LibraryService.getGenres.mockResolvedValue([{ Name: 'Horror' }]);
 
-    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
-      { Id: 'm1', Name: 'Movie', Type: 'Movie', Genres: ['Horror'], ProductionYear: 2026 },
-      { Id: 's1', Name: 'Series', Type: 'Series', Genres: ['Horror'], ProductionYear: 2025 }
-    ]);
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [...four('Movie', 'Horror', 2026), ...four('Series', 'Horror', 2025)]);
 
     expect(sections).toHaveLength(1);
     expect(sections[0]).toMatchObject({
       title: 'Horror',
       href: '#/genre/Movie,Series/Horror'
     });
+  });
+
+  it('leaves out rows with too few titles and names English genres in German', async () => {
+    LibraryService.getGenres.mockImplementation((userId, token, type) => (
+      Promise.resolve(type === 'Series' ? [{ Name: 'War & Politics' }, { Name: 'Reality' }] : [])
+    ));
+
+    const sections = await HomeSectionsService._buildGenreSections('u1', 't1', [
+      ...four('Series', 'War & Politics', 2024),
+      { Id: 'r1', Name: 'Show', Type: 'Series', Genres: ['Reality'], ProductionYear: 2024 }
+    ]);
+
+    expect(sections.map(section => section.title)).toEqual(['Krieg & Politik']);
   });
 });
 

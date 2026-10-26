@@ -11,6 +11,7 @@ import { createNotificationBell } from '../notificationBell.js';
 import { startScreensaver } from '../screensaver.js';
 import { getCurrentPageScope } from '../../utils/pageScope.js';
 import { followAfterBack, inAppLinkOf } from '../../utils/historyEntry.js';
+import { focusableIn } from '../../utils/modal.js';
 
 function createTopTabs({ onNavigate }) {
   const links = new Map();
@@ -52,9 +53,11 @@ const ACTION_HANDLERS = {
 
 function createTopActions({ onOpenWatchParty }) {
   const buttons = TOP_ACTIONS.map(action => {
+    // Icons only: the name shows on hover.
     const attrs = {
       className: `navbar-action-button navbar-action-${action.key}`,
-      'aria-label': action.label
+      'aria-label': action.label,
+      title: action.label
     };
 
     if (action.href) {
@@ -64,7 +67,6 @@ function createTopActions({ onOpenWatchParty }) {
     return createElement('button', {
       ...attrs,
       type: 'button',
-      title: action.key === 'screensaver' ? action.label : undefined,
       onClick: action.key === 'group' ? () => onOpenWatchParty?.() : ACTION_HANDLERS[action.key]
     }, createTopbarIcon(action.key));
   });
@@ -78,7 +80,8 @@ function createTopActions({ onOpenWatchParty }) {
 export function Navbar({ onLogout, onChangePassword }) {
   let mobileNavOpen = false;
 
-  const settingsDialog = createSettingsDialog({ onLogout, onChangePassword });
+  // Opened from the drawer, whose button is gone by the time it closes.
+  const settingsDialog = createSettingsDialog({ onLogout, onChangePassword, returnFocus: () => mobileMenuButton });
 
   const mobileDrawer = createMobileDrawer({
     onNavigate: () => setMobileNavOpen(false),
@@ -163,8 +166,14 @@ export function Navbar({ onLogout, onChangePassword }) {
     document.documentElement.classList.toggle('mobile-nav-open', mobileNavOpen);
     document.body.classList.toggle('mobile-nav-open', mobileNavOpen);
 
-    if (!mobileNavOpen) {
+    // The page behind is out of reach while the drawer is open; the focus
+    // goes in and comes back to the menu button.
+    element.closest('.app-shell')?.toggleAttribute('inert', mobileNavOpen);
+    if (mobileNavOpen) {
+      window.requestAnimationFrame(() => focusableIn(mobileDrawer.mobileNavList)[0]?.focus({ preventScroll: true }));
+    } else {
       mobileDrawer.resetToNav();
+      if (mobileDrawer.mobileNavList.contains(document.activeElement)) mobileMenuButton.focus({ preventScroll: true });
     }
   };
 
@@ -200,8 +209,24 @@ export function Navbar({ onLogout, onChangePassword }) {
   element.addEventListener('click', followDrawerLink, true);
 
   window.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-    if (mobileNavOpen) setMobileNavOpen(false);
+    if (!mobileNavOpen) return;
+    if (event.key === 'Escape') {
+      setMobileNavOpen(false);
+      return;
+    }
+    // Tab wraps inside the drawer.
+    if (event.key !== 'Tab') return;
+    const focusable = focusableIn(mobileDrawer.mobileNavList);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 
   settingsDialog.loadAdminVisibility?.();

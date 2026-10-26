@@ -134,10 +134,13 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
     return page;
   };
 
-  const focusFirst = () => {
+  // `from`: the subpage just left; back on its parent the row that opened it
+  // gets the focus again.
+  const focusFirst = (from = null) => {
     const [first] = focusables();
+    const opener = from ? current?.querySelector(`.vanta-settings-row[data-page="${from}"]`) : null;
     const selected = current?.querySelector('.vanta-settings-focusable[aria-checked="true"], .vanta-settings-focusable.is-current');
-    (selected || first)?.focus({ preventScroll: true });
+    (opener || selected || first)?.focus({ preventScroll: true });
   };
 
   let transition = null;
@@ -157,7 +160,7 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
   };
 
   // Swaps pages; `direction` is 'forward' (drill in), 'back' or 'none'.
-  const showPage = (id, direction) => {
+  const showPage = (id, direction, from = null) => {
     settleTransition();
     const previous = current;
     const next = buildPage(id);
@@ -167,7 +170,7 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
     if (!previous || direction === 'none' || !canAnimate) {
       viewport.replaceChildren(next);
       viewport.style.height = '';
-      focusFirst();
+      focusFirst(from);
       return;
     }
 
@@ -187,7 +190,7 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
         : [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-30%)', opacity: 0 }], { ...timing, fill: 'forwards' })
     ];
     transition = { animations, previous, timer: window.setTimeout(settleTransition, PAGE_DURATION_MS + 40) };
-    focusFirst();
+    focusFirst(from);
   };
 
   function navigate(id) {
@@ -201,8 +204,8 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
       close();
       return;
     }
-    stack.pop();
-    showPage(stack[stack.length - 1], 'back');
+    const left = stack.pop();
+    showPage(stack[stack.length - 1], 'back', left);
   }
 
   // Rebuilds the open page (a party update, a new track list) and puts the

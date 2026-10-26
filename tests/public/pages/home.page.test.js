@@ -200,3 +200,19 @@ describe('HomePage "Meine Liste"', () => {
     expect(container.textContent).toContain('Weiter schauen');
   });
 });
+
+describe('pickHeroItems', () => {
+  const item = (id, extra = {}) => ({ Id: id, ...extra });
+  const complete = id => item(id, { BackdropImageTags: ['b'], Overview: 'Text' });
+
+  it('prefers titles with a backdrop and a text', async () => {
+    const { pickHeroItems } = await import('../../../src/public/js/pages/home.page.js');
+    const picked = pickHeroItems([complete('a'), item('bare'), complete('b'), complete('c')]);
+    expect(picked.map(entry => entry.Id).sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('falls back to every title when too few are complete', async () => {
+    const { pickHeroItems } = await import('../../../src/public/js/pages/home.page.js');
+    expect(pickHeroItems([complete('a'), item('b'), item('c')])).toHaveLength(3);
+  });
+});

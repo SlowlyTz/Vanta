@@ -187,3 +187,13 @@
     animation: none;
   }
 }
+
+.notification-panel-settings-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -19,6 +19,13 @@ const KEEP_INTERACTIVE = '#toast-container, .update-overlay, .offline-overlay';
 
 const stack = [];
 
+// Whether an element can get the focus back (a drawer that closed meanwhile is hidden).
+function canTakeFocus(element) {
+  if (!element?.isConnected || element.closest?.('[inert], [hidden]')) return false;
+  const style = window.getComputedStyle?.(element);
+  return !style || (style.visibility !== 'hidden' && style.display !== 'none');
+}
+
 export const isModalOpen = () => stack.length > 0;
 
 // The topmost open modal ({ dialog, overlay, close }), or null; the TV focus
@@ -121,6 +128,8 @@ function onFocusIn(event) {
  * @param {object}  [options.pageScope]   closes with this page; defaults to the current one
  * @param {Function} [options.onBack]     Escape or a remote's Back: return true when it
  *                                        went a step back inside the dialog instead of closing
+ * @param {Function} [options.returnFocus] the element to focus on close when the one that
+ *                                        had the focus before is gone or hidden by then
  */
 export function openModal({
   overlay,
@@ -133,7 +142,8 @@ export function openModal({
   lockScroll: shouldLockScroll = true,
   label = null,
   pageScope = null,
-  onBack = null
+  onBack = null,
+  returnFocus = null
 }) {
   const previouslyFocused = document.activeElement;
   let closed = false;
@@ -177,7 +187,8 @@ export function openModal({
       restoreBackground();
       if (shouldLockScroll) unlockScroll();
       if (removeOnClose) overlay.remove();
-      if (previouslyFocused?.isConnected) previouslyFocused.focus?.({ preventScroll: true });
+      const target = canTakeFocus(previouslyFocused) ? previouslyFocused : returnFocus?.();
+      if (canTakeFocus(target)) target.focus?.({ preventScroll: true });
       onClose?.();
     }
   };

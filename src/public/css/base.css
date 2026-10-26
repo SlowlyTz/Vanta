@@ -82,6 +82,9 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  /* Pages with and without a scrollbar keep the same width (no jump of the
+     centred navbar). */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -194,4 +197,38 @@ html.reduce-motion *::after {
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
+}
+
+/* Touch screens: small icon buttons keep their look but get a 44px hit area. */
+@media (pointer: coarse) {
+  .navbar-action-button,
+  .btn-hero-info,
+  .played-toggle,
+  .watch-party-dialog-close {
+    position: relative;
+  }
+
+  .navbar-action-button::after,
+  .mobile-menu-button::after,
+  .mobile-drawer-close::after,
+  .mobile-drawer-accordion-toggle::after,
+  .btn-hero-info::after,
+  .hero-carousel-pause::after,
+  .played-toggle::after,
+  .watch-party-dialog-close::after,
+  .actor-modal-close::after,
+  .detail-trailer-close::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Card arrows: rows are swiped on touch screens. */
+  .carousel-arrows {
+    display: none;
+  }
 }

@@ -60,12 +60,24 @@ describe('focus engine', () => {
     place();
     engine.focus(document.getElementById('r1c'));
     engine.move('down');
-    expect(document.activeElement.id).toBe('r2b');
-    engine.move('left');
+    // A row entered the first time starts at its first visible card.
     expect(document.activeElement.id).toBe('r2a');
+    engine.move('right');
+    expect(document.activeElement.id).toBe('r2b');
     engine.move('up');
     // Back to the card of the first row that was focused last.
     expect(document.activeElement.id).toBe('r1c');
+  });
+
+  it('enters the sidebar on the current page, then where it was left', () => {
+    document.body.innerHTML = `
+      <nav class="tv-sidebar" data-tv-group="nav">${btn('home', '0,0,60,40')}<a id="movies" class="tv-sidebar-link active" href="#">m</a>${btn('settings', '0,500,60,40')}</nav>
+      <div id="main-content" data-tv-group="content">${btn('c1', '100,480,100,100')}</div>`;
+    document.getElementById('movies').setAttribute('data-rect', '0,60,60,40');
+    place();
+    engine.focus(document.getElementById('c1'));
+    engine.move('left');
+    expect(document.activeElement.id).toBe('movies');
   });
 
   it('moves between groups and returns to the group\'s last focus', () => {

@@ -1,14 +1,14 @@
+// A run time as the German UI writes it: "2 Std. 37 Min." or "24 Min.".
 export function formatTicksToDuration(ticks) {
   if (!ticks) return '';
-  const seconds = ticks / 10000000;
-  const minutes = Math.floor(seconds / 60);
+  const minutes = Math.round(ticks / 10_000_000 / 60);
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
   if (hours > 0) {
-    return `${hours}h ${remainingMinutes}m`;
+    return remainingMinutes ? `${hours} Std. ${remainingMinutes} Min.` : `${hours} Std.`;
   }
-  return `${remainingMinutes}m`;
+  return `${remainingMinutes} Min.`;
 }
 
 export function formatTime(seconds) {

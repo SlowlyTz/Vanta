@@ -8,7 +8,7 @@ import { isNavLinkActive } from '../navbar/activeNav.js';
 // interface.
 export const TV_SIDEBAR_ENTRIES = [
   { key: 'search', label: 'Suche', href: '#/search', icon: () => createTopbarIcon('search') },
-  { key: 'home', label: 'Home', href: '#/home', icon: () => createNavIcon('home') },
+  { key: 'home', label: 'Startseite', href: '#/home', icon: () => createNavIcon('home') },
   { key: 'movies', label: 'Filme', href: '#/movies', icon: () => createNavIcon('movies') },
   { key: 'series', label: 'Serien', href: '#/series', icon: () => createNavIcon('series') },
   { key: 'watchlist', label: 'Meine Liste', href: '#/profile?tab=watchlist', icon: () => createNavIcon('watchlist') },

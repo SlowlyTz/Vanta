@@ -156,6 +156,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
 
       <div class="vanta-player-loading" role="status" aria-live="polite">
         <div class="vanta-player-loading-backdrop"></div>
+        <button class="vanta-player-loading-back" type="button" aria-label="Zurück">${svgIcon('arrowBack')}</button>
         <div class="vanta-player-loading-inner">
           <div class="vanta-player-spinner" aria-hidden="true"></div>
           <span class="vanta-player-loading-label">Video wird vorbereitet</span>
@@ -221,6 +222,7 @@ export function createPlayerMarkup(root, { title, subtitle, poster }) {
     loadingProblemText: root.querySelector('.vanta-player-loading-problem-text'),
     loadingRetry: root.querySelector('.vanta-player-loading-retry'),
     loadingLeave: root.querySelector('.vanta-player-loading-leave'),
+    loadingBack: root.querySelector('.vanta-player-loading-back'),
     inlineLoading: root.querySelector('.vanta-player-inline-loading'),
     inlineLabel: root.querySelector('.vanta-player-inline-label'),
     loadingProgress: root.querySelector('.vanta-player-loading-progress'),

@@ -124,9 +124,13 @@ export function bindRendering(ctx) {
     ctx.lobby.hidden = true;
     ctx.errorState.hidden = false;
     ctx.errorState.innerHTML = '';
+    // Nothing is live here: the header's live dot goes out.
+    document.querySelector('.watch-party-live-dot')?.setAttribute('hidden', '');
     ctx.errorState.appendChild(stateCard({
       title: 'Watch Party nicht verfügbar',
-      message: error.message || 'Diese Watch Party konnte nicht geladen werden.',
+      message: error.status === 404
+        ? 'Diese Watch Party ist beendet oder der Link stimmt nicht.'
+        : (error.message || 'Diese Watch Party konnte nicht geladen werden.'),
       onHome: () => ctx.goHome()
     }));
   };

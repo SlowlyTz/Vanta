@@ -49,7 +49,7 @@ export const memberMethods = {
     assertOwner(party, actorUserId);
 
     if (targetUserId === party.ownerUserId) {
-      throw badRequest('Der Owner kann sich nicht selbst entfernen');
+      throw badRequest('Der Gastgeber kann sich nicht selbst entfernen.');
     }
 
     if (!party.members.has(targetUserId)) {
@@ -104,10 +104,10 @@ export const memberMethods = {
 
     const target = assertPartyMember(party, targetUserId);
     if (target.role === 'owner') {
-      throw forbidden('Der Owner kann nicht gebannt werden.');
+      throw forbidden('Der Gastgeber kann nicht entfernt werden.');
     }
     if (target.role === 'admin' && party.ownerUserId !== actorUserId) {
-      throw forbidden('Nur der Owner kann Admins bannen.');
+      throw forbidden('Nur der Gastgeber kann Admins entfernen.');
     }
 
     party.bannedUserIds ??= new Set();

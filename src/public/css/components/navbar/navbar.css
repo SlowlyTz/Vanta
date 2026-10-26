@@ -44,7 +44,9 @@
   right: 0;
   height: calc(100% + 14px + 26px);
   height: calc(100% + max(14px, env(safe-area-inset-top)) + 26px);
-  background: linear-gradient(180deg, rgba(5, 5, 7, 0.88), rgba(5, 5, 7, 0.55) 60%, rgba(5, 5, 7, 0));
+  /* Solid behind the bar itself, so card titles never run under the icons;
+     only the last 26px fade out. */
+  background: linear-gradient(180deg, rgba(5, 5, 7, 0.94), rgba(5, 5, 7, 0.9) 68%, rgba(5, 5, 7, 0));
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease;
@@ -253,7 +255,7 @@
   }
 
   .navbar-right {
-    gap: 4px;
+    gap: 10px;
   }
 
   .navbar-action-button,

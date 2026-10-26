@@ -5,6 +5,7 @@ import { formatYear } from '../utils/format.js';
 import { prefersReducedMotion } from '../utils/motion.js';
 import { MediaApi } from '../api/media.api.js';
 import { ensurePageStyles } from '../utils/pageStyles.js';
+import { genreLabel } from '../shared/genreLabels.js';
 
 export const SLIDE_MS = 12_000;
 const CONTROLS_IDLE_MS = 5_000;
@@ -118,7 +119,7 @@ export function openScreensaver({ items, onClose = null, pageScope = null, now =
     meta.replaceChildren(...[
       formatYear(item.PremiereDate || item.ProductionYear),
       item.OfficialRating,
-      (item.Genres || []).slice(0, 3).join(' · ')
+      (item.Genres || []).slice(0, 3).map(genreLabel).join(' · ')
     ].filter(Boolean).map(text => createElement('span', {}, String(text))));
     overview.textContent = item.Overview || '';
     preload(items[(index + 1) % items.length]);

@@ -69,6 +69,8 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
   const updateArrowStates = () => {
     const scrollLeft = listContainer.scrollLeft;
     const maxScroll = getMaxScroll();
+    // A row that fits needs no arrows at all.
+    arrows.hidden = maxScroll <= 5;
 
     if (maxScroll <= 5 || scrollLeft <= 5) {
       prevBtn.classList.add('disabled');
@@ -110,12 +112,8 @@ export function HorizontalCarousel({ title, items = [], trackClass = '', contain
     );
   }
 
-  headerChildren.push(
-    createElement('div', { className: 'carousel-arrows' },
-      prevBtn,
-      nextBtn
-    )
-  );
+  const arrows = createElement('div', { className: 'carousel-arrows' }, prevBtn, nextBtn);
+  headerChildren.push(arrows);
 
   const header = createElement('div', { className: 'carousel-header' }, ...headerChildren);
 

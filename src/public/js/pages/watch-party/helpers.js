@@ -1,4 +1,5 @@
 import { formatClock } from '../../shared/time.js';
+import { formatTicksToDuration } from '../../utils/format.js';
 
 export const COUNTDOWN_MODULE_URL = '/vendor/scenes/vanta-countdown.js';
 export const OWNER_SYNC_INTERVAL_MS = 5000;
@@ -16,9 +17,7 @@ export function formatPosition(positionMs) {
 }
 
 export function formatRuntime(runtimeTicks) {
-  if (!runtimeTicks) return null;
-  const minutes = Math.round(runtimeTicks / 10_000_000 / 60);
-  return minutes > 0 ? `${minutes} Min.` : null;
+  return runtimeTicks >= 10_000_000 * 30 ? formatTicksToDuration(runtimeTicks) : null;
 }
 
 export function countdownMetaParts(snapshot) {

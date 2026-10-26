@@ -3,8 +3,9 @@ import { MediaApi } from '../../api/media.api.js';
 import { PERSON_PLACEHOLDER_URL, getPersonImageUrl } from '../../utils/image.js';
 import { MediaCarousel } from '../../components/mediaCarousel.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
-import { EmptyState, ErrorState } from '../../components/emptyState.js';
+import { ErrorState } from '../../components/emptyState.js';
 import { openModal } from '../../utils/modal.js';
+import { createExpandableText } from '../../components/expandableText.js';
 
 export function createActorModal({ currentItemId }) {
   const modalOverlay = createElement('div', { className: 'actor-modal-overlay' });
@@ -119,9 +120,7 @@ export function createActorModal({ currentItemId }) {
     modalContent.appendChild(profileRow);
 
     if (person.Overview) {
-      modalContent.appendChild(
-        createElement('div', { className: 'actor-bio' }, person.Overview)
-      );
+      modalContent.appendChild(createExpandableText({ text: person.Overview, lines: 6, className: 'actor-bio' }));
     }
 
     const otherItems = normalizeKnownForItems(items.filter(i => i.Id !== currentItemId));
@@ -141,12 +140,7 @@ export function createActorModal({ currentItemId }) {
         modalContent.appendChild(knownForCarousel);
       }
     } else {
-      modalContent.appendChild(
-        createElement('div', { className: 'media-carousel-container' },
-          createElement('h3', { className: 'carousel-title-text', style: { fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)' } }, 'Bekannt für'),
-          EmptyState({ message: 'Keine weiteren Titel in der Mediathek gefunden.', style: { minHeight: '100px' } })
-        )
-      );
+      modalContent.appendChild(createElement('p', { className: 'actor-known-for-empty' }, 'Keine weiteren Titel in der Mediathek.'));
     }
   };
 

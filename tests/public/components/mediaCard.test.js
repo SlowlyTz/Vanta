@@ -46,6 +46,12 @@ describe('MediaCard', () => {
     expect(card.textContent).not.toMatch(/S\d{2}E\d{2}/);
   });
 
+  it('titles an episode in its season list by its own name', () => {
+    const card = MediaCard({ item: { Id: 'e2', Type: 'Episode', Name: 'Die Katze ist im Sack', SeriesName: 'Breaking Bad', IndexNumber: 2, ParentIndexNumber: 1, RunTimeTicks: 48 * 60 * 10_000_000 }, landscape: true, inSeason: true });
+    expect(card.querySelector('.media-card-title').textContent).toBe('Die Katze ist im Sack');
+    expect(card.querySelector('.media-card-subtitle').textContent).toBe('Folge 2 · 48 Min.');
+  });
+
   it('navigates using the movie Id for movie cards', () => {
     const movie = { Id: 'm1', Type: 'Movie', Name: 'Inception', ProductionYear: 2010 };
 

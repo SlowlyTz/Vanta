@@ -10,6 +10,7 @@ import { createSectionLoader, setSectionBusy } from '../components/loader.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { EmptyState, ErrorState } from '../components/emptyState.js';
 import { getBackdropUrlFor } from '../utils/image.js';
+import { genreLabel } from '../shared/genreLabels.js';
 
 // The profile: a head with what one has watched, then one's lists as tabs
 // right under it (Weiter schauen, Meine Liste, Favoriten, Verlauf), the
@@ -39,7 +40,7 @@ const LISTS = [
       const { items } = await WatchlistApi.list(options);
       return { items: items || [], page: 1, totalPages: 1 };
     },
-    emptyText: 'Deine Liste ist leer. Merke dir Filme und Serien über „Meine Liste“ auf ihrer Detailseite.'
+    emptyText: 'Deine Liste ist leer. Merke dir Filme und Serien mit dem Lesezeichen-Symbol auf ihrer Detailseite.'
   },
   {
     key: 'favorites',
@@ -139,7 +140,7 @@ function ProfileHero({ user, signal }) {
     stats.series.value.textContent = formatCount(data.series);
     stats.time.value.textContent = formatWatchTime(data.minutes);
     if (data.topGenres?.length) {
-      genres.textContent = `Am liebsten: ${data.topGenres.join(' · ')}`;
+      genres.textContent = `Am liebsten: ${data.topGenres.map(genreLabel).join(' · ')}`;
       genres.hidden = false;
     }
     if (data.lastWatched?.Name) {
@@ -166,12 +167,15 @@ function renderList(container, { signal, initial }) {
   LISTS.forEach(list => { state.pages[list.key] = createEmptyPageState(); });
 
   const tabButtons = new Map();
-  const tabsNav = createElement('div', { className: 'profile-tabs', role: 'tablist', 'data-tv-row': '' });
+  const tv = document.documentElement.classList.contains('tv-mode');
+  const tabsNav = createElement('div', { className: 'profile-tabs', role: 'tablist', 'aria-label': 'Listen', 'data-tv-row': '', 'data-tv-remember': '' });
   LISTS.forEach(list => {
     const button = createElement('button', {
       className: 'profile-tab-button',
       type: 'button',
       role: 'tab',
+      id: `profile-tab-${list.key}`,
+      'aria-controls': 'profile-tab-panel',
       onClick: () => {
         setActiveTab(list.key);
         // Without a new history entry; the router leaves the page standing.
@@ -182,13 +186,29 @@ function renderList(container, { signal, initial }) {
     tabsNav.appendChild(button);
   });
 
-  const contentEl = createElement('div', { className: 'profile-tab-content' });
+  const contentEl = createElement('div', { className: 'profile-tab-content', id: 'profile-tab-panel', role: 'tabpanel' });
+
+  // Keyboard: one tab stop for the row, arrows (Home/End) choose the tab.
+  // A TV's focus engine moves along the row itself.
+  if (!tv) {
+    tabsNav.addEventListener('keydown', event => {
+      const keys = LISTS.map(list => list.key);
+      const index = keys.indexOf(state.activeTab);
+      const next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: keys.length - 1 }[event.key];
+      if (next === undefined) return;
+      event.preventDefault();
+      const key = keys[(next + keys.length) % keys.length];
+      tabButtons.get(key).click();
+      tabButtons.get(key).focus();
+    });
+  }
 
   const renderTabButtons = () => {
     tabButtons.forEach((button, key) => {
       const active = key === state.activeTab;
       button.classList.toggle('active', active);
       button.setAttribute('aria-selected', String(active));
+      if (!tv) button.tabIndex = active ? 0 : -1;
       // On a TV the list opens on its own tab.
       if (active) button.setAttribute('data-tv-autofocus', '');
       else button.removeAttribute('data-tv-autofocus');
@@ -205,6 +225,7 @@ function renderList(container, { signal, initial }) {
   const renderTabContent = () => {
     const list = listOf(state.activeTab);
     const tabState = state.pages[state.activeTab];
+    contentEl.setAttribute('aria-labelledby', `profile-tab-${state.activeTab}`);
     contentEl.innerHTML = '';
 
     if (tabState.loading && tabState.items.length === 0) {

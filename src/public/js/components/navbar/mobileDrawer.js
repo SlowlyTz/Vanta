@@ -4,6 +4,7 @@ import { createNavIcon, createCloseIcon, createChevronIcon } from './icons.js';
 import { isNavLinkActive } from './activeNav.js';
 import { MediaApi } from '../../api/media.api.js';
 import { getFeaturedPublishersFromStudios } from '../../constants/featuredPublishers.js';
+import { genreLabel } from '../../shared/genreLabels.js';
 
 const ACCORDION_KEYS = new Set(['movies', 'series', 'publishers']);
 
@@ -23,7 +24,7 @@ function renderGenreSubmenu(submenu, genres, type, onNavigate) {
 
   (genres || []).slice(0, 12).forEach(genre => {
     submenu.appendChild(
-      createSubmenuLink(`#/genre/${type}/${encodeURIComponent(genre.Name)}`, genre.Name, onNavigate)
+      createSubmenuLink(`#/genre/${type}/${encodeURIComponent(genre.Name)}`, genreLabel(genre.Name), onNavigate)
     );
   });
 }

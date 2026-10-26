@@ -37,6 +37,8 @@ export function createLoadingCover({ dom, getLoadIndicator = () => null, onRetry
 
   dom.loadingRetry?.addEventListener('click', () => onRetry());
   dom.loadingLeave?.addEventListener('click', () => onLeave());
+  // Always there while the cover is up: the controls' Zurück lies beneath it.
+  dom.loadingBack?.addEventListener('click', () => onLeave());
 
   const armWatchdog = () => {
     if (watchdog !== null || !watchdogMs) return;

@@ -176,7 +176,7 @@ export default function DetailPage({ id }, pageScope) {
       }
       container.innerHTML = '';
       container.appendChild(
-        createElement('div', { className: 'content-section' },
+        createElement('div', { className: `content-section${notFound ? ' detail-not-found' : ''}` },
           ErrorState({
             title: notFound ? 'Dieser Titel ist nicht verfügbar' : undefined,
             message: notFound

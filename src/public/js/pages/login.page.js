@@ -1,11 +1,11 @@
 import { createElement } from '../utils/dom.js';
 import { authStore } from '../store/auth.store.js';
-import { appStore } from '../store/app.store.js';
 import { REDIRECT_AFTER_LOGIN_KEY } from '../utils/auth-redirect.js';
 import { formatClock } from '../shared/time.js';
 import { takeSessionNotice } from '../utils/sessionNotice.js';
 import { createTvPairing } from './login/tvPairing.js';
 import { setTvChoice } from '../utils/tvMode.js';
+import { confirmDialog } from '../components/confirmDialog.js';
 
 const LOGIN_BUTTON_IDLE_TEXT = 'Anmelden';
 const LOGIN_BUTTON_BUSY_TEXT = 'Anmeldung läuft…';
@@ -84,7 +84,8 @@ export default function LoginPage(params, pageScope) {
     const password = passwordInput.value;
 
     if (!username) {
-      appStore.showToast('Bitte Benutzernamen eingeben', 'error');
+      showLoginError('Bitte gib deinen Benutzernamen ein.');
+      usernameInput.focus();
       return;
     }
 
@@ -96,7 +97,6 @@ export default function LoginPage(params, pageScope) {
 
     try {
       await authStore.login(username, password, rememberCheckbox.checked);
-      appStore.showToast('Erfolgreich angemeldet!', 'success');
       let redirectHash = '#/home';
       try {
         redirectHash = sessionStorage.getItem(REDIRECT_AFTER_LOGIN_KEY) || redirectHash;
@@ -112,7 +112,6 @@ export default function LoginPage(params, pageScope) {
         return;
       }
       showLoginError(message, error.reason);
-      appStore.showToast(message, 'error');
       resetLoginButton();
     }
   };
@@ -232,10 +231,12 @@ export default function LoginPage(params, pageScope) {
 
   const errorBanner = createElement('div', { className: 'login-error hidden', role: 'alert' });
 
+  // novalidate: VANTA's own German message instead of the browser's tooltip.
   const loginForm = createElement('form', {
     className: 'login-form',
     method: 'post',
     action: '/api/auth/login',
+    novalidate: true,
     onSubmit: handleLogin
   },
     errorBanner,
@@ -298,10 +299,19 @@ export default function LoginPage(params, pageScope) {
         pairing.stop();
         pairing.element.remove();
         loginForm.classList.remove('is-hidden-for-pairing');
-        // VANTA's keyboard, not the TV's (which a focused field would open).
+        loginForm.appendChild(backToCode);
+        // The field has the focus first, so closing the keyboard returns to
+        // it; VANTA's keyboard, not the TV's (which a focused field would open).
+        usernameInput.focus({ preventScroll: true });
         import('../components/tv/OnScreenKeyboard.js').then(module => module.openKeyboardFor(usernameInput));
       }
     });
+    // Back to the phone code: the page anew, with a fresh code.
+    const backToCode = createElement('button', {
+      type: 'button',
+      className: 'btn-secondary login-back-to-code',
+      onClick: () => window.location.reload()
+    }, 'Mit Code anmelden');
     loginForm.before(pairing.element);
   }
 
@@ -316,12 +326,14 @@ const TV_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" str
 // without a ?tv= in the address, which would set the old view again.
 export function createViewToggle({ win = window, doc = document } = {}) {
   const tv = doc.documentElement.classList.contains('tv-mode');
-  const label = tv ? 'Desktop-Ansicht' : 'TV-Ansicht';
+  const label = tv ? 'Normale Ansicht' : 'TV-Ansicht';
   const button = createElement('button', {
     type: 'button',
     className: 'login-view-toggle',
-    'aria-label': tv ? 'Zur Desktop-Ansicht wechseln' : 'Zur TV-Ansicht wechseln',
-    onClick: () => {
+    'aria-label': tv ? 'Zur normalen Ansicht wechseln' : 'Zur TV-Ansicht wechseln',
+    onClick: async () => {
+      // On a TV the other view is hard to leave again with a remote.
+      if (tv && !(await confirmDialog({ title: 'Normale Ansicht?', message: 'Sie ist für Maus und Touch gedacht und mit der Fernbedienung schwer zu bedienen.', confirmLabel: 'Wechseln', cancelLabel: 'Abbrechen', focusCancel: true }))) return;
       setTvChoice(tv ? 'off' : 'on');
       const params = new URLSearchParams(win.location.search);
       params.delete('tv');

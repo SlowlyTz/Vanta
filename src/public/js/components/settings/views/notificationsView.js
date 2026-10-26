@@ -27,7 +27,7 @@ function columnHead(icon, text) {
 }
 
 // "Benachrichtigungen": push on this device, and per kind push and the list
-// under the bell. `onStatus` gets "An"/"Aus" for the row in the hub.
+// under the bell. `onStatus` gets "Push an"/"Push aus" for the row in the hub.
 export function createNotificationsView({ onStatus = () => {} } = {}) {
   const element = createElement('div', { className: 'settings-view' });
   let prefs = null;
@@ -69,7 +69,7 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
           local = false;
           appStore.showToast(error.message || 'Push konnte nicht eingeschaltet werden', 'error');
         }
-        onStatus(deviceOn ? 'An' : 'Aus');
+        onStatus(deviceOn ? 'Push an' : 'Push aus');
         render();
       }
     });
@@ -106,7 +106,8 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
       const meta = NOTIFICATION_KINDS.find(kind => kind.kind === entry.kind);
       const kindLabel = meta?.label || entry.kind;
       const inAppSwitch = switchCell({ label: `${kindLabel}: in der App`, checked: entry.inApp, onChange: value => save({ kinds: [{ kind: entry.kind, inApp: value }] }) });
-      const pushSwitch = switchCell({ label: `${kindLabel}: Push`, checked: entry.push, onChange: value => save({ kinds: [{ kind: entry.kind, push: value }] }) });
+      // Without push on this device the column only keeps the choice for later.
+      const pushSwitch = switchCell({ label: `${kindLabel}: Push`, checked: entry.push, disabled: !deviceOn, onChange: value => save({ kinds: [{ kind: entry.kind, push: value }] }) });
       return createElement('div', { className: 'settings-kind-row' },
         createElement('span', { className: 'settings-control-text' },
           createElement('span', { className: 'settings-control-label' }, kindLabel),
@@ -130,7 +131,8 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
         createElement('div', { className: 'settings-card-actions' }, testButton)
       ),
       prefs
-        ? settingsCard('Was du bekommst', kindHead, ...kindRows)
+        ? settingsCard('Was du bekommst', kindHead, ...kindRows,
+          deviceOn ? null : settingsNote('Push kommt an, sobald „Push auf diesem Gerät“ eingeschaltet ist.', { tone: 'info' }))
         : settingsCard('Was du bekommst', settingsNote('Wird geladen …'))
     );
   };
@@ -144,7 +146,7 @@ export function createNotificationsView({ onStatus = () => {} } = {}) {
     prefs = loaded;
     local = !registered && isLocalPush();
     deviceOn = registered || local;
-    onStatus(deviceOn ? 'An' : 'Aus');
+    onStatus(deviceOn ? 'Push an' : 'Push aus');
     render();
   };
 

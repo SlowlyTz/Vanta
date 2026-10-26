@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { notificationsStore } from '../store/notifications.store.js';
 import { openModal } from '../utils/modal.js';
 import { bindSheetSwipe } from '../utils/sheetSwipe.js';
+import { OPEN_SETTINGS_EVENT } from './navbar/settingsEvents.js';
 
 const SHEET_QUERY = '(max-width: 600px)';
 
@@ -77,7 +78,15 @@ export function createNotificationBell() {
         return;
       }
       if (feed.items.length === 0) {
-        list.replaceChildren(createElement('p', { className: 'notification-panel-empty' }, 'Noch keine Benachrichtigungen. Was du bekommst, stellst du in den Einstellungen ein.'));
+        const settingsLink = createElement('button', {
+          type: 'button',
+          className: 'notification-panel-settings-link',
+          onClick: () => {
+            handle?.close();
+            window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_EVENT, { detail: { area: 'notifications' } }));
+          }
+        }, 'in den Einstellungen');
+        list.replaceChildren(createElement('p', { className: 'notification-panel-empty' }, 'Noch keine Benachrichtigungen. Was du bekommst, stellst du ', settingsLink, ' ein.'));
         return;
       }
       list.replaceChildren(...feed.items.map(item => {

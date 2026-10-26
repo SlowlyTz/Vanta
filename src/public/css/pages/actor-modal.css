@@ -61,9 +61,11 @@
 }
 
 .actor-modal-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  /* Stays at the top while the biography and titles scroll. */
+  position: sticky;
+  top: 0;
+  float: right;
+  margin: -12px -12px 0 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 50%;
@@ -76,6 +78,17 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   z-index: 10;
+}
+
+.actor-modal-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.actor-known-for-empty {
+  margin: var(--spacing-md) 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .actor-modal-close:hover {
@@ -224,6 +237,7 @@
     width: 100%;
     height: 100dvh;
     padding: 12px;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   }
   .actor-modal {
     width: 100%;
@@ -232,8 +246,7 @@
     border-radius: 16px;
   }
   .actor-modal-close {
-    top: 12px;
-    right: 12px;
+    margin: -8px -4px 0 8px;
   }
   .actor-profile-row {
     gap: var(--spacing-md);

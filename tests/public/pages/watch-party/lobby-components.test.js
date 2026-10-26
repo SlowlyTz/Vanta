@@ -44,7 +44,7 @@ describe('Hero-Texte', () => {
   });
 
   it('baut die Meta-Zeile nur aus vorhandenen Angaben', () => {
-    expect(countdownMetaParts({ productionYear: 2024, runtimeTicks: 36_000_000_000 })).toEqual(['2024', '60 Min.']);
+    expect(countdownMetaParts({ productionYear: 2024, runtimeTicks: 36_000_000_000 })).toEqual(['2024', '1 Std.']);
     expect(countdownMetaParts({})).toEqual([]);
   });
 });

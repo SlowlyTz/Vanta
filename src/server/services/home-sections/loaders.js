@@ -2,6 +2,9 @@ import { LibraryService } from '../jellyfin/library.service.js';
 import { TmdbService } from '../tmdb.service.js';
 import { getFeaturedPublishersFromStudios } from '../../../public/js/constants/featuredPublishers.js';
 import { normalizeGenre, normalizeTitle, getItemYear, shuffleArray, sortByNewest, buildGenreHref } from './normalizers.js';
+import { genreLabel } from '../../../public/js/shared/genreLabels.js';
+
+const MIN_GENRE_ROW_ITEMS = 4;
 
 const SECTION_LIMIT = 20;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -85,13 +88,14 @@ export const loaderMethods = {
         return itemGenres.includes(genre.key);
       });
 
-      if (genreItems.length === 0) continue;
+      // A row of one or two titles looks broken on the home page.
+      if (genreItems.length < MIN_GENRE_ROW_ITEMS) continue;
 
       const sortedItems = sortByNewest(genreItems).slice(0, SECTION_LIMIT);
 
       sections.push({
         type: 'standard',
-        title: genre.label,
+        title: genreLabel(genre.label),
         href: buildGenreHref(genre),
         items: sortedItems
       });

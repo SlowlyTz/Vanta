@@ -76,3 +76,18 @@
   cursor: default;
   filter: none;
 }
+
+/* Narrow phones: the button goes under the text, so the title stays readable. */
+@media (max-width: 420px) {
+  .watch-party-recent-item {
+    flex-wrap: wrap;
+  }
+
+  .watch-party-recent-body {
+    flex-basis: calc(100% - 84px);
+  }
+
+  .watch-party-recent-join {
+    flex: 1 1 100%;
+  }
+}

@@ -87,10 +87,17 @@ export function createExpandableText({ text, lines = 2, className = '' }) {
     }, { once: true });
   };
 
+  // Re-rendering moves the toggle; a focused one (keyboard, TV remote) keeps the focus.
+  const keepFocus = (render) => {
+    const hadFocus = document.activeElement === toggle;
+    render();
+    if (hadFocus) toggle.focus({ preventScroll: true });
+  };
+
   const expand = () => {
     expanded = true;
     const from = container.offsetHeight;
-    renderFull(true);
+    keepFocus(() => renderFull(true));
     toggle.textContent = LESS_LABEL;
     toggle.setAttribute('aria-expanded', 'true');
     container.classList.add('is-expanded');
@@ -102,7 +109,7 @@ export function createExpandableText({ text, lines = 2, className = '' }) {
     toggle.textContent = MORE_LABEL;
     toggle.setAttribute('aria-expanded', 'false');
     container.classList.remove('is-expanded');
-    animateHeight(container.scrollHeight, collapsedHeight, () => renderCut(cutCount));
+    animateHeight(container.scrollHeight, collapsedHeight, () => keepFocus(() => renderCut(cutCount)));
   };
 
   // Measure once the element has a width, and again when it changes

@@ -22,16 +22,21 @@ export function exitApp(win = window) {
   return false;
 }
 
+// A page can take one Back step for itself (a filter panel it closes): it
+// cancels this event.
+export const TV_BACK_EVENT = 'vanta:tv-back';
+
 // What "Zurück" on a remote does, in this order: close the top dialog, close
-// the sidebar, leave the player, ask before leaving VANTA from the home page,
-// else go back a page.
+// the sidebar, a step of the page itself, leave the player, ask before
+// leaving VANTA from the home page, else go back a page.
 export function createBackHandler({
   topModal = getTopModal,
   sidebar = null,
   hash = () => window.location.hash || '#/home',
   history = window.history,
   confirm = confirmDialog,
-  exit = exitApp
+  exit = exitApp,
+  win = window
 } = {}) {
   let asking = false;
   return async function back() {
@@ -45,6 +50,7 @@ export function createBackHandler({
       sidebar.close();
       return 'sidebar';
     }
+    if (!win.dispatchEvent(new CustomEvent(TV_BACK_EVENT, { cancelable: true }))) return 'page-step';
     const current = hash();
     if (current.startsWith('#/player/')) {
       history.back();

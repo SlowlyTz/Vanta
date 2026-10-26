@@ -200,7 +200,8 @@
   position: absolute;
   right: var(--spacing-lg);
   right: max(var(--spacing-lg), env(safe-area-inset-right));
-  bottom: var(--spacing-lg);
+  /* Above the first row, which reaches up into the hero by --hero-overlap. */
+  bottom: calc(var(--hero-overlap, 0px) + var(--spacing-md));
   z-index: 4;
   width: 34px;
   height: 34px;
@@ -231,4 +232,8 @@
 .hero-carousel-pause:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.85);
   outline-offset: 2px;
+}
+
+.hero-carousel-position {
+  display: none;
 }

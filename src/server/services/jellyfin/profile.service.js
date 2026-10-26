@@ -183,7 +183,7 @@ async function fetchLastWatched(userId, token) {
   for (const filters of ['IsPlayed', 'IsResumable']) {
     const data = await getItems(userId, token, {
       Filters: filters,
-      IncludeItemTypes: 'Movie,Episode',
+      IncludeItemTypes: 'Movie,Episode,Series',
       Recursive: 'true',
       SortBy: 'DatePlayed',
       SortOrder: 'Descending',
@@ -199,9 +199,12 @@ async function fetchLastWatched(userId, token) {
 }
 
 async function buildStats(userId, token) {
-  const [movies, episodes, lastWatched] = await Promise.all([
+  const [movies, episodes, playedSeries, lastWatched] = await Promise.all([
     fetchAllPlayed(userId, token, 'Movie'),
     fetchAllPlayed(userId, token, 'Episode'),
+    // A series marked watched as a whole counts even without played episodes
+    // (that is what the Verlauf tab lists).
+    fetchAllPlayed(userId, token, 'Series').catch(() => ({ items: [], total: 0 })),
     fetchLastWatched(userId, token).catch(() => null)
   ]);
   const minutesOf = item => (Number(item.RunTimeTicks) || 0) / TICKS_PER_MINUTE;
@@ -226,7 +229,7 @@ async function buildStats(userId, token) {
   return {
     movies: movies.total,
     episodes: episodes.total,
-    series: minutesBySeries.size,
+    series: new Set([...minutesBySeries.keys(), ...playedSeries.items.map(series => series.Id)]).size,
     minutes: Math.round(minutes),
     topGenres: [...genreMinutes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([genre]) => genre),
     lastWatched

@@ -15,6 +15,8 @@ import { createPlaybackView } from '../settings/views/playbackView.js';
 import { createAppearanceView } from '../settings/views/appearanceView.js';
 import { createDevicesView } from '../settings/views/devicesView.js';
 import { followAfterBack, inAppLinkOf } from '../../utils/historyEntry.js';
+import { confirmDialog } from '../confirmDialog.js';
+import { OPEN_SETTINGS_EVENT } from './settingsEvents.js';
 
 // From this width the hub and the open area stand side by side.
 const SPLIT_QUERY = '(min-width: 900px)';
@@ -38,7 +40,7 @@ function hubRow({ label, icon, onClick, status = null }) {
 // slides in over the hub; a dialog with the hub on the left and the open
 // area on the right on wide screens. On a TV a full screen of the areas that
 // make sense there (playback, look, the account), always side by side.
-export function createSettingsDialog({ onLogout, onChangePassword, extensions = {} }) {
+export function createSettingsDialog({ onLogout, onChangePassword, extensions = {}, returnFocus = null }) {
   const tv = document.documentElement.classList.contains('tv-mode');
   const settingsUsername = createElement('span', { className: 'settings-profile-name' }, 'Username');
   const { form: passwordForm, setStatus: setPasswordStatus } = createPasswordForm(onChangePassword);
@@ -46,7 +48,9 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   const logoutBtn = createElement('button', {
     className: 'settings-logout-button',
     type: 'button',
-    onClick: () => {
+    onClick: async () => {
+      // On a TV one Down too many lands here; signing in again needs the phone.
+      if (tv && !(await confirmDialog({ title: 'Abmelden?', message: 'Zum Anmelden brauchst du danach wieder den Code oder die Bildschirmtastatur.', confirmLabel: 'Abmelden', cancelLabel: 'Abbrechen', focusCancel: true }))) return;
       setSettingsOpen(false);
       onLogout?.();
     }
@@ -120,8 +124,9 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
 
   const rootPanel = createElement('div', {
     className: 'settings-panel settings-panel-root',
-    // A group: left from an area comes back to the row it belongs to.
-    dataset: { view: 'root', tvGroup: '' }
+    // A group: left from an area comes back to the row it belongs to; a
+    // column: up and down stay in the list, only right enters an area.
+    dataset: { view: 'root', tvGroup: '', tvColumn: '' }
   },
     settingsProfile.element,
     group('Konto', profileRow.element, rows.password.element),
@@ -389,6 +394,7 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
       removeOnClose: false,
       closeOnBackdrop: false,
       onBack: goBack,
+      returnFocus,
       onClose: () => setSettingsOpen(false)
     });
     // The statuses on the hub rows.
@@ -399,6 +405,12 @@ export function createSettingsDialog({ onLogout, onChangePassword, extensions = 
   };
 
   setSettingsView('root');
+
+  window.addEventListener(OPEN_SETTINGS_EVENT, event => {
+    setSettingsOpen(true);
+    const area = event.detail?.area;
+    if (area && views[area] && !rows[area]?.element.hidden) openArea(area);
+  });
 
   return {
     element: settingsBackdrop,

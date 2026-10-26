@@ -35,7 +35,10 @@ export function isFocusable(element) {
   return !style || (style.visibility !== 'hidden' && style.display !== 'none');
 }
 
-export const focusKeyOf = element => element?.dataset?.tvKey || element?.dataset?.itemId || element?.id || null;
+// What identifies a focused element across a page rebuild: its own key, or
+// the card it sits in.
+export const focusKeyOf = element => element?.dataset?.tvKey || element?.dataset?.itemId || element?.id
+  || element?.closest?.('[data-item-id]')?.dataset.itemId || null;
 
 // How far `to` lies from `from` in the direction; Infinity when not that way.
 // Measured from the edges, the offset across counts double, and overlapping
@@ -194,6 +197,11 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
     }
     let best = bestOf(pool, fromRect, direction);
     if (!best) return false;
+    // Into the sidebar: where one last was there, else the current page.
+    if (sidebar?.contains(best) && !sidebar.contains(from)) {
+      const back = remembered.get(containerOf(best, 'data-tv-group'));
+      return focus(back && sidebar.contains(back) && isFocusable(back) ? back : sidebarEntry() || best);
+    }
     // Into another row of cards, column or group: where one last was there.
     // A row that is a grid of keys (the on-screen keyboard) or buttons stays
     // spatial: down from "w" is "s", whatever was pressed there before.
@@ -204,6 +212,17 @@ export function createFocusEngine({ doc = document, storage = globalThis.session
         const back = remembered.get(target);
         if (back && back !== from && isFocusable(back) && target.contains(back)) {
           best = back;
+          break;
+        }
+        // A row entered the first time starts at its chosen tab, else at its
+        // first visible card, not at the one nearest to where one came from.
+        if (attribute === 'data-tv-row') {
+          const chosen = target.querySelector('[aria-selected="true"], .active, .is-active');
+          const rowLeft = target.getBoundingClientRect().left;
+          const first = chosen && isFocusable(chosen)
+            ? chosen
+            : candidates(target).find(element => element.getBoundingClientRect().left >= rowLeft - 1);
+          if (first) best = first;
           break;
         }
       }

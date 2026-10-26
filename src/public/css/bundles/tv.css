@@ -14,7 +14,7 @@ html.tv-mode {
   --tv-sidebar-width: 5rem;
   /* Where the content starts: after the sidebar. */
   --tv-content-left: calc(var(--tv-sidebar-width) + var(--tv-safe-x) + 1.5rem);
-  --tv-ring: 0 0 0 0.16rem #fff, 0 0 0 0.34rem rgba(5, 5, 7, 0.85);
+  --tv-ring: 0 0 0 0.22rem #fff, 0 0 0 0.42rem rgba(5, 5, 7, 0.85);
   scroll-behavior: auto;
   background: #050507;
   scrollbar-width: none;
@@ -124,9 +124,11 @@ html.tv-mode .tv-sidebar {
   transition: width 160ms ease !important;
 }
 
+/* Open: an opaque panel, so the page behind does not show through the labels. */
 html.tv-mode .tv-sidebar:focus-within {
   width: calc(15rem + var(--tv-safe-x));
-  background: linear-gradient(90deg, rgba(5, 5, 7, 0.98) 80%, rgba(5, 5, 7, 0.4));
+  background: rgba(5, 5, 7, 0.97);
+  box-shadow: 2rem 0 3rem rgba(5, 5, 7, 0.75);
 }
 
 html.tv-mode .tv-sidebar-brand {
@@ -356,18 +358,20 @@ html.tv-mode .media-card-details {
   margin-top: 0.75rem;
 }
 
+/* Read from three metres: about 24px for titles, 20px for secondary text at 1080p. */
 html.tv-mode .media-card-title {
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 
 html.tv-mode .media-card-subtitle,
 html.tv-mode .media-card-meta {
-  font-size: 0.68rem;
+  font-size: 0.85rem;
 }
 
 html.tv-mode .media-card-badge,
 html.tv-mode .media-type-badge {
-  font-size: 0.6rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.7rem;
 }
 
 /* ---- Home ---------------------------------------------------------------
@@ -417,7 +421,7 @@ html.tv-mode .home-hero-title {
 
 html.tv-mode .home-hero-metadata .meta-pill {
   padding: 0.15rem 0.6rem;
-  font-size: 0.68rem;
+  font-size: 0.85rem;
 }
 
 html.tv-mode .home-hero-desc {
@@ -442,6 +446,20 @@ html.tv-mode .btn-hero-info {
 
 html.tv-mode .hero-carousel-pause {
   display: none;
+}
+
+/* Which title of the hero row is shown (Right on the last button turns it). */
+html.tv-mode .hero-carousel-position {
+  position: absolute;
+  right: 5vw;
+  bottom: 2rem;
+  z-index: 4;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 html.tv-mode .home-hero + .content-section {
@@ -593,7 +611,7 @@ html.tv-mode .profile-stat-value {
 }
 
 html.tv-mode .profile-stat-label {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
 }
 
 html.tv-mode .profile-tab-content {
@@ -735,7 +753,9 @@ html.tv-mode .is-tv-search .search-input-wrapper {
 html.tv-mode .is-tv-search .search-input-field {
   width: 100%;
   height: 2.8rem;
-  padding: 0 1.1rem;
+  padding: 0 1.1rem 0 2.8rem;
+  background-position: 1rem center;
+  background-size: 1.1rem 1.1rem;
   font-size: 1.1rem;
   text-align: left;
 }
@@ -886,7 +906,7 @@ html.tv-mode .settings-dialog.is-tv .settings-control-label {
 }
 
 html.tv-mode .settings-dialog.is-tv .settings-control-description {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
 }
 
 html.tv-mode .settings-dialog.is-tv .settings-control-row.tv-focus {
@@ -1106,4 +1126,111 @@ html.tv-mode .trailer-action.tv-focus {
 
 html.tv-mode .trailer-intro-content {
   font-size: 1rem;
+}
+
+/* ---- Watch Party dialog: TV size ----------------------------------------- */
+
+html.tv-mode .watch-party-dialog {
+  width: 60rem;
+  max-width: calc(100vw - 6rem);
+  max-height: calc(100vh - 6rem);
+  padding: 1.5rem;
+}
+
+html.tv-mode .watch-party-card-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  max-height: calc(100vh - 16rem);
+  /* Room for the focus ring, which the scroll box would cut. */
+  padding: 0.5rem;
+}
+
+html.tv-mode .watch-party-dialog-close,
+html.tv-mode .watch-party-dialog-back {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  font-size: 1.4rem;
+}
+
+/* ---- Focus over selection ------------------------------------------------
+   From the sofa the focus must be the strongest mark: the focused pill is
+   white, a chosen one only tinted with a border. */
+html.tv-mode .ui-segment.is-active,
+html.tv-mode .profile-tab-button.active,
+html.tv-mode .search-filter-chip.is-active,
+html.tv-mode .settings-segmented-option.is-active {
+  border: 0.1rem solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+html.tv-mode .ui-segment.tv-focus,
+html.tv-mode .profile-tab-button.tv-focus,
+html.tv-mode .search-filter-chip.tv-focus,
+html.tv-mode .settings-segmented-option.tv-focus,
+html.tv-mode .confirm-dialog button.tv-focus {
+  background: #fff;
+  color: #050507;
+  transform: scale(1.06);
+}
+
+/* ---- Dialogs: opaque (the blur they rely on is off on TVs) ------------- */
+html.tv-mode .confirm-dialog,
+html.tv-mode .actor-modal {
+  background: #17171c;
+}
+
+html.tv-mode .confirm-dialog-overlay {
+  background: rgba(0, 0, 0, 0.82);
+}
+
+/* ---- Icons in rem, so they scale with the screen like the text --------- */
+html.tv-mode .detail-metadata svg,
+html.tv-mode .watchlist-button svg,
+html.tv-mode .settings-option-icon svg,
+html.tv-mode .settings-logout-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* ---- Motion that weak TV chips pay for on every frame ------------------ */
+html.tv-mode .screensaver-slide.is-visible,
+html.tv-mode .watch-party-backdrop.has-image {
+  animation: none;
+}
+
+/* ---- Trailer: full screen, driven by the remote ------------------------ */
+html.tv-mode .detail-trailer-backdrop {
+  padding: 0;
+  background: #000;
+}
+
+html.tv-mode .detail-trailer-modal {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+html.tv-mode .detail-trailer-title,
+html.tv-mode .detail-trailer-close {
+  display: none;
+}
+
+html.tv-mode .detail-trailer-frame {
+  height: 100%;
+}
+
+html.tv-mode .detail-trailer-hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--tv-safe-y);
+  transform: translateX(-50%);
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
 }

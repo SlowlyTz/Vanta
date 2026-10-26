@@ -14,12 +14,12 @@ export function bindPlayerEvents(context) {
       await switchToHls(error, { silent: context.isDeferredReadyRoom() });
       return;
     }
-    context.showError(error?.message);
+    context.showError(error);
   };
 
   const switchToHls = async (reason, { silent = false } = {}) => {
     if (context.fallbackAttempted || context.destroyed) {
-      if (!silent) context.showError(reason?.message);
+      if (!silent) context.showError(reason);
       return;
     }
     context.fallbackAttempted = true;
@@ -39,7 +39,7 @@ export function bindPlayerEvents(context) {
       context.updateMenus(hlsPlayback);
     } catch (error) {
       if (context.destroyed || context.handleFatalPlaybackError(error)) return;
-      if (!silent) context.showError(error.message);
+      if (!silent) context.showError(error);
     }
   };
 

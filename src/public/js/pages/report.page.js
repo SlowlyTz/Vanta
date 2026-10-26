@@ -31,12 +31,13 @@ export default function ReportPage({ view = 'new' } = {}, pageScope) {
   container.appendChild(page);
 
   const mineDot = createElement('span', { className: 'ui-new-dot', hidden: true, 'aria-label': 'Neue Antworten' });
-  const tabs = createElement('div', { className: 'ui-segmented ui-segmented-full report-tabs', role: 'tablist', 'aria-label': 'Meldungen' },
+  const tabs = createElement('div', { className: 'ui-segmented ui-segmented-full report-tabs', role: 'tablist', 'aria-label': 'Meldungen', 'data-tv-row': '', 'data-tv-remember': '' },
     createElement('button', {
       className: `ui-segment${activeView === 'new' ? ' is-active' : ''}`,
       type: 'button',
       role: 'tab',
       'aria-selected': String(activeView === 'new'),
+      dataset: { tvKey: 'report-new' },
       onClick: () => { window.location.hash = '#/report'; }
     }, 'Neue Meldung'),
     createElement('button', {
@@ -44,6 +45,7 @@ export default function ReportPage({ view = 'new' } = {}, pageScope) {
       type: 'button',
       role: 'tab',
       'aria-selected': String(activeView === 'mine'),
+      dataset: { tvKey: 'report-mine' },
       onClick: () => { window.location.hash = '#/report/mine'; }
     }, 'Meine Meldungen', mineDot)
   );

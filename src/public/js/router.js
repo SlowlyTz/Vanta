@@ -35,6 +35,7 @@ export function focusAutofocusTarget(pageElement) {
 // From this far down the navbar takes its scrolled look.
 const SCROLLED_OFFSET = 16;
 const AUTH_RETRY_MS = 3000;
+const NOT_FOUND_ROUTE = { pageLoader: () => import('./pages/notFound.page.js'), requiresAuth: true };
 
 export class Router {
   constructor() {
@@ -245,11 +246,7 @@ export class Router {
       return;
     }
 
-    const match = this.findRoute(hash);
-    if (!match) {
-      window.location.hash = '#/home';
-      return;
-    }
+    const match = this.findRoute(hash) || { route: NOT_FOUND_ROUTE, params: {} };
 
     // Where the user came from (the player returns there after its sleep timer).
     if (hash !== this.currentHash) {

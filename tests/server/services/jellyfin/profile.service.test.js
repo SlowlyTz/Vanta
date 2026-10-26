@@ -264,7 +264,7 @@ describe('ProfileService', () => {
 
   describe('getStats', () => {
     const TICKS = 600000000; // one minute
-    function mockStats({ movies = [], episodes = [], series = {}, last = null, lastSeries = null }) {
+    function mockStats({ movies = [], episodes = [], series = {}, playedSeries = [], last = null, lastSeries = null }) {
       jellyfinJson.mockImplementation((path, { query }) => {
         if (query.Ids) {
           // The last title's series comes with all fields, the genre lookup with Genres only.
@@ -275,7 +275,7 @@ describe('ProfileService', () => {
           const items = query.Filters === 'IsPlayed' && last ? [last] : [];
           return Promise.resolve({ Items: items, TotalRecordCount: items.length });
         }
-        const items = query.IncludeItemTypes === 'Movie' ? movies : episodes;
+        const items = { Movie: movies, Series: playedSeries }[query.IncludeItemTypes] || episodes;
         return Promise.resolve({ Items: items.slice(query.StartIndex, query.StartIndex + query.Limit), TotalRecordCount: items.length });
       });
     }
@@ -310,6 +310,11 @@ describe('ProfileService', () => {
       });
       const movieCall = jellyfinJson.mock.calls.find(([, { query }]) => query.IncludeItemTypes === 'Movie' && query.Filters === 'IsPlayed' && !query.SortBy);
       expect(movieCall[1].query).toEqual(expect.objectContaining({ Recursive: 'true', Fields: 'Genres', StartIndex: 0, Limit: 1000 }));
+    });
+
+    it('counts a series marked watched as a whole', async () => {
+      mockStats({ playedSeries: [{ Id: 's9', Type: 'Series' }] });
+      expect((await ProfileService.getStats('user', 'token')).series).toBe(1);
     });
 
     it('pages through long histories and keeps the answer a few minutes per account', async () => {

@@ -132,6 +132,27 @@ describe('createWatchPartyDialog', () => {
     expect(dialog.element.querySelector('.watch-party-card-meta').textContent).toBe('2021');
   });
 
+  it('asks before creating a party for a title picked in the dialog', async () => {
+    WatchPartyApi.suggestions.mockResolvedValue({ items: [movieCard({ Id: 'movie-2' })] });
+    WatchPartyApi.create.mockResolvedValue({ party: { id: 'party-2' } });
+    const dialog = createWatchPartyDialog();
+    await dialog.open();
+    await flush();
+
+    dialog.element.querySelector('.watch-party-card').click();
+    await flush();
+    expect(WatchPartyApi.create).not.toHaveBeenCalled();
+
+    // Zurück brings the same list back.
+    [...dialog.element.querySelectorAll('.watch-party-confirm button')].find(button => button.textContent === 'Zurück').click();
+    expect(dialog.element.querySelectorAll('.watch-party-card').length).toBe(1);
+
+    dialog.element.querySelector('.watch-party-card').click();
+    dialog.element.querySelector('.watch-party-confirm .ui-button-primary').click();
+    await flush();
+    expect(WatchPartyApi.create).toHaveBeenCalledWith('movie-2');
+  });
+
   it('öffnet den Episode-Picker bei Serienauswahl und erstellt die Party mit der Episode-ID', async () => {
     WatchPartyApi.suggestions.mockResolvedValue({ items: [seriesCard()] });
     MediaApi.getSeasons.mockResolvedValue([{ Id: 'season-1', Name: 'Staffel 1' }]);
@@ -150,6 +171,8 @@ describe('createWatchPartyDialog', () => {
     expect(dialog.element.querySelector('.watch-party-episode-button')).toBeTruthy();
 
     dialog.element.querySelector('.watch-party-episode-button').click();
+    await flush();
+    dialog.element.querySelector('.watch-party-confirm .ui-button-primary').click();
     await flush();
 
     expect(WatchPartyApi.create).toHaveBeenCalledWith('ep-1');

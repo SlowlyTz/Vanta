@@ -129,7 +129,21 @@
 
 @media (max-width: 380px) {
   .grid-container {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
+}
+
+/* A long title must not widen its column. */
+.grid-container > * {
+  min-width: 0;
+}
+
+/* Not-found and unavailable states sit in the middle of the screen. */
+.page-not-found,
+.detail-not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
 }

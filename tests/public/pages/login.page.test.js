@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authStore } from '../../../src/public/js/store/auth.store.js';
 import LoginPage from '../../../src/public/js/pages/login.page.js';
 
+vi.mock('../../../src/public/js/components/confirmDialog.js', () => ({ confirmDialog: vi.fn(async () => true) }));
 vi.mock('../../../src/public/js/store/auth.store.js', () => ({
   authStore: { login: vi.fn() }
 }));
@@ -271,8 +272,9 @@ describe('login view toggle', () => {
     document.documentElement.classList.add('tv-mode');
     const win = fakeWindow('?tv=1');
     const button = createViewToggle({ win });
-    expect(button.textContent).toBe('Desktop-Ansicht');
+    expect(button.textContent).toBe('Normale Ansicht');
     button.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(localStorage.getItem('vanta.tvMode')).toBe('off');
     expect(win.history.replaceState).toHaveBeenCalledWith(null, '', '/#/login');
     // Also without a ?tv= to drop, the page loads anew.

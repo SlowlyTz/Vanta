@@ -108,8 +108,14 @@ export function bindTransportControls(context) {
     animateButtons(direction);
   };
 
+  // The big buttons over the video duplicate the bar's: for the mouse and
+  // touch only, so Tab does not visit them twice (a TV moves by the remote).
+  if (!context.tvMode) root.querySelectorAll('.vanta-player-center-controls button').forEach(button => { button.tabIndex = -1; });
+
   context.togglePlay = () => {
     if (context.watchParty?.enabled && !context.canControlWatchParty()) return;
+    // While a stream is still being prepared, Space/OK would abort the start.
+    if (context.sourceSwitch?.isSwitching?.()) return;
     if (player.paused) player.play().catch(() => {});
     else player.pause();
   };

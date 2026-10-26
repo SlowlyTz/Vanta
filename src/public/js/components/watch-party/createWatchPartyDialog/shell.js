@@ -33,7 +33,7 @@ export function bindShell(ctx) {
         return;
       }
       ctx.showPickMediaView();
-      if (item) await ctx.handleSelect(item);
+      if (item) await ctx.startFor(item);
     } else {
       ctx.backdrop.classList.remove('open');
       ctx.backdrop.setAttribute('aria-hidden', 'true');

@@ -7,7 +7,15 @@ import { confirmDialog } from '../../confirmDialog.js';
 
 const SCREENSAVER_MINUTES = [5, 10, 20, 30].map(value => ({ value, label: `${value} Min.` }));
 
-export const appearanceStatus = (prefs) => (prefs.reducedMotion ? 'Weniger Bewegung' : 'Standard');
+// The hub row's summary: what is set on this device.
+export const appearanceStatus = (prefs, tvChoice = getTvChoice()) => {
+  const parts = [tvChoice === 'on' ? 'TV-Modus an' : tvChoice === 'off' ? 'TV-Modus aus' : 'TV-Modus automatisch'];
+  if (prefs.reducedMotion) parts.push('weniger Bewegung');
+  return parts.join(', ');
+};
+
+// A phone has no use for a screensaver (its button is hidden there too).
+const isPhone = () => window.matchMedia?.('(pointer: coarse) and (max-width: 768px)').matches === true;
 
 // "Darstellung": the TV mode of this device, the screensaver, less motion
 // and the opening animation, in one list. Further rows come from `extraRows`.
@@ -54,13 +62,18 @@ export function createAppearanceView({ onStatus = () => {}, extraRows = () => []
       onChange: value => changeTvMode(value, tvRow)
     });
     // "Startet nach" only matters while the screensaver is on.
-    const after = choiceRow({ label: 'Bildschirmschoner nach', options: SCREENSAVER_MINUTES, value: prefs.screensaverMinutes, onChange: value => save({ screensaverMinutes: value }) });
+    const after = choiceRow({ label: 'Startet nach', options: SCREENSAVER_MINUTES, value: prefs.screensaverMinutes, onChange: value => save({ screensaverMinutes: value }) });
     after.element.hidden = !prefs.screensaverEnabled;
+    const screensaver = switchRow({ label: 'Bildschirmschoner', description: 'Auf der Startseite, wenn länger nichts passiert.', checked: prefs.screensaverEnabled, onChange: value => { after.element.hidden = !value; save({ screensaverEnabled: value }); } });
+    if (isPhone()) {
+      screensaver.element.hidden = true;
+      after.element.hidden = true;
+    }
     element.replaceChildren(
       ...extraRows(),
       settingsCard(null,
         tvRow.element,
-        switchRow({ label: 'Bildschirmschoner', description: 'Auf der Startseite, wenn länger nichts passiert.', checked: prefs.screensaverEnabled, onChange: value => { after.element.hidden = !value; save({ screensaverEnabled: value }); } }).element,
+        screensaver.element,
         after.element,
         switchRow({ label: 'Weniger Bewegung', checked: prefs.reducedMotion, onChange: value => save({ reducedMotion: value }) }).element,
         switchRow({ label: 'Intro-Animation beim Start', checked: prefs.introAnimation !== 'off', onChange: value => save({ introAnimation: value ? 'auto' : 'off' }) }).element

@@ -168,6 +168,19 @@ describe('bindTvControls', () => {
     expect(document.activeElement.className).toBe('vanta-player-back');
   });
 
+  it('spools from the big play button while the controls are up (paused)', () => {
+    current = setup({ state: 'ready-paused' });
+    const center = document.createElement('div');
+    center.className = 'vanta-player-center-controls';
+    const play = document.querySelector('.vanta-player-play');
+    play.replaceWith(center);
+    center.appendChild(play);
+    play.focus();
+    key('ArrowRight');
+    expect(document.querySelector('.vanta-tv-seek-preview').hidden).toBe(false);
+    expect(document.activeElement).toBe(play);
+  });
+
   it('knows the media keys', () => {
     current = setup({ state: 'ready-playing-active' });
     key('MediaPlayPause');
