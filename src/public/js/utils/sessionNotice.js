@@ -30,12 +30,14 @@ export function takeSessionNotice() {
 // The server ended this session: drop the user and go to the login, where
 // the notice (if any) is waiting.
 export function endClientSession(notice = null) {
+  // Cached images belong to the account that is gone, whatever the reason.
+  clearUserCaches();
+  // A ban or a deleted account also ends this browser's pushes; after a plain
+  // expiry the next login of the same account takes them over (the server
+  // drops pushes of sessions that ended).
   if (notice) {
     storeSessionNotice(notice);
-    // A session that ended (expired, signed out elsewhere, banned) takes the
-    // push subscription along, so the next account here does not inherit it.
     unsubscribeBrowserPush().catch(() => {});
-    clearUserCaches();
   }
   window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
   if (window.location.hash !== '#/login') {

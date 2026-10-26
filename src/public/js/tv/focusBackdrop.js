@@ -1,4 +1,4 @@
-import { getBackdropUrlFor } from '../utils/image.js';
+import { getBackdropUrlFor, cssUrl } from '../utils/image.js';
 
 const DELAY_MS = 300;
 
@@ -21,7 +21,7 @@ export function bindFocusBackdrop({ doc = document, win = window } = {}) {
     shownId = id;
     const next = doc.createElement('div');
     next.className = 'tv-focus-backdrop-image';
-    next.style.backgroundImage = `url("${getBackdropUrlFor({ Id: id, BackdropImageTags: [tag] }, Math.min(win.innerWidth, 1280) / (win.devicePixelRatio || 1)).replace(/"/g, '%22')}")`;
+    next.style.backgroundImage = cssUrl(getBackdropUrlFor({ Id: id, BackdropImageTags: [tag] }, Math.min(win.innerWidth, 1280) / (win.devicePixelRatio || 1)));
     layer.appendChild(next);
     win.requestAnimationFrame(() => next.classList.add('is-visible'));
     [...layer.children].slice(0, -1).forEach(old => win.setTimeout(() => old.remove(), 600));

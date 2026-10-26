@@ -1,11 +1,14 @@
 /* Next episode overlay */
 .vanta-player-next-episode {
   position: absolute;
+  right: 16px;
   right: max(16px, env(safe-area-inset-right));
+  bottom: calc(14px + 96px);
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 96px);
   z-index: 20;
   display: flex;
   gap: 12px;
+  width: 360px;
   width: min(360px, calc(100vw - 32px));
   padding: 14px;
   border: 1px solid rgb(255 255 255 / 0.14);
@@ -101,7 +104,11 @@
   background: transparent;
 }
 
-.vanta-player-next-episode-dismiss:hover,
+.vanta-player-next-episode-dismiss:hover {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
 .vanta-player-next-episode-dismiss:focus-visible {
   background: rgb(255 255 255 / 0.1);
   outline: none;
@@ -137,7 +144,9 @@
 
 @media (max-width: 480px) {
   .vanta-player-next-episode {
+    right: 8px;
     right: max(8px, env(safe-area-inset-right));
+    bottom: calc(8px + 72px);
     bottom: calc(max(8px, env(safe-area-inset-bottom)) + 72px);
     flex-direction: column;
   }
@@ -148,3 +157,15 @@
   }
 }
 
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-player-next-episode > * + * {
+    margin-left: 12px;
+  }
+  .vanta-player-next-episode-body > * + * {
+    margin-top: 2px;
+  }
+  .vanta-player-next-episode-actions > * + * {
+    margin-left: 8px;
+  }
+}

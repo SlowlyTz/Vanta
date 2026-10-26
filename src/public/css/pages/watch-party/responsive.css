@@ -8,6 +8,7 @@
   }
 
   .watch-party-roster {
+    width: 560px;
     width: min(560px, 100%);
   }
 
@@ -38,6 +39,7 @@
   }
 
   .watch-party-lobby-inner {
+    padding: calc(var(--wp-topbar-height) + 18vh) 16px calc(150px + 0px) 16px;
     padding:
       calc(var(--wp-topbar-height) + 18vh)
       max(16px, env(safe-area-inset-right))

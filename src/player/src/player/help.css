@@ -5,6 +5,7 @@
   z-index: 60;
   display: grid;
   place-items: center;
+  padding: 24px 24px 24px 24px;
   padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   overflow-y: auto;
   background: rgb(6 6 8 / 0.5);
@@ -30,6 +31,7 @@
 }
 
 .vanta-help-panel {
+  width: 1080px;
   width: min(1080px, 100%);
   display: grid;
   gap: 22px;
@@ -71,7 +73,11 @@
   fill: currentColor;
 }
 
-.vanta-help-close:hover,
+.vanta-help-close:hover {
+  background: rgb(255 255 255 / 0.22);
+  outline: none;
+}
+
 .vanta-help-close:focus-visible {
   background: rgb(255 255 255 / 0.22);
   outline: none;
@@ -198,5 +204,12 @@
   .vanta-help,
   .vanta-help-panel {
     transition: none;
+  }
+}
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-help-input > * + * {
+    margin-left: 4px;
   }
 }

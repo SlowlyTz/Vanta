@@ -7,6 +7,13 @@
     --drawer-inset: 0px;
   }
 
+/* Chromium 68 has no min()/max()/clamp(); custom properties get their fallback here. */
+@supports not (width: max(1px, 1px)) {
+  :root {
+    --drawer-width: 320px;
+  }
+}
+
   .mobile-drawer-nav {
     border-left: 0;
     border-radius: 0 26px 26px 0;

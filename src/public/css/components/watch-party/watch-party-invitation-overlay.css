@@ -1,8 +1,11 @@
 .watch-party-invitation-stack {
   position: fixed;
+  top: 16px;
   top: max(16px, env(safe-area-inset-top));
+  right: 16px;
   right: max(16px, env(safe-area-inset-right));
   z-index: 100100;
+  width: 340px;
   width: min(340px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
@@ -94,7 +97,9 @@
 
 @media (max-width: 600px) {
   .watch-party-invitation-stack {
+    left: 16px;
     left: max(16px, env(safe-area-inset-left));
+    right: 16px;
     right: max(16px, env(safe-area-inset-right));
     width: auto;
   }

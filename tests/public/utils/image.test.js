@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getItemImageUrl, getItemImageSources, getPersonImageUrl, PERSON_PLACEHOLDER_URL } from '../../../src/public/js/utils/image.js';
+import { cssUrl, getItemImageUrl, getItemImageSources, getPersonImageUrl, PERSON_PLACEHOLDER_URL } from '../../../src/public/js/utils/image.js';
 
 const movie = { Id: 'm1', Name: 'Inception', Type: 'Movie', ImageTags: { Primary: 'p1', Logo: 'l1' }, BackdropImageTags: ['b1'] };
 
@@ -30,9 +30,16 @@ describe('getItemImageUrl', () => {
 
   it('returns an SVG placeholder with the title when there is no image, and an empty string for no item', () => {
     const url = getItemImageUrl({ Id: 'n', Name: 'Ohne Bild', Type: 'Movie' }, 'Primary');
-    expect(url.startsWith('data:image/svg+xml;utf8,')).toBe(true);
-    expect(url).toContain('Ohne Bild');
+    expect(url.startsWith('data:image/svg+xml,')).toBe(true);
+    expect(decodeURIComponent(url)).toContain('Ohne Bild');
     expect(getItemImageUrl(null)).toBe('');
+  });
+
+  it('escapes the title in the placeholder and gives a URL safe for CSS', () => {
+    const url = getItemImageUrl({ Id: 'n', Name: 'Tom & Jerry\'s <Show>', Type: 'Movie' }, 'Primary');
+    expect(decodeURIComponent(url)).toContain('Tom &amp; Jerry&apos;s &lt;Show&gt;');
+    expect(url).not.toMatch(/["<>]/);
+    expect(cssUrl('a"b')).toBe('url("a%22b")');
   });
 });
 

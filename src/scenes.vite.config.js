@@ -16,6 +16,8 @@ export default defineConfig({
   publicDir: false,
   build: {
     outDir: path.resolve(srcRoot, 'public/vendor/scenes'),
+    // TV browsers (Chromium 68) parse it too, even though the intro is off there.
+    target: 'chrome68',
     emptyOutDir: true,
     sourcemap: false,
     minify: true,

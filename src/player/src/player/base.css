@@ -87,13 +87,32 @@
   z-index: 12;
 }
 
+/* Chromium 68 has no min()/max()/clamp(); custom properties get their fallback here. */
+@supports not (width: max(1px, 1px)) {
+  .vanta-player-captions {
+    --media-cue-font-size: 1.6rem;
+  }
+}
+
 /* Subtitle look chosen in the settings (size, background). */
 .vanta-player-root[data-subtitle-size="small"] .vanta-player-captions {
   --media-cue-font-size: clamp(0.85rem, 1.7vw, 1.25rem);
 }
 
+@supports not (width: max(1px, 1px)) {
+  .vanta-player-root[data-subtitle-size="small"] .vanta-player-captions {
+    --media-cue-font-size: 1.25rem;
+  }
+}
+
 .vanta-player-root[data-subtitle-size="large"] .vanta-player-captions {
   --media-cue-font-size: clamp(1.2rem, 2.9vw, 2.15rem);
+}
+
+@supports not (width: max(1px, 1px)) {
+  .vanta-player-root[data-subtitle-size="large"] .vanta-player-captions {
+    --media-cue-font-size: 2.15rem;
+  }
 }
 
 .vanta-player-root[data-subtitle-background="none"] .vanta-player-captions {

@@ -1,4 +1,3 @@
-import { seekTo } from '../seek.js';
 import { formatClock } from '../../../public/js/shared/time.js';
 import { normalizeKey } from '../../../public/js/tv/keys.js';
 import { directionalScore } from '../../../public/js/tv/focusEngine.js';
@@ -61,7 +60,7 @@ export function bindTvControls(context, { doc = document } = {}) {
     window.clearTimeout(timer);
     hold = null;
     preview.hidden = true;
-    seekTo(player, target, { endEpsilon: 0.25 });
+    context.seekToTarget(target);
     ui.resetIdle();
   };
 

@@ -109,8 +109,23 @@
   }
 
   // A page load names the deployed build; when it changed, the old hashed
-  // files will never be asked for again.
-  function rememberBuild(response) {
+  // files will never be asked for again. Only files cached before this page
+  // load go: the new page's own files are being cached meanwhile.
+  function dropAssetsCachedBefore(time) {
+    return caches.open(ASSET_CACHE).then(function (cache) {
+      return cache.keys().then(function (requests) {
+        return Promise.all(requests.map(function (request) {
+          return cache.match(request).then(function (cached) {
+            var cachedAt = Date.parse((cached && cached.headers.get('date')) || '');
+            if (!cachedAt || cachedAt < time) return cache.delete(request);
+            return undefined;
+          });
+        }));
+      });
+    });
+  }
+
+  function rememberBuild(response, startedAt) {
     var build = response && response.headers && response.headers.get('X-Vanta-Build');
     if (!build) return Promise.resolve();
     return caches.open(META_CACHE).then(function (meta) {
@@ -119,7 +134,8 @@
       }).then(function (previous) {
         if (previous === build) return undefined;
         return meta.put(BUILD_KEY, new Response(build)).then(function () {
-          return previous ? caches.delete(ASSET_CACHE) : undefined;
+          // The Date header has whole seconds.
+          return previous ? dropAssetsCachedBefore(startedAt - 2000) : undefined;
         });
       });
     }).catch(function () {});
@@ -154,9 +170,10 @@
 
     if (request.mode !== 'navigate') return;
 
+    var startedAt = Date.now();
     event.respondWith(
       fetch(request).then(function (response) {
-        event.waitUntil(rememberBuild(response));
+        event.waitUntil(rememberBuild(response, startedAt));
         return response;
       }).catch(function () {
         return caches.match(OFFLINE_URL).then(function (cached) {

@@ -104,3 +104,16 @@ html.tv-mode .login-page.is-tv-login {
 html.tv-mode .is-tv-login .login-panel-inner {
   max-width: 38rem;
 }
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .connect-form > * + * {
+    margin-left: 12px;
+  }
+  .connect-actions > * + * {
+    margin-left: 10px;
+  }
+  .tv-pairing-body > * + * {
+    margin-left: 2rem;
+  }
+}

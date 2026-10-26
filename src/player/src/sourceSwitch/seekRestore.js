@@ -68,6 +68,7 @@ export async function performSeek(state, targetPosition, { version } = {}) {
   }
 
   if (Math.abs(Number(player.currentTime) - target) < 0.35) {
+    state.lastRequestedPosition = null;
     if (!state.switching) {
       state.setInlineLoading(false);
       syncPlayingState(state);
@@ -90,6 +91,7 @@ export async function performSeek(state, targetPosition, { version } = {}) {
     // Seek timeout or error – still clean up below
   } finally {
     if (currentSeek !== state.seekVersion) return;
+    state.lastRequestedPosition = null;
     clearSeekTimer(state);
     if (version !== undefined && !state.isCurrentLoad(version)) return;
     if (!state.switching) {

@@ -46,7 +46,11 @@ button.admin-dash-card {
   cursor: pointer;
 }
 
-button.admin-dash-card:hover,
+button.admin-dash-card:hover {
+  background: var(--admin-surface-hover);
+  outline: none;
+}
+
 button.admin-dash-card:focus-visible {
   background: var(--admin-surface-hover);
   outline: none;

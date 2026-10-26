@@ -41,6 +41,7 @@
   align-items: center;
   gap: 12px;
   height: calc(var(--wp-topbar-height) + env(safe-area-inset-top));
+  padding: 0px 48px 0 48px;
   padding: env(safe-area-inset-top) max(clamp(16px, 4vw, 48px), env(safe-area-inset-right)) 0 max(clamp(16px, 4vw, 48px), env(safe-area-inset-left));
   background: linear-gradient(to bottom, rgba(4, 4, 6, 0.72), rgba(4, 4, 6, 0));
   pointer-events: none;
@@ -160,7 +161,11 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.watch-party-end-button:hover,
+.watch-party-end-button:hover {
+  background: rgba(255, 122, 122, 0.12);
+  outline: none;
+}
+
 .watch-party-end-button:focus-visible {
   background: rgba(255, 122, 122, 0.12);
   outline: none;
@@ -237,6 +242,7 @@
 }
 
 .watch-party-state-card {
+  width: 440px;
   width: min(440px, 100%);
   display: grid;
   justify-items: center;

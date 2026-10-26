@@ -24,7 +24,7 @@ html.player-active #app {
   min-height: 100svh;
   background: #000000;
   color: #ffffff;
-  z-index: 99999;
+  z-index: var(--z-player);
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: manipulation;
@@ -42,6 +42,7 @@ body.player-active .player-page {
   top: 50%;
   left: 50%;
   z-index: 50;
+  width: 440px;
   width: min(440px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;

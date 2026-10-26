@@ -1,5 +1,6 @@
 import { WatchPartyApi } from '../../api/watch-party.api.js';
 import { appStore } from '../../store/app.store.js';
+import { copyText } from '../../utils/clipboard.js';
 
 export function bindActions(ctx) {
   ctx.handleKick = async userId => {
@@ -32,7 +33,7 @@ export function bindActions(ctx) {
 
   ctx.handleCopyInvite = async () => {
     try {
-      await navigator.clipboard.writeText(ctx.inviteInput.value);
+      await copyText(ctx.inviteInput.value);
       ctx.inviteBar.showCopied();
     } catch {
       ctx.inviteInput.select();

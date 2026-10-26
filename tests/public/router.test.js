@@ -119,6 +119,39 @@ describe('Router.renderPage', () => {
     expect(element.isConnected).toBe(true);
     expect(document.activeElement).toBe(element.querySelector('input'));
   });
+
+  it('does not show a page whose navigation was overtaken during the exit animation', async () => {
+    await router.renderPage(page('<p>first</p>'), true);
+    const stale = page('<p>stale</p>');
+
+    expect(await router.renderPage(stale, true, () => true)).toBe(false);
+    expect(stale.isConnected).toBe(false);
+  });
+});
+
+describe('Router.back', () => {
+  it('goes back inside VANTA and to the fallback on a page opened directly', () => {
+    const router = new Router();
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+
+    router.back('#/requests');
+    expect(back).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('#/requests');
+
+    router.previousHash = '#/home';
+    router.back('#/requests');
+    expect(back).toHaveBeenCalledTimes(1);
+    back.mockRestore();
+  });
+});
+
+describe('Router.findRoute', () => {
+  it('treats a malformed escape as no match', () => {
+    const router = new Router();
+    router.routes = [{ path: '/item/:id' }];
+    expect(router.findRoute('/item/%E0')).toBeNull();
+    expect(router.findRoute('/item/abc').params).toEqual({ id: 'abc' });
+  });
 });
 
 describe('Router · hash changes a page handles itself', () => {

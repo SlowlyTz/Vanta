@@ -114,6 +114,7 @@
 
 .trailer-info-title {
   color: var(--text-primary);
+  font-size: 2.75rem;
   font-size: clamp(1.65rem, 2.8vw, 2.75rem);
   font-weight: 600;
   letter-spacing: -0.045em;
@@ -127,6 +128,7 @@
   margin-top: 18px;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.74);
+  font-size: 0.98rem;
   font-size: clamp(0.86rem, 1vw, 0.98rem);
   font-weight: 350;
   line-height: 1.58;

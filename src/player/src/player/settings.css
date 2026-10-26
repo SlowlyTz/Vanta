@@ -6,11 +6,14 @@
   --settings-width: 380px;
   --settings-ease: var(--abyss-ease, cubic-bezier(0.16, 1, 0.3, 1));
   position: absolute;
+  right: 20px;
   right: max(20px, env(safe-area-inset-right));
+  bottom: calc(14px + 104px);
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 104px);
   z-index: 40;
   width: var(--settings-width);
   max-width: calc(100vw - 32px);
+  max-height: 560px;
   max-height: min(72vh, 560px);
   display: flex;
   flex-direction: column;
@@ -119,7 +122,11 @@
   fill: currentColor;
 }
 
-.vanta-settings-back:hover,
+.vanta-settings-back:hover {
+  background: rgb(255 255 255 / 0.12);
+  outline: none;
+}
+
 .vanta-settings-back:focus-visible {
   background: rgb(255 255 255 / 0.12);
   outline: none;
@@ -153,8 +160,12 @@
 }
 
 .vanta-settings-row:hover,
+.vanta-settings-option:hover {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
 .vanta-settings-row:focus-visible,
-.vanta-settings-option:hover,
 .vanta-settings-option:focus-visible {
   background: rgb(255 255 255 / 0.1);
   outline: none;
@@ -280,7 +291,11 @@
   transition: background 160ms ease, color 160ms ease;
 }
 
-.vanta-settings-segment:hover,
+.vanta-settings-segment:hover {
+  color: #fff;
+  outline: none;
+}
+
 .vanta-settings-segment:focus-visible {
   color: #fff;
   outline: none;
@@ -351,12 +366,18 @@
   background: #6b6b75;
 }
 
-[data-state="sync"]::after { background: #4ade80; }
-[data-state="correcting"]::after { background: #8ab4ff; }
-[data-state="buffering"]::after { background: #facc15; }
-[data-state="paused"]::after { background: #cbd5e1; }
-[data-state="blocked"]::after { background: #ff7a7a; }
-[data-state="unknown"]::after { background: #4ade80; opacity: 0.6; }
+.vanta-settings-party-avatar[data-state="sync"]::after,
+.vanta-settings-avatar[data-state="sync"]::after { background: #4ade80; }
+.vanta-settings-party-avatar[data-state="correcting"]::after,
+.vanta-settings-avatar[data-state="correcting"]::after { background: #8ab4ff; }
+.vanta-settings-party-avatar[data-state="buffering"]::after,
+.vanta-settings-avatar[data-state="buffering"]::after { background: #facc15; }
+.vanta-settings-party-avatar[data-state="paused"]::after,
+.vanta-settings-avatar[data-state="paused"]::after { background: #cbd5e1; }
+.vanta-settings-party-avatar[data-state="blocked"]::after,
+.vanta-settings-avatar[data-state="blocked"]::after { background: #ff7a7a; }
+.vanta-settings-party-avatar[data-state="unknown"]::after,
+.vanta-settings-avatar[data-state="unknown"]::after { background: #4ade80; opacity: 0.6; }
 
 .vanta-settings-party .vanta-settings-sync {
   margin: 0;
@@ -479,7 +500,11 @@
   transition: background 140ms ease;
 }
 
-.vanta-settings-sync-button:hover,
+.vanta-settings-sync-button:hover {
+  background: rgb(255 255 255 / 0.22);
+  outline: none;
+}
+
 .vanta-settings-sync-button:focus-visible {
   background: rgb(255 255 255 / 0.22);
   outline: none;
@@ -511,7 +536,11 @@
   transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
 }
 
-.vanta-settings-season:hover,
+.vanta-settings-season:hover {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
 .vanta-settings-season:focus-visible {
   background: rgb(255 255 255 / 0.1);
   outline: none;
@@ -545,7 +574,11 @@
   transition: background 140ms ease;
 }
 
-.vanta-settings-episode:hover:not(:disabled),
+.vanta-settings-episode:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+  outline: none;
+}
+
 .vanta-settings-episode:focus-visible {
   background: rgb(255 255 255 / 0.1);
   outline: none;
@@ -690,7 +723,11 @@
   transition: background 140ms ease, color 140ms ease;
 }
 
-.vanta-settings-action:hover,
+.vanta-settings-action:hover {
+  background: rgb(255 255 255 / 0.2);
+  outline: none;
+}
+
 .vanta-settings-action:focus-visible {
   background: rgb(255 255 255 / 0.2);
   outline: none;
@@ -713,9 +750,11 @@
     top: 0;
     right: 0;
     bottom: 0;
+    width: var(--settings-width);
     width: min(var(--settings-width), 52vw);
     max-width: none;
     max-height: none;
+    padding: 8px 4px 8px 0;
     padding: max(8px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) 0;
     border-width: 0 0 0 1px;
     border-radius: 22px 0 0 22px;
@@ -745,6 +784,7 @@
     bottom: 0;
     width: auto;
     max-height: 78vh;
+    padding: 6px 0 10px;
     padding: 6px 0 max(10px, env(safe-area-inset-bottom));
     border-width: 1px 0 0;
     border-radius: 22px 22px 0 0;
@@ -771,5 +811,30 @@
   .vanta-settings,
   .vanta-settings[data-state="closing"] {
     transform: none;
+  }
+}
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-settings-page-head > * + * {
+    margin-left: 6px;
+  }
+  .vanta-settings-party-head > * + * {
+    margin-left: 12px;
+  }
+  .vanta-settings-toggle-row > * + * {
+    margin-left: 12px;
+  }
+  .vanta-settings-seasons > * + * {
+    margin-left: 6px;
+  }
+  .vanta-settings-participant-main > * + * {
+    margin-left: 10px;
+  }
+  .vanta-settings-participant-name > * + * {
+    margin-left: 6px;
+  }
+  .vanta-settings-participant-actions > * + * {
+    margin-left: 6px;
   }
 }

@@ -4,6 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 560px;
   max-height: min(56vh, 560px);
   overflow-y: auto;
 }

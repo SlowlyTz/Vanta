@@ -6,6 +6,13 @@
   --drawer-motion: 420ms var(--abyss-ease);
 }
 
+/* Chromium 68 has no min()/max()/clamp(); custom properties get their fallback here. */
+@supports not (width: max(1px, 1px)) {
+  :root {
+    --drawer-push: 72px;
+  }
+}
+
 /* A floating glass panel on the left: header with the logo, the scrolling
    entries in the middle and the user card pinned to the bottom. On desktop
    it hovers with a margin around it; phones get a full-height sheet
@@ -35,7 +42,7 @@
   contain: layout paint;
   transform: translate3d(calc(-100% - var(--drawer-inset) * 2), 0, 0);
   transition: transform var(--drawer-motion), visibility 0s linear 420ms;
-  z-index: 1950;
+  z-index: var(--z-drawer);
 }
 
 body.mobile-nav-open .mobile-drawer-nav {
@@ -142,7 +149,12 @@ body.mobile-nav-open .mobile-drawer-footer {
   transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
-.mobile-drawer-close:hover,
+.mobile-drawer-close:hover {
+  background: rgba(255, 255, 255, 0.11);
+  color: var(--text-primary);
+  outline: none;
+}
+
 .mobile-drawer-close:focus-visible {
   background: rgba(255, 255, 255, 0.11);
   color: var(--text-primary);
@@ -235,7 +247,12 @@ body.mobile-nav-open .mobile-drawer-footer {
   display: inline-flex;
 }
 
-.mobile-drawer-nav .navbar-link:hover,
+.mobile-drawer-nav .navbar-link:hover {
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
 .mobile-drawer-nav .navbar-link:focus-visible {
   color: rgba(255, 255, 255, 0.94);
   background: rgba(255, 255, 255, 0.05);
@@ -296,8 +313,12 @@ body.mobile-nav-open .mobile-drawer-footer {
 }
 
 .mobile-drawer-profile:hover,
-.mobile-drawer-profile:focus-visible,
 .mobile-drawer-profile.active {
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+}
+
+.mobile-drawer-profile:focus-visible {
   background: rgba(255, 255, 255, 0.07);
   outline: none;
 }
@@ -358,7 +379,12 @@ body.mobile-nav-open .mobile-drawer-footer {
   display: inline-flex;
 }
 
-.mobile-drawer-settings:hover,
+.mobile-drawer-settings:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  outline: none;
+}
+
 .mobile-drawer-settings:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;

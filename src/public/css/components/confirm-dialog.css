@@ -3,8 +3,11 @@
 --------------------------------- */
 .confirm-dialog-overlay {
   position: fixed;
-  inset: 0;
-  z-index: 1600;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-confirm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,6 +21,7 @@
 .confirm-dialog {
   width: 100%;
   max-width: 400px;
+  padding: 32px;
   padding: clamp(24px, 5vw, 32px);
   background: var(--bg-glass);
   border: 1px solid rgba(255, 255, 255, 0.08);

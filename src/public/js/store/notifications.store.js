@@ -29,19 +29,21 @@ class NotificationsStore extends Store {
   async refresh() {
     if (this.loading) return this.loading;
     const seq = this.readSeq;
+    const generation = this.generation;
     // Each part on its own: a failing one leaves the other standing.
     const part = (load, apply) => Promise.resolve().then(load).then(apply).catch(() => {});
     this.loading = Promise.all([
       part(() => NotificationsApi.getSummary(), summary => {
+        if (!this.isCurrent(generation)) return;
         this.summary = { mine: { ...EMPTY.mine, ...summary?.mine }, admin: summary?.admin || null };
       }),
       part(() => NotificationsApi.getFeed(), feed => {
-        if (seq !== this.readSeq) return;
+        if (seq !== this.readSeq || !this.isCurrent(generation)) return;
         this.feed = { items: feed?.items || [], unread: feed?.unread || 0, loaded: true };
       })
     ])
-      .then(() => this.notify())
-      .finally(() => { this.loading = null; });
+      .then(() => { if (this.isCurrent(generation)) this.notify(); })
+      .finally(() => { if (this.isCurrent(generation)) this.loading = null; });
     return this.loading;
   }
 
@@ -93,6 +95,7 @@ class NotificationsStore extends Store {
   }
 
   stop() {
+    this.nextGeneration();
     window.clearInterval(this.timer);
     this.timer = null;
     if (this.onVisible) document.removeEventListener('visibilitychange', this.onVisible);

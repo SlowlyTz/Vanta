@@ -84,4 +84,16 @@ describe('preferencesStore', () => {
     expect(preferencesStore.get('stillWatchingHours')).toBe(4);
     expect(localStorage.getItem('vanta.preferences')).toBeNull();
   });
+
+  it('drops an answer that arrives after logout', async () => {
+    let answer;
+    PreferencesApi.get.mockReturnValue(new Promise(resolve => { answer = resolve; }));
+    const loading = preferencesStore.load();
+    preferencesStore.clear();
+    answer({ stillWatchingHours: 6 });
+    await loading;
+
+    expect(preferencesStore.getState()).toEqual(DEFAULT_PREFERENCES);
+    expect(localStorage.getItem('vanta.preferences')).toBeNull();
+  });
 });

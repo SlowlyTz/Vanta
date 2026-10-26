@@ -244,6 +244,7 @@
 /* Erscheint nur bei ungespeicherten Änderungen und bleibt unten sichtbar. */
 .admin-user-save-bar {
   position: sticky;
+  bottom: 12px;
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 5;
   display: flex;
@@ -280,7 +281,11 @@
   cursor: pointer;
 }
 
-.admin-user-discard:hover,
+.admin-user-discard:hover {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
 .admin-user-discard:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   outline: none;

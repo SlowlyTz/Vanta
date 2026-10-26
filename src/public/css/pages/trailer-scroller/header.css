@@ -8,7 +8,10 @@ body.trailer-scroller-active {
 
 body.trailer-scroller-active {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 html.trailer-scroller-active #app {
@@ -44,7 +47,10 @@ html.trailer-scroller-active #app {
 .trailer-scroller-page::before {
   position: absolute;
   z-index: -1;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   content: '';
   pointer-events: none;
   background-image:
@@ -63,6 +69,7 @@ html.trailer-scroller-active #app {
   grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
   align-items: center;
   gap: 24px;
+  padding: 10px 44px;
   padding: 10px clamp(18px, 3vw, 44px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.075);
   background: rgba(7, 7, 11, 0.72);
@@ -88,6 +95,7 @@ html.trailer-scroller-active #app {
 .trailer-scroller-title {
   overflow: hidden;
   color: var(--text-primary);
+  font-size: 1.2rem;
   font-size: clamp(1rem, 1.4vw, 1.2rem);
   font-weight: 620;
   letter-spacing: -0.02em;

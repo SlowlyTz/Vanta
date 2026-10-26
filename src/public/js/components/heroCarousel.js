@@ -1,6 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { createMetaIcon } from './metaIcons.js';
-import { getItemImageUrl, getBackdropUrlFor } from '../utils/image.js';
+import { getItemImageUrl, getBackdropUrlFor, cssUrl } from '../utils/image.js';
 import { formatYear, formatTicksToDuration } from '../utils/format.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { prefersReducedMotion } from '../utils/motion.js';
@@ -122,7 +122,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     const slide = slidesData[index];
     if (!slide || slide.loaded) return;
     slide.loaded = true;
-    slide.backdrop.style.backgroundImage = `url('${getBackdropUrlFor(slide.item)}')`;
+    slide.backdrop.style.backgroundImage = cssUrl(getBackdropUrlFor(slide.item));
   };
 
   container.insertBefore(backdropsContainer, container.firstChild);

@@ -5,7 +5,10 @@
 
 .watch-party-countdown-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 100000;
   display: grid;
   place-items: center;
@@ -33,7 +36,10 @@
 
 .watch-party-countdown-stage {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 .watch-party-countdown-canvas {
@@ -51,6 +57,7 @@
 /* Fallback: a large digit */
 .watch-party-countdown-fallback {
   position: relative;
+  width: 360px;
   width: min(46vmin, 360px);
   aspect-ratio: 1;
   display: grid;
@@ -72,6 +79,7 @@
 }
 
 .watch-party-countdown-number {
+  font: 700 200px / 1 Outfit, system-ui, sans-serif;
   font: 700 min(26vmin, 200px) / 1 Outfit, system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
@@ -82,7 +90,9 @@
 .watch-party-countdown-info {
   position: absolute;
   left: 50%;
+  bottom: 9vh;
   bottom: max(9vh, calc(env(safe-area-inset-bottom) + 32px));
+  width: 560px;
   width: min(560px, calc(100vw - 48px));
   display: grid;
   gap: 6px;
@@ -97,6 +107,7 @@
 }
 
 .watch-party-countdown-title {
+  font: 650 1.6rem / 1.2 Outfit, system-ui, sans-serif;
   font: 650 clamp(1.1rem, 2.6vw, 1.6rem) / 1.2 Outfit, system-ui, sans-serif;
   overflow-wrap: anywhere;
 }

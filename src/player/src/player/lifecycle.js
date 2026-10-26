@@ -2,7 +2,8 @@ import { exitPictureInPicture, exitInlineFullscreen } from '../platform.js';
 import { exitSmartphoneFullscreen } from '../orientation.js';
 import { NEXT_EPISODE_VIEWER_MESSAGE } from './markup.js';
 
-function cancelUnusedPlayback(context, playback) {
+// A resolved stream that will not be played: its server slot is freed.
+export function cancelUnusedPlayback(context, playback) {
   if (!playback?.playSessionId || typeof context.reportPlayback !== 'function') return;
   Promise.resolve(context.reportPlayback('cancel', {
     itemId: context.itemId,

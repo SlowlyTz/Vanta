@@ -8,6 +8,8 @@ import { mergeSeasons, buildRequestCoverage } from './requests/helpers.js';
 import { createSeriesPicker } from './requests/seriesPicker.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { getTmdbImageUrl, createPosterPlaceholder } from '../utils/poster.js';
+import { cssUrl } from '../utils/image.js';
+import { router } from '../router.js';
 
 const chip = (text, tone) => createElement('span', { className: `ui-chip ${tone}` }, text);
 
@@ -42,7 +44,7 @@ function buildHero({ details, type, statusChip, onTrailer }) {
   const poster = getTmdbImageUrl(details.poster_path, 'w342');
 
   return createElement('section', { className: 'request-hero' },
-    backdrop ? createElement('div', { className: 'request-hero-backdrop', style: `background-image:url("${backdrop}")` }) : null,
+    backdrop ? createElement('div', { className: 'request-hero-backdrop', style: { backgroundImage: cssUrl(backdrop) } }) : null,
     createElement('img', {
       className: 'request-hero-poster',
       src: poster || createPosterPlaceholder(title),
@@ -156,10 +158,7 @@ export default function RequestDetailPage({ type, id }, pageScope) {
         createElement('button', {
           className: 'ui-button ui-button-ghost request-back',
           type: 'button',
-          onClick: () => {
-            if (window.history.length > 1) window.history.back();
-            else window.location.hash = '#/requests';
-          }
+          onClick: () => router.back('#/requests')
         }, createBackIcon(), 'Zurück'),
         buildHero({
           details,

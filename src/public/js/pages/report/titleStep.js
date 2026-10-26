@@ -1,4 +1,4 @@
-import { createElement } from '../../utils/dom.js';
+import { createElement, focusTextField } from '../../utils/dom.js';
 import { MediaApi } from '../../api/media.api.js';
 import { getItemImageUrl } from '../../utils/image.js';
 import { iconElement } from './icons.js';
@@ -74,7 +74,7 @@ export function createTitleStep({ onSelect }) {
     chosen.hidden = !item;
     chosen.innerHTML = '';
     if (!item) {
-      window.requestAnimationFrame(() => input.focus());
+      window.requestAnimationFrame(() => focusTextField(input));
       return;
     }
     chosen.append(
@@ -87,5 +87,5 @@ export function createTitleStep({ onSelect }) {
     );
   };
 
-  return { element, showChosen, focus: () => input.focus() };
+  return { element, showChosen, focus: () => focusTextField(input) };
 }

@@ -27,14 +27,16 @@ class WatchlistStore extends Store {
 
   load() {
     if (this.loading) return this.loading;
+    const generation = this.generation;
     this.loading = WatchlistApi.ids()
       .then(({ ids }) => {
+        if (!this.isCurrent(generation)) return;
         this.ids = new Set(ids || []);
         this.loaded = true;
         this.notify();
       })
       .catch(() => {})
-      .finally(() => { this.loading = null; });
+      .finally(() => { if (this.isCurrent(generation)) this.loading = null; });
     return this.loading;
   }
 
@@ -75,6 +77,7 @@ class WatchlistStore extends Store {
   }
 
   clear() {
+    this.nextGeneration();
     this.ids = new Set();
     this.loaded = false;
     this.notify();

@@ -46,7 +46,11 @@
   cursor: pointer;
 }
 
-.admin-library-bulk:hover,
+.admin-library-bulk:hover {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
 .admin-library-bulk:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   outline: none;

@@ -24,7 +24,9 @@ export function createSourceSwitchState({
     currentPlayback: null,
     switching: false,
     loadVersion: 0,
-    lastRequestedPosition: 0,
+    // The target of a load or seek still under way; null once it is done, so
+    // a later user seek (which does not pass through here) is not undone.
+    lastRequestedPosition: null,
     intendsToPlay: true,
     autoplayBlocked: false,
     seekTimer: null,
@@ -34,7 +36,7 @@ export function createSourceSwitchState({
   state.isCurrentLoad = version => version === state.loadVersion;
 
   state.captureState = () => ({
-    position: Math.max(state.reporter.getPosition(), state.lastRequestedPosition),
+    position: state.lastRequestedPosition ?? state.reporter.getPosition(),
     shouldPlay: state.intendsToPlay,
     volume: Number(state.player.volume),
     muted: Boolean(state.player.muted),

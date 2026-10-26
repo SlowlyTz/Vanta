@@ -76,6 +76,8 @@ class AuthStore extends Store {
     this.notify();
   }
 
+  // true or false; null when the server could not be asked (offline, a
+  // restart after a deploy): that is no reason to send anyone to the login.
   async checkAuth() {
     this.loading = true;
     this.notify();
@@ -85,6 +87,7 @@ class AuthStore extends Store {
       this.notify();
       return true;
     } catch (error) {
+      if (!error?.status) return null;
       this.user = null;
       this.notify();
       return false;

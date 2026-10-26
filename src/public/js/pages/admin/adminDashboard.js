@@ -133,7 +133,8 @@ export function createAdminDashboard({ tools = [], onSelect, scope }) {
       )
     );
 
-    streamsSlot.replaceChildren(streams.list.length ? card({ title: 'Was gerade läuft', className: 'is-wide' },
+    // Nothing playing: the slot stays empty (replaceChildren would print "null").
+    streamsSlot.replaceChildren(...(streams.list.length ? [card({ title: 'Was gerade läuft', className: 'is-wide' },
       createElement('ul', { className: 'admin-dash-streams' }, streams.list.map(stream => createElement('li', {},
         createElement('div', { className: 'admin-dash-stream-head' },
           createElement('strong', {}, stream.title),
@@ -143,7 +144,7 @@ export function createAdminDashboard({ tools = [], onSelect, scope }) {
         createElement('span', { className: 'admin-dash-muted' }, `${stream.user} · ${stream.device}${stream.paused ? ' · pausiert' : ''}`),
         stream.progress === null ? null : createElement('div', { className: 'admin-dash-meter is-thin' }, createElement('span', { style: { width: `${Math.round(stream.progress * 100)}%` } }))
       )))
-    ) : null);
+    )] : []));
   };
 
   const renderActivity = () => {

@@ -55,3 +55,14 @@
 .vanta-media-player [data-media-button][data-focus] {
   z-index: 1;
 }
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-player-controls-row > * + * {
+    margin-left: 12px;
+  }
+  .vanta-player-controls-left > * + *,
+  .vanta-player-controls-right > * + * {
+    margin-left: 4px;
+  }
+}

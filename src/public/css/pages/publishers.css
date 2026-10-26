@@ -4,7 +4,9 @@
 .publishers-featured-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
   gap: clamp(14px, 2vw, 22px);
+  width: 1080px;
   width: min(100%, 1080px);
   margin: 0 auto;
 }
@@ -30,7 +32,10 @@
 
 .publisher-featured-logo {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -150,6 +155,7 @@
   }
 
   .publishers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
     gap: var(--spacing-sm);
   }

@@ -4,11 +4,14 @@ import { MediaCard } from '../../components/mediaCard.js';
 import { EmptyState, ErrorState } from '../../components/emptyState.js';
 import { createSectionLoader, setSectionBusy } from '../../components/loader.js';
 import { PLAYED_CHANGED_EVENT } from '../../components/playedToggle.js';
-import { getCurrentPageScope } from '../../utils/pageScope.js';
+import { getCurrentPageScope, runInPageScope } from '../../utils/pageScope.js';
 
 export function buildSeasonsSection(item, seasons) {
+  const scope = getCurrentPageScope();
   const episodeGrid = createElement('div', { className: 'episodes-grid' });
   const tabs = [];
+  // Only the latest tab click may fill the grid.
+  let loadRun = 0;
 
   // The whole series marked (un)watched: every shown episode follows, its
   // check, badge and progress (each card listens for its own id).
@@ -22,9 +25,10 @@ export function buildSeasonsSection(item, seasons) {
     }
   };
   window.addEventListener(PLAYED_CHANGED_EVENT, onSeriesPlayed);
-  getCurrentPageScope()?.onLeave(() => window.removeEventListener(PLAYED_CHANGED_EVENT, onSeriesPlayed));
+  scope?.onLeave(() => window.removeEventListener(PLAYED_CHANGED_EVENT, onSeriesPlayed));
 
   const loadSeasonEpisodes = async (seasonId, tabButton) => {
+    const run = ++loadRun;
     const activeTab = seasonsTabsContainer.querySelector('.season-tab.active');
     if (activeTab) activeTab.classList.remove('active');
     tabButton.classList.add('active');
@@ -34,7 +38,8 @@ export function buildSeasonsSection(item, seasons) {
     episodeGrid.appendChild(createSectionLoader({ label: 'Episoden werden geladen', compact: true }));
 
     try {
-      const episodes = await MediaApi.getEpisodes(item.Id, seasonId);
+      const episodes = await MediaApi.getEpisodes(item.Id, seasonId, { signal: scope?.signal });
+      if (run !== loadRun) return;
       episodeGrid.innerHTML = '';
 
       if (episodes.length === 0) {
@@ -42,19 +47,20 @@ export function buildSeasonsSection(item, seasons) {
           EmptyState({ message: 'Keine Episoden in dieser Staffel gefunden.', style: { gridColumn: '1/-1' } })
         );
       } else {
-        episodes.forEach(episode => {
+        runInPageScope(scope, () => episodes.forEach(episode => {
           const card = MediaCard({ item: episode, landscape: true, playedToggle: true });
           if (card) episodeGrid.appendChild(card);
-        });
+        }));
       }
     } catch (err) {
+      if (run !== loadRun) return;
       console.error(err);
       episodeGrid.innerHTML = '';
       episodeGrid.appendChild(
         ErrorState({ title: null, message: 'Fehler beim Laden der Episoden.', style: { gridColumn: '1/-1' } })
       );
     } finally {
-      setSectionBusy(episodeGrid, false);
+      if (run === loadRun) setSectionBusy(episodeGrid, false);
     }
   };
 
@@ -78,11 +84,12 @@ export function buildSeasonsSection(item, seasons) {
     episodeGrid
   );
 
-  setTimeout(() => {
+  const firstLoad = setTimeout(() => {
     if (tabs[0] && seasons[0]) {
       loadSeasonEpisodes(seasons[0].Id, tabs[0]);
     }
   }, 50);
+  scope?.onLeave(() => clearTimeout(firstLoad));
 
   return seasonsSection;
 }

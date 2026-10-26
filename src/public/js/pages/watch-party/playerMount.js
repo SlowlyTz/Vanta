@@ -79,7 +79,7 @@ export function bindPlayerMount(ctx) {
         ]);
         if (ctx.destroyed) return;
 
-        const episodeContext = await loadEpisodeContext(item).catch(() => null);
+        const episodeContext = await loadEpisodeContext(item, { signal: mountAbort.signal }).catch(() => null);
         if (ctx.destroyed) return;
 
         ctx.watchPartyConfig = {

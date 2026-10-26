@@ -34,3 +34,10 @@ export function createElement(tag, props = {}, ...children) {
 
   return element;
 }
+
+// Focuses a text field, except in TV mode: there a focused field opens the
+// system keyboard, so the remote's focus stays where it is.
+export function focusTextField(field) {
+  if (!field || document.documentElement.classList.contains('tv-mode')) return;
+  field.focus();
+}

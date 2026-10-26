@@ -2,6 +2,7 @@ import { createElement } from '../../../utils/dom.js';
 import { MediaApi } from '../../../api/media.api.js';
 import { WatchPartyApi } from '../../../api/watch-party.api.js';
 import { episodeCode } from '../../../shared/episodeCode.js';
+import { cssUrl } from '../../../utils/image.js';
 
 const STATUS_LABELS = {
   lobby: 'Wartet auf Start',
@@ -53,7 +54,7 @@ export function bindRecentParties(ctx) {
     const backdrop = party.itemSnapshot?.backdrop;
     const thumb = createElement('span', { className: 'watch-party-recent-thumb', 'aria-hidden': 'true' });
     if (backdrop?.id) {
-      thumb.style.backgroundImage = `url("${MediaApi.getImageUrl(backdrop.id, 'Backdrop', 320, { tag: backdrop.tag, quality: 80 })}")`;
+      thumb.style.backgroundImage = cssUrl(MediaApi.getImageUrl(backdrop.id, 'Backdrop', 320, { tag: backdrop.tag, quality: 80 }));
     }
     return createElement('li', { className: 'watch-party-recent-item' },
       thumb,
@@ -74,6 +75,7 @@ export function bindRecentParties(ctx) {
   // `item`: the title the dialog was opened for ("Watch Party starten" on a
   // card); a new party goes straight to it.
   ctx.showContinueChoice = (item = null) => {
+    ctx.searchRunId += 1;
     ctx.currentView = 'continue-choice';
     ctx.titleEl.textContent = 'Watch Party';
     ctx.backButton.hidden = true;

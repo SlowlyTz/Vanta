@@ -73,5 +73,11 @@ export function createIntroModal({ onStart }) {
   };
   window.addEventListener('keydown', onKeydown);
 
-  return { element: backdrop, close };
+  // The page was left with the intro open: nothing may start any more.
+  const dispose = () => {
+    window.removeEventListener('keydown', onKeydown);
+    backdrop.remove();
+  };
+
+  return { element: backdrop, close, dispose };
 }

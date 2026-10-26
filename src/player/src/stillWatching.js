@@ -59,6 +59,7 @@ export function bindStillWatching(context, { setTimer = (fn, ms) => window.setIn
   const open = () => {
     context.stillWatchingOpen = true;
     context.settings?.close?.({ returnFocus: false });
+    context.help?.close?.();
     player.pause();
     dialog.hidden = false;
     root.classList.add('is-still-watching');

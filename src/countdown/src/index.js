@@ -28,11 +28,13 @@ export async function mountCountdown({ container, fadeTarget = container, starts
 
   const canvas = document.createElement('canvas');
   canvas.className = 'watch-party-countdown-canvas';
-  container.appendChild(canvas);
 
   const measure = () => ({ width: container.clientWidth || window.innerWidth, height: container.clientHeight || window.innerHeight });
   const size = measure();
+  // Created before the canvas goes in: without WebGL this throws (the caller
+  // falls back to the CSS countdown) and no empty canvas is left behind.
   const view = createCountdownScene({ canvas, digits, width: size.width, height: size.height, dpr: pixelRatio(lowPower) });
+  container.appendChild(canvas);
   const onResize = () => {
     const next = measure();
     view.resize(next.width, next.height);

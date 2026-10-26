@@ -46,10 +46,11 @@ class PreferencesStore extends Store {
 
   load() {
     if (this.loading) return this.loading;
+    const generation = this.generation;
     this.loading = PreferencesApi.get()
-      .then(values => this.apply(values))
+      .then(values => { if (this.isCurrent(generation)) this.apply(values); })
       .catch(() => {})
-      .finally(() => { this.loading = null; });
+      .finally(() => { if (this.isCurrent(generation)) this.loading = null; });
     return this.loading;
   }
 
@@ -97,6 +98,7 @@ class PreferencesStore extends Store {
   }
 
   clear() {
+    this.nextGeneration();
     this.values = { ...DEFAULT_PREFERENCES };
     this.confirmed = this.values;
     this.pending.clear();

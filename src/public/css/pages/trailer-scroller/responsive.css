@@ -4,6 +4,7 @@
   }
 
   .trailer-info-title {
+    font-size: 2.2rem;
     font-size: clamp(1.5rem, 2.8vw, 2.2rem);
   }
 }
@@ -80,6 +81,7 @@
     min-height: 0;
     flex: 1 1 auto;
     justify-content: flex-end;
+    padding: 16px 84px 18px 16px;
     padding: 16px 84px max(18px, env(safe-area-inset-bottom)) 16px;
   }
 
@@ -100,6 +102,7 @@
   }
 
   .trailer-info-title {
+    font-size: 1.9rem;
     font-size: clamp(1.4rem, 7vw, 1.9rem);
     line-height: 1.06;
   }
@@ -118,6 +121,7 @@
   .trailer-actions {
     position: absolute;
     right: 10px;
+    bottom: 18px;
     bottom: max(18px, env(safe-area-inset-bottom));
     flex-direction: column;
     flex-wrap: nowrap;
@@ -171,6 +175,7 @@
   }
 
   .trailer-loading-preview {
+    width: 440px;
     width: min(440px, 92vw);
     grid-template-columns: 1fr;
   }

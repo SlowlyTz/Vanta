@@ -83,7 +83,10 @@
 .watch-party-member-avatar::after {
   content: '';
   position: absolute;
-  inset: -4px;
+  top: -4px;
+  right: -4px;
+  bottom: -4px;
+  left: -4px;
   border-radius: 50%;
   border: 2px solid transparent;
   transition: border-color var(--transition-smooth);
@@ -170,7 +173,10 @@
 
 .watch-party-member-progress > span {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   border-radius: inherit;
   background: rgb(var(--abyss-accent));
   transform-origin: left;
@@ -263,20 +269,33 @@
 }
 
 .watch-party-member:hover .watch-party-kick-button,
+.watch-party-member:hover .watch-party-role-button {
+  opacity: 1;
+}
+
 .watch-party-kick-button:focus-visible,
-.watch-party-member:hover .watch-party-role-button,
 .watch-party-role-button:focus-visible {
   opacity: 1;
 }
 
-.watch-party-role-button:hover,
+.watch-party-role-button:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text-primary, #fff);
+  outline: none;
+}
+
 .watch-party-role-button:focus-visible {
   background: rgb(255 255 255 / 0.1);
   color: var(--text-primary, #fff);
   outline: none;
 }
 
-.watch-party-kick-button:hover,
+.watch-party-kick-button:hover {
+  background: rgba(255, 122, 122, 0.14);
+  color: var(--wp-red);
+  outline: none;
+}
+
 .watch-party-kick-button:focus-visible {
   background: rgba(255, 122, 122, 0.14);
   color: var(--wp-red);
@@ -320,7 +339,11 @@
   transition: background var(--transition-fast);
 }
 
-.watch-party-member-invite:hover,
+.watch-party-member-invite:hover {
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+}
+
 .watch-party-member-invite:focus-visible {
   background: rgba(255, 255, 255, 0.06);
   outline: none;

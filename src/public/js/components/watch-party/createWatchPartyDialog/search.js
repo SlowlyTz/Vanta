@@ -76,6 +76,7 @@ export function bindSearch(ctx) {
   };
 
   ctx.showPickMediaView = () => {
+    ctx.searchRunId += 1;
     ctx.currentView = 'pick-media';
     ctx.titleEl.textContent = 'Watch Party starten';
     // Back to "Weiterschauen" when there is something to go on with.

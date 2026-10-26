@@ -28,4 +28,16 @@ describe('Store', () => {
     store.increment();
     expect(calls).toEqual([['a', 1], ['b', 1], ['b', 2]]);
   });
+
+  it('keeps notifying the others when a listener throws', () => {
+    const store = new Counter({ emitOnSubscribe: false });
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const after = vi.fn();
+    store.subscribe(() => { throw new Error('broken'); });
+    store.subscribe(after);
+
+    store.increment();
+    expect(after).toHaveBeenCalledWith({ count: 1 });
+    error.mockRestore();
+  });
 });

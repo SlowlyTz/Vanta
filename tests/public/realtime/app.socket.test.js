@@ -92,6 +92,18 @@ describe('createAppSocket', () => {
 
     vi.advanceTimersByTime(1500);
     expect(FakeWebSocket.instances).toHaveLength(2);
+
+    // A second refusal waits twice as long; an open socket starts over.
+    FakeWebSocket.instances[1].emit('close');
+    vi.advanceTimersByTime(1500);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    vi.advanceTimersByTime(1500);
+    expect(FakeWebSocket.instances).toHaveLength(3);
+
+    FakeWebSocket.instances[2].emit('open');
+    FakeWebSocket.instances[2].emit('close');
+    vi.advanceTimersByTime(1500);
+    expect(FakeWebSocket.instances).toHaveLength(4);
   });
 
   it('verbindet nicht neu, wenn der Server die Sitzung beendet hat', () => {

@@ -46,6 +46,7 @@
   place-content: center;
   justify-items: center;
   gap: 12px;
+  width: 560px;
   width: min(560px, calc(100vw - 40px));
 }
 
@@ -68,6 +69,7 @@
   display: grid;
   justify-items: center;
   gap: 7px;
+  width: 260px;
   width: min(260px, 70vw);
 }
 
@@ -250,6 +252,7 @@
   left: 50%;
   bottom: 22%;
   z-index: 30;
+  max-width: 36rem;
   max-width: min(90%, 36rem);
   padding: 0.6rem 1rem;
   border-radius: 10px;
@@ -264,4 +267,14 @@
 
 .vanta-player-notice[hidden] {
   display: none;
+}
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-player-loading-log > * + * {
+    margin-left: 8px;
+  }
+  .vanta-player-loading-problem-actions > * + * {
+    margin-left: 10px;
+  }
 }

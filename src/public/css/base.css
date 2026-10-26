@@ -51,12 +51,31 @@
   /* Transitions */
   --transition-fast: 0.2s var(--abyss-ease-snappy);
   --transition-smooth: 0.35s var(--abyss-ease);
+
+  /* Layers, bottom to top. Dialogs sit above the navbar and drawer, toasts
+     above the player and party layers, the offline overlay above all. */
+  --z-navbar: 1860;
+  --z-drawer: 1950;
+  --z-dialog: 2300;
+  --z-confirm: 2500;
+  --z-screensaver: 2600;
+  --z-keyboard: 3000;
+  --z-player: 99999;
+  --z-toast: 100150;
+  --z-offline: 100200;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Browsers without native inert (Chromium before 102, TVs) still keep the
+   pointer out; see the polyfill in js/polyfills.js. */
+[inert] {
+  pointer-events: none;
+  user-select: none;
 }
 
 html {

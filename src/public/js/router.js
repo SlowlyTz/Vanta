@@ -34,6 +34,7 @@ export function focusAutofocusTarget(pageElement) {
 
 // From this far down the navbar takes its scrolled look.
 const SCROLLED_OFFSET = 16;
+const AUTH_RETRY_MS = 3000;
 
 export class Router {
   constructor() {
@@ -153,6 +154,13 @@ export class Router {
     });
   }
 
+  // "Zurück" of a page: the previous in-app page, or `fallbackHash` when this
+  // page was opened directly (a shared link, a new tab) and Back would leave VANTA.
+  back(fallbackHash = '#/home') {
+    if (this.previousHash) window.history.back();
+    else window.location.hash = fallbackHash;
+  }
+
   findRoute(hash) {
     const routeHash = hash.split('?')[0];
 
@@ -164,9 +172,14 @@ export class Router {
 
       const params = {};
       const paramNames = (route.path.match(/:([^/]+)/g) || []).map(param => param.slice(1));
-      paramNames.forEach((name, index) => {
-        params[name] = decodeURIComponent(match[index + 1]);
-      });
+      try {
+        paramNames.forEach((name, index) => {
+          params[name] = decodeURIComponent(match[index + 1]);
+        });
+      } catch {
+        // A malformed escape (a hand-edited link) matches nothing.
+        return null;
+      }
 
       return { route, params };
     }
@@ -174,7 +187,8 @@ export class Router {
     return null;
   }
 
-  async renderPage(pageElement, useShell) {
+  // Answers false when a newer navigation took over during the exit animation.
+  async renderPage(pageElement, useShell, superseded = () => false) {
     if (!useShell) {
       this.unmountShell();
       this.appContainer.innerHTML = '';
@@ -182,7 +196,7 @@ export class Router {
         this.appContainer.appendChild(pageElement);
         focusAutofocusTarget(pageElement);
       }
-      return;
+      return true;
     }
 
     this.mountShell();
@@ -196,6 +210,7 @@ export class Router {
       previous.classList.remove('route-view-enter', 'route-view-enter-active');
       previous.classList.add('route-view-exit');
       await waitForRouteExit();
+      if (superseded()) return false;
     }
 
     this.main.innerHTML = '';
@@ -209,6 +224,7 @@ export class Router {
         pageElement.classList.add('route-view-enter-active');
       });
     }
+    return true;
   }
 
   async handleRoute() {
@@ -249,9 +265,14 @@ export class Router {
 
     if (!user) {
       const check = await authStore.checkAuth();
+      if (superseded()) return;
+      if (check === null) {
+        // Server unreachable: try again shortly instead of showing the login.
+        window.setTimeout(() => { if (!superseded()) this.handleRoute(); }, AUTH_RETRY_MS);
+        return;
+      }
       isAuthenticated = check;
       user = authStore.getState().user;
-      if (superseded()) return;
     }
 
     if (route.requiresAuth && !isAuthenticated) {
@@ -294,7 +315,7 @@ export class Router {
       setActivePageScope(scope);
       this.updateShellState(hash, user);
       this.currentPage = pageElement;
-      await this.renderPage(pageElement, pageUsesShell);
+      if (await this.renderPage(pageElement, pageUsesShell, superseded) === false) return;
       if (pageElement?.dataset?.restoreScroll !== 'true') {
         window.scrollTo(0, 0);
       }

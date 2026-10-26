@@ -1,6 +1,7 @@
 import { createElement } from '../../utils/dom.js';
 import { appStore } from '../../store/app.store.js';
 import { openModal } from '../../utils/modal.js';
+import { copyText } from '../../utils/clipboard.js';
 
 export function bindShareModal(ctx) {
   ctx.closeShareModal = () => {
@@ -12,7 +13,7 @@ export function bindShareModal(ctx) {
 
   ctx.copyShareUrl = async url => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       appStore.showToast('Link kopiert', 'success');
     } catch {
       appStore.showToast('Link konnte nicht kopiert werden', 'error');

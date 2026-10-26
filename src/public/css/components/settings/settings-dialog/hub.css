@@ -126,7 +126,11 @@
   font-weight: 600;
 }
 
-.settings-profile-link:hover,
+.settings-profile-link:hover {
+  text-decoration: underline;
+  outline: none;
+}
+
 .settings-profile-link:focus-visible {
   text-decoration: underline;
   outline: none;
@@ -134,7 +138,9 @@
 
 /* Side by side from tablet width: the hub left, the open area right. */
 .settings-dialog.is-split {
+  width: 880px;
   width: min(880px, calc(100vw - 48px));
+  height: 720px;
   height: min(720px, calc(100dvh - 48px));
 }
 
@@ -231,8 +237,13 @@
 }
 
 .settings-dropdown-toggle:hover,
-.settings-dropdown-toggle:focus-visible,
 .settings-dropdown.is-open .settings-dropdown-toggle {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.settings-dropdown-toggle:focus-visible {
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.1);
   outline: none;
@@ -308,7 +319,11 @@
   cursor: pointer;
 }
 
-.settings-dropdown-option:hover,
+.settings-dropdown-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
 .settings-dropdown-option:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   outline: none;
@@ -365,7 +380,10 @@
 
 .settings-switch-input {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   margin: 0;
@@ -375,7 +393,10 @@
 
 .settings-switch-track {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
@@ -437,7 +458,11 @@
   cursor: pointer;
 }
 
-.settings-segmented-option:hover,
+.settings-segmented-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
 .settings-segmented-option:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   outline: none;
@@ -522,7 +547,11 @@
   cursor: pointer;
 }
 
-.settings-inline-button:hover:not([disabled]),
+.settings-inline-button:hover:not([disabled]) {
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
 .settings-inline-button:focus-visible {
   background: rgba(255, 255, 255, 0.12);
   outline: none;

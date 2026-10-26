@@ -2,6 +2,7 @@ import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 import { createExpandableText } from './expandableText.js';
 import { createMetaIcon, metaIconFor } from './metaIcons.js';
+import { cssUrl } from '../utils/image.js';
 
 // Two lines on phones, a little more room on wide screens.
 const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
@@ -112,7 +113,7 @@ export function DetailView({ item, actions, favoriteButton, watchlistButton = nu
   const detailPageEl = createElement('div', { className: 'detail-page' },
     createElement('div', {
       className: 'detail-hero-backdrop',
-      style: item.backdropUrl ? { backgroundImage: `url('${item.backdropUrl}')` } : {}
+      style: item.backdropUrl ? { backgroundImage: cssUrl(item.backdropUrl) } : {}
     }),
     createElement('div', { className: 'detail-content' },
       createElement('div', { className: 'detail-hero-main' },

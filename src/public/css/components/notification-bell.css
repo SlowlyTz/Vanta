@@ -21,8 +21,11 @@
 
 .notification-panel-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 1200;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-dialog);
   background: rgba(0, 0, 0, 0.55);
 }
 
@@ -32,7 +35,9 @@
 
 .notification-panel {
   position: fixed;
+  width: 380px;
   width: min(380px, calc(100vw - 16px));
+  max-height: 560px;
   max-height: min(560px, calc(100dvh - 90px));
   display: flex;
   flex-direction: column;
@@ -110,7 +115,11 @@
   cursor: pointer;
 }
 
-.notification-entry:hover,
+.notification-entry:hover {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
 .notification-entry:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   outline: none;

@@ -92,7 +92,7 @@ export default function SearchPage(params, pageScope) {
   };
 
   const showStatus = (title, message) => {
-    statusContainer.replaceChildren(createElement('h3', {}, title), message ? createElement('p', {}, message) : null);
+    statusContainer.replaceChildren(...[createElement('h3', {}, title), message ? createElement('p', {}, message) : null].filter(Boolean));
     statusContainer.classList.remove('hidden');
   };
 

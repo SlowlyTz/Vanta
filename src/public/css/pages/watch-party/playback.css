@@ -1,6 +1,9 @@
 .watch-party-autoplay-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 100000;
   display: flex;
   flex-direction: column;
@@ -42,9 +45,11 @@
 .watch-party-notifications {
   position: fixed;
   /* Below the lobby's top bar; in the player (viewport locked) at the very top. */
+  top: calc(14px + 58px);
   top: calc(max(14px, env(safe-area-inset-top)) + 58px);
   left: 50%;
   z-index: 100002;
+  width: 380px;
   width: min(380px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
@@ -151,6 +156,7 @@
 }
 
 body.player-active .watch-party-notifications {
+  top: 14px;
   top: max(14px, env(safe-area-inset-top));
 }
 
@@ -186,6 +192,7 @@ body.player-active .watch-party-notifications {
 /* Waiting for a buffering member */
 .watch-party-waiting {
   position: fixed;
+  top: 64px;
   top: max(64px, calc(env(safe-area-inset-top) + 64px));
   left: 50%;
   z-index: 100003;
@@ -241,7 +248,9 @@ body.player-active .watch-party-notifications {
 /* Sync diagnostics, only with localStorage vanta.debug.sync = 1 */
 .watch-party-sync-debug {
   position: fixed;
+  top: 12px;
   top: max(12px, env(safe-area-inset-top));
+  left: 12px;
   left: max(12px, env(safe-area-inset-left));
   z-index: 100001;
   margin: 0;

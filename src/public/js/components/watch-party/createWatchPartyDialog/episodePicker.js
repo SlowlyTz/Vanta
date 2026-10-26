@@ -45,21 +45,29 @@ export function bindEpisodePicker(ctx) {
     });
   };
 
+  // Every load and view switch bumps ctx.searchRunId; an answer for an
+  // older one is dropped.
+  const isStale = runId => runId !== ctx.searchRunId || ctx.currentView !== 'pick-episode';
+
   ctx.loadSeasonEpisodes = async (seriesId, seasonId) => {
+    const runId = ++ctx.searchRunId;
     ctx.setStatus('Folgen werden geladen …');
     ctx.resultsList.innerHTML = '';
 
     try {
       const episodes = await MediaApi.getEpisodes(seriesId, seasonId);
+      if (isStale(runId)) return;
       ctx.setStatus('');
       ctx.renderEpisodeCards(episodes || []);
     } catch (error) {
+      if (isStale(runId)) return;
       console.error('[Watch Party Episodes Error]', error);
       ctx.setStatus('Folgen konnten nicht geladen werden.');
     }
   };
 
   ctx.showEpisodePicker = async series => {
+    const runId = ++ctx.searchRunId;
     ctx.currentView = 'pick-episode';
     ctx.selectedSeries = series;
     ctx.titleEl.textContent = series.Name || 'Episode wählen';
@@ -72,6 +80,7 @@ export function bindEpisodePicker(ctx) {
 
     try {
       const seasons = await MediaApi.getSeasons(series.Id);
+      if (isStale(runId)) return;
       if (!seasons?.length) {
         ctx.setStatus('Keine Staffeln für diese Serie gefunden.');
         return;
@@ -80,6 +89,7 @@ export function bindEpisodePicker(ctx) {
       ctx.renderSeasonTabs(seasons);
       await ctx.loadSeasonEpisodes(series.Id, seasons[0].Id);
     } catch (error) {
+      if (isStale(runId)) return;
       console.error('[Watch Party Episode Picker Error]', error);
       ctx.setStatus('Episoden konnten nicht geladen werden.');
     }

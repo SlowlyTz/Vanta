@@ -677,7 +677,7 @@ html.tv-mode .osk-backdrop {
   right: 0;
   bottom: 0;
   left: 0;
-  z-index: 3000;
+  z-index: var(--z-keyboard);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1051,6 +1051,7 @@ html.tv-mode .trailer-card {
 }
 
 html.tv-mode .trailer-video-container {
+  width: 100%;
   width: min(100%, calc((100vh - var(--scroller-page-offset) - 6rem) * 16 / 9));
   border-radius: 1rem;
 }

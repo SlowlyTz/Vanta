@@ -118,7 +118,10 @@ export function createAdminRequestsTool() {
       .forEach(entry => listContainer.appendChild(itemFor(entry, true)));
   };
 
+  // Only the latest load (tab switch, decision) fills the list.
+  let loadRun = 0;
   const load = async () => {
+    const run = ++loadRun;
     try {
       statusElement.textContent = 'Wird geladen …';
       statusElement.classList.remove('hidden');
@@ -129,12 +132,14 @@ export function createAdminRequestsTool() {
       const [requests, reports] = await Promise.all(activeTab === 'all'
         ? [RequestsApi.getAllRequests(), ReportsApi.getAll()]
         : [RequestsApi.getOpenRequests(), ReportsApi.getOpen()]);
+      if (run !== loadRun) return;
 
       statusElement.classList.add('hidden');
       loadedRequests = requests || [];
       loadedReports = reports || [];
       renderList();
     } catch (error) {
+      if (run !== loadRun) return;
       console.error('Failed to load admin requests:', error);
       loadedRequests = [];
       loadedReports = [];
@@ -143,7 +148,7 @@ export function createAdminRequestsTool() {
       statusElement.textContent = error.message || 'Fehler beim Laden der Anfragen';
       statusElement.classList.remove('hidden');
     } finally {
-      setSectionBusy(listContainer, false);
+      if (run === loadRun) setSectionBusy(listContainer, false);
     }
   };
 

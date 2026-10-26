@@ -19,6 +19,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 1100px;
   width: min(100%, 1100px);
   margin: 0 auto;
 }
@@ -29,6 +30,7 @@
 }
 
 .ui-page.ui-page-narrow {
+  width: 720px;
   width: min(100%, 720px);
 }
 
@@ -40,6 +42,7 @@
 
 .ui-title {
   margin: 0;
+  font-size: 2.2rem;
   font-size: clamp(1.7rem, 3vw, 2.2rem);
   font-weight: 750;
   letter-spacing: -0.02em;
@@ -371,6 +374,7 @@
 /* Option cards (problem types) */
 .ui-options {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
   gap: 8px;
 }
@@ -492,6 +496,7 @@
 /* Sticky action bar at the bottom of a flow */
 .ui-action-bar {
   position: sticky;
+  bottom: 12px;
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 5;
   display: flex;

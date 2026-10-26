@@ -7,6 +7,7 @@ import { createPartyCard } from '../settings/partyCard.js';
 import { renderEpisodesPage, renderOptionsPage, renderParticipantsPage, renderSleepTimerPage, renderSubtitlesPage } from '../settings/pages.js';
 import { SLEEP_PRESETS, CUSTOM_MINUTES_MIN, CUSTOM_MINUTES_MAX } from '../sleepTimer.js';
 import { bindNextEpisode } from './nextEpisodeBinding.js';
+import { cancelUnusedPlayback } from './lifecycle.js';
 import { MAX_PARTY_MEMBERS } from '../../../public/js/shared/watchParty.js';
 
 const SYNC_REFRESH_MS = 1_000;
@@ -26,69 +27,66 @@ export function bindMenus(context) {
 
   const shell = root.querySelector('.vanta-player-shell');
 
+  // Quality and audio track both swap the running stream for another one at
+  // the same position. Only the latest choice counts: one still resolving
+  // when another is made is dropped and its play session given back.
+  let switchRun = 0;
+  const switchStream = async ({ resolveOptions, label, failureNotice, onSuccess }) => {
+    const currentPlayback = context.sourceSwitch.getCurrentPlayback();
+    if (!currentPlayback) return;
+    const run = ++switchRun;
+    try {
+      const playback = await context.resolvePlayback('auto', {
+        ...resolveOptions,
+        replacesPlaySessionId: currentPlayback.playSessionId
+      });
+      if (context.destroyed) return;
+      if (run !== switchRun) {
+        cancelUnusedPlayback(context, playback);
+        return;
+      }
+      const result = await context.sourceSwitch.switchTo(playback, {
+        position: context.sourceSwitch.captureState().position,
+        shouldPlay: context.sourceSwitch.getIntendsToPlay(),
+        label
+      });
+      if (context.destroyed) return;
+      if (!result?.success) {
+        // The old stream plays again: the menu says so, too.
+        context.updateMenus(context.sourceSwitch.getCurrentPlayback() || currentPlayback);
+        context.showNotice?.(failureNotice);
+        return;
+      }
+      context.updateMenus(playback);
+      onSuccess?.();
+    } catch (error) {
+      if (!context.destroyed && run === switchRun && !context.handleFatalPlaybackError(error)) context.showError(error.message);
+    }
+  };
+
   const qualityMenu = watchParty?.disableQualityMenu
     ? null
     : createQualityController({
-        onSelect: async profileId => {
-          const currentPlayback = context.sourceSwitch.getCurrentPlayback();
-          if (!currentPlayback) return;
-          try {
-            const playback = await context.resolvePlayback('auto', {
-              qualityProfile: profileId,
-              replacesPlaySessionId: currentPlayback.playSessionId
-            });
-            if (context.destroyed) return;
-            const result = await context.sourceSwitch.switchTo(playback, {
-              position: context.sourceSwitch.captureState().position,
-              shouldPlay: context.sourceSwitch.getIntendsToPlay(),
-              label: 'Qualität wird gewechselt …'
-            });
-            if (context.destroyed) return;
-            if (!result?.success) {
-              // The old stream plays again: the menu says so, too.
-              context.updateMenus(context.sourceSwitch.getCurrentPlayback() || currentPlayback);
-              context.showNotice?.('Qualität konnte nicht gewechselt werden. Die bisherige läuft weiter.');
-              return;
-            }
-            context.updateMenus(playback);
-          } catch (error) {
-            if (!context.destroyed && !context.handleFatalPlaybackError(error)) context.showError(error.message);
-          }
-        }
+        onSelect: profileId => switchStream({
+          resolveOptions: { qualityProfile: profileId },
+          label: 'Qualität wird gewechselt …',
+          failureNotice: 'Qualität konnte nicht gewechselt werden. Die bisherige läuft weiter.'
+        })
       });
   context.qualityMenu = qualityMenu;
 
-  // Swaps the running stream for one with another audio track, at the same
-  // position (in a watch party the drift loop pulls it back onto the timeline).
+  // In a watch party the drift loop pulls a new audio stream back onto the
+  // timeline. No language is remembered that did not play.
   context.audioMenu = createAudioController({
-    onSelect: async audioStreamIndex => {
-      const currentPlayback = context.sourceSwitch.getCurrentPlayback();
-      if (!currentPlayback) return;
-      try {
-        const playback = await context.resolvePlayback('auto', {
-          audioStreamIndex,
-          mediaSourceId: currentPlayback.mediaSourceId || undefined,
-          replacesPlaySessionId: currentPlayback.playSessionId
-        });
-        if (context.destroyed) return;
-        const result = await context.sourceSwitch.switchTo(playback, {
-          position: context.sourceSwitch.captureState().position,
-          shouldPlay: context.sourceSwitch.getIntendsToPlay(),
-          label: 'Tonspur wird gewechselt …'
-        });
-        if (context.destroyed) return;
-        if (!result?.success) {
-          // No language is remembered that did not play.
-          context.updateMenus(context.sourceSwitch.getCurrentPlayback() || currentPlayback);
-          context.showNotice?.('Tonspur konnte nicht gewechselt werden. Die bisherige läuft weiter.');
-          return;
-        }
-        context.updateMenus(playback);
-        context.preferences?.update({ audioLanguage: context.audioMenu.getCurrentLanguage() });
-      } catch (error) {
-        if (!context.destroyed && !context.handleFatalPlaybackError(error)) context.showError(error.message);
-      }
-    }
+    onSelect: audioStreamIndex => switchStream({
+      resolveOptions: {
+        audioStreamIndex,
+        mediaSourceId: context.sourceSwitch.getCurrentPlayback()?.mediaSourceId || undefined
+      },
+      label: 'Tonspur wird gewechselt …',
+      failureNotice: 'Tonspur konnte nicht gewechselt werden. Die bisherige läuft weiter.',
+      onSuccess: () => context.preferences?.update({ audioLanguage: context.audioMenu.getCurrentLanguage() })
+    })
   });
 
   context.subtitleMenu = createSubtitleController({

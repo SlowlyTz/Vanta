@@ -94,6 +94,7 @@
 
 .trailer-feed-state-title {
   color: var(--text-primary);
+  font-size: 1.55rem;
   font-size: clamp(1.2rem, 2vw, 1.55rem);
   font-weight: 620;
   letter-spacing: -0.025em;
@@ -123,6 +124,7 @@
 
 .trailer-loading-preview {
   display: grid;
+  width: 680px;
   width: min(680px, 86vw);
   grid-template-columns: minmax(0, 1.45fr) minmax(180px, 0.55fr);
   margin-bottom: 28px;

@@ -1,4 +1,4 @@
-import { createElement } from '../../utils/dom.js';
+import { createElement, focusTextField } from '../../utils/dom.js';
 import { WatchPartyApi } from '../../api/watch-party.api.js';
 import { appStore } from '../../store/app.store.js';
 
@@ -14,7 +14,7 @@ export function bindInviteModal(ctx) {
     ctx.renderInviteSelection();
     ctx.inviteUserOverlay.setAttribute('tabindex', '-1');
     ctx.inviteUserOverlay.focus();
-    ctx.inviteUsernameInput.focus();
+    focusTextField(ctx.inviteUsernameInput);
   };
 
   ctx.closeInviteUserMenu = () => {
@@ -39,6 +39,8 @@ export function bindInviteModal(ctx) {
 
     try {
       const { user } = await WatchPartyApi.resolveInviteUser(ctx.partyId, username);
+      // Typed on since: only the answer for what the field shows counts.
+      if (username !== ctx.inviteUsernameInput.value.trim()) return;
       if (!user) {
         ctx.inviteResult.textContent = 'Kein exakter Treffer';
         ctx.inviteResult.dataset.state = 'empty';
@@ -53,6 +55,7 @@ export function bindInviteModal(ctx) {
       ));
       ctx.renderInviteSelection();
     } catch {
+      if (username !== ctx.inviteUsernameInput.value.trim()) return;
       ctx.inviteResult.textContent = 'Suche fehlgeschlagen';
       ctx.inviteResult.dataset.state = 'error';
     }

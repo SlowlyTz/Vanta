@@ -164,7 +164,11 @@
   cursor: pointer;
 }
 
-.search-filter-chip:hover,
+.search-filter-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
 .search-filter-chip:focus-visible {
   background: rgba(255, 255, 255, 0.12);
   outline: none;

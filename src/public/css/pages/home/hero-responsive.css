@@ -36,6 +36,7 @@
     line-height: 1.08;
   }
   .home-hero-logo {
+    width: 260px;
     width: min(60vw, 260px);
     max-height: 84px;
   }
@@ -72,6 +73,13 @@
     --hero-overlap: 94px;
     --hero-content-bottom: clamp(112px, 20svh, 150px);
   }
+
+/* Chromium 68 has no min()/max()/clamp(); custom properties get their fallback here. */
+@supports not (width: max(1px, 1px)) {
+  :root {
+    --hero-content-bottom: 150px;
+  }
+}
 }
 
 @media (max-width: 900px) and (orientation: landscape), (max-height: 500px) and (orientation: landscape) {

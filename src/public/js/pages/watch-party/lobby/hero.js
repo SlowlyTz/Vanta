@@ -3,6 +3,7 @@ import { MediaApi } from '../../../api/media.api.js';
 import { countdownMetaParts, formatPosition } from '../helpers.js';
 import { icon } from './icons.js';
 import { episodeHeadingCode } from '../../../shared/episodeCode.js';
+import { cssUrl } from '../../../utils/image.js';
 
 export function episodeLabel(snapshot) {
   return episodeHeadingCode(snapshot?.seasonNumber, snapshot?.episodeNumber);
@@ -58,7 +59,7 @@ export function createLobbyHero() {
       : null;
     if (backdropUrl !== lastBackdropUrl) {
       lastBackdropUrl = backdropUrl;
-      backdrop.style.backgroundImage = backdropUrl ? `url("${backdropUrl.replaceAll('"', '%22')}")` : '';
+      backdrop.style.backgroundImage = backdropUrl ? cssUrl(backdropUrl) : '';
       backdrop.classList.toggle('has-image', Boolean(backdropUrl));
     }
 

@@ -5,9 +5,7 @@ import { createEchoTokens } from '../syncEcho.js';
 import { createPlayerMarkup } from './markup.js';
 import { normalizeLanguageCode } from '../preferences.js';
 
-export function isStreamLimitError(error) {
-  return error?.code === 'STREAM_LIMIT_REACHED' || error?.status === 429;
-}
+export { isStreamLimitError } from '../streamLimit.js';
 
 export async function createPlayerContext(options) {
   const {

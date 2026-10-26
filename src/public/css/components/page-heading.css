@@ -6,13 +6,16 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  margin: 0 auto 48px;
   margin: 0 auto clamp(28px, 4vw, 48px);
   text-align: center;
 }
 
 .page-heading-title {
+  max-width: 920px;
   max-width: min(920px, 100%);
   color: var(--text-primary);
+  font-size: 3.2rem;
   font-size: clamp(2rem, 4vw, 3.2rem);
   font-weight: 780;
   line-height: 1.08;
@@ -21,6 +24,7 @@
 }
 
 .page-heading-rule {
+  width: 220px;
   width: min(220px, 38vw);
   height: 1px;
   background: rgba(255, 255, 255, 0.16);
@@ -29,6 +33,7 @@
 .page-heading-subtitle {
   max-width: 640px;
   color: var(--text-secondary);
+  font-size: 1.05rem;
   font-size: clamp(0.94rem, 1.6vw, 1.05rem);
   line-height: 1.5;
 }
@@ -40,10 +45,12 @@
   }
 
   .page-heading-title {
+    font-size: 2.2rem;
     font-size: clamp(1.65rem, 8vw, 2.2rem);
   }
 
   .page-heading-rule {
+    width: 160px;
     width: min(160px, 52vw);
   }
 }

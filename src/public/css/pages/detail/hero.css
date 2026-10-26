@@ -10,6 +10,13 @@
   padding-bottom: 0;
 }
 
+/* Chromium 68 has no min()/max()/clamp(); custom properties get their fallback here. */
+@supports not (width: max(1px, 1px)) {
+  .detail-page {
+    --detail-hero-height: 700px;
+  }
+}
+
 /* The backdrop has its own height, independent of the content below it, so
    unfolding the description does not rescale the image; the bottom gradient
    fades it into the page background. */
@@ -41,12 +48,15 @@
 .detail-content {
   position: relative;
   z-index: 3;
+  width: 1480px;
   width: min(100%, 1480px);
   max-width: 100%;
   margin: 0 auto;
+  padding: 116px 64px 28px;
   padding: clamp(var(--spotlight-navbar-clearance), 9vh, 116px) clamp(20px, 5vw, 64px) clamp(16px, 2.5vw, 28px);
   display: flex;
   flex-direction: column;
+  gap: 32px;
   gap: clamp(20px, 2.5vw, 32px);
   min-width: 0;
   min-height: var(--detail-hero-height);
@@ -60,6 +70,7 @@
     'poster info';
   align-content: center;
   align-items: center;
+  column-gap: 72px;
   column-gap: clamp(36px, 5vw, 72px);
   row-gap: 16px;
   min-height: 0;
@@ -72,6 +83,7 @@
   aspect-ratio: 2/3;
   justify-self: start;
   align-self: center;
+  margin-top: 22px;
   margin-top: clamp(12px, 2vh, 28px);
   border-radius: var(--abyss-radius);
   overflow: hidden;
@@ -282,14 +294,23 @@
   flex-shrink: 0;
 }
 
-.detail-help-link:hover,
+.detail-help-link:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--text-primary);
+}
+
 .detail-help-link:focus-visible {
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(255, 255, 255, 0.22);
   color: var(--text-primary);
 }
 
-.detail-help-report:hover,
+.detail-help-report:hover {
+  color: #ff8a8a;
+  border-color: rgba(255, 90, 90, 0.4);
+}
+
 .detail-help-report:focus-visible {
   color: #ff8a8a;
   border-color: rgba(255, 90, 90, 0.4);

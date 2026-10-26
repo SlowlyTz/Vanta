@@ -20,6 +20,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding: 16px 20px 14px 20px;
   padding:
     max(16px, env(safe-area-inset-top))
     max(20px, env(safe-area-inset-right))
@@ -92,7 +93,10 @@
   fill: currentColor;
 }
 
-.vanta-player-back:hover,
+.vanta-player-back:hover {
+  background: rgb(255 255 255 / 0.18);
+}
+
 .vanta-player-back:focus-visible {
   background: rgb(255 255 255 / 0.18);
 }
@@ -171,6 +175,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 56px;
   gap: clamp(24px, 6vw, 56px);
   pointer-events: none;
 }
@@ -195,11 +200,13 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  margin: 0 calc(-1 * 20px) calc(-1 * 14px) calc(-1 * 20px);
   margin:
     0
     calc(-1 * max(20px, env(safe-area-inset-right)))
     calc(-1 * max(14px, env(safe-area-inset-bottom)))
     calc(-1 * max(20px, env(safe-area-inset-left)));
+  padding: 72px 20px 14px 20px;
   padding:
     72px
     max(20px, env(safe-area-inset-right))
@@ -211,4 +218,23 @@
 
 .vanta-player-bottom-controls > * {
   pointer-events: auto;
+}
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-player-back > * + * {
+    margin-left: 6px;
+  }
+  .vanta-player-heading > * + * {
+    margin-top: 2px;
+  }
+  .vanta-player-topbar-end > * + * {
+    margin-left: 8px;
+  }
+  .vanta-player-party-pill > * + * {
+    margin-left: 7px;
+  }
+  .vanta-player-center-controls > * + * {
+    margin-left: 6vw,;
+  }
 }

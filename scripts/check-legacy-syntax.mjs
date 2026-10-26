@@ -1,6 +1,7 @@
 // Fails when the built scripts use syntax that TV browsers from about 2020
-// (Chromium 68: webOS 5, Tizen 5.5) cannot parse, or call a method they lack
-// that polyfills.js does not fill in. Run after `npm run build`.
+// (Chromium 68: webOS 5, Tizen 5.5) cannot parse, call a method they lack
+// that polyfills.js does not fill in, or when the built stylesheets use CSS
+// they drop. Run after `npm run build`.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const targets = [
   path.join(root, 'dist'),
   path.join(root, 'src/public/vendor/player'),
+  path.join(root, 'src/public/vendor/scenes'),
   path.join(root, 'src/public/js/intro-gate.js'),
   path.join(root, 'src/public/sw.js')
 ];
@@ -71,9 +73,69 @@ for (const file of files) {
   }
 }
 
+// Stylesheets: Chromium 68 drops `inset`, a whole selector list when one
+// entry uses :focus-visible/:is/:where/:has, and min()/max()/clamp() unless
+// a plain value of the same property comes first.
+const cssFiles = [path.join(root, 'dist'), path.join(root, 'src/public/vendor/player')].flatMap(target => {
+  if (!fs.existsSync(target)) return [];
+  return fs.readdirSync(target, { recursive: true }).map(name => path.join(target, name)).filter(file => file.endsWith('.css'));
+});
+const MODERN_SELECTOR = /:focus-visible|:is\(|:where\(|:has\(/;
+const MATH = /(?<![\w-])(min|max|clamp)\(/;
+const topLevelParts = text => {
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const char of text) {
+    if (char === '(') depth += 1;
+    if (char === ')') depth -= 1;
+    if (char === ',' && depth === 0) {
+      parts.push(current.trim());
+      current = '';
+    } else current += char;
+  }
+  parts.push(current.trim());
+  return parts;
+};
+const cssProblemsOf = css => {
+  const problems = new Set();
+  for (const [, rawSelector, rawBody] of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = rawSelector.trim();
+    const body = rawBody;
+    if (selector.startsWith('@')) continue;
+    const parts = topLevelParts(selector);
+    if (parts.some(part => MODERN_SELECTOR.test(part)) && parts.some(part => !MODERN_SELECTOR.test(part))) {
+      problems.add(`selector list mixing modern pseudo-classes: ${selector.slice(0, 60)}`);
+    }
+    // A rule Chromium 68 drops anyway (vidstack's :where() defaults) needs no fallback.
+    if (parts.every(part => MODERN_SELECTOR.test(part))) continue;
+    const seen = new Set();
+    for (const declaration of body.split(';')) {
+      const colon = declaration.indexOf(':');
+      if (colon < 0) continue;
+      const property = declaration.slice(0, colon).trim();
+      const value = declaration.slice(colon + 1);
+      if (property === 'inset') problems.add('inset');
+      // Gaps: flex gap is missing anyway and gets margins (see the player CSS).
+      if (!property.startsWith('--') && !property.endsWith('gap') && MATH.test(value) && !seen.has(property)) problems.add(`${property} with min()/max()/clamp() and no fallback`);
+      seen.add(property);
+    }
+  }
+  return [...problems];
+};
+
+for (const file of cssFiles) {
+  const problems = cssProblemsOf(fs.readFileSync(file, 'utf8'));
+  if (problems.length) {
+    failed += 1;
+    console.error(`${path.relative(root, file)}: ${problems.slice(0, 5).join('; ')}${problems.length > 5 ? ` (+${problems.length - 5})` : ''}`);
+  }
+}
+
 if (!files.length) {
   console.error('Nothing to check: run `npm run build` first.');
   process.exit(1);
 }
-console.log(failed ? `${failed} of ${files.length} files use syntax Chromium 68 cannot parse.` : `${files.length} files fit Chromium 68.`);
+const checked = files.length + cssFiles.length;
+console.log(failed ? `${failed} of ${checked} files use what Chromium 68 cannot handle.` : `${checked} files fit Chromium 68.`);
 process.exit(failed ? 1 : 0);

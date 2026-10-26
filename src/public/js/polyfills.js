@@ -27,6 +27,17 @@ define(Element.prototype, 'toggleAttribute', function toggleAttribute(name, forc
 });
 define(Document.prototype, 'replaceChildren', replaceChildren);
 
+// Chromium 102+. Without it `element.inert = true` was only an expando; here
+// it sets the attribute, which the focus trap, the TV focus engine and the
+// stylesheet ([inert] takes no pointer events) all respect.
+if (typeof HTMLElement !== 'undefined' && !('inert' in HTMLElement.prototype)) {
+  Object.defineProperty(HTMLElement.prototype, 'inert', {
+    get() { return this.hasAttribute('inert'); },
+    set(value) { this.toggleAttribute('inert', Boolean(value)); },
+    configurable: true
+  });
+}
+
 define(String.prototype, 'replaceAll', function replaceAll(search, replacement) {
   if (search instanceof RegExp) return this.replace(search, replacement);
   return this.split(String(search)).join(typeof replacement === 'function' ? replacement(search) : replacement);

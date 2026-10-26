@@ -27,6 +27,20 @@ function prefersReducedMotion() {
   }
 }
 
+// What identifies a control across a rebuild of its page.
+const FOCUS_KEYS = ['page', 'optionId', 'value', 'episodeId', 'seasonId', 'userId', 'action'];
+const toAttribute = key => `data-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`;
+const cssString = value => `"${String(value).replace(/["\\]/g, '\\$&')}"`;
+
+function focusKeyOf(element) {
+  const candidates = [element.closest('button, [tabindex]'), element.closest('.vanta-settings-row')].filter(Boolean);
+  for (const control of candidates) {
+    const keys = FOCUS_KEYS.filter(key => control.dataset?.[key] !== undefined);
+    if (keys.length) return keys.map(key => `[${toAttribute(key)}=${cssString(control.dataset[key])}]`).join('');
+  }
+  return null;
+}
+
 export function createSettingsFlyout({ container, button, onOpenChange = () => {} }) {
   const pages = new Map();
   const stack = [];
@@ -191,13 +205,19 @@ export function createSettingsFlyout({ container, button, onOpenChange = () => {
     showPage(stack[stack.length - 1], 'back');
   }
 
+  // Rebuilds the open page (a party update, a new track list) and puts the
+  // focus back on the same control, so a remote keeps working in it.
   function refresh() {
     if (state !== 'open' || !stack.length) return;
-    const focusedPage = document.activeElement?.closest?.('.vanta-settings-row')?.dataset.page;
+    const focused = document.activeElement;
+    const hadFocus = Boolean(focused && current?.contains(focused));
+    const selector = hadFocus ? focusKeyOf(focused) : null;
     const next = buildPage(stack[stack.length - 1]);
     viewport.replaceChildren(next);
     current = next;
-    if (focusedPage) current.querySelector(`.vanta-settings-row[data-page="${focusedPage}"]`)?.focus({ preventScroll: true });
+    if (!hadFocus) return;
+    const target = (selector && current.querySelector(selector)) || current.querySelector('button:not([disabled]), [tabindex="0"]');
+    target?.focus({ preventScroll: true });
   }
 
   function open() {

@@ -32,7 +32,10 @@
 
 .settings-modal-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -44,7 +47,7 @@
   visibility: hidden;
   pointer-events: none;
   transition: opacity 220ms ease, visibility 220ms ease;
-  z-index: 1500;
+  z-index: var(--z-dialog);
 }
 
 .settings-modal-backdrop.open {
@@ -57,7 +60,9 @@
    the top corner, hairline border. */
 .settings-dialog {
   position: relative;
+  width: 440px;
   width: min(440px, calc(100vw - 32px));
+  max-height: 720px;
   max-height: min(720px, calc(100vh - 48px));
   max-height: min(720px, calc(100dvh - 48px));
   display: flex;

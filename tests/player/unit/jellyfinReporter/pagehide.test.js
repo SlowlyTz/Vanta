@@ -123,4 +123,20 @@ describe('createJellyfinReporter · a paused player still counts', () => {
     expect(report).toHaveBeenCalledTimes(2);
     reporter.destroy();
   });
+
+  it('also treats a bare 429 as the stream limit', async () => {
+    const onStreamLimit = vi.fn();
+    const player = createMockPlayer({ currentTime: 30, paused: false });
+    const limit = Object.assign(new Error('Too many'), { status: 429 });
+    const report = vi.fn(event => (event === 'start' ? Promise.resolve() : Promise.reject(limit)));
+    const reporter = createJellyfinReporter({ player, itemId: 'item-1', report, onStreamLimit });
+    reporter.setPlayback({ playSessionId: 'session-1' });
+    player.dispatchEvent({ type: 'playing' });
+    await vi.advanceTimersByTimeAsync(0);
+    player.currentTime = 40;
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(onStreamLimit).toHaveBeenCalledWith(limit);
+    expect(report).toHaveBeenCalledTimes(2);
+    reporter.destroy();
+  });
 });

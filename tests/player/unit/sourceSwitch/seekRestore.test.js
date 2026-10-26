@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { waitForDurationOrSeekable } from '../../../../src/player/src/sourceSwitch/seekRestore.js';
+import { performSeek, waitForDurationOrSeekable } from '../../../../src/player/src/sourceSwitch/seekRestore.js';
+import { createSourceSwitchState } from '../../../../src/player/src/sourceSwitch/state.js';
 
 describe('waitForDurationOrSeekable', () => {
   afterEach(() => vi.useRealTimers());
@@ -37,5 +38,27 @@ describe('waitForDurationOrSeekable', () => {
     listeners['duration-change']();
     await Promise.resolve();
     expect(resolved).toBe(true);
+  });
+});
+
+describe('captureState after a seek', () => {
+  it('takes the position the viewer seeked to, not the earlier load target', async () => {
+    const player = { currentTime: 3000, duration: 7200, volume: 1, muted: false, playbackRate: 1, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const reporter = { getPosition: () => player.currentTime };
+    const noop = () => {};
+    const state = createSourceSwitchState({
+      player,
+      reporter,
+      ui: { setState: noop },
+      callbacks: { setLoading: noop, setLoadingStatus: noop, setInlineLoading: noop, showError: noop }
+    });
+
+    // Resume at 50:00: the load's seek lands where it should.
+    await performSeek(state, 3000);
+    expect(state.captureState().position).toBe(3000);
+
+    // The viewer seeks back to 10:00 with the timeline (not through performSeek).
+    player.currentTime = 600;
+    expect(state.captureState().position).toBe(600);
   });
 });

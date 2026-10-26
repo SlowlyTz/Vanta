@@ -1,4 +1,5 @@
 import { toTicks } from './time.js';
+import { isStreamLimitError } from './streamLimit.js';
 
 const PROGRESS_INTERVAL_MS = 10_000;
 const REPORT_RETRY_LIMIT = 3;
@@ -17,7 +18,6 @@ export function createJellyfinReporter({ player, itemId, report, onStreamLimit =
   let progressTimer = null;
   let lastPosition = 0;
   let lastSentPositionTicks = -1;
-  let retryCount = 0;
   let stopInProgress = false;
   let pageHideHandled = false;
   // Set when the video played to its end; a 'playing' after it starts anew.
@@ -68,25 +68,21 @@ export function createJellyfinReporter({ player, itemId, report, onStreamLimit =
     // A heartbeat goes out even without a new position (paused).
     if (event === 'progress' && !options.heartbeat && !shouldSendPosition(payload.positionTicks)) return;
 
-    const attempt = async () => {
+    const attempt = async (retries = 0) => {
       try {
         await report(event, payload, options);
         lastSentPositionTicks = payload.positionTicks;
-        retryCount = 0;
       } catch (error) {
-    if (error?.code === 'STREAM_LIMIT_REACHED') {
-      retryCount = 0;
-      stopTimer();
-      onStreamLimit?.(error);
-      return;
-    }
-    if (retryCount < REPORT_RETRY_LIMIT) {
-      retryCount += 1;
-      await new Promise(resolve => setTimeout(resolve, REPORT_RETRY_DELAY_MS));
-      return attempt();
-    }
+        if (isStreamLimitError(error)) {
+          stopTimer();
+          onStreamLimit?.(error);
+          return;
+        }
+        if (retries < REPORT_RETRY_LIMIT) {
+          await new Promise(resolve => setTimeout(resolve, REPORT_RETRY_DELAY_MS));
+          return attempt(retries + 1);
+        }
         console.warn(`[Player Reporting] ${event} failed after ${REPORT_RETRY_LIMIT + 1} attempts:`, error);
-        retryCount = 0;
       }
     };
 

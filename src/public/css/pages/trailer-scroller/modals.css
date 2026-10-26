@@ -1,8 +1,11 @@
 .trailer-share-backdrop,
 .trailer-intro-backdrop {
   position: fixed;
-  z-index: 2100;
-  inset: 0;
+  z-index: var(--z-dialog);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,6 +24,7 @@
 .trailer-share-content,
 .trailer-intro-content {
   position: relative;
+  width: 460px;
   width: min(460px, calc(100vw - 40px));
   padding: 30px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -97,6 +101,7 @@
 }
 
 .trailer-intro-content {
+  width: 560px;
   width: min(560px, calc(100vw - 40px));
   text-align: left;
 }
@@ -112,6 +117,7 @@
 
 .trailer-intro-title {
   color: var(--text-primary);
+  font-size: 2.6rem;
   font-size: clamp(1.8rem, 5vw, 2.6rem);
   font-weight: 600;
   letter-spacing: -0.045em;

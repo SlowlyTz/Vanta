@@ -1,15 +1,21 @@
 /* The screensaver of the home page (components/screensaver.js). */
 .screensaver-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 2000;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-screensaver);
   background: #000;
   animation: screensaver-in 900ms ease;
 }
 
 .screensaver {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   overflow: hidden;
   color: #fff;
   outline: none;
@@ -19,7 +25,10 @@
 .screensaver-slide,
 .screensaver-shade {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 .screensaver-slide {
@@ -46,7 +55,9 @@
 
 .screensaver-clock {
   position: absolute;
+  top: 5vh;
   top: max(5vh, env(safe-area-inset-top));
+  left: 5vw;
   left: max(5vw, env(safe-area-inset-left));
   display: grid;
   gap: 4px;
@@ -54,6 +65,7 @@
 }
 
 .screensaver-time {
+  font-size: 6.5rem;
   font-size: clamp(3rem, 8vw, 6.5rem);
   font-weight: 300;
   line-height: 1;
@@ -61,25 +73,31 @@
 }
 
 .screensaver-date {
+  font-size: 1.4rem;
   font-size: clamp(1rem, 1.6vw, 1.4rem);
   color: rgba(255, 255, 255, 0.8);
 }
 
 .screensaver-info {
   position: absolute;
+  left: 5vw;
   left: max(5vw, env(safe-area-inset-left));
+  bottom: 7vh;
   bottom: max(7vh, env(safe-area-inset-bottom));
+  max-width: 640px;
   max-width: min(640px, 80vw);
   display: grid;
   gap: 12px;
 }
 
 .screensaver-title h2 {
+  font-size: 3.4rem;
   font-size: clamp(2rem, 4vw, 3.4rem);
   line-height: 1.05;
 }
 
 .screensaver-logo {
+  max-width: 420px;
   max-width: min(420px, 70vw);
   max-height: 140px;
   object-fit: contain;
@@ -116,9 +134,13 @@
    itself holds the focus; the dialog holding it alone keeps them hidden. */
 .screensaver.show-controls .screensaver-actions,
 .screensaver.show-controls .screensaver-close,
-.screensaver-watch:focus-visible,
-.screensaver-close:focus-visible,
 .screensaver-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.screensaver-watch:focus-visible,
+.screensaver-close:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
@@ -141,7 +163,9 @@
 
 .screensaver-close {
   position: absolute;
+  top: 5vh;
   top: max(5vh, env(safe-area-inset-top));
+  right: 5vw;
   right: max(5vw, env(safe-area-inset-right));
   border: 1px solid rgba(255, 255, 255, 0.35);
   background: rgba(0, 0, 0, 0.45);
@@ -173,10 +197,18 @@
     left: 16px;
     right: 16px;
     top: auto;
+    bottom: 16px;
     bottom: max(16px, env(safe-area-inset-bottom));
   }
 
   .screensaver-info {
     bottom: 96px;
+  }
+}
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .screensaver-meta > * + * {
+    margin-left: 14px;
   }
 }

@@ -161,4 +161,24 @@ describe('createSettingsFlyout', () => {
     expect(env.button.hidden).toBe(true);
     expect(env.container.querySelector('.vanta-settings')).toBeNull();
   });
+
+  it('keeps the focus on the same control when a subpage is rebuilt', () => {
+    env = setup();
+    env.flyout.registerPage('party', {
+      title: 'Teilnehmer',
+      render: body => ['u1', 'u2'].forEach(userId => {
+        const action = document.createElement('button');
+        action.dataset.userId = userId;
+        action.dataset.action = 'promote';
+        body.appendChild(action);
+      })
+    });
+    env.flyout.open();
+    env.flyout.navigate('party');
+    env.element.querySelector('[data-user-id="u2"]').focus();
+
+    env.flyout.refresh();
+
+    expect(document.activeElement?.dataset.userId).toBe('u2');
+  });
 });

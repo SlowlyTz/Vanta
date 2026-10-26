@@ -18,6 +18,7 @@
 .admin-page {
   display: flex;
   flex-direction: column;
+  width: 960px;
   width: min(100%, 960px);
   margin: 0 auto;
 }
@@ -47,6 +48,7 @@
 .admin-page-title {
   margin: 0;
   color: var(--text-primary);
+  font-size: 2.2rem;
   font-size: clamp(1.7rem, 3vw, 2.2rem);
   font-weight: 750;
   letter-spacing: -0.02em;
@@ -74,7 +76,10 @@ html.admin-layer-open body {
 .admin-layer {
   --admin-layer-width: 640px;
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 1900;
   display: flex;
   flex-direction: column;
@@ -114,6 +119,7 @@ html.admin-layer-open body {
   display: flex;
   align-items: center;
   min-height: 56px;
+  padding: 10px 10px 4px;
   padding: max(10px, env(safe-area-inset-top)) max(10px, calc((100% - var(--admin-layer-width)) / 2 + 4px)) 4px;
 }
 
@@ -155,6 +161,7 @@ html.admin-layer-open body {
 }
 
 .admin-layer-inner {
+  width: 100%;
   width: min(100%, var(--admin-layer-width));
   margin: 0 auto;
 }
@@ -168,6 +175,7 @@ html.admin-layer-open body {
 
 .admin-layer-title {
   margin: 0;
+  font-size: 2.1rem;
   font-size: clamp(1.6rem, 3vw, 2.1rem);
   font-weight: 750;
   letter-spacing: -0.02em;

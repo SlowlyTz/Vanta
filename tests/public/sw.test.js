@@ -162,16 +162,20 @@ describe('sw.js', () => {
     expect(worker.caches.stores.get('vanta-images-v1')?.size ?? 0).toBe(0);
   });
 
-  it('drops the cached build files once a page load reports another build', async () => {
-    worker.caches.stores.get('vanta-assets-v1').set('http://localhost/assets/index-Old00000.js', new FakeResponse('old'));
+  it('drops the build files cached before a page load that reports another build', async () => {
+    const assets = worker.caches.stores.get('vanta-assets-v1');
+    const longAgo = new Date(Date.now() - 60_000).toUTCString();
+    assets.set('http://localhost/assets/index-Old00000.js', new FakeResponse('old', { headers: { date: longAgo } }));
 
     worker.fetch.mockResolvedValueOnce(new FakeResponse('<html>', { headers: { 'X-Vanta-Build': 'build-a' } }));
     await dispatchFetch(worker, request('/', { mode: 'navigate' }));
-    expect(worker.caches.stores.has('vanta-assets-v1')).toBe(true);
+    expect(assets.size).toBe(1);
 
+    // The new page's files arrive while the navigation is being handled.
+    assets.set('http://localhost/assets/index-New00000.js', new FakeResponse('new', { headers: { date: new Date().toUTCString() } }));
     worker.fetch.mockResolvedValueOnce(new FakeResponse('<html>', { headers: { 'X-Vanta-Build': 'build-b' } }));
     await dispatchFetch(worker, request('/', { mode: 'navigate' }));
-    expect(worker.caches.stores.has('vanta-assets-v1')).toBe(false);
+    expect([...assets.keys()]).toEqual(['http://localhost/assets/index-New00000.js']);
   });
 });
 

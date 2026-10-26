@@ -1,4 +1,4 @@
-import { createElement } from '../../utils/dom.js';
+import { createElement, focusTextField } from '../../utils/dom.js';
 import { REPORT_PROBLEMS, REPORT_MESSAGE_MAX } from '../../shared/reports.js';
 import { iconElement } from './icons.js';
 
@@ -51,7 +51,7 @@ export function createProblemStep({ onChange }) {
     const required = key === 'other';
     label.textContent = required ? 'Was ist das Problem?' : 'Details (optional)';
     textarea.placeholder = required ? 'Beschreibe kurz, was nicht stimmt …' : '';
-    if (required) window.requestAnimationFrame(() => textarea.focus());
+    if (required) window.requestAnimationFrame(() => focusTextField(textarea));
     emit();
   }
 

@@ -8,8 +8,17 @@
   --hero-content-bottom: clamp(150px, 20vh, 210px);
 }
 
+/* Chromium 68 has no min()/max()/clamp(); custom properties get their fallback here. */
+@supports not (width: max(1px, 1px)) {
+  :root {
+    --hero-overlap: 132px;
+    --hero-content-bottom: 210px;
+  }
+}
+
 .home-hero {
   position: relative;
+  height: 820px;
   height: min(86vh, 820px);
   min-height: 620px;
   width: 100%;
@@ -49,8 +58,10 @@
 
 .home-hero-content {
   position: absolute;
+  left: 64px;
   left: clamp(26px, 4.8vw, 64px);
   bottom: var(--hero-content-bottom);
+  width: 560px;
   width: min(560px, calc(100vw - 48px));
   max-width: 650px;
   z-index: 3;
@@ -68,6 +79,7 @@
 }
 
 .home-hero-logo {
+  width: 420px;
   width: min(420px, 48vw);
   max-height: 130px;
   object-fit: contain;
@@ -186,6 +198,7 @@
 /* Stops and restarts the automatic slide change (WCAG 2.2.2). */
 .hero-carousel-pause {
   position: absolute;
+  right: var(--spacing-lg);
   right: max(var(--spacing-lg), env(safe-area-inset-right));
   bottom: var(--spacing-lg);
   z-index: 4;
@@ -205,7 +218,11 @@
   transition: opacity var(--transition-fast), background var(--transition-fast);
 }
 
-.hero-carousel-pause:hover,
+.hero-carousel-pause:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.55);
+}
+
 .hero-carousel-pause:focus-visible {
   opacity: 1;
   background: rgba(0, 0, 0, 0.55);

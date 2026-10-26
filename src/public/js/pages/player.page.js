@@ -72,7 +72,7 @@ export default function PlayerPage({ id }, pageScope) {
 
   const goBack = () => {
     cleanup();
-    window.history.back();
+    router.back('#/home');
   };
 
   // Replaces the current history entry instead of pushing a new one, so switching
@@ -146,7 +146,7 @@ export default function PlayerPage({ id }, pageScope) {
       // "Von vorn" (#/player/<id>?from=start) ignores the saved position.
       const fromStart = new URLSearchParams(window.location.hash.split('?')[1] || '').get('from') === 'start';
       const resumePosition = fromStart ? 0 : Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
-      const episodeContext = await loadEpisodeContext(item).catch(() => null);
+      const episodeContext = await loadEpisodeContext(item, { signal: mountAbort.signal }).catch(() => null);
       if (cleaningUp) return;
 
       controller = await playerModule.mountVantaPlayer({

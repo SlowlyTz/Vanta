@@ -76,6 +76,7 @@ export function bindInit(ctx) {
         }
       });
       ctx.container.appendChild(intro.element);
+      ctx.onCleanup(intro.dispose);
     } else {
       ctx.setActive(initialIndex, { behavior: 'auto' });
       ctx.scheduleActivePlayerResync();

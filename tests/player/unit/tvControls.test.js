@@ -38,6 +38,7 @@ function setup({ state = 'ready-playing-idle', canControl = true, party = false,
     isDeferredReadyRoom: () => phase === 'ready-room',
     togglePlay: vi.fn(),
     seekStep: vi.fn(),
+    seekToTarget: vi.fn(target => { context.player.currentTime = target; }),
     onBack: vi.fn(),
     disposers,
     listen: (target, type, handler, options) => {

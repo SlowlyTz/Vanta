@@ -1,4 +1,4 @@
-import { seekBy } from '../seek.js';
+import { seekBy, seekTo } from '../seek.js';
 
 // Presses closer together than this add up in one bubble ("−30 s").
 export const SEEK_BUBBLE_CHAIN_MS = 900;
@@ -77,6 +77,20 @@ export function bindTransportControls(context) {
   context.seekStep = step => {
     if (context.watchParty?.enabled && !context.canControlWatchParty()) return;
     seekBy(player, step, { endEpsilon: 0.25 });
+    context.pendingSeekStep += step;
+    const direction = step < 0 ? 'back' : 'forward';
+    showBubble(direction, tally.add(direction, Math.abs(step)));
+    animateButtons(direction);
+    ui.resetIdle();
+  };
+
+  // A jump to a point (the TV remote's held arrow): booked and shown like
+  // a step, so the party names who jumped and how far.
+  context.seekToTarget = target => {
+    if (context.watchParty?.enabled && !context.canControlWatchParty()) return;
+    const step = Math.round(target - (Number(player.currentTime) || 0));
+    seekTo(player, target, { endEpsilon: 0.25 });
+    if (!step) return;
     context.pendingSeekStep += step;
     const direction = step < 0 ? 'back' : 'forward';
     showBubble(direction, tally.add(direction, Math.abs(step)));

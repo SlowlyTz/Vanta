@@ -1,6 +1,6 @@
 import { createElement } from '../utils/dom.js';
 import { openModal } from '../utils/modal.js';
-import { getBackdropUrlFor, getItemImageUrl } from '../utils/image.js';
+import { getBackdropUrlFor, getItemImageUrl, cssUrl } from '../utils/image.js';
 import { formatYear } from '../utils/format.js';
 import { prefersReducedMotion } from '../utils/motion.js';
 import { MediaApi } from '../api/media.api.js';
@@ -105,7 +105,7 @@ export function openScreensaver({ items, onClose = null, pageScope = null, now =
     index = (index + 1) % items.length;
     const item = items[index];
     const slide = createElement('div', { className: 'screensaver-slide' });
-    slide.style.backgroundImage = `url("${getBackdropUrlFor(item).replaceAll('"', '%22')}")`;
+    slide.style.backgroundImage = cssUrl(getBackdropUrlFor(item));
     // Each picture moves its own way.
     slide.style.setProperty('--pan-x', `${(index % 3) - 1}%`);
     slides.appendChild(slide);

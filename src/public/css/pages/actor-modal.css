@@ -3,14 +3,17 @@
 --------------------------------- */
 .actor-modal-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100dvh;
   background: rgba(4, 4, 6, 0.985);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
+  z-index: var(--z-dialog);
   opacity: 0;
   visibility: hidden;
   overflow: hidden;

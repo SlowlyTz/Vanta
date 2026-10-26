@@ -25,3 +25,24 @@ describe('polyfills: toggleAttribute', () => {
     expect(el.hasAttribute('data-paused')).toBe(false);
   });
 });
+
+describe('polyfills: inert', () => {
+  let descriptor;
+  beforeAll(async () => {
+    descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'inert');
+    delete HTMLElement.prototype.inert;
+    await import('../../src/public/js/polyfills.js?missing-inert');
+  });
+  afterAll(() => {
+    if (descriptor) Object.defineProperty(HTMLElement.prototype, 'inert', descriptor);
+  });
+
+  it('mirrors the property in the attribute', () => {
+    const el = document.createElement('div');
+    el.inert = true;
+    expect(el.hasAttribute('inert')).toBe(true);
+    expect(el.inert).toBe(true);
+    el.inert = false;
+    expect(el.hasAttribute('inert')).toBe(false);
+  });
+});

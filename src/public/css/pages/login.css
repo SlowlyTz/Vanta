@@ -15,7 +15,10 @@
 /* Backdrop */
 .login-visual {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: -1;
   overflow: hidden;
 }
@@ -32,7 +35,10 @@
 
 .login-visual-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(
     to bottom,
     rgba(10, 10, 12, 0.72) 0%,
@@ -46,6 +52,7 @@
   flex: 1;
   display: flex;
   min-width: 0;
+  padding: 48px var(--spacing-md);
   padding: clamp(24px, 6vw, 48px) var(--spacing-md);
 }
 
@@ -58,6 +65,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
+  padding: 36px;
   padding: clamp(24px, 6vw, 36px);
   background: var(--bg-glass);
   backdrop-filter: blur(var(--blur-glass));
@@ -75,6 +83,7 @@
 
 .login-logo {
   display: block;
+  width: 140px;
   width: min(140px, 55%);
   height: auto;
   margin-bottom: var(--spacing-md);
@@ -82,6 +91,7 @@
 }
 
 .login-title {
+  font-size: 1.85rem;
   font-size: clamp(1.5rem, 2.4vw, 1.85rem);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -253,8 +263,13 @@
 }
 
 .login-hint-trigger:hover,
-.login-hint-trigger:focus-visible,
 .login-hint.open .login-hint-trigger {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.login-hint-trigger:focus-visible {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
   outline: none;
@@ -265,6 +280,7 @@
   left: 50%;
   bottom: calc(100% + 12px);
   width: max-content;
+  max-width: 280px;
   max-width: min(280px, calc(100vw - 48px));
   padding: 12px 14px;
   border-radius: var(--radius-md);
@@ -307,7 +323,12 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .login-hint-trigger:hover + .login-hint-bubble,
+  .login-hint-trigger:hover + .login-hint-bubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0) scale(1);
+  }
+
   .login-hint-trigger:focus-visible + .login-hint-bubble {
     opacity: 1;
     visibility: visible;
@@ -335,7 +356,10 @@
     display: none;
   }
   .login-hint.open .login-hint-bubble,
-  .login-hint-trigger:hover + .login-hint-bubble,
+  .login-hint-trigger:hover + .login-hint-bubble {
+    transform: translate(0, 0) scale(1);
+  }
+
   .login-hint-trigger:focus-visible + .login-hint-bubble {
     transform: translate(0, 0) scale(1);
   }
@@ -388,7 +412,10 @@
 
   .login-visual {
     position: sticky;
-    inset: auto;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
     top: 0;
     height: 100vh;
     height: 100dvh;
@@ -408,6 +435,7 @@
 
   .login-panel {
     background: var(--bg-primary);
+    padding: 65px 96px;
     padding: clamp(40px, 6vh, 80px) clamp(40px, 5vw, 96px);
   }
 
@@ -443,7 +471,9 @@
 /* Top right: switch between the TV and the desktop view of this device. */
 .login-view-toggle {
   position: absolute;
+  top: 16px;
   top: max(16px, env(safe-area-inset-top));
+  right: 16px;
   right: max(16px, env(safe-area-inset-right));
   z-index: 5;
   display: inline-flex;
@@ -467,7 +497,12 @@
   margin-right: 8px;
 }
 
-.login-view-toggle:hover,
+.login-view-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(30, 30, 38, 0.75);
+  outline: none;
+}
+
 .login-view-toggle:focus-visible {
   border-color: rgba(255, 255, 255, 0.32);
   background: rgba(30, 30, 38, 0.75);

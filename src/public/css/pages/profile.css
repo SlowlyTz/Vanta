@@ -14,6 +14,7 @@
   position: relative;
   display: flex;
   align-items: flex-end;
+  min-height: 640px;
   min-height: clamp(460px, 62vh, 640px);
   padding-top: 96px;
   isolation: isolate;
@@ -112,6 +113,7 @@
 
 .profile-name {
   margin: 4px 0 2px;
+  font-size: 3.6rem;
   font-size: clamp(2.2rem, 5vw, 3.6rem);
   font-weight: 800;
   line-height: 1.05;

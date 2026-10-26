@@ -45,7 +45,9 @@ export function createSourceSwitch(options) {
     const previousState = state.captureState();
     const nextState = {
       ...previousState,
-      position: Math.max(0, Number(loadOptions.position) ?? previousState.position),
+      position: Number.isFinite(Number(loadOptions.position)) && loadOptions.position !== null
+        ? Math.max(0, Number(loadOptions.position))
+        : previousState.position,
       shouldPlay: loadOptions.shouldPlay !== false,
       label: loadOptions.label || 'Video wird geladen …'
     };

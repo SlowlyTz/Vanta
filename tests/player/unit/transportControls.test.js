@@ -158,6 +158,13 @@ describe('bindTransportControls', () => {
     expect(env.context.takePendingSeekStep()).toBeNull();
   });
 
+  it('books a jump to a point like a step (the TV remote held down)', () => {
+    env = setup();
+    env.context.player.currentTime = 100;
+    env.context.seekToTarget(160);
+    expect(env.context.takePendingSeekStep()).toBe(60);
+  });
+
   it('zeigt Sprünge anderer mit Namen und dreht die passenden Icons', () => {
     env = setup({ watchParty: { enabled: true }, canControl: false });
     env.context.showSeekFeedback(10, { by: 'Lena' });

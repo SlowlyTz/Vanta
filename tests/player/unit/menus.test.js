@@ -274,5 +274,23 @@ describe('bindMenus', () => {
       expect(onPlaybackError).toHaveBeenCalledWith(limit);
       expect(context.showError).not.toHaveBeenCalled();
     });
+
+    it('plays only the latest of two quick choices and gives the other stream back', async () => {
+      let answerFirst;
+      const resolvePlayback = vi.fn()
+        .mockImplementationOnce(() => new Promise(resolve => { answerFirst = resolve; }))
+        .mockResolvedValueOnce({ playSessionId: 'second' });
+      const context = switchSetup({ resolvePlayback, onPlaybackError: vi.fn() });
+      context.reportPlayback = vi.fn(async () => {});
+      context.audioMenu.select(2);
+      context.audioMenu.select(3);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      answerFirst({ playSessionId: 'first' });
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(context.sourceSwitch.switchTo).toHaveBeenCalledTimes(1);
+      expect(context.sourceSwitch.switchTo.mock.calls[0][0].playSessionId).toBe('second');
+      expect(context.reportPlayback).toHaveBeenCalledWith('cancel', expect.objectContaining({ playSessionId: 'first' }), { keepalive: true });
+    });
   });
 });

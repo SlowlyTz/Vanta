@@ -104,18 +104,21 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
       .catch(error => {
         console.error('Failed to load movie genres:', error);
         showSubmenuError(submenu, 'Genres konnten nicht geladen werden');
+        return false;
       }),
     series: (submenu) => MediaApi.getGenres('Series')
       .then(genres => renderGenreSubmenu(submenu, genres, 'Series', onNavigate))
       .catch(error => {
         console.error('Failed to load series genres:', error);
         showSubmenuError(submenu, 'Genres konnten nicht geladen werden');
+        return false;
       }),
     publishers: (submenu) => MediaApi.getStudios()
       .then(studios => renderPublisherSubmenu(submenu, getFeaturedPublishersFromStudios(studios), onNavigate))
       .catch(error => {
         console.error('Failed to load publishers:', error);
         showSubmenuError(submenu, 'Publisher konnten nicht geladen werden');
+        return false;
       })
   };
 
@@ -132,7 +135,9 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
         showSubmenuLoading(submenu);
         requestAnimationFrame(() => setSubmenuHeight(submenu, true));
 
-        accordionLoaders[key]?.(submenu).then(() => {
+        accordionLoaders[key]?.(submenu).then(loaded => {
+          // A failed load is tried again the next time the entry opens.
+          if (loaded === false) accordionLoaded.delete(key);
           if (item.classList.contains('is-open')) setSubmenuHeight(submenu, true);
         });
         return;
@@ -281,7 +286,11 @@ export function createMobileDrawer({ onNavigate, onOpenSettings }) {
     mobileSettingsButton.querySelector('.mobile-drawer-dot').hidden = !settings;
   };
 
+  // Another account sees other libraries: its submenus load afresh.
+  let shownUser = null;
   const setUser = name => {
+    if (shownUser !== null && name !== shownUser) accordionLoaded.clear();
+    shownUser = name;
     userName.textContent = name || 'Profil';
     avatar.textContent = initialOf(name);
   };

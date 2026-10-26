@@ -205,6 +205,7 @@
    or wheel, with a level bar. */
 .vanta-player-volume-bubble {
   position: absolute;
+  top: 20px;
   top: max(20px, env(safe-area-inset-top));
   left: 50%;
   z-index: 25;
@@ -270,7 +271,9 @@
    the controls are hidden. */
 .vanta-player-skip-segment {
   position: absolute;
+  right: 24px;
   right: max(24px, env(safe-area-inset-right));
+  bottom: calc(14px + 118px);
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 118px);
   z-index: 24;
   display: inline-flex;
@@ -306,7 +309,12 @@
   fill: currentColor;
 }
 
-.vanta-player-skip-segment:hover,
+.vanta-player-skip-segment:hover {
+  background: #fff;
+  color: #0b0b0e;
+  outline: none;
+}
+
 .vanta-player-skip-segment:focus-visible {
   background: #fff;
   color: #0b0b0e;
@@ -314,6 +322,7 @@
 }
 
 .vanta-player-root[data-ui-state="ready-playing-idle"] .vanta-player-skip-segment {
+  bottom: calc(14px + 24px);
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 24px);
 }
 
@@ -424,5 +433,21 @@
   .vanta-player-seek-icon,
   .vanta-player-seek-bubble.is-visible {
     animation: none !important;
+  }
+}
+
+/* Flex gap arrived in Chromium 84: TV browsers before it space the items with margins. */
+@supports not (aspect-ratio: 1) {
+  .vanta-player-transport-bar > * + * {
+    margin-left: 2px;
+  }
+  .vanta-player-volume-bubble > * + * {
+    margin-left: 12px;
+  }
+  .vanta-player-skip-segment > * + * {
+    margin-left: 10px;
+  }
+  .vanta-player-time > * + * {
+    margin-left: 5px;
   }
 }

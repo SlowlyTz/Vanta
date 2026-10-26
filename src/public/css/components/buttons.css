@@ -35,65 +35,13 @@
   transform: scale(1.03);
 }
 
-@media (max-width: 768px) {
-  .media-card:hover .media-card-image-container,
-  .media-card:hover .media-card-image {
-    transform: none;
-  }
-
-  .media-carousel-container {
-    margin-bottom: var(--spacing-lg);
-  }
-
-  .carousel-header {
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  .carousel-title-text {
-    font-size: 1.15rem;
-  }
-
-  .media-carousel {
-    gap: 14px;
-    padding: 8px 2px 16px;
-  }
-
-  .media-carousel-item {
-    flex-basis: 140px;
-  }
-
-  .media-carousel.landscape-carousel .media-carousel-item {
-    flex-basis: 240px;
-  }
-
-  .media-card-title {
-    font-size: 0.88rem;
-  }
-
-  .media-card-subtitle {
-    font-size: 0.76rem;
-  }
-
+@media (max-width: 767.98px) {
   .btn-primary,
   .btn-secondary {
     min-height: 44px;
     padding: 11px 18px;
     border-radius: var(--abyss-radius);
     font-size: 0.95rem;
-  }
-
-  #toast-container {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-  }
-
-  .toast-message {
-    width: 100%;
-    max-width: none;
-    padding: 12px 14px;
-    font-size: 0.9rem;
   }
 }
 

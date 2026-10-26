@@ -1,6 +1,7 @@
 import { createElement } from '../utils/dom.js';
 import { appStore } from '../store/app.store.js';
 import { watchlistStore } from '../store/watchlist.store.js';
+import { resolvePageScope } from '../utils/pageScope.js';
 
 export const BOOKMARK_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/></svg>';
 const PLUS_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
@@ -40,6 +41,6 @@ export function createWatchlistButton(item, { scope = null } = {}) {
 
   render();
   const unsubscribe = watchlistStore.subscribe(render);
-  scope?.onLeave?.(unsubscribe);
+  resolvePageScope(scope).onLeave(unsubscribe);
   return button;
 }

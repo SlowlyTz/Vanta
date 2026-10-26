@@ -10,8 +10,10 @@
 }
 
 .footer-inner {
+  width: 1480px;
   width: min(100%, 1480px);
   margin: 0 auto;
+  padding: 22px 64px calc(22px + 0px);
   padding: 22px clamp(20px, 5vw, 64px) calc(22px + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;

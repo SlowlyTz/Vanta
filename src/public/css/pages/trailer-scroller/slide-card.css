@@ -26,6 +26,7 @@
   min-height: 100%;
   align-items: center;
   justify-content: center;
+  padding: 32px 64px;
   padding: clamp(16px, 3vh, 36px) clamp(18px, 4vw, 64px);
   overflow: hidden;
   isolation: isolate;
@@ -74,11 +75,14 @@
 /* Video and details side by side, without a frame of their own. */
 .trailer-card {
   display: grid;
+  width: 1480px;
   width: min(1480px, 100%);
   max-height: 100%;
   min-height: 0;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-gap: 48px;
   grid-gap: clamp(24px, 3vw, 48px);
+  gap: 48px;
   gap: clamp(24px, 3vw, 48px);
   align-items: center;
 }
@@ -87,6 +91,7 @@
   position: relative;
   justify-self: center;
   /* As wide as the column allows, but never taller than the slide. */
+  width: 100%;
   width: min(100%, calc((100vh - var(--scroller-page-offset) - 96px) * 16 / 9));
   width: min(100%, calc((100dvh - var(--scroller-page-offset) - 96px) * 16 / 9));
   aspect-ratio: 16 / 9;

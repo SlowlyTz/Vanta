@@ -57,6 +57,7 @@ export function bindDataLoading(ctx) {
         limit: LOAD_LIMIT,
         target: targetTrailerId
       });
+      if (ctx.isDestroyed) return;
 
       // A different feed id means the server shuffled anew — anything we already hold belongs to
       // the previous feed and has to go.
@@ -76,6 +77,7 @@ export function bindDataLoading(ctx) {
 
       if (shouldActivateFirst) ctx.setActive(0);
     } catch (error) {
+      if (ctx.isDestroyed) return;
       if (error.isAuthError) {
         ctx.state = { ...ctx.state, loading: false };
         ctx.lastLoadFailed = true;
