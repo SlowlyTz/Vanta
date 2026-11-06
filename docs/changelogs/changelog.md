@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.3.0: home and detail page
+
+A livelier home page, a detail page that feels like a cinema, and titles spread over several libraries shown as one.
+
+### Home page
+- „Top 10 Filme heute“ and „Top 10 Serien heute“, ranked by TMDB's chart of the day as far as the library has the titles; each rank is a large number in the poster's colours. The two rows sit apart.
+- Hovering a cover tints the background with its colours (not on touch screens or TVs).
+- On desktops the banner plays the shown title's trailer once, muted with a sound button, and moves on after it.
+- „Weil du „X“ geschaut hast“: titles like the one finished last.
+
+### Detail page
+- The hero fills the screen: backdrop full-bleed, the title's logo, a glow in the poster's colours and a soft fade into the page.
+- After a few seconds on a desktop the trailer plays muted behind the hero.
+- Chips for ratings, age rating, resolution, HDR, sound and „Endet um“; the play button names the next episode or the minutes left.
+- Cast and crew as portraits with direction and script first, the film series the title belongs to, trailers and extras; seasons as one pill row.
+
+### Titles in several libraries
+- A series split over several folders or drives (one season here, one there) shows as one series with all seasons; copies of a film become versions to choose from in the detail page and the player.
+- The admin dashboard warns about real duplicates (the same film or episode twice, or a file matched to the wrong title) and shows each file's name, folder, size and streams.
+
+---
+
 ## 1.2.0: audit
 
 A full audit of server, client, player and the three UIs (phone, desktop, TV), with the fixes it found and a cleaner, documented code base.
