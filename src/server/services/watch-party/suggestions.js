@@ -1,6 +1,7 @@
 // Watch party methods to resolve a playable title, check access and suggest titles.
 import { ItemsService } from '../jellyfin/items.service.js';
 import { LibraryService } from '../browse/library.service.js';
+import { getEpisodes, getSeasons } from '../browse/title-copies.js';
 import { badRequest } from './errors.js';
 import { shuffle } from '../../utils/shuffle.js';
 import { httpError } from '../../utils/httpError.js';
@@ -12,9 +13,9 @@ export const suggestionMethods = {
     }
 
     if (item.Type === 'Series') {
-      const seasons = await ItemsService.getSeasons(userId, accessToken, item.Id);
+      const seasons = await getSeasons(userId, accessToken, item.Id);
       if (!seasons?.length) throw badRequest('Keine Staffeln für diese Serie gefunden.');
-      const episodes = await ItemsService.getEpisodes(userId, accessToken, item.Id, seasons[0].Id);
+      const episodes = await getEpisodes(userId, accessToken, item.Id, seasons[0].Id);
       if (!episodes?.length) throw badRequest('Keine Episoden in der ersten Staffel gefunden.');
       const nextEpisode = episodes.find(episode => episode.UserData && !episode.UserData.Played);
       return (nextEpisode || episodes[0]).Id;
@@ -22,7 +23,7 @@ export const suggestionMethods = {
 
     if (item.Type === 'Season') {
       if (!item.SeriesId) throw badRequest('Hauptserien-ID konnte nicht ermittelt werden.');
-      const episodes = await ItemsService.getEpisodes(userId, accessToken, item.SeriesId, item.Id);
+      const episodes = await getEpisodes(userId, accessToken, item.SeriesId, item.Id);
       if (!episodes?.length) throw badRequest('Keine Episoden in dieser Staffel gefunden.');
       const nextEpisode = episodes.find(episode => episode.UserData && !episode.UserData.Played);
       return (nextEpisode || episodes[0]).Id;

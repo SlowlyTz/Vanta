@@ -11,10 +11,10 @@ export function queryUserItems(userId, token, params = {}) {
 }
 
 export class ItemsService {
-  static async getItemDetails(userId, token, itemId) {
+  static async getItemDetails(userId, token, itemId, { extraFields = [] } = {}) {
     return jellyfinJson(`/Users/${userId}/Items/${itemId}`, {
       token,
-      query: { Fields: DETAIL_ITEM_FIELDS }
+      query: { Fields: [DETAIL_ITEM_FIELDS, ...extraFields].join(',') }
     });
   }
 

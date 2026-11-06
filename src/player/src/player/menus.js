@@ -22,11 +22,12 @@ const ROW_ICONS = {
   audio: '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h3v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h3a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z"/></svg>',
   help: '<svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg>',
   sleep: '<svg viewBox="0 0 24 24"><path d="M12.3 2a10 10 0 1 0 9.7 12.6A8 8 0 0 1 12.3 2z"/></svg>',
+  versions: '<svg viewBox="0 0 24 24"><path d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4V6zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>',
   participants: '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zM8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3zm8 0c-.31 0-.62.02-.91.06 1.18.84 1.91 1.95 1.91 3.19V18h4v-2c0-1.66-2.33-3-5-3z"/></svg>'
 };
 
 export function bindMenus(context) {
-  const { root, player, reporter, watchParty, episodeBrowser, dom, ui } = context;
+  const { root, player, reporter, watchParty, episodeBrowser, versions, dom, ui } = context;
 
   const shell = root.querySelector('.vanta-player-shell');
 
@@ -131,10 +132,14 @@ export function bindMenus(context) {
     return syncHeader.element;
   });
 
+  // A film kept in several libraries: another copy plays from the same spot.
+  const hasVersions = Boolean(versions?.options?.length > 1) && !watchParty?.enabled;
+
   settings.setRows(() => [
     { page: 'subtitles', label: 'Untertitel', value: context.subtitleMenu.getCurrentLabel(), icon: ROW_ICONS.subtitles },
     { page: 'audio', label: 'Tonspur', value: context.audioMenu.getCurrentLabel(), icon: ROW_ICONS.audio, hidden: !context.audioMenu.hasChoices() },
     { page: 'quality', label: 'Qualität', value: qualityMenu?.getCurrentLabel() || '', icon: ROW_ICONS.quality, hidden: !qualityMenu },
+    { page: 'versions', label: 'Version', value: versions?.options.find(option => option.selected)?.label || '', icon: ROW_ICONS.versions, hidden: !hasVersions },
     { page: 'episodes', label: 'Folgen', value: currentEpisodeCode(), icon: ROW_ICONS.episodes, hidden: !episodeBrowser?.enabled },
     {
       page: 'participants',
@@ -188,6 +193,16 @@ export function bindMenus(context) {
       render: (body, flyout) => renderOptionsPage(body, {
         options: qualityMenu.getOptions(),
         onSelect: id => qualityMenu.select(id)
+      }, flyout)
+    });
+  }
+
+  if (hasVersions) {
+    settings.registerPage('versions', {
+      title: 'Version',
+      render: (body, flyout) => renderOptionsPage(body, {
+        options: versions.options,
+        onSelect: id => versions.onSelect(id, context.sourceSwitch.captureState().position)
       }, flyout)
     });
   }

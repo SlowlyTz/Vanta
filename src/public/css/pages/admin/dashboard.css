@@ -228,3 +228,112 @@ button.admin-dash-card:focus-visible {
 .admin-dash-send {
   justify-self: start;
 }
+
+.admin-dash-card.has-warning {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), var(--admin-surface) 60%);
+}
+
+/* "Doppelte Dateien" (adminDuplicates.js). */
+.admin-dup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-dup-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--admin-hairline);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+}
+
+.admin-dup-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.admin-dup-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 10px;
+}
+
+.admin-dup-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-dup-file-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-dup-library {
+  font-weight: 650;
+}
+
+.admin-dup-name,
+.admin-dup-folder {
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+.admin-dup-folder {
+  color: var(--admin-muted);
+}
+
+.admin-dup-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 12px;
+  row-gap: 3px;
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
+
+.admin-dup-fact {
+  display: contents;
+}
+
+.admin-dup-fact dt {
+  color: var(--admin-muted);
+}
+
+.admin-dup-fact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-dup-episode summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.admin-dup-episode[open] summary {
+  margin-bottom: 6px;
+}
+
+.admin-dup-entry.is-mismatch {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.admin-dup-note {
+  color: rgb(251, 191, 36);
+  font-size: 0.85rem;
+}

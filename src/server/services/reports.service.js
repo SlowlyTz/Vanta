@@ -2,6 +2,7 @@
 // user sees them, then decided by an admin.
 import db from '../db/database.js';
 import { ItemsService } from './jellyfin/items.service.js';
+import { getEpisodes, getSeasons } from './browse/title-copies.js';
 import { toScopeInteger } from './request-scope.js';
 import { httpError } from '../utils/httpError.js';
 import {
@@ -66,11 +67,11 @@ export class ReportsService {
 
     let episodeName = null;
     if (report.scope !== 'all') {
-      const seasons = await ItemsService.getSeasons(userId, token, item.Id);
+      const seasons = await getSeasons(userId, token, item.Id);
       if (!seasons.some(season => season.IndexNumber === report.seasonNumber)) throw httpError(400, 'Staffel nicht gefunden');
     }
     if (report.scope === 'episode') {
-      const episodes = await ItemsService.getEpisodes(userId, token, item.Id);
+      const episodes = await getEpisodes(userId, token, item.Id);
       const episode = episodes.find(entry => entry.ParentIndexNumber === report.seasonNumber && entry.IndexNumber === report.episodeNumber);
       if (!episode) throw httpError(400, 'Folge nicht gefunden');
       episodeName = episode.Name || null;

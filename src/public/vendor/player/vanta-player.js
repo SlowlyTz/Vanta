@@ -696,15 +696,15 @@ function qe(e) {
 //#endregion
 //#region src/player/src/player/context.js
 async function Je(e) {
-	let { root: t, itemId: n, title: r, subtitle: i = "", poster: a, resumePosition: o = 0, resolvePlayback: s, reportPlayback: c, onBack: l, watchParty: u = null, episodeBrowser: d = null, preferences: f = null, loadSegments: p = null, onPlaybackError: m = null, loadTranscodeProgress: h = null, deferInitialLoad: g = !1, fullscreenTarget: _ = null, stillWatching: v = null, sleepTimer: y = null, onSleep: b = null, userPreferences: x = null, onUserPreferenceChange: S = null, tvMode: C = !1 } = e;
+	let { root: t, itemId: n, title: r, subtitle: i = "", poster: a, resumePosition: o = 0, resolvePlayback: s, reportPlayback: c, onBack: l, watchParty: u = null, episodeBrowser: d = null, versions: f = null, preferences: p = null, loadSegments: m = null, onPlaybackError: h = null, loadTranscodeProgress: g = null, deferInitialLoad: _ = !1, fullscreenTarget: v = null, stillWatching: y = null, sleepTimer: b = null, onSleep: x = null, userPreferences: S = null, onUserPreferenceChange: C = null, tvMode: w = !1 } = e;
 	await customElements.whenDefined("media-player");
-	let w = he(), T = ze(t, {
+	let T = he(), E = ze(t, {
 		title: r,
 		subtitle: i,
 		poster: a
-	}), { player: E } = T;
-	u != null && u.enabled && (E.autoplay = !1);
-	let D = {
+	}), { player: D } = E;
+	u != null && u.enabled && (D.autoplay = !1);
+	let O = {
 		root: t,
 		itemId: n,
 		title: r,
@@ -712,28 +712,29 @@ async function Je(e) {
 		poster: a,
 		resumePosition: o,
 		resolvePlayback: (e, t = {}) => s(e, {
-			...D.streamSelection(),
+			...O.streamSelection(),
 			...t
 		}),
 		reportPlayback: c,
 		onBack: l,
 		watchParty: u,
 		episodeBrowser: d,
-		preferencesConfig: f,
-		loadSegments: p,
-		onPlaybackError: m,
-		loadTranscodeProgress: h,
-		deferInitialLoad: g,
-		fullscreenTarget: _,
-		stillWatching: v,
-		sleepTimerOptions: y,
-		onSleep: b,
-		userPreferences: x,
-		onUserPreferenceChange: S,
-		tvMode: C,
-		iosLike: w,
-		dom: T,
-		player: E,
+		versions: f,
+		preferencesConfig: p,
+		loadSegments: m,
+		onPlaybackError: h,
+		loadTranscodeProgress: g,
+		deferInitialLoad: _,
+		fullscreenTarget: v,
+		stillWatching: y,
+		sleepTimerOptions: b,
+		onSleep: x,
+		userPreferences: S,
+		onUserPreferenceChange: C,
+		tvMode: w,
+		iosLike: T,
+		dom: E,
+		player: D,
 		disposers: [],
 		ui: De(t),
 		destroyed: !1,
@@ -742,34 +743,34 @@ async function Je(e) {
 		ownerEchoSuppressionDepth: 0,
 		echoTokens: Me()
 	};
-	return D.handleFatalPlaybackError = (e) => !isStreamLimitError(e) || typeof D.onPlaybackError != "function" ? !1 : (D.onPlaybackError(e), !0), D.streamSelection = () => {
+	return O.handleFatalPlaybackError = (e) => !isStreamLimitError(e) || typeof O.onPlaybackError != "function" ? !1 : (O.onPlaybackError(e), !0), O.streamSelection = () => {
 		var e, t, n, r, i, a, o, s;
-		let c = {}, l = (e = D.audioMenu) == null || (t = e.getCurrentIndex) == null ? void 0 : t.call(e), u = (n = D.sourceSwitch) == null || (r = n.getCurrentPlayback) == null ? void 0 : r.call(n);
+		let c = {}, l = (e = O.audioMenu) == null || (t = e.getCurrentIndex) == null ? void 0 : t.call(e), u = (n = O.sourceSwitch) == null || (r = n.getCurrentPlayback) == null ? void 0 : r.call(n);
 		if (Number.isInteger(l) && u) c.audioStreamIndex = l, u.mediaSourceId && (c.mediaSourceId = u.mediaSourceId);
 		else {
 			var d;
-			let e = Ue((d = D.preferences) == null ? void 0 : d.get().audioLanguage);
+			let e = Ue((d = O.preferences) == null ? void 0 : d.get().audioLanguage);
 			e && (c.audioLanguage = e);
 		}
-		let f = !((i = D.qualityMenu) == null || (a = i.hasUserChoice) == null) && a.call(i) ? D.qualityMenu.getCurrentId() : (x == null ? void 0 : x.defaultQuality) || ((o = D.qualityMenu) == null || (s = o.getCurrentId) == null ? void 0 : s.call(o));
+		let f = !((i = O.qualityMenu) == null || (a = i.hasUserChoice) == null) && a.call(i) ? O.qualityMenu.getCurrentId() : (S == null ? void 0 : S.defaultQuality) || ((o = O.qualityMenu) == null || (s = o.getCurrentId) == null ? void 0 : s.call(o));
 		return f && f !== "auto" && (c.qualityProfile = f), c;
-	}, D.listen = (e, t, n, r) => {
-		e.addEventListener(t, n, r), D.disposers.push(() => e.removeEventListener(t, n, r));
-	}, D.beginOwnerEchoSuppression = () => {
-		D.ownerEchoSuppressionDepth += 1;
-	}, D.endOwnerEchoSuppression = (e = 250) => {
+	}, O.listen = (e, t, n, r) => {
+		e.addEventListener(t, n, r), O.disposers.push(() => e.removeEventListener(t, n, r));
+	}, O.beginOwnerEchoSuppression = () => {
+		O.ownerEchoSuppressionDepth += 1;
+	}, O.endOwnerEchoSuppression = (e = 250) => {
 		window.setTimeout(() => {
-			D.ownerEchoSuppressionDepth = Math.max(0, D.ownerEchoSuppressionDepth - 1);
+			O.ownerEchoSuppressionDepth = Math.max(0, O.ownerEchoSuppressionDepth - 1);
 		}, e);
-	}, D.watchPartyPhase = () => (u == null ? void 0 : u.phase) || (u != null && u.enabled ? "playback" : null), D.isDeferredReadyRoom = () => D.watchPartyPhase() === "ready-room", D.canControlWatchParty = () => u != null && u.enabled ? !!u.canControl : !0, D.canEmitOwnerControl = (e) => e && D.echoTokens.consume(e) ? !1 : !!(u != null && u.enabled) && D.canControlWatchParty() && D.watchPartyPhase() === "playback" && D.ownerEchoSuppressionDepth === 0, D.refreshWatchPartyControlAccess = () => {
+	}, O.watchPartyPhase = () => (u == null ? void 0 : u.phase) || (u != null && u.enabled ? "playback" : null), O.isDeferredReadyRoom = () => O.watchPartyPhase() === "ready-room", O.canControlWatchParty = () => u != null && u.enabled ? !!u.canControl : !0, O.canEmitOwnerControl = (e) => e && O.echoTokens.consume(e) ? !1 : !!(u != null && u.enabled) && O.canControlWatchParty() && O.watchPartyPhase() === "playback" && O.ownerEchoSuppressionDepth === 0, O.refreshWatchPartyControlAccess = () => {
 		var e, n;
 		u != null && u.enabled && (Ae({
 			root: t,
 			watchParty: u
-		}), (e = D.mediaSession) == null || e.refresh(), (n = D.refreshSegmentButton) == null || n.call(D));
-	}, u != null && u.enabled && (u.onParticipantsChange = D.refreshWatchPartyControlAccess), D.refreshWatchPartyControlAccess(), D.syncInlinePlayback = () => {
-		w && ge(t);
-	}, w && (t.classList.add("is-ios", "supports-ios-inline-fullscreen"), D.syncInlinePlayback()), be() || t.classList.add("no-pip"), D;
+		}), (e = O.mediaSession) == null || e.refresh(), (n = O.refreshSegmentButton) == null || n.call(O));
+	}, u != null && u.enabled && (u.onParticipantsChange = O.refreshWatchPartyControlAccess), O.refreshWatchPartyControlAccess(), O.syncInlinePlayback = () => {
+		T && ge(t);
+	}, T && (t.classList.add("is-ios", "supports-ios-inline-fullscreen"), O.syncInlinePlayback()), be() || t.classList.add("no-pip"), O;
 }
 //#endregion
 //#region src/player/src/orientation.js
@@ -2932,46 +2933,48 @@ var Pr = 1e3, $ = {
 	audio: "<svg viewBox=\"0 0 24 24\"><path d=\"M12 3a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h3v-8H5v-1a7 7 0 0 1 14 0v1h-3v8h3a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z\"/></svg>",
 	help: "<svg viewBox=\"0 0 24 24\"><path d=\"M11 18h2v-2h-2v2zm1-16a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z\"/></svg>",
 	sleep: "<svg viewBox=\"0 0 24 24\"><path d=\"M12.3 2a10 10 0 1 0 9.7 12.6A8 8 0 0 1 12.3 2z\"/></svg>",
+	versions: "<svg viewBox=\"0 0 24 24\"><path d=\"M4 6H2v14a2 2 0 0 0 2 2h14v-2H4V6zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-8 12.5v-9l6 4.5-6 4.5z\"/></svg>",
 	participants: "<svg viewBox=\"0 0 24 24\"><path d=\"M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5zM8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3zm8 0c-.31 0-.62.02-.91.06 1.18.84 1.91 1.95 1.91 3.19V18h4v-2c0-1.66-2.33-3-5-3z\"/></svg>"
 };
 function Fr(e) {
-	let { root: t, player: n, reporter: r, watchParty: i, episodeBrowser: a, dom: o, ui: s } = e, c = t.querySelector(".vanta-player-shell"), l = 0, u = async ({ resolveOptions: t, label: n, failureNotice: r, onSuccess: i }) => {
+	var t;
+	let { root: n, player: r, reporter: i, watchParty: a, episodeBrowser: o, versions: s, dom: c, ui: l } = e, u = n.querySelector(".vanta-player-shell"), d = 0, f = async ({ resolveOptions: t, label: n, failureNotice: r, onSuccess: i }) => {
 		let a = e.sourceSwitch.getCurrentPlayback();
 		if (!a) return;
-		let o = ++l;
+		let o = ++d;
 		try {
 			let c = await e.resolvePlayback("auto", {
 				...t,
 				replacesPlaySessionId: a.playSessionId
 			});
 			if (e.destroyed) return;
-			if (o !== l) {
+			if (o !== d) {
 				jr(e, c);
 				return;
 			}
-			let u = await e.sourceSwitch.switchTo(c, {
+			let l = await e.sourceSwitch.switchTo(c, {
 				position: e.sourceSwitch.captureState().position,
 				shouldPlay: e.sourceSwitch.getIntendsToPlay(),
 				label: n
 			});
 			if (e.destroyed) return;
-			if (!(u != null && u.success)) {
+			if (!(l != null && l.success)) {
 				var s;
 				e.updateMenus(e.sourceSwitch.getCurrentPlayback() || a), (s = e.showNotice) == null || s.call(e, r);
 				return;
 			}
 			e.updateMenus(c), i == null || i();
 		} catch (t) {
-			!e.destroyed && o === l && !e.handleFatalPlaybackError(t) && e.showError(t);
+			!e.destroyed && o === d && !e.handleFatalPlaybackError(t) && e.showError(t);
 		}
-	}, d = i != null && i.disableQualityMenu ? null : pn({ onSelect: (e) => u({
+	}, p = a != null && a.disableQualityMenu ? null : pn({ onSelect: (e) => f({
 		resolveOptions: { qualityProfile: e },
 		label: "Qualität wird gewechselt …",
 		failureNotice: "Qualität konnte nicht gewechselt werden. Die bisherige läuft weiter."
 	}) });
-	e.qualityMenu = d, e.audioMenu = xn({ onSelect: (t) => {
+	e.qualityMenu = p, e.audioMenu = xn({ onSelect: (t) => {
 		var n;
-		return u({
+		return f({
 			resolveOptions: {
 				audioStreamIndex: t,
 				mediaSourceId: ((n = e.sourceSwitch.getCurrentPlayback()) == null ? void 0 : n.mediaSourceId) || void 0
@@ -2984,34 +2987,36 @@ function Fr(e) {
 			}
 		});
 	} }), e.subtitleMenu = bn({
-		player: n,
-		reporter: r,
+		player: r,
+		reporter: i,
 		onChange: () => {
 			var t;
 			return (t = e.settings) == null ? void 0 : t.refresh();
 		}
 	});
-	let f = null, p = null, m = {
+	let m = null, h = null, g = {
 		userId: null,
 		refresh: () => {
 			var t;
 			return (t = e.settings) == null ? void 0 : t.refresh();
 		}
-	}, h = Rn({
-		container: c,
-		button: o.settingsButton,
+	}, _ = Rn({
+		container: u,
+		button: c.settingsButton,
 		onOpenChange: (t) => {
-			e.settingsOpen = t, t ? (s.holdActive("settings"), p = window.setInterval(() => f == null ? void 0 : f.update(), Pr)) : (s.releaseActive("settings"), window.clearInterval(p), m.userId = null);
+			e.settingsOpen = t, t ? (l.holdActive("settings"), h = window.setInterval(() => m == null ? void 0 : m.update(), Pr)) : (l.releaseActive("settings"), window.clearInterval(h), g.userId = null);
 		}
 	});
-	e.settings = h, e.disposers.push(() => window.clearInterval(p));
-	let g = () => {
+	e.settings = _, e.disposers.push(() => window.clearInterval(h));
+	let v = () => {
 		var e;
-		let t = wn(a == null ? void 0 : a.context, a == null || (e = a.context) == null ? void 0 : e.currentEpisodeId);
+		let t = wn(o == null ? void 0 : o.context, o == null || (e = o.context) == null ? void 0 : e.currentEpisodeId);
 		return t ? Cn(t) : "Alle Folgen";
 	};
-	h.setHeader(() => i != null && i.enabled ? (f = Wn(i), f.element) : null), h.setRows(() => {
-		var t, n;
+	_.setHeader(() => a != null && a.enabled ? (m = Wn(a), m.element) : null);
+	let y = (s == null || (t = s.options) == null ? void 0 : t.length) > 1 && !(a != null && a.enabled);
+	_.setRows(() => {
+		var t, n, r;
 		return [
 			{
 				page: "subtitles",
@@ -3029,28 +3034,35 @@ function Fr(e) {
 			{
 				page: "quality",
 				label: "Qualität",
-				value: (d == null ? void 0 : d.getCurrentLabel()) || "",
+				value: (p == null ? void 0 : p.getCurrentLabel()) || "",
 				icon: $.quality,
-				hidden: !d
+				hidden: !p
+			},
+			{
+				page: "versions",
+				label: "Version",
+				value: (s == null || (t = s.options.find((e) => e.selected)) == null ? void 0 : t.label) || "",
+				icon: $.versions,
+				hidden: !y
 			},
 			{
 				page: "episodes",
 				label: "Folgen",
-				value: g(),
+				value: v(),
 				icon: $.episodes,
-				hidden: !(a != null && a.enabled)
+				hidden: !(o != null && o.enabled)
 			},
 			{
 				page: "participants",
 				label: "Teilnehmer",
-				value: `${(i == null || (t = i.participants) == null ? void 0 : t.length) || 0}/4`,
+				value: `${(a == null || (n = a.participants) == null ? void 0 : n.length) || 0}/4`,
 				icon: $.participants,
-				hidden: !(i != null && i.enabled)
+				hidden: !(a != null && a.enabled)
 			},
 			{
 				page: "sleep",
 				label: "Sleep-Timer",
-				value: ((n = e.sleepTimer) == null ? void 0 : n.label()) || "",
+				value: ((r = e.sleepTimer) == null ? void 0 : r.label()) || "",
 				icon: $.sleep,
 				hidden: !e.sleepTimer
 			},
@@ -3066,7 +3078,7 @@ function Fr(e) {
 			}
 		];
 	});
-	let _ = () => {
+	let b = () => {
 		var t;
 		let n = ((t = e.preferences) == null ? void 0 : t.get()) || {};
 		return {
@@ -3074,50 +3086,56 @@ function Fr(e) {
 			background: n.subtitleBackground || "semi"
 		};
 	};
-	if (e.applySubtitleStyle = (n = {}) => {
+	if (e.applySubtitleStyle = (t = {}) => {
 		let r = {
-			..._(),
-			...n
+			...b(),
+			...t
 		};
-		if (t.dataset.subtitleSize = r.size, t.dataset.subtitleBackground = r.background, Object.keys(n).length) {
+		if (n.dataset.subtitleSize = r.size, n.dataset.subtitleBackground = r.background, Object.keys(t).length) {
 			var i;
 			(i = e.preferences) == null || i.update({
 				subtitleSize: r.size,
 				subtitleBackground: r.background
 			});
 		}
-	}, e.applySubtitleStyle(), h.registerPage("subtitles", {
+	}, e.applySubtitleStyle(), _.registerPage("subtitles", {
 		title: "Untertitel",
 		render: (t, n) => $n(t, {
 			options: e.subtitleMenu.getOptions(),
 			onSelect: (t) => e.selectSubtitle(t),
-			style: _(),
+			style: b(),
 			onStyleChange: (t) => e.applySubtitleStyle(t)
 		}, n)
-	}), h.registerPage("audio", {
+	}), _.registerPage("audio", {
 		title: "Tonspur",
 		render: (t, n) => Q(t, {
 			options: e.audioMenu.getOptions(),
 			onSelect: (t) => e.audioMenu.select(t),
 			emptyLabel: "Nur eine Tonspur"
 		}, n)
-	}), d && h.registerPage("quality", {
+	}), p && _.registerPage("quality", {
 		title: "Qualität",
 		render: (e, t) => Q(e, {
-			options: d.getOptions(),
-			onSelect: (e) => d.select(e)
+			options: p.getOptions(),
+			onSelect: (e) => p.select(e)
 		}, t)
-	}), a != null && a.enabled && h.registerPage("episodes", {
+	}), y && _.registerPage("versions", {
+		title: "Version",
+		render: (t, n) => Q(t, {
+			options: s.options,
+			onSelect: (t) => s.onSelect(t, e.sourceSwitch.captureState().position)
+		}, n)
+	}), o != null && o.enabled && _.registerPage("episodes", {
 		title: "Folgen",
 		wide: !0,
 		render: (e, t) => er(e, {
-			context: a.context,
-			readonly: !!a.readonly,
-			onSelectEpisode: a.onSelectEpisode
+			context: o.context,
+			readonly: !!o.readonly,
+			onSelectEpisode: o.onSelectEpisode
 		}, t)
 	}), e.sleepTimer) {
-		let t = e.sleepTimer, n = !!(a != null && a.enabled);
-		h.registerPage("sleep", {
+		let t = e.sleepTimer, n = !!(o != null && o.enabled);
+		_.registerPage("sleep", {
 			title: "Sleep-Timer",
 			render: (e, r) => nr(e, {
 				presets: lr,
@@ -3139,38 +3157,38 @@ function Fr(e) {
 			}, r)
 		});
 	}
-	if (i != null && i.enabled) {
-		h.registerPage("participants", {
+	if (a != null && a.enabled) {
+		_.registerPage("participants", {
 			title: "Teilnehmer",
 			render: (e) => tr(e, {
-				watchParty: i,
-				pendingBan: m
+				watchParty: a,
+				pendingBan: g
 			})
 		});
-		let t = i.onParticipantsChange, n = () => {
+		let t = a.onParticipantsChange, n = () => {
 			t == null || t();
-			let e = h.currentPage();
-			(e === "root" || e === "participants") && h.refresh();
+			let e = _.currentPage();
+			(e === "root" || e === "participants") && _.refresh();
 		};
-		i.onParticipantsChange = n, e.disposers.push(() => {
-			i.onParticipantsChange === n && (i.onParticipantsChange = t);
+		a.onParticipantsChange = n, e.disposers.push(() => {
+			a.onParticipantsChange === n && (a.onParticipantsChange = t);
 		});
 	}
 	Ar(e);
-	let v = () => {
+	let x = () => {
 		var t;
 		(t = e.preferences) == null || t.update({ subtitleLanguage: e.subtitleMenu.getCurrentLanguage() });
 	};
 	return e.selectSubtitle = (t) => {
-		e.subtitleMenu.select(t), v();
+		e.subtitleMenu.select(t), x();
 	}, e.toggleSubtitles = () => {
-		e.subtitleMenu.toggle(), v();
+		e.subtitleMenu.toggle(), x();
 	}, e.updateMenus = (t, n = {}) => {
 		var r, i, a;
-		d == null || d.update((r = t.quality) == null ? void 0 : r.profiles, (i = t.quality) == null ? void 0 : i.current), e.audioMenu.update(t.audioTracks, t.audioStreamIndex), e.subtitleMenu.update(t, {
+		p == null || p.update((r = t.quality) == null ? void 0 : r.profiles, (i = t.quality) == null ? void 0 : i.current), e.audioMenu.update(t.audioTracks, t.audioStreamIndex), e.subtitleMenu.update(t, {
 			preserveSelection: n.preserveSubtitleSelection !== !1,
 			preferredLanguage: ((a = e.preferences) == null ? void 0 : a.get().subtitleLanguage) || null
-		}), h.refresh();
+		}), _.refresh();
 	}, e;
 }
 //#endregion

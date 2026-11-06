@@ -115,7 +115,7 @@ export function itemMatchesFilters(item, filters = {}) {
   return passesFilters(entry, { ...filters, genres: (filters.genres || []).map(normalizeForSearch).filter(Boolean) });
 }
 
-// `entries`: { id, type, libraryId, name, original, year, age, officialRating, genres:Set, people:[{ id, name, displayName, imageTag }] }
+// `entries`: { id, type, libraryId, mergeKey, rank, name, original, year, age, officialRating, genres:Set, people:[{ id, name, displayName, imageTag }] }
 // with normalised name/original/people names. Filters: types, genres (any
 // of), decade (1990 means the 1990s; 1960 and older for "älter"), maxAge.
 export function rankEntries(entries, { query = '', filters = {}, libraryIds = null, ageLimit = null, limit = 50 } = {}) {
@@ -128,9 +128,15 @@ export function rankEntries(entries, { query = '', filters = {}, libraryIds = nu
 
   const scorePerson = personScorer(normalized);
   const scored = [];
+  // Copies of one title (same `mergeKey`) answer as the first copy the user can see.
+  const firstCopy = new Map();
   for (const entry of entries) {
     if (visible && !visible.has(entry.libraryId)) continue;
     if (!withinAgeLimit(ageLimit, entry)) continue;
+    if (entry.mergeKey) {
+      const known = firstCopy.get(entry.mergeKey);
+      if (!known || entry.rank < known.rank) firstCopy.set(entry.mergeKey, entry);
+    }
     if (!passesFilters(entry, wanted)) continue;
 
     let score = normalized ? Math.max(scoreText(normalized, entry.name), scoreText(normalized, entry.original) - 5) : 1;
@@ -143,7 +149,16 @@ export function rankEntries(entries, { query = '', filters = {}, libraryIds = nu
   }
 
   scored.sort((a, b) => b.score - a.score || (b.entry.rating || 0) - (a.entry.rating || 0) || a.entry.name.localeCompare(b.entry.name));
-  return scored.slice(0, limit).map(({ entry }) => entry.id);
+  const ids = [];
+  const seen = new Set();
+  for (const { entry } of scored) {
+    const id = (entry.mergeKey && firstCopy.get(entry.mergeKey)?.id) || entry.id;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+    if (ids.length >= limit) break;
+  }
+  return ids;
 }
 
 // The people whose name matches, each once, with how many visible titles.

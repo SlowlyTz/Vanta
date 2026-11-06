@@ -5,6 +5,7 @@ import { jellyfinJson } from './jellyfin/client.js';
 import { COMMON_ITEM_FIELDS } from './jellyfin/fields.js';
 import { setResumeFilter } from './resume-visibility.js';
 import { httpError } from '../utils/httpError.js';
+import { copiesOf } from './browse/title-copies.js';
 
 const listHidden = db.prepare('SELECT series_id, hidden_at FROM resume_hidden WHERE user_id = ?');
 const hideSeries = db.prepare(`
@@ -16,7 +17,7 @@ const unhideSeries = db.prepare('DELETE FROM resume_hidden WHERE user_id = ? AND
 
 const seriesIdOf = (item) => (item?.Type === 'Series' ? item.Id : item?.SeriesId || null);
 
-export function createResumeService({ fetchJson = jellyfinJson, now = () => Date.now() } = {}) {
+export function createResumeService({ fetchJson = jellyfinJson, now = () => Date.now(), copies = copiesOf } = {}) {
   const setPosition = (userId, token, itemId, positionTicks) => fetchJson(`/UserItems/${itemId}/UserData`, {
     token,
     method: 'POST',
@@ -25,13 +26,17 @@ export function createResumeService({ fetchJson = jellyfinJson, now = () => Date
   });
 
   return {
-    // The started or next episode of a series (Jellyfin's "next up").
+    // The started or next episode of a series (Jellyfin's "next up"); of a
+    // series in several libraries the first copy that still has one.
     async nextUp(userId, token, seriesId) {
-      const data = await fetchJson('/Shows/NextUp', {
-        token,
-        query: { SeriesId: seriesId, UserId: userId, Limit: 1, EnableResumable: 'true', Fields: COMMON_ITEM_FIELDS }
-      });
-      return data.Items?.[0] || null;
+      for (const copy of await copies(userId, token, seriesId)) {
+        const data = await fetchJson('/Shows/NextUp', {
+          token,
+          query: { SeriesId: copy.id, UserId: userId, Limit: 1, EnableResumable: 'true', Fields: COMMON_ITEM_FIELDS }
+        });
+        if (data.Items?.[0]) return data.Items[0];
+      }
+      return null;
     },
 
     // A film loses its position; a series (or an episode of one) is hidden

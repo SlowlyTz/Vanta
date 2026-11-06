@@ -1,6 +1,7 @@
 // Per-user card data (progress, watched, next episode) for titles from the
 // shared catalogue, fetched from Jellyfin in bundles.
 import { jellyfinJson } from './jellyfin/client.js';
+import { copiesOf } from './browse/title-copies.js';
 
 const TTL_MS = 60 * 1000;
 const MAX_IDS = 100;
@@ -42,7 +43,7 @@ export function summarizeUserData(item, nextUpBySeries = new Map()) {
 }
 
 // Bundled for the cards on screen; answers are kept a minute per user.
-export function createUserDataService({ fetchJson = jellyfinJson, now = () => Date.now() } = {}) {
+export function createUserDataService({ fetchJson = jellyfinJson, now = () => Date.now(), copies = copiesOf } = {}) {
   const cache = new Map(); // userId -> { at, byId: Map, nextUp: { at, map } }
 
   const userCache = (userId) => {
@@ -66,6 +67,40 @@ export function createUserDataService({ fetchJson = jellyfinJson, now = () => Da
     return map;
   };
 
+  // A series in several libraries counts as one: episodes and watched ones of
+  // all copies add up, and the next episode is the first copy's that has one.
+  const mergeSeriesCopies = async (userId, token, items, nextUp, fetchItems) => {
+    const groups = new Map();
+    for (const item of items) {
+      if (item.Type !== 'Series') continue;
+      const list = await copies(userId, token, item.Id);
+      if (list.length > 1) groups.set(item.Id, list.map(copy => copy.id));
+    }
+    if (groups.size === 0) return items;
+
+    const known = new Map(items.map(item => [item.Id, item]));
+    const others = [...new Set([...groups.values()].flat())].filter(id => !known.has(id));
+    for (const item of others.length ? await fetchItems(others) : []) known.set(item.Id, item);
+
+    return items.map(item => {
+      const ids = groups.get(item.Id);
+      if (!ids) return item;
+      const parts = ids.map(id => known.get(id)).filter(Boolean);
+      const sum = (read) => parts.reduce((total, part) => total + (Number(read(part)) || 0), 0);
+      const next = ids.map(id => nextUp.get(id)).find(Boolean);
+      if (next) nextUp.set(item.Id, next);
+      return {
+        ...item,
+        RecursiveItemCount: sum(part => part.RecursiveItemCount),
+        UserData: {
+          ...item.UserData,
+          UnplayedItemCount: sum(part => part.UserData?.UnplayedItemCount),
+          Played: parts.every(part => part.UserData?.Played === true)
+        }
+      };
+    });
+  };
+
   return {
     async forItems(userId, token, ids) {
       const wanted = [...new Set(ids)].filter(Boolean).slice(0, MAX_IDS);
@@ -79,15 +114,16 @@ export function createUserDataService({ fetchJson = jellyfinJson, now = () => Da
       }
       if (missing.length === 0) return result;
 
-      const data = await fetchJson(`/Users/${userId}/Items`, {
+      const fetchItems = async (ids) => (await fetchJson(`/Users/${userId}/Items`, {
         token,
-        query: { Ids: missing.join(','), Fields: 'RecursiveItemCount', EnableUserData: 'true', EnableImages: 'false' }
-      });
-      const items = data.Items || [];
+        query: { Ids: ids.join(','), Fields: 'RecursiveItemCount', EnableUserData: 'true', EnableImages: 'false' }
+      })).Items || [];
+      const items = await fetchItems(missing);
       const nextUp = items.some(item => item.Type === 'Series')
         ? await loadNextUp(userId, token, entry).catch(() => new Map())
         : new Map();
-      for (const item of items) {
+      const merged = await mergeSeriesCopies(userId, token, items, nextUp, fetchItems);
+      for (const item of merged) {
         const summary = summarizeUserData(item, nextUp);
         entry.byId.set(item.Id, { at: now(), summary });
         result[item.Id] = summary;

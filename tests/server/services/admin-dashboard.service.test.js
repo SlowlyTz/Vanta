@@ -37,6 +37,7 @@ describe('admin dashboard', () => {
       parties: () => [{ id: 'p', itemSnapshot: { name: 'Dune' }, ownerName: 'Ann', status: 'playing', members: new Map([['a', {}], ['b', {}]]) }],
       bans: () => [{ username: 'x', reason: 'r', bannedAt: '2026-01-01' }],
       logins: () => ({ successes: 1, failures: 0, locks: 0, activeLocks: 0 }),
+      duplicates: () => 2,
       now: () => 10_000,
       startedAt: 0
     });
@@ -48,7 +49,7 @@ describe('admin dashboard', () => {
       const data = await dashboard.read();
       expect(data.server).toMatchObject({ uptimeSeconds: 10, jellyfin: { ok: false, latencyMs: null } });
       expect(data.streams).toEqual({ available: false, list: [], direct: 0, transcoding: 0 });
-      expect(data.work).toEqual({ requests: 1, reports: 0 });
+      expect(data.work).toEqual({ requests: 1, reports: 0, duplicates: 2 });
       expect(data.catalog).toMatchObject({ library: { movies: 3 }, nextUpdateAt: 99 });
       expect(data.storage.imageCache).toEqual({ files: 2, bytes: 100, maxBytes: 1000 });
       expect(data.parties).toEqual([{ id: 'p', title: 'Dune', owner: 'Ann', status: 'playing', members: 2 }]);

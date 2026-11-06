@@ -108,6 +108,16 @@ export function createAdminDashboard({ tools = [], onSelect, scope }) {
           stat(number(work.reports), 'Meldungen')
         )
       ),
+      // Shown only when there is something to clean up (replaceChildren would print "null").
+      ...(work.duplicates ? [card({
+        title: 'Doppelte Dateien',
+        key: 'duplicates',
+        className: 'has-warning',
+        onClick: () => import('./adminDuplicates.js').then(module => module.openDuplicatesLayer())
+      },
+        createElement('div', { className: 'admin-dash-stats' }, stat(number(work.duplicates), 'Titel betroffen')),
+        createElement('p', { className: 'admin-dash-muted' }, 'Gleiche Filme oder Folgen in mehreren Bibliotheken')
+      )] : []),
       card({ title: 'Katalog' },
         catalog ? createElement('div', { className: 'admin-dash-stats' },
           stat(number(catalog.library.movies), 'Filme'),

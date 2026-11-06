@@ -7,6 +7,7 @@ import db from '../db/database.js';
 import { jellyfinJson, jellyfinRawFetch } from './jellyfin/client.js';
 import { APP_VERSION } from '../../public/js/shared/version.js';
 import { getCatalog } from './catalog/index.js';
+import { DuplicateFinder } from './duplicates.service.js';
 import { getImageCache } from './images/image-cache.js';
 import { WatchPartyService } from './watch-party.service.js';
 import { UserBanService } from './user-ban.service.js';
@@ -56,6 +57,7 @@ export function createAdminDashboard({
   fetchJson = jellyfinJson,
   ping = () => jellyfinRawFetch('/System/Ping', { timeoutMs: 3000 }),
   catalog = getCatalog,
+  duplicates = () => DuplicateFinder.count(),
   images = getImageCache,
   parties = () => [...WatchPartyService.parties.values()],
   bans = () => UserBanService.getAll(),
@@ -120,7 +122,7 @@ export function createAdminDashboard({
       return {
         server: { version: APP_VERSION, uptimeSeconds: Math.round((now() - startedAt) / 1000), jellyfin },
         streams: active,
-        work: { requests: openRequests.get().n, reports: openReports.get().n },
+        work: { requests: openRequests.get().n, reports: openReports.get().n, duplicates: duplicates() },
         catalog: catalogInfo,
         storage: storageInfo,
         parties: partyList,

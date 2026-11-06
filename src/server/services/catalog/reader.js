@@ -19,6 +19,38 @@ const parseTypes = (type) => {
   return types.every(part => MIRRORED_TYPES.has(part)) ? types : null;
 };
 
+// Copies of one title share the type and the TMDB id (the IMDb id when TMDB
+// has none); the oldest copy comes first. Films must also run about as long:
+// a file Jellyfin identified as the wrong film (the 2020 "Mulan" as the 1998
+// one) is no copy and stays a title of its own.
+export const RUNTIME_TOLERANCE_TICKS = 5 * 60 * 10_000_000;
+const runtimesMatch = (a, b) => `(${a}.type <> 'Movie' OR NULLIF(${a}.runtime_ticks, 0) IS NULL OR NULLIF(${b}.runtime_ticks, 0) IS NULL OR ABS(${a}.runtime_ticks - ${b}.runtime_ticks) <= ${RUNTIME_TOLERANCE_TICKS})`;
+const sameTitle = (a, b) => `${a}.type = ${b}.type AND ((${b}.tmdb_id IS NOT NULL AND ${a}.tmdb_id = ${b}.tmdb_id) OR (${b}.tmdb_id IS NULL AND ${b}.imdb_id IS NOT NULL AND ${a}.tmdb_id IS NULL AND ${a}.imdb_id = ${b}.imdb_id)) AND ${runtimesMatch(a, b)}`;
+
+const runtimeOf = (row) => (Number(row.runtime_ticks) > 0 ? Number(row.runtime_ticks) : null);
+const runtimesClose = (a, b) => a.type !== 'Movie' || runtimeOf(a) === null || runtimeOf(b) === null
+  || Math.abs(runtimeOf(a) - runtimeOf(b)) <= RUNTIME_TOLERANCE_TICKS;
+
+// Rows (oldest first) sharing a provider id, split into the copies of one
+// title each: a row joins the first group whose first row it matches.
+function clusterCopies(rows) {
+  const clusters = new Map();
+  for (const row of rows) {
+    const key = mergeKeyOf(row);
+    if (!key) continue;
+    if (!clusters.has(key)) clusters.set(key, []);
+    const list = clusters.get(key);
+    const cluster = list.find(entry => runtimesClose(entry[0], row));
+    if (cluster) cluster.push(row);
+    else list.push([row]);
+  }
+  return clusters;
+}
+const comesFirst = (a, b) => `(COALESCE(${a}.date_created, '') < COALESCE(${b}.date_created, '') OR (COALESCE(${a}.date_created, '') = COALESCE(${b}.date_created, '') AND ${a}.id < ${b}.id))`;
+
+export const mergeKeyOf = ({ type, tmdb_id: tmdbId, imdb_id: imdbId }) =>
+  tmdbId ? `${type}:tmdb:${tmdbId}` : imdbId ? `${type}:imdb:${imdbId}` : null;
+
 // Every method takes the caller's visible library ids and age limit (see age-limit.js), so
 // per-user access matches Jellyfin's own queries. Results are the stored Jellyfin items.
 export function createCatalogReader(db) {
@@ -40,22 +72,43 @@ export function createCatalogReader(db) {
     return ratingsCache.ratings;
   };
 
-  const ageClause = (ageLimit, clauses, params) => {
+  const ageClause = (ageLimit, clauses, params, alias = 'i') => {
     if (!ageLimit) return;
     const allowed = knownRatings().filter(rating => withinAgeLimit(ageLimit, { officialRating: rating }));
     const blocked = ageLimit.blockUnrated || [];
-    const rated = allowed.length ? `i.official_rating IN (${allowed.map(() => '?').join(', ')})` : '0';
+    const rated = allowed.length ? `${alias}.official_rating IN (${allowed.map(() => '?').join(', ')})` : '0';
     const unrated = blocked.length
-      ? `(i.official_rating IS NULL AND i.type NOT IN (${blocked.map(() => '?').join(', ')}))`
-      : 'i.official_rating IS NULL';
+      ? `(${alias}.official_rating IS NULL AND ${alias}.type NOT IN (${blocked.map(() => '?').join(', ')}))`
+      : `${alias}.official_rating IS NULL`;
     clauses.push(`(${rated} OR ${unrated})`);
     params.push(...allowed, ...blocked);
+  };
+
+  const libraryClause = (libraryIds, clauses, params, alias = 'i') => {
+    if (!Array.isArray(libraryIds)) return;
+    if (libraryIds.length === 0) clauses.push('0');
+    else {
+      clauses.push(`${alias}.library_id IN (${libraryIds.map(() => '?').join(', ')})`);
+      params.push(...libraryIds);
+    }
+  };
+
+  // A title can sit in several libraries (season 1 on one drive, season 2 on
+  // another, or the same film twice). Lists show one entry per title: the
+  // oldest copy the user can see.
+  const mergeClause = (libraryIds, ageLimit, clauses, params) => {
+    const visible = [];
+    const visibleParams = [];
+    libraryClause(libraryIds, visible, visibleParams, 'd');
+    ageClause(ageLimit, visible, visibleParams, 'd');
+    clauses.push(`NOT EXISTS (SELECT 1 FROM catalog_items d WHERE ${sameTitle('d', 'i')} AND ${comesFirst('d', 'i')}${visible.map(clause => ` AND ${clause}`).join('')})`);
+    params.push(...visibleParams);
   };
 
   // Builds the WHERE clause shared by every query. `libraryIds` null means
   // "no restriction" (admins), an empty array means "nothing visible";
   // `ageLimit` null means no parental limit.
-  const buildWhere = ({ types = [], libraryIds = null, ageLimit = null, genre = null, studios = [], withTrailer = false, withBackdrop = false, query = null }) => {
+  const buildWhere = ({ types = [], libraryIds = null, ageLimit = null, genre = null, studios = [], withTrailer = false, withBackdrop = false, query = null, merge = true }) => {
     const clauses = [];
     const params = [];
 
@@ -66,13 +119,8 @@ export function createCatalogReader(db) {
       params.push(...types);
     }
 
-    if (Array.isArray(libraryIds)) {
-      if (libraryIds.length === 0) clauses.push('0');
-      else {
-        clauses.push(`i.library_id IN (${libraryIds.map(() => '?').join(', ')})`);
-        params.push(...libraryIds);
-      }
-    }
+    libraryClause(libraryIds, clauses, params);
+    if (merge) mergeClause(libraryIds, ageLimit, clauses, params);
 
     if (genre) {
       clauses.push('EXISTS (SELECT 1 FROM catalog_item_genres g WHERE g.item_id = i.id AND g.genre_normalized = ?)');
@@ -123,11 +171,19 @@ export function createCatalogReader(db) {
       if (!people.has(row.item_id)) people.set(row.item_id, []);
       people.get(row.item_id).push({ id: row.person_id, name: normalizeForSearch(row.name), displayName: row.name, imageTag: row.image_tag });
     }
-    const list = db.prepare('SELECT id, type, library_id, name, original_title, production_year, official_rating, community_rating FROM catalog_items').all()
-      .map(row => ({
+    const rows = db.prepare(`SELECT id, type, library_id, name, original_title, production_year, official_rating, community_rating, tmdb_id, imdb_id, runtime_ticks
+      FROM catalog_items ORDER BY COALESCE(date_created, '') ASC, id ASC`).all();
+    const copyKeys = new Map();
+    for (const [key, clusters] of clusterCopies(rows)) {
+      clusters.forEach((cluster, index) => cluster.forEach(row => copyKeys.set(row.id, `${key}#${index}`)));
+    }
+    const list = rows
+      .map((row, rank) => ({
         id: row.id,
         type: row.type,
         libraryId: row.library_id,
+        mergeKey: copyKeys.get(row.id) || null,
+        rank,
         name: normalizeForSearch(row.name),
         original: normalizeForSearch(row.original_title),
         year: row.production_year,
@@ -185,7 +241,7 @@ export function createCatalogReader(db) {
       for (const row of db.prepare('SELECT library_id, COUNT(*) AS count FROM catalog_items GROUP BY library_id').all()) {
         stats[row.library_id] = { count: row.count, previews: [] };
       }
-      for (const item of select({ types: ['Movie', 'Series'] }, { sort: 'newest' })) {
+      for (const item of select({ types: ['Movie', 'Series'], merge: false }, { sort: 'newest' })) {
         const entry = stats[item.LibraryId];
         if (!entry || entry.previews.length >= previews || !item.ImageTags?.Primary) continue;
         entry.previews.push({ id: item.Id, tag: item.ImageTags.Primary });
@@ -254,8 +310,46 @@ export function createCatalogReader(db) {
       return { libraryId: rows[0].library_id ?? null, type: rows[0].type, officialRating: rows[0].official_rating ?? null };
     },
 
+    // Every copy of the title `itemId` the caller can see, first copy first
+    // (see mergeClause); empty when the catalogue does not know the id.
+    copiesOf: (itemId, { libraryIds = null, ageLimit = null } = {}) => {
+      const clauses = [];
+      const params = [String(itemId)];
+      libraryClause(libraryIds, clauses, params, 'd');
+      ageClause(ageLimit, clauses, params, 'd');
+      return db.prepare(`
+        SELECT d.id, d.type, d.library_id FROM catalog_items i
+        JOIN catalog_items d ON d.id = i.id OR (${sameTitle('d', 'i')})
+        WHERE i.id = ?${clauses.map(clause => ` AND ${clause}`).join('')}
+        ORDER BY COALESCE(d.date_created, '') ASC, d.id ASC
+      `).all(...params).map(row => ({ id: row.id, type: row.type, libraryId: row.library_id }));
+    },
+
+    // Titles held more than once across all libraries, with the library
+    // names: what the admin's duplicate check looks at. `mismatch` marks rows
+    // sharing a provider id but not the runtime (likely identified wrongly).
+    titleGroups: () => {
+      const libraries = new Map(db.prepare('SELECT id, name FROM catalog_libraries').all().map(row => [row.id, row.name]));
+      const rows = db.prepare(`SELECT id, type, name, production_year, library_id, tmdb_id, imdb_id, runtime_ticks FROM catalog_items
+        ORDER BY COALESCE(date_created, '') ASC, id ASC`).all();
+      const describe = (key, list, mismatch) => ({
+        key,
+        type: list[0].type,
+        name: list[0].name,
+        year: list[0].production_year ?? null,
+        mismatch,
+        copies: list.map(row => ({ id: row.id, libraryId: row.library_id, libraryName: libraries.get(row.library_id) || null }))
+      });
+      const groups = [];
+      for (const [key, clusters] of clusterCopies(rows)) {
+        if (clusters.length > 1) groups.push(describe(key, clusters.flat(), true));
+        else if (clusters[0].length > 1) groups.push(describe(key, clusters[0], false));
+      }
+      return groups;
+    },
+
     byProviderId: ({ tmdbId = null, imdbId = null, type = null, libraryIds = null, ageLimit = null }) => {
-      const filters = buildWhere({ types: parseTypes(type) || [], libraryIds, ageLimit });
+      const filters = buildWhere({ types: parseTypes(type) || [], libraryIds, ageLimit, merge: false });
       const clauses = [];
       const params = [...filters.params];
       if (tmdbId) { clauses.push('i.tmdb_id = ?'); params.push(String(tmdbId)); }

@@ -23,6 +23,8 @@ export async function createPlayerContext(options) {
     onBack,
     watchParty = null,
     episodeBrowser = null,
+    // Other copies of a film: { options: [{ id, label, selected }], onSelect(id, positionSeconds) }.
+    versions = null,
     preferences = null,
     loadSegments = null,
     onPlaybackError = null,
@@ -69,6 +71,7 @@ export async function createPlayerContext(options) {
     onBack,
     watchParty,
     episodeBrowser,
+    versions,
     preferencesConfig: preferences,
     loadSegments,
     onPlaybackError,

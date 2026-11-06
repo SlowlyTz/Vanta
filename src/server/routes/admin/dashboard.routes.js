@@ -5,17 +5,25 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AdminDashboard } from '../../services/admin-dashboard.service.js';
 import { NotifyService } from '../../services/notify.service.js';
 import { UserDirectory } from '../../services/user-directory.service.js';
+import { DuplicateFinder } from '../../services/duplicates.service.js';
 
 const TITLE_MAX = 80;
 const BODY_MAX = 300;
 
-export function createDashboardRouter({ dashboard = AdminDashboard, notify = NotifyService, directory = UserDirectory } = {}) {
+export function createDashboardRouter({ dashboard = AdminDashboard, notify = NotifyService, directory = UserDirectory, duplicates = DuplicateFinder } = {}) {
   const router = express.Router();
   router.use(requireAuth, requireFreshAdmin);
 
   router.get('/', asyncHandler(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json(await dashboard.read());
+  }));
+
+  // Films held twice and episodes in more than one library, with their files.
+  router.get('/duplicates', asyncHandler(async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const result = await duplicates.list();
+    res.json(result || { checkedAt: null, items: [] });
   }));
 
   // "Push an alle senden": a message to every user, in the list and as push

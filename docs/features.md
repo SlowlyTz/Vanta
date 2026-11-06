@@ -51,6 +51,12 @@ Push is Web Push with VANTA's own VAPID keys. The server accepts endpoints only 
 
 Browsers without a push service (Helium, ungoogled Chromium) cannot subscribe. There the switch turns on a fallback: every push is also sent as `NOTIFICATION_PUSH` over `/ws/app`, and the tab shows it as a system notification while VANTA is open.
 
+## Titles in several libraries
+
+A series whose seasons lie in different libraries (season 1 on one drive, season 2 on another) is one series: lists show its oldest copy the user can see, the detail page and the player join the seasons and episodes of all copies (each episode number once), and watched state, "next up" and "Als gesehen markieren" cover every copy. Copies share the type and the TMDB id (IMDb id without one); films must also run within 5 min of each other. A film held twice is one card whose copies are versions, chosen in the player (Einstellungen → Version, from the same spot).
+
+Admins see real duplicates on the dashboard („Doppelte Dateien“): a film held more than once, or an episode in more than one library, each with path, library, size, picture, sound, languages and date. Files with the same id but another runtime are listed as „vermutlich falsch erkannt“ and stay separate titles until they are identified correctly in Jellyfin.
+
 ## Search
 
 From the catalogue: exact > prefix > word start > contains > up to two typos, also through cast and crew. Filters: type, genre, decade, age rating, unwatched; kept in the hash. The last ten searches are kept per device.

@@ -108,6 +108,12 @@ export default function DetailPage({ id }, pageScope) {
 
     try {
       const { item, similar, seasons, normalized } = await loadDetailData(id, { signal });
+      // A title in several libraries has one page: that of its first copy.
+      const firstCopyId = item.VantaCopies?.[0]?.Id;
+      if (firstCopyId && firstCopyId !== id) {
+        window.location.replace(`#/item/${firstCopyId}`);
+        return;
+      }
       const youtubeTrailerId = getYouTubeTrailerId(item);
 
       const actors = normalized.actors || [];

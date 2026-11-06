@@ -8,6 +8,7 @@ import { PLAYER_MODULE_URL, playerMediaOptions } from '../utils/playerMedia.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { preferencesStore } from '../store/preferences.store.js';
 import { createPlayerCarry, sleepForNextEpisode } from '../utils/playerCarry.js';
+import { versionOptions } from '../utils/versions.js';
 
 // `#/item/<id>` (also with a query) names the detail page playback started from.
 const originItemId = (hash) => /^#\/item\/([^/?]+)/.exec(hash || '')?.[1] || null;
@@ -90,6 +91,18 @@ export default function PlayerPage({ id }, pageScope) {
     router.handleRoute();
   };
 
+  // Another copy of the film, from where this one is (`?at=` seconds).
+  const navigateToVersion = (versionId, positionSeconds) => {
+    playerCarry.give({ idleMs, sleep: sleepState, originId, originInHistory });
+    const at = Math.max(0, Math.floor(Number(positionSeconds) || 0));
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${window.location.search}#/player/${versionId}?at=${at}`
+    );
+    router.handleRoute();
+  };
+
   function handleHashChange() {
     if (!window.location.hash.startsWith('#/player')) cleanup();
   }
@@ -145,9 +158,15 @@ export default function PlayerPage({ id }, pageScope) {
       ]);
       if (cleaningUp) return;
 
-      // "Von vorn" (#/player/<id>?from=start) ignores the saved position.
-      const fromStart = new URLSearchParams(window.location.hash.split('?')[1] || '').get('from') === 'start';
-      const resumePosition = fromStart ? 0 : Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
+      // "Von vorn" (#/player/<id>?from=start) ignores the saved position; a
+      // version switch (?at=<seconds>) starts where the other copy was.
+      const hashQuery = new URLSearchParams(window.location.hash.split('?')[1] || '');
+      const fromStart = hashQuery.get('from') === 'start';
+      const at = Number(hashQuery.get('at'));
+      const resumePosition = Number.isFinite(at) && hashQuery.has('at')
+        ? at
+        : fromStart ? 0 : Number(item.UserData?.PlaybackPositionTicks || 0) / 10_000_000;
+      const copies = item.Type === 'Movie' && Array.isArray(item.VantaCopies) ? item.VantaCopies : [];
       const episodeContext = await loadEpisodeContext(item, { signal: mountAbort.signal }).catch(() => null);
       if (cleaningUp) return;
 
@@ -180,6 +199,13 @@ export default function PlayerPage({ id }, pageScope) {
           if (originInHistory) window.history.back();
           else window.location.replace(`#/item/${originId}`);
         },
+        versions: copies.length > 1 ? {
+          options: versionOptions(copies, playableId),
+          onSelect: async (versionId, positionSeconds) => {
+            await cleanup();
+            navigateToVersion(versionId, positionSeconds);
+          }
+        } : null,
         episodeBrowser: episodeContext ? {
           enabled: true,
           context: episodeContext,

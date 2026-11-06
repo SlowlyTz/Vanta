@@ -1,7 +1,7 @@
 // Whether a TMDB title is already in the user's Jellyfin library, down to the
 // seasons and episodes of a series.
 import { LibraryService } from './browse/library.service.js';
-import { ItemsService } from './jellyfin/items.service.js';
+import { getEpisodes, getSeasons } from './browse/title-copies.js';
 import { normalizeKey as normalizeTitle } from '../utils/text.js';
 
 const JELLYFIN_TYPE_BY_TMDB_TYPE = { movie: 'Movie', tv: 'Series' };
@@ -100,8 +100,8 @@ class JellyfinCrossCheck {
   static async checkSeriesSeasons(userId, token, jellyfinSeriesId, tmdbSeasons) {
     try {
       const [jellyfinSeasons, jellyfinEpisodes] = await Promise.all([
-        ItemsService.getSeasons(userId, token, jellyfinSeriesId),
-        ItemsService.getEpisodes(userId, token, jellyfinSeriesId).catch(() => [])
+        getSeasons(userId, token, jellyfinSeriesId),
+        getEpisodes(userId, token, jellyfinSeriesId).catch(() => [])
       ]);
       const existingSeasons = new Map();
       for (const s of jellyfinSeasons) {

@@ -3,7 +3,7 @@
 import { jellyfinJson } from '../jellyfin/client.js';
 import { COMMON_ITEM_FIELDS, TRAILER_ITEM_FIELDS } from '../jellyfin/fields.js';
 import { getFeaturedPublisherById, matchFeaturedPublisher } from '../../../public/js/shared/featuredPublishers.js';
-import { ItemsService } from '../jellyfin/items.service.js';
+import { copiesOf, getEpisodes, getSeasons } from './title-copies.js';
 import { findNextEpisode } from '../../../public/js/shared/nextEpisode.js';
 import { getActiveCatalogReader } from '../catalog/reader.js';
 import { getCatalogAccess } from '../catalog/visibility.js';
@@ -47,11 +47,11 @@ function shouldPromoteContinueWatchingEpisode(item) {
 }
 
 async function buildEpisodeContext(userId, token, seriesId) {
-  const seasons = await ItemsService.getSeasons(userId, token, seriesId);
+  const seasons = await getSeasons(userId, token, seriesId);
   // One round-trip per season, all at once: sequentially a six-season show
   // costs seven Jellyfin round-trips before the resume row can render.
   const episodeLists = await Promise.all(
-    seasons.map(season => ItemsService.getEpisodes(userId, token, seriesId, season.Id))
+    seasons.map(season => getEpisodes(userId, token, seriesId, season.Id))
   );
   const episodesBySeason = Object.fromEntries(seasons.map((season, index) => [season.Id, episodeLists[index]]));
 
@@ -84,6 +84,21 @@ function dedupeById(items) {
   return result;
 }
 
+// Episodes of one series in several libraries (or copies of one film) are one
+// title: the most recently played entry stands for it.
+async function onePerTitle(userId, token, items) {
+  const seen = new Set();
+  const kept = [];
+  for (const item of items) {
+    const titleId = item.Type === 'Episode' ? item.SeriesId : item.Id;
+    const key = titleId ? (await copiesOf(userId, token, titleId))[0].id : item.Id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(item);
+  }
+  return kept;
+}
+
 export class LibraryService {
   // Resolved a row's worth at a time (each near-finished episode costs a
   // look at its series), until the row is full or nothing is left.
@@ -103,7 +118,7 @@ export class LibraryService {
       const resolved = await Promise.all(candidates.slice(i, i + RESUME_LIMIT).map(item => resolveResumeItem(userId, token, item)));
       result = dedupeById([...result, ...resolved.filter(item => item && isResumableEntry(item))]);
     }
-    return result.slice(0, RESUME_LIMIT);
+    return (await onePerTitle(userId, token, result)).slice(0, RESUME_LIMIT);
   }
 
   static async getMovies(userId, token) {

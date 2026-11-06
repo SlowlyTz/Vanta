@@ -3,10 +3,12 @@
 import express from 'express';
 import { LibraryService } from '../../services/browse/library.service.js';
 import { ItemsService } from '../../services/jellyfin/items.service.js';
+import { copiesOf, firstCopiesOnly, getEpisodes, getSeasons } from '../../services/browse/title-copies.js';
 import { PlaybackApiService } from '../../services/jellyfin/playback-api.service.js';
 import { HomeSectionsService } from '../../services/browse/home-sections.service.js';
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { UserDataService } from '../../services/user-data.service.js';
+import { summarizeMedia } from '../../services/browse/media-summary.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 import { validateIdParam } from '../../utils/ids.js';
 
@@ -98,12 +100,31 @@ router.get('/screensaver', requireAuth, jellyfinRoute('Screensaver Error', 'Bild
   res.json({ items: await LibraryService.getScreensaverItems(req.session.userId, req.session.accessToken, limit) });
 }));
 
+// File details stay on the server (MediaSources carry paths): the page gets
+// what the picture and sound are, and for a title in several libraries its
+// copies (`VantaCopies`, first copy first) with that summary each.
+const withMediaSummary = (item) => {
+  const { MediaSources, ...rest } = item;
+  return { ...rest, VantaMedia: summarizeMedia({ MediaSources }) };
+};
+
 router.get('/item/:id', requireAuth, jellyfinRoute('Media Item Error', 'Details konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  const item = await ItemsService.getItemDetails(userId, accessToken, id);
-  return res.json(item);
+  const item = await ItemsService.getItemDetails(userId, accessToken, id, { extraFields: ['MediaSources'] });
+  const copies = ['Movie', 'Series'].includes(item.Type) ? await copiesOf(userId, accessToken, id) : [];
+  if (copies.length < 2) return res.json(withMediaSummary(item));
+
+  const details = await Promise.all(copies.map(copy => (copy.id === item.Id
+    ? item
+    : ItemsService.getItemDetails(userId, accessToken, copy.id, { extraFields: ['MediaSources'] }).catch(() => null))));
+  return res.json({
+    ...withMediaSummary(item),
+    VantaCopies: copies
+      .map((copy, index) => details[index] && { Id: copy.id, Media: summarizeMedia(details[index]), RunTimeTicks: details[index].RunTimeTicks ?? null })
+      .filter(Boolean)
+  });
 }));
 
 router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error', 'Ähnliche Titel konnten nicht geladen werden', async (req, res) => {
@@ -111,14 +132,14 @@ router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error'
   const { id } = req.params;
 
   const items = await ItemsService.getSimilarItems(userId, accessToken, id);
-  return res.json(items);
+  return res.json(await firstCopiesOnly(userId, accessToken, items.filter(entry => entry.Id !== id)));
 }));
 
 router.get('/item/:id/seasons', requireAuth, jellyfinRoute('Media Seasons Error', 'Staffeln konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  const seasons = await ItemsService.getSeasons(userId, accessToken, id);
+  const seasons = await getSeasons(userId, accessToken, id);
   return res.json(seasons);
 }));
 
@@ -127,20 +148,22 @@ router.get('/item/:id/episodes', requireAuth, jellyfinRoute('Media Episodes Erro
   const { id } = req.params;
   const { seasonId } = req.query;
 
-  const episodes = await ItemsService.getEpisodes(userId, accessToken, id, seasonId);
+  const episodes = await getEpisodes(userId, accessToken, id, seasonId);
   return res.json(episodes);
 }));
 
 // "Als gesehen markieren" and back, for a film, an episode, a season or a
-// whole series (Jellyfin applies it to every episode below). The progress
-// cache of the user starts over, so every card shows the new state.
+// whole series (Jellyfin applies it to every episode below), and for every
+// copy of a title kept in several libraries. The progress cache of the user
+// starts over, so every card shows the new state.
 const setPlayed = (played) => jellyfinRoute('Media Played Error', played ? 'Konnte nicht als gesehen markiert werden' : 'Konnte nicht als ungesehen markiert werden', async (req, res) => {
   const { userId, accessToken } = req.session;
   const { id } = req.params;
 
-  const userData = played
-    ? await PlaybackApiService.markPlayed(userId, accessToken, id)
-    : await PlaybackApiService.markUnplayed(userId, accessToken, id);
+  const mark = played ? PlaybackApiService.markPlayed : PlaybackApiService.markUnplayed;
+  const copies = await copiesOf(userId, accessToken, id);
+  const answers = await Promise.all(copies.map(copy => mark.call(PlaybackApiService, userId, accessToken, copy.id)));
+  const userData = answers[copies.findIndex(copy => copy.id === id)] ?? answers[0];
   UserDataService.forget(userId);
   return res.json({ played, userData });
 });
