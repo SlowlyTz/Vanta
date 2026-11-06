@@ -299,6 +299,29 @@ class TmdbService {
     return results.slice(0, limit);
   }
 
+  // TMDB's chart of the day (or week) for films or series alone, `pages`
+  // pages of 20 deep: what the "Top 10" rows are matched against.
+  static async getTrendingByType(mediaType, timeWindow = 'day', pages = 2) {
+    const cacheKey = `tmdb_trending_${mediaType}_${timeWindow}_${pages}`;
+    const cached = getMemoryCache(cacheKey, 60 * 60 * 1000);
+    if (cached) return cached;
+
+    return dedupe(cacheKey, async () => {
+      const answers = await Promise.all(Array.from({ length: pages }, (_, index) =>
+        fetchTmdbJson(`/trending/${mediaType}/${timeWindow}`, { language: 'de-DE', page: index + 1 })));
+      const results = answers.flatMap(data => data.results || []).map(item => ({
+        id: item.id,
+        title: item.title || item.name,
+        originalTitle: item.original_title || item.original_name,
+        mediaType,
+        releaseDate: item.release_date || item.first_air_date,
+        popularity: item.popularity || 0
+      }));
+      setMemoryCache(cacheKey, results);
+      return results;
+    });
+  }
+
   static async getPopular(limit = 20) {
     const cacheKey = 'tmdb_popular';
     const cached = getMemoryCache(cacheKey, 60 * 60 * 1000);

@@ -83,5 +83,7 @@ YouTube trailers from Jellyfin metadata, with „Meine Liste“, details and sha
 - **Card menu**: long press, right click or the remote's menu key: continue, Meine Liste, remove from „Weiter schauen“ (with undo), share link, details, watched, start a watch party.
 - **Publishers**: curated studio and service hubs (Disney, Warner Bros., Netflix, …) from the catalogue's studios.
 - **Genres**: TMDB's English series genres are shown in German (`js/shared/genreLabels.js`); home genre rows need at least four titles; genre tags on a detail page lead to their list.
+- **Top 10 heute**: two home rows ranked by TMDB's chart of the day, as far as the library has the titles, topped up from the week's chart and the popular list (`buildTopTenSections`); the films sit among the recommendations, the series further down before the genres; each rank is a large number filled with its poster's colours, half behind the poster. A row needs at least three titles.
+- **Cover colours**: hovering (or focusing) a card on the home page tints the black background with the poster's colours (`components/ambientBackdrop.js`, colours from `utils/coverColors.js`), fading back when the pointer leaves the cards; not on touch screens or TVs.
 - **Unknown addresses** show „Seite nicht gefunden“.
 - **Admin dashboard** (`#/admin`, not on TVs): server and Jellyfin state, active streams, open work, catalogue, storage, parties and recent activity, refreshed every 10 s.

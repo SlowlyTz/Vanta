@@ -16,6 +16,7 @@ vi.mock('../../../../src/server/services/browse/library.service.js', () => ({
 vi.mock('../../../../src/server/services/tmdb.service.js', () => ({
   TmdbService: {
     getTrending: vi.fn(),
+    getTrendingByType: vi.fn(),
     getPopular: vi.fn(),
     getNowPlaying: vi.fn()
   }
@@ -24,7 +25,7 @@ vi.mock('../../../../src/server/services/tmdb.service.js', () => ({
 import { LibraryService } from '../../../../src/server/services/browse/library.service.js';
 import { TmdbService } from '../../../../src/server/services/tmdb.service.js';
 import { HomeSectionsService } from '../../../../src/server/services/browse/home-sections.service.js';
-import { buildGenreSections, buildNowPlayingSection, buildPublisherSections, isCurrentRelease } from '../../../../src/server/services/browse/home-sections/loaders.js';
+import { buildGenreSections, buildNowPlayingSection, buildPublisherSections, buildTopTenSections, isCurrentRelease } from '../../../../src/server/services/browse/home-sections/loaders.js';
 
 // A release date `days` from today (negative: in the past).
 const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -215,5 +216,50 @@ describe('buildNowPlayingSection', () => {
 
     expect(nowPlaying.title).toBe('Jetzt im Kino');
     expect(nowPlaying.items).toEqual([]);
+  });
+});
+
+describe('buildTopTenSections', () => {
+  const film = (id, tmdb) => ({ Id: id, Name: id, Type: 'Movie', ProviderIds: { Tmdb: String(tmdb) } });
+  const show = (id, tmdb) => ({ Id: id, Name: id, Type: 'Series', ProviderIds: { Tmdb: String(tmdb) } });
+  const chart = (mediaType, ...ids) => ids.map(id => ({ id, mediaType, title: `t${id}` }));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    TmdbService.getPopular.mockResolvedValue([]);
+  });
+
+  it('ranks by the chart of the day and tops up from the week, per type', async () => {
+    const library = [film('a', 1), film('b', 2), film('c', 3), film('d', 4), show('s', 2)];
+    TmdbService.getTrendingByType.mockImplementation(async (mediaType, window) => {
+      if (mediaType === 'movie') return window === 'day' ? chart('movie', 3, 99, 1) : chart('movie', 1, 4, 2);
+      return chart('tv', 2);
+    });
+
+    const sections = await buildTopTenSections(library);
+    expect(sections).toHaveLength(1);
+    expect(sections[0]).toMatchObject({ type: 'top10', title: 'Top 4 Filme heute' });
+    expect(sections[0].items.map(entry => entry.Id)).toEqual(['c', 'a', 'd', 'b']);
+  });
+
+  it('never matches a series to a film with the same TMDB id', async () => {
+    const library = [film('film-7', 7), show('show-7', 7), show('show-8', 8), show('show-9', 9)];
+    TmdbService.getTrendingByType.mockImplementation(async (mediaType) => (mediaType === 'tv' ? chart('tv', 7, 8, 9) : []));
+
+    const [series] = await buildTopTenSections(library);
+    expect(series.items.map(entry => entry.Id)).toEqual(['show-7', 'show-8', 'show-9']);
+  });
+
+  it('builds only the rows asked for', async () => {
+    const library = [show('s1', 1), show('s2', 2), show('s3', 3), film('f1', 1), film('f2', 2), film('f3', 3)];
+    TmdbService.getTrendingByType.mockImplementation(async (mediaType) => chart(mediaType, 1, 2, 3));
+    const sections = await buildTopTenSections(library, { types: ['Series'] });
+    expect(sections.map(section => section.title)).toEqual(['Top 3 Serien heute']);
+    expect(TmdbService.getTrendingByType).not.toHaveBeenCalledWith('movie', expect.anything());
+  });
+
+  it('leaves out a row a chart outage leaves empty', async () => {
+    TmdbService.getTrendingByType.mockRejectedValue(new Error('down'));
+    expect(await buildTopTenSections([film('a', 1)])).toEqual([]);
   });
 });

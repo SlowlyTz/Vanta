@@ -70,6 +70,9 @@ export async function launchBrowser({ chrome = process.env.CHROME_BIN || '/usr/b
       await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
       await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
     },
+    async hover(x, y) {
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    },
     async wheel(x, y, deltaY) {
       await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x, y, deltaX: 0, deltaY });
     },

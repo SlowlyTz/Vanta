@@ -24,9 +24,56 @@ export function isCurrentRelease(releaseDate, now = Date.now()) {
 }
 
 const FEATURED_SECTIONS = [
-  { type: 'featured', title: 'Top 5 Filme & Serien der letzten 20 Tage', source: 'trending', cardSize: 'large' },
   { type: 'featured', title: 'Aktuell beliebt', source: 'popular', cardSize: 'large' }
 ];
+
+// "Top 10 heute": TMDB's chart of the day, as far as the library has the
+// titles, topped up from the week's chart and the popular list. A row with
+// fewer than three titles is left out.
+export const TOP_TEN_SIZE = 10;
+const TOP_TEN_MIN = 3;
+const TOP_TEN_ROWS = [
+  { mediaType: 'movie', itemType: 'Movie', label: 'Filme' },
+  { mediaType: 'tv', itemType: 'Series', label: 'Serien' }
+];
+
+// `types` picks the rows ('Movie', 'Series'): home shows them apart, the
+// films among the recommendations, the series further down.
+export async function buildTopTenSections(items, { types = ['Movie', 'Series'] } = {}) {
+  const sections = [];
+  for (const row of TOP_TEN_ROWS.filter(entry => types.includes(entry.itemType))) {
+    try {
+      // TMDB ids of films and series overlap: each row matches its own type only.
+      const indexes = buildItemIndexes(items.filter(item => item.Type === row.itemType));
+      const sources = [
+        () => TmdbService.getTrendingByType(row.mediaType, 'day'),
+        () => TmdbService.getTrendingByType(row.mediaType, 'week', 5),
+        async () => (await TmdbService.getPopular(40)).filter(entry => entry.mediaType === row.mediaType)
+      ];
+      const matched = [];
+      const seen = new Set();
+      for (const load of sources) {
+        if (matched.length >= TOP_TEN_SIZE) break;
+        const candidates = await load().catch(error => {
+          console.error(`[HomeSectionsService] Top 10 source failed for ${row.label}:`, error.message);
+          return [];
+        });
+        for (const candidate of candidates) {
+          if (matched.length >= TOP_TEN_SIZE) break;
+          const item = findJellyfinMatch(candidate, indexes);
+          if (!item || seen.has(item.Id)) continue;
+          seen.add(item.Id);
+          matched.push(item);
+        }
+      }
+      if (matched.length < TOP_TEN_MIN) continue;
+      sections.push({ type: 'top10', title: `Top ${matched.length} ${row.label} heute`, items: matched });
+    } catch (error) {
+      console.error(`[HomeSectionsService] Failed to build the top 10 ${row.label}:`, error.message);
+    }
+  }
+  return sections;
+}
 
 export function buildItemIndexes(items) {
   const byTmdbId = new Map();
@@ -172,14 +219,12 @@ export async function buildNowPlayingSection(items, { now = Date.now() } = {}) {
 
 export async function buildFeaturedSections(items) {
   const indexes = buildItemIndexes(items);
-  const sections = [];
+  const sections = await buildTopTenSections(items, { types: ['Movie'] });
 
   for (const featuredDef of FEATURED_SECTIONS) {
     try {
       let tmdbItems = [];
-      if (featuredDef.source === 'trending') {
-        tmdbItems = await TmdbService.getTrending('week', 20);
-      } else if (featuredDef.source === 'popular') {
+      if (featuredDef.source === 'popular') {
         tmdbItems = await TmdbService.getPopular(20);
       }
 

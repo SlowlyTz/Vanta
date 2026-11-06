@@ -10,6 +10,7 @@ import { setSectionBusy } from '../components/loader.js';
 import { createHeroSkeleton, createCarouselSkeleton } from '../components/skeleton.js';
 import { MediaCarousel } from '../components/mediaCarousel.js';
 import { FeaturedMediaCarousel } from '../components/featuredMediaCarousel.js';
+import { TopTenCarousel } from '../components/topTenCarousel.js';
 import { HeroCarousel } from '../components/heroCarousel.js';
 import { getRouteState, saveRouteState, consumeReturnMarker } from '../utils/routeState.js';
 import { resolvePageScope } from '../utils/pageScope.js';
@@ -18,6 +19,7 @@ import { whenConnected } from '../utils/whenConnected.js';
 import { preferencesStore } from '../store/preferences.store.js';
 import { createIdleWatch, startScreensaver } from '../components/screensaver.js';
 import { lastPlayerLeftAt } from '../utils/cardUserData.js';
+import { bindAmbientBackdrop } from '../components/ambientBackdrop.js';
 
 const HOME_ROUTE = '#/home';
 const HOME_SECTION_GROUPS = [
@@ -206,6 +208,10 @@ export default function HomePage(params, pageScope) {
   const renderSection = (section) => {
     if (!section.items || section.items.length === 0) return null;
 
+    if (section.type === 'top10') {
+      return TopTenCarousel({ title: section.title, items: section.items });
+    }
+
     if (section.type === 'featured') {
       return FeaturedMediaCarousel({
         title: section.title,
@@ -381,6 +387,7 @@ export default function HomePage(params, pageScope) {
 
   loadData();
   bindScreensaver();
+  bindAmbientBackdrop(container, { scope });
 
   return container;
 }

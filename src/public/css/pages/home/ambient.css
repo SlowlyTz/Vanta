@@ -1,0 +1,40 @@
+/* The cover-coloured glow behind the home page (components/ambientBackdrop.js). */
+.ambient-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.ambient-layer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+.ambient-layer.is-visible {
+  opacity: 1;
+}
+
+/* The page lets the glow through; the body keeps the black underneath. */
+html.has-ambient .app-shell,
+html.has-ambient .app-main {
+  background: transparent;
+}
+
+html.reduce-motion .ambient-layer {
+  transition-duration: 1ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-layer {
+    transition-duration: 1ms;
+  }
+}

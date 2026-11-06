@@ -1,0 +1,101 @@
+/* "Top 10 heute" rows (components/topTenCarousel.js): the rank as a large
+   number, filled with the poster's colours, half behind the poster. */
+.top10-carousel {
+  gap: 4px;
+}
+
+.top10-item {
+  --top10-card: 144px;
+  --top10-overlap: 4px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 214px;
+  min-width: 0;
+  padding-left: 70px;
+}
+
+.top10-item.is-wide {
+  flex-basis: 262px;
+  padding-left: 118px;
+}
+
+.top10-item .media-card {
+  position: relative;
+  z-index: 1;
+  width: var(--top10-card);
+  flex: 0 0 var(--top10-card);
+}
+
+.top10-rank {
+  position: absolute;
+  /* The right edge of every number sits the same way under the poster. */
+  right: calc(var(--top10-card) - var(--top10-overlap));
+  bottom: 52px;
+  text-align: right;
+  white-space: nowrap;
+  z-index: 0;
+  font-family: var(--font-main);
+  font-size: 158px;
+  font-weight: 800;
+  line-height: 0.78;
+  letter-spacing: -0.06em;
+  color: rgba(255, 255, 255, 0.82);
+  background: linear-gradient(180deg, rgb(var(--rank-from, 236, 236, 240)) 0%, rgb(var(--rank-to, 120, 120, 130)) 58%, rgba(var(--rank-to, 120, 120, 130), 0) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.22);
+  filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.55));
+  user-select: none;
+  pointer-events: none;
+  transition: transform 0.35s ease;
+}
+
+.top10-item.has-cover-colors .top10-rank {
+  -webkit-text-stroke-color: rgba(var(--rank-from), 0.35);
+}
+
+.top10-item:hover .top10-rank,
+.top10-item:focus-within .top10-rank {
+  transform: translateX(-6px);
+}
+
+@media (min-width: 768px) {
+  .top10-item {
+    --top10-card: 180px;
+    --top10-overlap: 6px;
+    flex-basis: 286px;
+    padding-left: 106px;
+  }
+
+  .top10-item.is-wide {
+    flex-basis: 346px;
+    padding-left: 166px;
+  }
+
+  .top10-rank {
+    font-size: 240px;
+  }
+}
+
+html.tv-mode .top10-item {
+  --top10-card: 11rem;
+  --top10-overlap: 0.4rem;
+  flex-basis: 17rem;
+  padding-left: 6rem;
+}
+
+html.tv-mode .top10-item.is-wide {
+  flex-basis: 20.5rem;
+  padding-left: 9.5rem;
+}
+
+html.tv-mode .top10-rank {
+  bottom: 4.2rem;
+  font-size: 14.5rem;
+}
+
+html.reduce-motion .top10-rank {
+  transition: none;
+}
