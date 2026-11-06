@@ -57,6 +57,14 @@ A series whose seasons lie in different libraries (season 1 on one drive, season
 
 Admins see real duplicates on the dashboard („Doppelte Dateien“): a film held more than once, or an episode in more than one library, each with path, library, size, picture, sound, languages and date. Files with the same id but another runtime are listed as „vermutlich falsch erkannt“ and stay separate titles until they are identified correctly in Jellyfin.
 
+## Detail page
+
+- **Hero**: the backdrop full-bleed on wide screens (poster beside it on phones and TVs), Jellyfin's logo instead of the name where there is one, a glow in the poster's colours, and chips for the TMDB and critic ratings, the age rating, resolution, HDR and sound of the file, and „Endet um“ for films (`pages/detail/heroFacts.js`).
+- **Trailer**: after 3.5 s on a desktop the YouTube trailer fades in behind the hero, muted and looping, with a sound button; it pauses while scrolled away. Not on phones, TVs, with reduced motion or data saving (`components/backgroundTrailer.js`, `pages/detail/heroTrailer.js`).
+- **Play button**: a started film shows the minutes left and a progress line; a series names the episode it continues with („S01E04 fortsetzen“). A film held twice offers its versions.
+- **Rows**: „Besetzung & Crew“ as portraits with direction and script first, the film series („Harry Potter Filmreihe“, the films the library holds, how many are missing; `title-extras.service.js` via TMDB collections), „Trailer & Extras“ (YouTube trailers and extras stored in Jellyfin), then similar titles.
+- **Weil du „X“ geschaut hast**: a home row of titles similar to the one finished last, without watched ones; needs at least four.
+
 ## Search
 
 From the catalogue: exact > prefix > word start > contains > up to two typos, also through cast and crew. Filters: type, genre, decade, age rating, unwatched; kept in the hash. The last ten searches are kept per device.
@@ -84,6 +92,7 @@ YouTube trailers from Jellyfin metadata, with „Meine Liste“, details and sha
 - **Publishers**: curated studio and service hubs (Disney, Warner Bros., Netflix, …) from the catalogue's studios.
 - **Genres**: TMDB's English series genres are shown in German (`js/shared/genreLabels.js`); home genre rows need at least four titles; genre tags on a detail page lead to their list.
 - **Top 10 heute**: two home rows ranked by TMDB's chart of the day, as far as the library has the titles, topped up from the week's chart and the popular list (`buildTopTenSections`); the films sit among the recommendations, the series further down before the genres; each rank is a large number filled with its poster's colours, half behind the poster. A row needs at least three titles.
+- **Home banner trailers**: on desktops the shown title's trailer plays once over its backdrop, muted, with a sound button beside the pause button; the banner waits for it and moves on 2.5 s after it ends. The pause button stops it too; no trailers on phones, TVs, with reduced motion or data saving (`components/heroCarouselTrailer.js`).
 - **Cover colours**: hovering (or focusing) a card on the home page tints the black background with the poster's colours (`components/ambientBackdrop.js`, colours from `utils/coverColors.js`), fading back when the pointer leaves the cards; not on touch screens or TVs.
 - **Unknown addresses** show „Seite nicht gefunden“.
 - **Admin dashboard** (`#/admin`, not on TVs): server and Jellyfin state, active streams, open work, catalogue, storage, parties and recent activity, refreshed every 10 s.

@@ -1,0 +1,446 @@
+/* The cinema hero of the detail page (components/detailView.js): logo or
+   title over the backdrop, a glow in the poster's colours, the trailer
+   behind it on desktops, and the facts as chips. Wide screens drop the
+   poster for a full-bleed hero; phones and TVs keep their layouts. */
+
+/* ---- Glow in the poster's colours (detail.page.js tintHero) ---------- */
+.detail-hero-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--detail-backdrop-height, var(--detail-hero-height));
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  background:
+    radial-gradient(ellipse 70% 70% at 0% 78%, rgba(var(--detail-tint-a, 0, 0, 0), 0.55), transparent 70%),
+    radial-gradient(ellipse 55% 60% at 100% 0%, rgba(var(--detail-tint-b, 0, 0, 0), 0.35), transparent 70%);
+  mix-blend-mode: screen;
+  /* Gone before the hero's lower edge, which fades into the page. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 92%);
+}
+
+.detail-page.has-tint .detail-hero-glow {
+  opacity: 1;
+}
+
+/* ---- Trailer behind the hero (pages/detail/heroTrailer.js) ----------- */
+.detail-hero-trailer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--detail-backdrop-height, var(--detail-hero-height));
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+
+/* Covers the hero like background-size: cover, a little larger so the
+   player's own edges stay outside. */
+.detail-hero-trailer .background-trailer-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  height: 56.25vw;
+  min-width: calc(var(--detail-hero-height) * 1.7778);
+  min-height: var(--detail-hero-height);
+  border: 0;
+  transform: translate(-50%, -50%) scale(1.22);
+}
+
+.detail-page.is-trailer-playing .detail-hero-trailer {
+  opacity: 1;
+}
+
+.detail-page.is-trailer-playing .detail-hero-backdrop {
+  background-image: none !important;
+}
+
+/* The backdrop's shade lies over the trailer too. */
+.detail-page.is-trailer-playing .detail-hero-backdrop {
+  z-index: 2;
+}
+
+.detail-hero-controls {
+  position: absolute;
+  right: 40px;
+  bottom: 48px;
+  z-index: 4;
+}
+
+.detail-hero-sound {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(10, 10, 14, 0.45);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.detail-hero-sound[hidden] {
+  display: none;
+}
+
+.detail-hero-sound:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #fff;
+  outline: none;
+  transform: scale(1.05);
+}
+
+.detail-hero-sound:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #fff;
+  outline: none;
+  transform: scale(1.05);
+}
+
+/* ---- Title, facts, chips --------------------------------------------- */
+.detail-title.has-logo {
+  line-height: 0;
+}
+
+.detail-logo {
+  display: block;
+  max-width: 520px;
+  max-width: min(520px, 80%);
+  max-height: 170px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left bottom;
+  filter: drop-shadow(0 6px 26px rgba(0, 0, 0, 0.6));
+}
+
+.detail-original-title {
+  margin-top: 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.detail-factline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.02rem;
+  font-weight: 500;
+}
+
+.detail-factline-dot {
+  margin: 0 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.detail-chips {
+  gap: 8px;
+}
+
+.detail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(16, 16, 22, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.82rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.detail-chip-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.detail-chip.is-rating .meta-icon {
+  color: #fbbf24;
+}
+
+.detail-chip.is-critic .meta-icon {
+  color: #f87171;
+}
+
+.detail-chip.is-tech {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  letter-spacing: 0.04em;
+  font-size: 0.76rem;
+}
+
+.detail-chip.is-ends {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Actions --------------------------------------------------------- */
+.detail-actions .detail-play {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.detail-actions .detail-play svg {
+  flex-shrink: 0;
+}
+
+.detail-action-note {
+  margin-left: 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  opacity: 0.68;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.detail-action-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgb(var(--abyss-accent));
+}
+
+/* ---- Versions of a film held twice ----------------------------------- */
+.detail-versions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-versions-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.detail-versions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-version {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.78);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detail-version:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+}
+
+.detail-version:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+}
+
+.detail-version.is-selected {
+  border-color: #fff;
+  background: #fff;
+  color: #0b0b0f;
+}
+
+/* ---- The hero fills the screen (not on TVs) ------------------------- */
+/* The backdrop is one screen high whatever the content below does, so
+   unfolding the description does not rescale it; its lower part fades
+   slowly into the page, which carries on in the same colour. */
+html:not(.tv-mode) .detail-cinema {
+  --detail-hero-height: 100vh;
+  --detail-backdrop-height: 100vh;
+}
+
+/* Phones: the screen without the browser's bars. */
+@supports (height: 100svh) {
+  html:not(.tv-mode) .detail-cinema {
+    --detail-hero-height: 100svh;
+    --detail-backdrop-height: 100svh;
+  }
+}
+
+html:not(.tv-mode) .detail-cinema .detail-hero-backdrop {
+  background-position: center 20%;
+}
+
+html:not(.tv-mode) .detail-cinema .detail-hero-backdrop::after {
+  background:
+    linear-gradient(to right, rgba(9, 9, 11, 0.94) 0%, rgba(9, 9, 11, 0.7) 32%, rgba(9, 9, 11, 0.12) 64%, rgba(9, 9, 11, 0) 100%),
+    linear-gradient(to top, var(--bg-primary) 0%, rgba(9, 9, 11, 0.92) 10%, rgba(9, 9, 11, 0.62) 26%, rgba(9, 9, 11, 0.22) 44%, rgba(9, 9, 11, 0) 62%),
+    linear-gradient(to bottom, rgba(9, 9, 11, 0.55) 0%, rgba(9, 9, 11, 0) 18%);
+}
+
+html:not(.tv-mode) .detail-cinema .detail-content {
+  justify-content: flex-end;
+  padding-bottom: 56px;
+}
+
+/* ---- Tablets and wider: full-bleed hero, no poster -------------------- */
+@media (min-width: 769px) {
+  /* Flush with the rows below (.content-section). */
+  html:not(.tv-mode) .detail-cinema .detail-content {
+    width: 100%;
+    padding-left: var(--spacing-xxl);
+    padding-right: var(--spacing-xxl);
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-hero-main {
+    grid-template-columns: minmax(0, 760px);
+    grid-template-areas:
+      'head'
+      'info';
+    align-content: end;
+    row-gap: 18px;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-poster {
+    display: none;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-info-head,
+  html:not(.tv-mode) .detail-cinema .detail-info {
+    align-items: flex-start;
+    margin: 0;
+    text-align: left;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-title,
+  html:not(.tv-mode) .detail-cinema .detail-episode-title,
+  html:not(.tv-mode) .detail-cinema .detail-overview {
+    text-align: left;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-metadata,
+  html:not(.tv-mode) .detail-cinema .detail-genres,
+  html:not(.tv-mode) .detail-cinema .detail-actions {
+    justify-content: flex-start;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-title:not(.has-logo) {
+    font-size: 4rem;
+    line-height: 1.02;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-overview {
+    font-size: 1.08rem;
+  }
+}
+
+/* Between tablet and desktop the actions may wrap instead of squeezing. */
+@media (min-width: 769px) and (max-width: 1100px) {
+  html:not(.tv-mode) .detail-cinema .detail-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* ---- Phones: the poster and title sit low on the backdrop -------------- */
+@media (max-width: 768px) {
+  html:not(.tv-mode) .detail-cinema .detail-content {
+    padding-bottom: 28px;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-hero-backdrop {
+    background-position: center top;
+  }
+
+  html:not(.tv-mode) .detail-cinema .detail-hero-backdrop::after {
+    background:
+      linear-gradient(to top, var(--bg-primary) 0%, rgba(9, 9, 11, 0.9) 34%, rgba(9, 9, 11, 0.55) 58%, rgba(9, 9, 11, 0.15) 80%, rgba(9, 9, 11, 0.4) 100%);
+  }
+}
+
+/* ---- Phones: the logo next to the poster stays small ----------------- */
+@media (max-width: 768px) {
+  .detail-logo {
+    max-width: 100%;
+    max-height: 82px;
+  }
+
+  .detail-factline {
+    font-size: 0.9rem;
+  }
+
+  .detail-factline-dot {
+    margin: 0 6px;
+  }
+
+  .detail-chip {
+    min-height: 26px;
+    padding: 3px 10px;
+    font-size: 0.74rem;
+  }
+
+  .detail-action-note {
+    max-width: 140px;
+  }
+}
+
+/* Chromium 68 ignores gap in flex containers. */
+@supports not (aspect-ratio: 1) {
+  .detail-chips > * {
+    margin: 0 8px 8px 0;
+  }
+
+  .detail-versions > * + *,
+  .detail-versions-list > * + * {
+    margin-left: 8px;
+  }
+}
+
+html.reduce-motion .detail-hero-glow,
+html.reduce-motion .detail-hero-trailer {
+  transition: none;
+}
+
+/* ---- TV: the remote drives the page; no trailer, rem sizes ------------ */
+html.tv-mode .detail-logo {
+  max-height: 6rem;
+  max-width: 24rem;
+}
+
+html.tv-mode .detail-chip {
+  min-height: 1.6rem;
+  font-size: 0.7rem;
+}
+
+html.tv-mode .detail-version {
+  min-height: 2rem;
+  font-size: 0.75rem;
+}
+
+html.tv-mode .detail-version:focus {
+  background: #fff;
+  color: #0b0b0f;
+}

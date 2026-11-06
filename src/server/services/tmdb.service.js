@@ -278,6 +278,28 @@ class TmdbService {
     });
   }
 
+  // A film series ("Harry Potter Filmreihe"): its name and the films in it.
+  static async getCollection(collectionId) {
+    const cacheKey = `tmdb_collection_${collectionId}`;
+    const cached = getMemoryCache(cacheKey, DETAIL_CACHE_TTL);
+    if (cached) return cached;
+
+    return dedupe(cacheKey, async () => {
+      const data = await fetchTmdbJson(`/collection/${collectionId}`, { language: 'de-DE' });
+      const result = {
+        id: data.id,
+        name: data.name,
+        parts: (data.parts || []).map(part => ({
+          id: part.id,
+          title: part.title,
+          releaseDate: part.release_date || null
+        }))
+      };
+      setMemoryCache(cacheKey, result);
+      return result;
+    });
+  }
+
   static async getTrending(timeWindow = 'week', limit = 20) {
     const cacheKey = `tmdb_trending_${timeWindow}`;
     const cached = getMemoryCache(cacheKey, 60 * 60 * 1000);

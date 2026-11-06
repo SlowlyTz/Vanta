@@ -3,6 +3,7 @@
 import { formatTicksToDuration, formatYear } from './format.js';
 import { getItemImageUrl } from './image.js';
 import { formatEpisodeCode } from '../shared/episodeCode.js';
+import { MediaApi } from '../api/media.api.js';
 
 export function normalizeJellyfinItem(item) {
   const isEpisode = item.Type === 'Episode';
@@ -30,9 +31,20 @@ export function normalizeJellyfinItem(item) {
 
   const genreList = Array.isArray(item.Genres) ? item.Genres : [];
 
-  const directors = item.People
-    ? item.People.filter(p => p.Type === 'Director').map(p => p.Name)
-    : [];
+  const people = Array.isArray(item.People) ? item.People : [];
+  const directors = people.filter(p => p.Type === 'Director').map(p => p.Name);
+  // Who made it, for the crew row: direction first, then the script; one
+  // card per person ("Regie & Buch").
+  const crewById = new Map();
+  [['Director', 'Regie'], ['Writer', 'Drehbuch']].forEach(([type, job]) => {
+    people.filter(p => p.Type === type).forEach(person => {
+      const key = person.Id || person.Name;
+      const known = crewById.get(key);
+      if (!known) crewById.set(key, { ...person, job });
+      else if (!known.job.includes(job)) known.job = 'Regie & Buch';
+    });
+  });
+  const crew = [...crewById.values()];
 
   const studios = item.Studios
     ? item.Studios.map(s => typeof s === 'string' ? s : (s.Name || s))
@@ -42,9 +54,7 @@ export function normalizeJellyfinItem(item) {
     ? item.Taglines[0]
     : null;
 
-  const actors = item.People
-    ? item.People.filter(p => p.Type === 'Actor')
-    : [];
+  const actors = people.filter(p => p.Type === 'Actor');
 
   return {
     name,
@@ -52,6 +62,9 @@ export function normalizeJellyfinItem(item) {
     overview: item.Overview || 'Keine Beschreibung verfügbar.',
     posterUrl: getItemImageUrl(item, 'Primary'),
     backdropUrl: getItemImageUrl(item, 'Backdrop'),
+    logoUrl: item.ImageTags?.Logo && item.Id ? MediaApi.getImageUrl(item.Id, 'Logo', 800, { tag: item.ImageTags.Logo }) : null,
+    media: item.VantaMedia || null,
+    runtimeTicks: Number(item.RunTimeTicks) || null,
     genres: genreList,
     year: formatYear(item.PremiereDate || item.ProductionYear) || null,
     duration,
@@ -63,6 +76,7 @@ export function normalizeJellyfinItem(item) {
     episodeTitle,
     tagline,
     directors,
+    crew,
     studios,
     actors,
     itemId: item.Id || null,

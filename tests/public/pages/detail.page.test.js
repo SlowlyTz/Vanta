@@ -12,7 +12,11 @@ vi.mock('../../../src/public/js/api/media.api.js', () => ({
     favoriteItem: vi.fn(),
     unfavoriteItem: vi.fn(),
     markPlayed: vi.fn(),
-    markUnplayed: vi.fn()
+    markUnplayed: vi.fn(),
+    getNextUp: vi.fn(async () => ({ episode: null })),
+    getCollection: vi.fn(async () => ({ collection: null })),
+    getExtras: vi.fn(async () => ({ items: [] })),
+    getImageUrl: vi.fn(() => '/img')
   }
 }));
 
@@ -318,11 +322,11 @@ describe('DetailPage continue or start over', () => {
   });
 
   it('continues a started film and offers to start it over', async () => {
-    MediaApi.getItem.mockResolvedValue(createBaseItem({ UserData: { PlaybackPositionTicks: 600_000_000 } }));
+    MediaApi.getItem.mockResolvedValue(createBaseItem({ RunTimeTicks: 6_000_000_000, UserData: { PlaybackPositionTicks: 600_000_000 } }));
     const container = DetailPage({ id: 'item-1' });
     await flush();
     const labels = [...container.querySelectorAll('.detail-actions button')].map(button => button.textContent);
-    expect(labels).toContain('Fortsetzen');
+    expect(labels).toContain('Fortsetzennoch 9 Min.');
     [...container.querySelectorAll('.detail-actions button')].find(button => button.textContent === 'Von vorn').click();
     expect(window.location.hash).toBe('#/player/item-1?from=start');
   });

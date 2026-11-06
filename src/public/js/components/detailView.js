@@ -1,15 +1,62 @@
-// Layout of the item detail page: hero with poster, facts and actions, then cast, seasons and similar titles.
+// Layout of the item detail page: a cinema hero (backdrop, glow in the cover's
+// colours, logo or title, facts and actions), then the page's sections.
 import { createElement } from '../utils/dom.js';
 import { createPosterPlaceholder } from '../utils/poster.js';
 import { createExpandableText } from './expandableText.js';
-import { createMetaIcon, metaIconFor } from './metaIcons.js';
+import { createMetaIcon } from './metaIcons.js';
 import { cssUrl } from '../utils/image.js';
 import { genreLabel } from '../shared/genreLabels.js';
 
 // Two lines on phones, a little more room on wide screens.
-const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 2 : 3);
+const overviewLines = () => (window.matchMedia?.('(max-width: 768px)').matches ? 3 : 4);
 
-export function DetailView({ item, actions, favoriteButton, watchlistButton = null, playedButton = null, castSection, seasonsSection, similarSection, statusContent = null, helpLinks = null }) {
+// "2024 · 1 Std. 40 Min. · Film": plain facts as one quiet line.
+function factLine(item) {
+  const parts = [item.year, item.duration, item.typeLabel].filter(Boolean);
+  if (!parts.length) return null;
+  return createElement('p', { className: 'detail-factline' },
+    ...parts.flatMap((part, index) => (index ? [createElement('span', { className: 'detail-factline-dot', 'aria-hidden': 'true' }, '·'), part] : [part])));
+}
+
+// A chip: an icon or a short label, then the value.
+export function detailChip({ icon = null, label = null, value, title = null, tone = '' }) {
+  return createElement('span', { className: `detail-chip ${tone}`.trim(), title: title || undefined },
+    icon ? createMetaIcon(icon) : null,
+    label ? createElement('span', { className: 'detail-chip-label' }, label) : null,
+    createElement('span', { className: 'detail-chip-value' }, value));
+}
+
+// The title: Jellyfin's logo where there is one (the name stays for screen
+// readers), else the name in large type.
+function titleElement(item) {
+  const heading = createElement('h1', { className: `detail-title${item.logoUrl ? ' has-logo' : ''}` });
+  if (item.logoUrl) {
+    const logo = createElement('img', { className: 'detail-logo', src: item.logoUrl, alt: item.name, decoding: 'async' });
+    // A broken logo falls back to the plain name.
+    logo.addEventListener('error', () => {
+      heading.classList.remove('has-logo');
+      heading.replaceChildren(item.name);
+    }, { once: true });
+    heading.appendChild(logo);
+  } else {
+    heading.textContent = item.name;
+  }
+  return heading;
+}
+
+export function DetailView({
+  item,
+  actions,
+  favoriteButton,
+  watchlistButton = null,
+  playedButton = null,
+  chips = [],
+  versionPicker = null,
+  heroControls = null,
+  statusContent = null,
+  helpLinks = null,
+  sections = []
+}) {
   const container = createElement('div', { className: 'page-container' });
 
   // Each genre leads to its list of films or series.
@@ -17,50 +64,6 @@ export function DetailView({ item, actions, favoriteButton, watchlistButton = nu
   const genreTags = (item.genres || []).map(genre =>
     createElement('a', { className: 'genre-tag', href: `#/genre/${genreType}/${encodeURIComponent(genre)}` }, genreLabel(genre))
   );
-
-  const metadataItems = [];
-  const pill = (icon, text, className = '') =>
-    createElement('span', { className: `metadata-item ${className}`.trim() }, createMetaIcon(icon), createElement('span', {}, text));
-
-  if (item.year) {
-    metadataItems.push(pill('year', item.year));
-  }
-
-  if (item.duration) {
-    metadataItems.push(pill('runtime', item.duration));
-  }
-
-  if (item.typeLabel) {
-    metadataItems.push(pill(metaIconFor(item.typeLabel), item.typeLabel));
-  }
-
-  if (item.fsk) {
-    metadataItems.push(pill('age', item.fsk, 'FSK'));
-  }
-
-  if (item.rating) {
-    metadataItems.push(pill('star', Number(item.rating).toFixed(1), 'rating'));
-  }
-
-  if (item.criticRating) {
-    metadataItems.push(pill('critic', `${item.criticRating}%`, 'rating'));
-  }
-
-  const crewInfo = [];
-
-  if (item.directors && item.directors.length > 0) {
-    crewInfo.push(createElement('p', {}, [
-      createElement('strong', {}, 'Regie: '),
-      item.directors.join(', ')
-    ]));
-  }
-
-  if (item.studios && item.studios.length > 0) {
-    crewInfo.push(createElement('p', {}, [
-      createElement('strong', {}, 'Studio: '),
-      item.studios.join(', ')
-    ]));
-  }
 
   // Stable keys let a TV remote come back from the player onto the button
   // it left from (the first one is play/continue, whatever its label).
@@ -75,26 +78,19 @@ export function DetailView({ item, actions, favoriteButton, watchlistButton = nu
     } else {
       btn.textContent = action.label;
     }
+    if (action.note) btn.appendChild(createElement('span', { className: 'detail-action-note' }, action.note));
+    if (action.progress) {
+      btn.classList.add('has-progress');
+      btn.appendChild(createElement('span', { className: 'detail-action-progress', style: { width: `${Math.round(action.progress * 100)}%` } }));
+    }
     return btn;
   });
-
-  if (watchlistButton) {
-    actionButtons.push(watchlistButton);
-  }
-
-  if (favoriteButton) {
-    actionButtons.push(favoriteButton);
-  }
-
-  if (playedButton) {
-    actionButtons.push(playedButton);
-  }
+  [watchlistButton, favoriteButton, playedButton].filter(Boolean).forEach(button => actionButtons.push(button));
 
   const posterImg = createElement('img', {
     src: item.posterUrl || createPosterPlaceholder(item.name || '?'),
     alt: item.name
   });
-
   if (item.posterUrl) {
     posterImg.onerror = (e) => {
       e.currentTarget.onerror = null;
@@ -102,48 +98,31 @@ export function DetailView({ item, actions, favoriteButton, watchlistButton = nu
     };
   }
 
-  const episodeTitleEl = item.episodeTitle
-    ? createElement('div', { className: 'detail-episode-title' }, item.episodeTitle)
-    : null;
-
-  const originalTitleEl = item.originalTitle
-    ? createElement('span', { className: 'detail-original-title' }, `(Originaltitel: ${item.originalTitle})`)
-    : null;
-
-  const taglineEl = item.tagline
-    ? createElement('p', { className: 'detail-tagline' }, `\u201E${item.tagline}\u201C`)
-    : null;
-
-  const detailPageEl = createElement('div', { className: 'detail-page' },
+  const detailPageEl = createElement('div', { className: `detail-page detail-cinema${item.logoUrl ? ' has-logo' : ''}` },
     createElement('div', {
       className: 'detail-hero-backdrop',
       style: item.backdropUrl ? { backgroundImage: cssUrl(item.backdropUrl) } : {}
     }),
+    createElement('div', { className: 'detail-hero-glow', 'aria-hidden': 'true' }),
+    heroControls,
     createElement('div', { className: 'detail-content' },
       createElement('div', { className: 'detail-hero-main' },
-        createElement('div', { className: 'detail-poster' },
-          posterImg
-        ),
-        // Title and facts sit next to the poster on phones, everything else
-        // runs below across the full width (see extended-responsive.css).
+        createElement('div', { className: 'detail-poster' }, posterImg),
         createElement('div', { className: 'detail-info-head' },
-          createElement('h1', { className: 'detail-title' },
-            item.name,
-            originalTitleEl
-          ),
-          episodeTitleEl,
-          metadataItems.length > 0 ? createElement('div', { className: 'detail-metadata' }, metadataItems) : null
+          titleElement(item),
+          item.originalTitle ? createElement('span', { className: 'detail-original-title' }, item.originalTitle) : null,
+          item.episodeTitle ? createElement('div', { className: 'detail-episode-title' }, item.episodeTitle) : null,
+          factLine(item),
+          chips.length ? createElement('div', { className: 'detail-metadata detail-chips' }, chips) : null
         ),
         createElement('div', { className: 'detail-info' },
-          genreTags.length > 0 ? createElement('div', { className: 'detail-genres' }, genreTags) : null,
-          taglineEl,
+          item.tagline ? createElement('p', { className: 'detail-tagline' }, `„${item.tagline}“`) : null,
           statusContent,
           // A row: right at its end stops instead of dropping into the cast.
-          actionButtons.length > 0 ? createElement('div', { className: 'detail-actions', 'data-tv-row': '', 'data-tv-remember': '' }, actionButtons) : null,
-          item.overview
-            ? createExpandableText({ text: item.overview, lines: overviewLines(), className: 'detail-overview' })
-            : null,
-          crewInfo.length > 0 ? createElement('div', { className: 'detail-crew' }, crewInfo) : null,
+          actionButtons.length ? createElement('div', { className: 'detail-actions', 'data-tv-row': '', 'data-tv-remember': '' }, actionButtons) : null,
+          versionPicker,
+          item.overview ? createExpandableText({ text: item.overview, lines: overviewLines(), className: 'detail-overview' }) : null,
+          genreTags.length ? createElement('div', { className: 'detail-genres' }, genreTags) : null,
           helpLinks
         )
       )
@@ -151,21 +130,8 @@ export function DetailView({ item, actions, favoriteButton, watchlistButton = nu
   );
 
   container.appendChild(detailPageEl);
-
-  const extraSections = [castSection, seasonsSection].filter(Boolean);
-  if (extraSections.length > 0) {
-    container.appendChild(
-      createElement('div', { className: 'content-section detail-extra-section' }, extraSections)
-    );
-  }
-
-  if (similarSection) {
-    container.appendChild(
-      createElement('div', { className: 'content-section detail-similar-section' },
-        similarSection
-      )
-    );
-  }
-
+  sections.filter(Boolean).forEach(section => {
+    container.appendChild(createElement('div', { className: 'content-section detail-extra-section' }, section));
+  });
   return container;
 }

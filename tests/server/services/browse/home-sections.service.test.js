@@ -22,10 +22,16 @@ vi.mock('../../../../src/server/services/tmdb.service.js', () => ({
   }
 }));
 
+vi.mock('../../../../src/server/services/browse/title-extras.service.js', () => ({ lastWatchedTitle: vi.fn() }));
+vi.mock('../../../../src/server/services/browse/title-copies.js', () => ({ firstCopiesOnly: vi.fn(async (userId, token, items) => items) }));
+vi.mock('../../../../src/server/services/jellyfin/items.service.js', () => ({ ItemsService: { getSimilarItems: vi.fn() } }));
+
 import { LibraryService } from '../../../../src/server/services/browse/library.service.js';
+import { lastWatchedTitle } from '../../../../src/server/services/browse/title-extras.service.js';
+import { ItemsService } from '../../../../src/server/services/jellyfin/items.service.js';
 import { TmdbService } from '../../../../src/server/services/tmdb.service.js';
 import { HomeSectionsService } from '../../../../src/server/services/browse/home-sections.service.js';
-import { buildGenreSections, buildNowPlayingSection, buildPublisherSections, buildTopTenSections, isCurrentRelease } from '../../../../src/server/services/browse/home-sections/loaders.js';
+import { buildBecauseYouWatched, buildGenreSections, buildNowPlayingSection, buildPublisherSections, buildTopTenSections, isCurrentRelease } from '../../../../src/server/services/browse/home-sections/loaders.js';
 
 // A release date `days` from today (negative: in the past).
 const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -261,5 +267,27 @@ describe('buildTopTenSections', () => {
   it('leaves out a row a chart outage leaves empty', async () => {
     TmdbService.getTrendingByType.mockRejectedValue(new Error('down'));
     expect(await buildTopTenSections([film('a', 1)])).toEqual([]);
+  });
+});
+
+describe('buildBecauseYouWatched', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('names the title watched last and leaves out what was watched', async () => {
+    lastWatchedTitle.mockResolvedValue({ id: 's1', name: 'Alice' });
+    ItemsService.getSimilarItems.mockResolvedValue([
+      item('a'), item('s1'), { ...item('b'), UserData: { Played: true } }, item('c'), item('d'), item('e')
+    ]);
+    const section = await buildBecauseYouWatched('u', 't');
+    expect(section.title).toBe('Weil du \u201EAlice\u201C geschaut hast');
+    expect(section.items.map(entry => entry.Id)).toEqual(['a', 'c', 'd', 'e']);
+  });
+
+  it('is left out without a watched title or with too few similar ones', async () => {
+    lastWatchedTitle.mockResolvedValue(null);
+    expect(await buildBecauseYouWatched('u', 't')).toBeNull();
+    lastWatchedTitle.mockResolvedValue({ id: 's1', name: 'Alice' });
+    ItemsService.getSimilarItems.mockResolvedValue([item('a'), item('b')]);
+    expect(await buildBecauseYouWatched('u', 't')).toBeNull();
   });
 });

@@ -5,8 +5,11 @@ import { getItemImageUrl, getBackdropUrlFor, cssUrl } from '../utils/image.js';
 import { formatYear, formatTicksToDuration } from '../utils/format.js';
 import { resolvePageScope } from '../utils/pageScope.js';
 import { prefersReducedMotion } from '../utils/motion.js';
+import { createCarouselTrailer } from './heroCarouselTrailer.js';
 
 const SLIDE_INTERVAL = 8000;
+// After a trailer has run, the backdrop shows a moment before the next title.
+const AFTER_TRAILER_INTERVAL = 2500;
 
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
 const PLAY_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
@@ -126,12 +129,30 @@ export function HeroCarousel({ items = [], pageScope = null }) {
   const gradientOverlay = createElement('div', { className: 'hero-carousel-gradient', 'aria-hidden': 'true' });
   container.insertBefore(gradientOverlay, container.children[1]);
 
+  // Desktops: the shown title's trailer plays over its backdrop; the banner
+  // waits for it and moves on once it is over.
+  const trailer = createCarouselTrailer({
+    container,
+    // Without a trailer the slide timer simply keeps running.
+    onDone: (played) => { if (played) scheduleNext(AFTER_TRAILER_INTERVAL); }
+  });
+  if (trailer) {
+    container.insertBefore(trailer.layer, gradientOverlay);
+    container.appendChild(trailer.soundButton);
+  }
+  const showTrailer = () => {
+    if (!trailer) return;
+    if (pausedByUser) trailer.stop();
+    else trailer.show(slidesData[currentIndex].item);
+  };
+
   const pauseButton = createElement('button', {
     type: 'button',
     className: 'hero-carousel-pause',
     onClick: () => {
       pausedByUser = !pausedByUser;
       updatePauseButton();
+      showTrailer();
       scheduleNext();
     }
   });
@@ -172,6 +193,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     const counter = container.querySelector('.hero-carousel-position');
     if (counter) counter.textContent = `${currentIndex + 1} / ${slidesData.length}`;
 
+    showTrailer();
     scheduleNext();
   };
 
@@ -179,7 +201,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
     goToSlide((currentIndex + 1) % slidesData.length);
   };
 
-  const isPaused = () => pausedByUser || hovered || focusedInside || document.hidden;
+  const isPaused = () => pausedByUser || hovered || focusedInside || document.hidden || Boolean(trailer?.isBusy());
 
   const stopAutoTimer = () => {
     if (autoTimer) {
@@ -193,7 +215,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
   // The carousel is built detached; its page scope stops it when the page is
   // left. The connection check is the fallback for a carousel built outside
   // any page.
-  function scheduleNext() {
+  function scheduleNext(delay = SLIDE_INTERVAL) {
     stopAutoTimer();
     if (destroyed || slidesData.length < 2 || pausedByUser) return;
     autoTimer = setTimeout(() => {
@@ -210,7 +232,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
         return;
       }
       nextSlide();
-    }, SLIDE_INTERVAL);
+    }, delay);
   }
 
   container.addEventListener('mouseenter', () => {
@@ -241,6 +263,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
   function cleanup() {
     destroyed = true;
     stopAutoTimer();
+    trailer?.destroy();
     document.removeEventListener('visibilitychange', onVisibilityChange);
   }
 
@@ -263,6 +286,7 @@ export function HeroCarousel({ items = [], pageScope = null }) {
 
   loadBackdrop(0);
   if (slidesData.length > 1) loadBackdrop(1);
+  showTrailer();
   scheduleNext();
 
   container.destroyCarousel = cleanup;

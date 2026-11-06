@@ -9,6 +9,7 @@ import { HomeSectionsService } from '../../services/browse/home-sections.service
 import { requireAuth } from '../../middleware/auth.middleware.js';
 import { UserDataService } from '../../services/user-data.service.js';
 import { summarizeMedia } from '../../services/browse/media-summary.js';
+import { getCollection, getExtras } from '../../services/browse/title-extras.service.js';
 import { jellyfinRoute } from '../../utils/jellyfinRoute.js';
 import { validateIdParam } from '../../utils/ids.js';
 
@@ -134,6 +135,16 @@ router.get('/item/:id/similar', requireAuth, jellyfinRoute('Media Similar Error'
   const items = await ItemsService.getSimilarItems(userId, accessToken, id);
   return res.json(await firstCopiesOnly(userId, accessToken, items.filter(entry => entry.Id !== id)));
 }));
+
+// The film series of a film, as far as the library has it; null without one.
+router.get('/item/:id/collection', requireAuth, jellyfinRoute('Media Collection Error', 'Filmreihe konnte nicht geladen werden', async (req, res) => {
+  res.json({ collection: await getCollection(req.session.userId, req.session.accessToken, req.params.id) });
+}, { fallback: (req, res) => res.json({ collection: null }) }));
+
+// Trailers and extras stored as files in Jellyfin.
+router.get('/item/:id/extras', requireAuth, jellyfinRoute('Media Extras Error', 'Extras konnten nicht geladen werden', async (req, res) => {
+  res.json({ items: await getExtras(req.session.userId, req.session.accessToken, req.params.id) });
+}, { fallback: (req, res) => res.json({ items: [] }) }));
 
 router.get('/item/:id/seasons', requireAuth, jellyfinRoute('Media Seasons Error', 'Staffeln konnten nicht geladen werden', async (req, res) => {
   const { userId, accessToken } = req.session;

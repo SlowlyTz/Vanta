@@ -35,6 +35,16 @@ export const MediaApi = {
     return request(`/api/media/item/${id}/similar`, { signal });
   },
 
+  // { collection: { name, items, missing } | null }: the film series of a film.
+  getCollection(id, { signal } = {}) {
+    return request(`/api/media/item/${id}/collection`, { signal });
+  },
+
+  // { items }: trailers and extras stored as files.
+  getExtras(id, { signal } = {}) {
+    return request(`/api/media/item/${id}/extras`, { signal });
+  },
+
   getSeasons(id, { signal } = {}) {
     return request(`/api/media/item/${id}/seasons`, { signal });
   },

@@ -1,0 +1,357 @@
+/* Rows below the detail hero: cast and crew as portraits, the film series
+   and the trailers and extras (castCrewSection.js, detail/moreSections.js). */
+.person-list {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 6px 4px 18px;
+  scrollbar-width: none;
+}
+
+.person-list::-webkit-scrollbar {
+  display: none;
+}
+
+.person-card {
+  flex: 0 0 132px;
+  width: 132px;
+  min-width: 0;
+}
+
+.person-card-button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.person-card-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Chromium 68 has no aspect-ratio. */
+@supports not (aspect-ratio: 1) {
+  .person-card-photo {
+    height: 198px;
+  }
+}
+
+.person-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.15);
+}
+
+.person-card-button:hover .person-card-photo {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+.person-card-button:focus-visible .person-card-photo {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+.person-card-button:focus-visible {
+  outline: none;
+}
+
+.person-card-job {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  max-width: calc(100% - 16px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 8, 12, 0.72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.66rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.person-card-name {
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.person-card-role {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The film series: where this film stands among the others. */
+.collection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 160px;
+  min-width: 0;
+}
+
+.collection-step {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.collection-item.is-current .collection-step {
+  color: rgb(var(--abyss-accent));
+}
+
+.collection-item.is-current .media-card-image-container {
+  box-shadow: 0 0 0 2px rgb(var(--abyss-accent));
+}
+
+.detail-collection-missing {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-right: auto;
+}
+
+/* Trailers and extras: wide thumbnails with a play mark. */
+.extras-list {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 6px 4px 18px;
+  scrollbar-width: none;
+}
+
+.extras-list::-webkit-scrollbar {
+  display: none;
+}
+
+.extra-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 0 0 300px;
+  width: 300px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.extra-card-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@supports not (aspect-ratio: 1) {
+  .extra-card-thumb {
+    height: 169px;
+  }
+}
+
+.extra-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.extra-card-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-radius: 50%;
+  background: rgba(10, 10, 14, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.extra-card:hover .extra-card-thumb img {
+  transform: scale(1.05);
+}
+
+.extra-card:focus-visible .extra-card-thumb img {
+  transform: scale(1.05);
+}
+
+.extra-card:hover .extra-card-play {
+  background: rgb(var(--abyss-accent));
+  transform: scale(1.08);
+}
+
+.extra-card:focus-visible .extra-card-play {
+  background: rgb(var(--abyss-accent));
+  transform: scale(1.08);
+}
+
+.extra-card:focus-visible {
+  outline: none;
+}
+
+.extra-card:focus-visible .extra-card-thumb {
+  box-shadow: 0 0 0 3px #fff;
+}
+
+.extra-card-title {
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.extra-card-meta {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .person-card {
+    flex-basis: 104px;
+    width: 104px;
+  }
+
+  @supports not (aspect-ratio: 1) {
+    .person-card-photo {
+      height: 156px;
+    }
+  }
+
+  .extra-card {
+    flex-basis: 240px;
+    width: 240px;
+  }
+}
+
+/* Chromium 68 ignores gap in flex containers. */
+@supports not (aspect-ratio: 1) {
+  .person-list > * + *,
+  .extras-list > * + * {
+    margin-left: 18px;
+  }
+}
+
+html.tv-mode .person-card {
+  flex-basis: 8rem;
+  width: 8rem;
+}
+
+html.tv-mode .person-card-button:focus .person-card-photo {
+  transform: translateY(-0.2rem);
+  box-shadow: 0 0 0 0.2rem #fff;
+}
+
+html.tv-mode .extra-card {
+  flex-basis: 16rem;
+  width: 16rem;
+}
+
+html.tv-mode .extra-card:focus .extra-card-thumb {
+  box-shadow: 0 0 0 0.2rem #fff;
+}
+
+/* ---- Season choice: one pill track that scrolls sideways ------------- */
+.seasons-section .seasons-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.seasons-section .season-tab {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.68);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seasons-section .season-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
+}
+
+.seasons-section .season-tab:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
+}
+
+.seasons-section .season-tab.active {
+  background: #fff;
+  color: #0b0b0f;
+}
+
+html.tv-mode .seasons-section .season-tab:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85);
+}
+
+/* Chromium 68 ignores gap in flex containers. */
+@supports not (aspect-ratio: 1) {
+  .seasons-section .season-tab + .season-tab {
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .seasons-section .season-tab {
+    min-height: 34px;
+    padding: 6px 14px;
+    font-size: 0.84rem;
+  }
+}

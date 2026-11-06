@@ -20,7 +20,7 @@ export async function getHomeSectionGroup(userId, accessToken, group) {
 
   if (group === 'featured') {
     const items = await buildIndex(userId, accessToken);
-    return buildFeaturedSections(items);
+    return buildFeaturedSections(items, { userId, accessToken });
   }
 
   if (group === 'publishers') {

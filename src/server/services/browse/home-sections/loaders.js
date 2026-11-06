@@ -5,6 +5,9 @@ import { TmdbService } from '../../tmdb.service.js';
 import { getFeaturedPublishersFromStudios } from '../../../../public/js/shared/featuredPublishers.js';
 import { normalizeGenre, normalizeTitle, getItemYear, shuffleArray, sortByNewest, buildGenreHref } from './normalizers.js';
 import { genreLabel } from '../../../../public/js/shared/genreLabels.js';
+import { ItemsService } from '../../jellyfin/items.service.js';
+import { firstCopiesOnly } from '../title-copies.js';
+import { lastWatchedTitle } from '../title-extras.service.js';
 
 const MIN_GENRE_ROW_ITEMS = 4;
 
@@ -217,9 +220,31 @@ export async function buildNowPlayingSection(items, { now = Date.now() } = {}) {
   return section;
 }
 
-export async function buildFeaturedSections(items) {
+// "Weil du „X“ geschaut hast": titles like the one finished last, without
+// those already watched. Left out below four titles.
+const BECAUSE_MIN = 4;
+export async function buildBecauseYouWatched(userId, token) {
+  try {
+    const source = await lastWatchedTitle(userId, token);
+    if (!source) return null;
+    const similar = await ItemsService.getSimilarItems(userId, token, source.id);
+    const items = (await firstCopiesOnly(userId, token, similar))
+      .filter(item => item.Id !== source.id && item.UserData?.Played !== true);
+    if (items.length < BECAUSE_MIN) return null;
+    return { type: 'standard', title: `Weil du \u201E${source.name}\u201C geschaut hast`, items };
+  } catch (error) {
+    console.error('[HomeSectionsService] Failed to build "because you watched":', error.message);
+    return null;
+  }
+}
+
+export async function buildFeaturedSections(items, { userId = null, accessToken = null } = {}) {
   const indexes = buildItemIndexes(items);
-  const sections = await buildTopTenSections(items, { types: ['Movie'] });
+  const [topTen, because] = await Promise.all([
+    buildTopTenSections(items, { types: ['Movie'] }),
+    userId ? buildBecauseYouWatched(userId, accessToken) : null
+  ]);
+  const sections = [...topTen, ...(because ? [because] : [])];
 
   for (const featuredDef of FEATURED_SECTIONS) {
     try {
