@@ -1,13 +1,18 @@
 // Jellyfin's parental control for the catalogue mirror: titles above the account's age limit
 // are hidden, and so are unrated titles of a type listed in BlockUnratedItems.
 
-// FSK age from a rating as Jellyfin stores it ("FSK-12", "DE-16", "12"),
-// with the usual US ratings mapped; null when unknown.
-const US_RATINGS = { G: 0, 'TV-Y': 0, 'TV-G': 0, 'TV-Y7': 6, PG: 6, 'TV-PG': 6, 'PG-13': 12, 'TV-14': 12, R: 16, 'TV-MA': 18, 'NC-17': 18, M18: 18 };
+// FSK age from a rating as Jellyfin stores it ("FSK-12", "DE-16", "12", or
+// another country's "NL-16"); null when unknown. US ratings carry the score
+// Jellyfin gives them (PG-13 = 13, R = 17), so a limit of 12 or 16 keeps them
+// out exactly as Jellyfin does.
+const US_RATINGS = {
+  G: 0, 'TV-Y': 0, 'TV-G': 0, 'TV-Y7': 7, 'TV-Y7-FV': 7, PG: 10, 'TV-PG': 10,
+  'PG-13': 13, 'TV-14': 14, R: 17, 'TV-MA': 17, 'NC-17': 18, M18: 18
+};
 export function ageRating(rating) {
   if (!rating) return null;
   const text = String(rating).trim().toUpperCase();
-  const number = /^(?:FSK|DE|FSF)?[-\s]?(\d{1,2})$/.exec(text);
+  const number = /^(?:[A-Z]{2,3})?[-\s]?(\d{1,2})$/.exec(text);
   if (number) return Number(number[1]);
   return US_RATINGS[text] ?? null;
 }
@@ -21,13 +26,11 @@ export function ageLimitOf(policy) {
 }
 
 // `item`: { type, officialRating } (catalogue entry) or a Jellyfin item. A
-// rating VANTA cannot read lets the title through.
+// rating VANTA cannot read counts as unrated, as in Jellyfin.
 export function withinAgeLimit(limit, item) {
   if (!limit) return true;
   const type = item?.type ?? item?.Type;
-  const rating = item?.officialRating ?? item?.OfficialRating ?? null;
-  if (!rating) return !limit.blockUnrated?.includes(type);
-  if (!Number.isFinite(limit.maxAge)) return true;
-  const age = ageRating(rating);
-  return age === null || age <= limit.maxAge;
+  const age = ageRating(item?.officialRating ?? item?.OfficialRating ?? null);
+  if (age === null) return !limit.blockUnrated?.includes(type);
+  return !Number.isFinite(limit.maxAge) || age <= limit.maxAge;
 }

@@ -31,11 +31,15 @@ describe('age limit', () => {
     const twelve = { maxAge: 12, blockUnrated: ['Movie'] };
     expect(withinAgeLimit(twelve, { type: 'Movie', officialRating: 'FSK-12' })).toBe(true);
     expect(withinAgeLimit(twelve, { type: 'Movie', officialRating: 'FSK-16' })).toBe(false);
-    expect(withinAgeLimit(twelve, { Type: 'Movie', OfficialRating: 'PG-13' })).toBe(true);
+    // US ratings carry Jellyfin's score: PG-13 is 13, R is 17.
+    expect(withinAgeLimit(twelve, { Type: 'Movie', OfficialRating: 'PG-13' })).toBe(false);
+    expect(withinAgeLimit({ maxAge: 16, blockUnrated: [] }, { type: 'Movie', officialRating: 'R' })).toBe(false);
+    expect(withinAgeLimit({ maxAge: 16, blockUnrated: [] }, { type: 'Movie', officialRating: 'NL-16' })).toBe(true);
     expect(withinAgeLimit(twelve, { type: 'Movie', officialRating: null })).toBe(false);
     expect(withinAgeLimit(twelve, { type: 'Series', officialRating: null })).toBe(true);
-    // A rating VANTA cannot read is let through.
-    expect(withinAgeLimit(twelve, { type: 'Movie', officialRating: 'Unrated-XY' })).toBe(true);
+    // A rating VANTA cannot read counts as unrated, as in Jellyfin.
+    expect(withinAgeLimit(twelve, { type: 'Movie', officialRating: 'Unrated-XY' })).toBe(false);
+    expect(withinAgeLimit({ maxAge: 12, blockUnrated: [] }, { type: 'Movie', officialRating: 'Unrated-XY' })).toBe(true);
     expect(withinAgeLimit({ maxAge: null, blockUnrated: ['Series'] }, { type: 'Series', officialRating: null })).toBe(false);
     expect(withinAgeLimit(null, { type: 'Movie', officialRating: 'FSK-18' })).toBe(true);
   });
@@ -70,9 +74,11 @@ describe('catalogue reader with an age limit', () => {
   });
 
   it('hides titles above the limit and blocked unrated ones in every list', () => {
-    const allowed = ['kids', 'odd', 'teen', 'teen-series', 'unrated-series'];
+    // `odd` has a rating VANTA cannot read: unrated, and unrated films are blocked.
+    const allowed = ['kids', 'teen', 'teen-series', 'unrated-series'];
     expect(ids(reader.all({ ageLimit: twelve }))).toEqual(allowed);
-    expect(ids(reader.newest({ type: 'Movie', ageLimit: twelve }))).toEqual(['kids', 'odd', 'teen']);
+    expect(ids(reader.newest({ type: 'Movie', ageLimit: twelve }))).toEqual(['kids', 'teen']);
+    expect(ids(reader.all({ ageLimit: { maxAge: 12, blockUnrated: [] } }))).toContain('odd');
     expect(reader.page({ type: 'Movie,Series', ageLimit: twelve }).totalRecordCount).toBe(allowed.length);
     expect(ids(reader.screensaver({ ageLimit: twelve }))).toEqual(allowed);
     expect(ids(reader.search({ query: 'adult', ageLimit: twelve }))).toEqual([]);

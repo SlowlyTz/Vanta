@@ -33,9 +33,9 @@ describe('scoreText', () => {
 });
 
 describe('ageRating', () => {
-  it('reads German and US ratings', () => {
-    expect(['FSK-12', 'FSK-0', '16', 'DE-6', 'R', 'TV-MA', 'M18', 'PG-13', 'XYZ', null].map(ageRating))
-      .toEqual([12, 0, 16, 6, 16, 18, 18, 12, null, null]);
+  it('reads German ratings and US ratings with the score Jellyfin gives them', () => {
+    expect(['FSK-12', 'FSK-0', '16', 'DE-6', 'NL-16', 'R', 'TV-MA', 'M18', 'PG-13', 'XYZ', null].map(ageRating))
+      .toEqual([12, 0, 16, 6, 16, 17, 17, 18, 13, null, null]);
   });
 });
 

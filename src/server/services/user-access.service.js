@@ -3,6 +3,7 @@
 import { clearVisibilityCache } from './catalog/visibility.js';
 import { UserDirectory } from './user-directory.service.js';
 import { getImageAccess } from './images/image-access.js';
+import { TrailersService } from './browse/trailers.service.js';
 
 // The FSK ages an account can be limited to (Jellyfin's rating score for an
 // FSK rating is the age); null is no limit.
@@ -33,4 +34,5 @@ export function invalidateUserAccess(userId) {
   clearVisibilityCache(userId);
   UserDirectory.invalidate();
   getImageAccess().clear();
+  TrailersService.clearCatalogCache();
 }

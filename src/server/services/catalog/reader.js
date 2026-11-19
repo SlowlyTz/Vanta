@@ -74,14 +74,20 @@ export function createCatalogReader(db) {
 
   const ageClause = (ageLimit, clauses, params, alias = 'i') => {
     if (!ageLimit) return;
-    const allowed = knownRatings().filter(rating => withinAgeLimit(ageLimit, { officialRating: rating }));
+    // Ratings VANTA cannot read count as unrated (see age-limit.js).
+    const readable = knownRatings().filter(rating => ageRating(rating) !== null);
+    const unreadable = knownRatings().filter(rating => ageRating(rating) === null);
+    const allowed = readable.filter(rating => withinAgeLimit(ageLimit, { officialRating: rating }));
     const blocked = ageLimit.blockUnrated || [];
     const rated = allowed.length ? `${alias}.official_rating IN (${allowed.map(() => '?').join(', ')})` : '0';
-    const unrated = blocked.length
-      ? `(${alias}.official_rating IS NULL AND ${alias}.type NOT IN (${blocked.map(() => '?').join(', ')}))`
+    const noRating = unreadable.length
+      ? `(${alias}.official_rating IS NULL OR ${alias}.official_rating IN (${unreadable.map(() => '?').join(', ')}))`
       : `${alias}.official_rating IS NULL`;
+    const unrated = blocked.length
+      ? `(${noRating} AND ${alias}.type NOT IN (${blocked.map(() => '?').join(', ')}))`
+      : noRating;
     clauses.push(`(${rated} OR ${unrated})`);
-    params.push(...allowed, ...blocked);
+    params.push(...allowed, ...unreadable, ...blocked);
   };
 
   const libraryClause = (libraryIds, clauses, params, alias = 'i') => {
