@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.1: security
+
+Fixes from a penetration test with and without login. It found no serious gap: access between users, the admin area, the WebSocket and the stream proxy held.
+
+### Security
+- Only the app's own address serves the app: any other path (`/.env`, source maps, typos) answers „Nicht gefunden“ (404), and a `robots.txt` keeps search engines out.
+- A title Jellyfin does not know answers 404 instead of a server error; broken or oversized requests and an unknown home row get a short German message that does not repeat the input.
+- In production the server warns at start when the session cookie is not limited to HTTPS (`COOKIE_SECURE`).
+- The watch party link is the invitation: anyone signed in who has it may join, as long as the title is open to them.
+
+### Age limits
+- US ratings count as Jellyfin counts them (PG-13 as 13, R as 17), so an FSK 12 or 16 limit hides them in lists, search and pictures as it does in Jellyfin. A rating VANTA cannot read counts as unrated.
+- A changed age limit or library access also reaches the trailer feed at once.
+
+---
+
 ## 1.3.0: home and detail page
 
 A livelier home page, a detail page that feels like a cinema, and titles spread over several libraries shown as one.
