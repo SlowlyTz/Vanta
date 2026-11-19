@@ -71,13 +71,23 @@ describe('Static asset delivery', () => {
     it('sends the shell with no-cache and an ETag on / and /index.html', async () => {
       const app = createApp(await loadModules({ nodeEnv: 'development' }));
 
-      for (const url of ['/', '/index.html', '/some/deep/link']) {
+      for (const url of ['/', '/index.html']) {
         const res = await request(app).get(url);
         expect(res.status).toBe(200);
         expect(res.headers['content-type']).toMatch(/text\/html/);
         expect(res.headers['cache-control']).toBe('no-cache');
         expect(res.headers.etag).toBeDefined();
         expect(res.text).toContain('<div id="app"></div>');
+      }
+    });
+
+    it('answers other paths with 404 instead of the shell', async () => {
+      const app = createApp(await loadModules({ nodeEnv: 'development' }));
+
+      for (const url of ['/some/deep/link', '/.env', '/assets/app.js.map']) {
+        const res = await request(app).get(url);
+        expect(res.status).toBe(404);
+        expect(res.text).not.toContain('<div id="app"></div>');
       }
     });
 

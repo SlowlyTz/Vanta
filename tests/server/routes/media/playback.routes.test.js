@@ -197,6 +197,17 @@ describe('Playback Routes stream-limit integration', () => {
       });
     });
 
+    it.each([400, 404])('answers 404 when Jellyfin does not know the item (%i)', async (status) => {
+      const unknown = new Error('not found');
+      unknown.status = status;
+      PlaybackApiService.getPlaybackInfo.mockRejectedValue(unknown);
+
+      const res = await request(createApp()).get('/item-1');
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe('Titel nicht gefunden');
+    });
+
     it('propagates a non-limit error from reserve as a generic failure instead of masking it', async () => {
       const unexpected = new Error('tracking failure');
       unexpected.status = 500;

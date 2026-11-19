@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = new Set([
   'auth.routes.js POST /login',
   'auth.routes.js GET /me',
   'auth.routes.js POST /logout',
+  'page.routes.js GET /',
   'page.routes.js GET *',
   'version.routes.js GET /',
   'health.routes.js GET /',

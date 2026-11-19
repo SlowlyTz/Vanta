@@ -234,9 +234,19 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
       audioStreamIndex: requestedAudioStreamIndex,
       mediaSourceId
     };
-    const { playbackInfo, audioStreamIndex } = await fetchPlaybackInfo({
-      userId, accessToken, id, infoOptions, audioStreamIndex: requestedAudioStreamIndex, audioLanguage: requestedAudioLanguage
-    });
+    let playbackInfo;
+    let audioStreamIndex;
+    try {
+      ({ playbackInfo, audioStreamIndex } = await fetchPlaybackInfo({
+        userId, accessToken, id, infoOptions, audioStreamIndex: requestedAudioStreamIndex, audioLanguage: requestedAudioLanguage
+      }));
+    } catch (error) {
+      // Jellyfin answers an id it does not know (or cannot parse) with 400/404.
+      if (error?.status === 400 || error?.status === 404) {
+        return res.status(404).json({ error: 'Titel nicht gefunden' });
+      }
+      throw error;
+    }
 
     const playback = PlaybackService.resolvePlayback(playbackInfo, id, {
       forceHlsTranscoding: shouldForceHls,

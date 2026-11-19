@@ -1,4 +1,5 @@
-// Serves the SPA shell (index.html) for every path outside /api.
+// Serves the SPA shell (index.html) on / only: the app routes in the hash
+// (#/home), so any other path is a file that does not exist and gets a 404.
 import express from 'express';
 import fs from 'fs/promises';
 import { INDEX_FILE } from '../config/static.js';
@@ -11,7 +12,7 @@ const router = express.Router();
 // the client compares with the server's to notice a newer deploy.
 // The build is fixed for the process, so the page is put together once.
 let page = null;
-router.get('*', async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   if (!BUILD_ID) {
     return res.sendFile(INDEX_FILE, { cacheControl: false, headers: { 'Cache-Control': 'no-cache' } });
   }
@@ -26,6 +27,10 @@ router.get('*', async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+});
+
+router.get('*', (req, res) => {
+  res.status(404).type('text').send('Nicht gefunden');
 });
 
 export default router;

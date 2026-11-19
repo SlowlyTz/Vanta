@@ -17,7 +17,7 @@ Wrong passwords: three per username and address lock for a minute, each further 
 
 Up to four people. The server holds one timeline: position, playing, the server time it was anchored at, and a sequence number.
 
-A party lives as long as anyone is connected, the owner or not; nobody connected for 5 min and it is over (the owner can also end it). The watch-party dialog offers „Weiterschauen“ for each live party the user was in, next to „Neue Watch Party starten“; a title picked in the dialog is confirmed before the party is created. Invitations go by exact username to accounts that signed in (also from a stored session after a restart), never to someone banned from the party.
+A party lives as long as anyone is connected, the owner or not; nobody connected for 5 min and it is over (the owner can also end it). The watch-party dialog offers „Weiterschauen“ for each live party the user was in, next to „Neue Watch Party starten“; a title picked in the dialog is confirmed before the party is created. The party link is the invitation: any signed-in user who has it may join (as long as the title is open to them), the owner can remove and ban guests. Invitations go by exact username to accounts that signed in (also from a stored session after a restart), never to someone banned from the party.
 
 - Clients measure their clock offset with `TIME_PING`/`TIME_PONG` (lowest round trip wins, every 30 s).
 - Admin play/pause/seek becomes a `TIMELINE` message; old sequence numbers are dropped.

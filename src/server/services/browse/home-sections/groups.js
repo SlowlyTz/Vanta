@@ -27,5 +27,5 @@ export async function getHomeSectionGroup(userId, accessToken, group) {
     return buildPublisherSections(userId, accessToken);
   }
 
-  throw httpError(400, `Unbekannter Bereich der Startseite: ${group}`);
+  throw httpError(400, 'Unbekannter Bereich der Startseite');
 }

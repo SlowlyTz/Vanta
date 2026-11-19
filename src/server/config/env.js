@@ -21,6 +21,11 @@ if (NODE_ENV === 'production' && SESSION_SECRET === 'change-this-long-random-sec
   throw new Error('SESSION_SECRET must be set to a secure random value in production.');
 }
 
+// Without it the session cookie also travels over plain HTTP.
+if (NODE_ENV === 'production' && process.env.COOKIE_SECURE !== 'true') {
+  console.warn('[Config] COOKIE_SECURE is not true: set it when VANTA is served over HTTPS.');
+}
+
 if (!TMDB_API_KEY) {
   throw new Error('TMDB_API_KEY is required.');
 }
